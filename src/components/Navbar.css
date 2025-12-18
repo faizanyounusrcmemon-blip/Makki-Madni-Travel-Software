@@ -1,0 +1,64 @@
+.menu-box {
+  position: absolute;
+  top: 32px;
+  left: 0;
+
+  background: linear-gradient(145deg, #0f2027, #203a43, #2c5364);
+  padding: 8px 0;
+  min-width: 190px;
+
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,0.08);
+
+  box-shadow:
+    0 15px 35px rgba(0,0,0,0.6),
+    inset 0 0 10px rgba(255,255,255,0.03);
+
+  backdrop-filter: blur(6px);
+  animation: fadeSlide 0.25s ease-out;
+  z-index: 999;
+}
+
+.menu-box a {
+  color: #f1f1f1;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+
+  padding: 12px 18px;
+  font-size: 14px;
+  font-weight: 500;
+  text-decoration: none;
+
+  transition: all 0.25s ease;
+  border-left: 3px solid transparent;
+}
+
+.menu-box a:hover {
+  background: linear-gradient(
+    90deg,
+    rgba(255,215,0,0.15),
+    rgba(255,215,0,0.02)
+  );
+
+  color: #ffd700;
+  border-left: 3px solid #ffd700;
+  padding-left: 22px;
+}
+
+/* Optional: Divider */
+.menu-box a + a {
+  border-top: 1px solid rgba(255,255,255,0.06);
+}
+
+/* Smooth open animation */
+@keyframes fadeSlide {
+  from {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
