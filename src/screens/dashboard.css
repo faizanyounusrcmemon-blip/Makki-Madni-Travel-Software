@@ -1,0 +1,92 @@
+/* PAGE */
+.dashboard-container {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+  padding: 30px 40px;
+  color: #fff;
+}
+
+/* HEADER */
+.dashboard-header {
+  text-align: center;
+  margin-bottom: 30px;
+}
+
+.dashboard-header h2 {
+  font-size: 28px;
+  font-weight: 800;
+  margin-bottom: 6px;
+  color: #ffd700;
+}
+
+.dashboard-header p {
+  opacity: 0.8;
+  font-size: 14px;
+}
+
+/* CONTENT AREA */
+.dashboard-content {
+  display: flex;
+  justify-content: flex-start; /* 👈 LEFT SIDE */
+  align-items: flex-start;
+}
+
+/* CARD */
+.dash-card {
+  background: rgba(255,255,255,0.08);
+  border-radius: 18px;
+  box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+  transition: all 0.3s ease;
+  backdrop-filter: blur(8px);
+  text-align: center;
+}
+
+/* SMALL CARD */
+.dash-card.small {
+  width: 260px;      /* 👈 thora chota */
+  padding: 20px;
+}
+
+.dash-card:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 30px 60px rgba(0,0,0,0.7);
+}
+
+/* ICON */
+.dash-icon {
+  font-size: 40px;
+  margin-bottom: 10px;
+}
+
+/* TEXT */
+.dash-card h4 {
+  font-size: 18px;
+  margin-bottom: 6px;
+}
+
+.dash-card p {
+  font-size: 13px;
+  opacity: 0.85;
+  margin-bottom: 16px;
+}
+
+/* BUTTON */
+.dash-card button {
+  border: none;
+  padding: 8px 20px;
+  border-radius: 30px;
+  font-size: 13px;
+  cursor: pointer;
+  color: #fff;
+  transition: all 0.3s ease;
+}
+
+/* GREEN THEME */
+.dash-card.green button {
+  background: linear-gradient(135deg, #00b09b, #96c93d);
+}
+
+.dash-card button:hover {
+  opacity: 0.9;
+  transform: scale(1.05);
+}

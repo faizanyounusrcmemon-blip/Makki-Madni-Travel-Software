@@ -1,0 +1,78 @@
+.package-page{
+  background:linear-gradient(135deg,#e9f0f6,#ffffff);
+  min-height:100vh;
+  padding:20px;
+}
+
+.quote-card{
+  max-width:1100px;
+  margin:auto;
+  background:#fff;
+  padding:22px;
+  border-radius:16px;
+  box-shadow:0 25px 45px rgba(0,0,0,.15);
+  border:1px solid #e2e2e2;
+}
+
+.section-title{
+  margin-top:22px;
+  margin-bottom:10px;
+  padding:8px 14px;
+  font-size:14px;
+  font-weight:700;
+  color:#fff;
+  background:linear-gradient(135deg,#0d47a1,#1976d2);
+  border-radius:10px;
+}
+
+.table{
+  border-radius:10px;
+  overflow:hidden;
+}
+
+.table thead{
+  background:#f1f5fb;
+}
+
+.form-control-sm{
+  border-radius:8px;
+  font-size:13px;
+}
+
+.form-control-sm:focus{
+  border-color:#1976d2;
+  box-shadow:0 0 0 .15rem rgba(25,118,210,.25);
+}
+
+.btn-sm{
+  border-radius:20px;
+}
+
+.table-info{
+  background:#e3f2fd !important;
+}
+
+.small{
+  border-radius:10px;
+  font-weight:600;
+}
+
+.brand-title{
+  text-align:center;
+  font-size:28px;
+  font-weight:800;
+  margin-bottom:4px;
+  color:#0d47a1;
+  letter-spacing:1px;
+}
+
+.brand-title::after{
+  content:"";
+  display:block;
+  width:120px;
+  height:3px;
+  margin:6px auto 0;
+  background:linear-gradient(135deg,#0d47a1,#1976d2);
+  border-radius:5px;
+}
+
