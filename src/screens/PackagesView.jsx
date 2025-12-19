@@ -3,35 +3,51 @@ import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 
 // =========================
-// DATE FORMATTER
+// DATE FORMATTER (01/DEC/2025)
 // =========================
 const fmtDate = (d) => {
   if (!d) return "";
-  return new Date(d).toLocaleDateString("en-GB", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  });
+  const dt = new Date(d);
+  const day = String(dt.getDate()).padStart(2, "0");
+  const mon = dt.toLocaleString("en-US", { month: "short" }).toUpperCase();
+  const year = dt.getFullYear();
+  return `${day}/${mon}/${year}`;
 };
 
-export default function PackagesView({ id, onNavigate }) {
+export default function PackagesView({ refNo, onNavigate }) {
   const [data, setData] = useState(null);
-  const ref = useRef(null);
-
-  useEffect(() => {
-    if (!id) return;
-
-    fetch(`${import.meta.env.VITE_BACKEND_URL}/api/bookings/get/${id}`)
-      .then((r) => r.json())
-      .then((d) => setData(d));
-  }, [id]);
+  const viewRef = useRef(null);
 
   // =========================
-  // EXPORT PDF
+  // LOAD PACKAGE BY REF NO
+  // =========================
+  useEffect(() => {
+    if (!refNo) return;
+
+    fetch(`${import.meta.env.VITE_BACKEND_URL}/api/bookings/get/${refNo}`)
+      .then((r) => r.json())
+      .then((res) => {
+        if (res.success) setData(res.row);
+        else alert("Record not found");
+      });
+  }, [refNo]);
+
+  // =========================
+  // EXPORT PDF (CLEAR)
   // =========================
   const exportPDF = async () => {
-    const canvas = await html2canvas(ref.current, { scale: 2 });
-    const img = canvas.toDataURL("image/jpeg");
+    const el = viewRef.current;
+
+    el.classList.add("pdf-mode");
+
+    const canvas = await html2canvas(el, {
+      scale: 3,
+      backgroundColor: "#ffffff",
+      useCORS: true,
+      windowWidth: el.scrollWidth,
+    });
+
+    const img = canvas.toDataURL("image/jpeg", 1.0);
 
     const pdf = new jsPDF("l", "mm", "a4");
     const w = pdf.internal.pageSize.getWidth();
@@ -39,12 +55,15 @@ export default function PackagesView({ id, onNavigate }) {
 
     pdf.addImage(img, "JPEG", 0, 0, w, h);
     pdf.save(`${data?.ref_no || "package"}.pdf`);
+
+    el.classList.remove("pdf-mode");
   };
 
   if (!data) return <div className="p-4">Loading...</div>;
 
   return (
     <div className="container mt-3">
+      {/* TOP BAR */}
       <button
         className="btn btn-secondary btn-sm mb-2"
         onClick={() => onNavigate("allreports")}
@@ -59,9 +78,10 @@ export default function PackagesView({ id, onNavigate }) {
         📄 Export PDF
       </button>
 
-      <div ref={ref} className="bg-white p-3 border">
-        <h3 className="fw-bold text-center">MAKKI MADNI TRAVEL</h3>
-        <h4 className="fw-bold">PACKAGE — {data.ref_no}</h4>
+      {/* VIEW */}
+      <div ref={viewRef} className="bg-white p-3 border">
+        <h3 className="fw-bold text-center">✈️ MAKKI MADNI TRAVEL</h3>
+        <h4 className="fw-bold mb-3">PACKAGE — {data.ref_no}</h4>
 
         <p><b>Customer:</b> {data.customer_name}</p>
         <p><b>Booking Date:</b> {fmtDate(data.booking_date)}</p>
@@ -69,19 +89,19 @@ export default function PackagesView({ id, onNavigate }) {
         <hr />
 
         {/* ================= FLIGHT ================= */}
-        <h5 className="fw-bold">Flight</h5>
+        <h5 className="fw-bold">✈️ Flight</h5>
         <p>
           Adults: {data.adult_count} × {data.adult_rate}<br />
           Child: {data.child_count} × {data.child_rate}<br />
           Infant: {data.infant_count} × {data.infant_rate}
         </p>
-        <p><b>Flight SAR Total:</b> {data.flight_sar_total}</p>
-        <p><b>Flight PKR Total:</b> {Number(data.flight_pkr_total || 0).toLocaleString()}</p>
+        <p><b>Flight SAR:</b> {data.flight_sar_total}</p>
+        <p><b>Flight PKR:</b> {Number(data.flight_pkr_total || 0).toLocaleString()}</p>
 
         <hr />
 
         {/* ================= HOTELS ================= */}
-        <h5 className="fw-bold">Hotels</h5>
+        <h5 className="fw-bold">🏨 Hotels</h5>
 
         {Array.isArray(data.hotels) && data.hotels.length > 0 ? (
           data.hotels.map((h, i) => (
@@ -96,23 +116,23 @@ export default function PackagesView({ id, onNavigate }) {
           <p>No hotel records</p>
         )}
 
-        <p><b>Hotel SAR Total:</b> {data.hotel_sar_total}</p>
-        <p><b>Hotel PKR Total:</b> {Number(data.hotel_pkr_total || 0).toLocaleString()}</p>
+        <p><b>Hotel SAR:</b> {data.hotel_sar_total}</p>
+        <p><b>Hotel PKR:</b> {Number(data.hotel_pkr_total || 0).toLocaleString()}</p>
 
         <hr />
 
         {/* ================= VISA ================= */}
-        <h5 className="fw-bold">Visa</h5>
+        <h5 className="fw-bold">🛂 Visa</h5>
         <p>
           Persons: {data.visa_persons}<br />
           Rate: {data.visa_rate}
         </p>
-        <p><b>Visa PKR Total:</b> {Number(data.visa_pkr_total || 0).toLocaleString()}</p>
+        <p><b>Visa PKR:</b> {Number(data.visa_pkr_total || 0).toLocaleString()}</p>
 
         <hr />
 
         {/* ================= TRANSPORT ================= */}
-        <h5 className="fw-bold">Transport</h5>
+        <h5 className="fw-bold">🚐 Transport</h5>
 
         {Array.isArray(data.transport) && data.transport.length > 0 ? (
           data.transport.map((t, i) => (
@@ -124,7 +144,7 @@ export default function PackagesView({ id, onNavigate }) {
           <p>No transport</p>
         )}
 
-        <p><b>Transport PKR Total:</b> {Number(data.transport_pkr_total || 0).toLocaleString()}</p>
+        <p><b>Transport PKR:</b> {Number(data.transport_pkr_total || 0).toLocaleString()}</p>
 
         <hr />
 
