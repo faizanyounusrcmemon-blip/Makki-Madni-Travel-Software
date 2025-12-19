@@ -16,6 +16,7 @@ const showDate = (val) => {
 export default function HotelVoucher({ onNavigate }) {
   const [ref, setRef] = useState("");
   const [data, setData] = useState(null);
+  const [confirmNo, setConfirmNo] = useState(""); // ✅ manual confirmation no
   const voucherRef = useRef(null);
 
   /* ================= LOAD FROM booking.js ================= */
@@ -115,6 +116,22 @@ export default function HotelVoucher({ onNavigate }) {
             </div>
           </div>
 
+          {/* ✅ CONFIRMATION NO (INLINE BOX) */}
+          <div
+            className="d-flex align-items-center gap-2 mb-3"
+            style={{ maxWidth: "350px" }}
+          >
+            <b>Confirmation No:</b>
+            <input
+              type="text"
+              className="form-control form-control-sm"
+              value={confirmNo}
+              onChange={(e) => setConfirmNo(e.target.value)}
+              placeholder="Enter number"
+            />
+          </div>
+
+          {/* PAX */}
           <div className="mb-3">
             <b>PAX Name:</b> {data.customer_name}
           </div>
