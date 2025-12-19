@@ -29,6 +29,7 @@ export default function Packages({ onNavigate }) {
   // CUSTOMER
   const [customerName, setCustomerName] = useState("");
   const [bookingDate, setBookingDate] = useState("");
+  const [searchRef, setSearchRef] = useState("");
 
   // ============================
   // FLIGHT PERSONS
@@ -184,6 +185,57 @@ export default function Packages({ onNavigate }) {
 
     quoteRef.current.classList.remove("pdf-mode");
   };
+// =======================================
+// LOAD SAVED PACKAGE (EDIT MODE)
+// =======================================
+   const loadPackage = async () => {
+     if (!searchRef) return alert("Search Ref No likho");
+
+     const res = await fetch(
+     `${import.meta.env.VITE_BACKEND_URL}/api/bookings/get/${searchRef}`
+   );
+     const data = await res.json();
+
+     if (!data.success) return alert("Record not found");
+
+     const d = data.row;
+
+  // BASIC
+     setCustomerName(d.customer_name);
+     setBookingDate(d.booking_date);
+
+  // FLIGHT PERSONS
+     setAdultCount(d.adult_count);
+     setAdultRate(d.adult_rate);
+     setChildCount(d.child_count);
+     setChildRate(d.child_rate);
+     setInfantCount(d.infant_count);
+     setInfantRate(d.infant_rate);
+
+  // FLIGHTS
+     setFlights(d.flights || []);
+
+  // HOTELS
+     setHotels(d.hotels || []);
+
+  // VISA
+     setVisaPersons(d.visa_persons);
+     setVisaRate(d.visa_rate);
+
+  // TRANSPORT
+     setTransportRows(d.transport || []);
+
+  // SUMMARY RATES
+     setFlightRate(d.flight_sar_rate);
+     setHotelsRate(d.hotel_sar_rate);
+     setVisaRatePKR(d.visa_sar_rate);
+     setTransportRate(d.transport_sar_rate);
+
+     setPersonQty(d.per_person_qty || 1);
+
+     alert("Package load ho gaya — ab edit karo");
+  };
+
 
   // ============================
   // SAVE PACKAGE  (ONLY THIS PART UPDATED)
@@ -280,9 +332,28 @@ export default function Packages({ onNavigate }) {
         </button>
 
         <div className="d-flex gap-2">
-          <button className="btn btn-primary btn-sm" onClick={handleSavePackage}>
+          <button
+            className="btn btn-primary btn-sm"
+            onClick={handleSavePackage}
+          >
             💾 Save
           </button>
+          <input
+            className="form-control form-control-sm"
+            style={{ width: "150px" }}
+            placeholder="Search Ref No"
+            value={searchRef}
+            onChange={(e) => setSearchRef(e.target.value)}
+          />
+
+
+          <button
+            className="btn btn-warning btn-sm"
+            onClick={loadPackage}
+          >
+            🔄 Load / Edit
+          </button>
+
 
           <button className="btn btn-success btn-sm" onClick={handleExportPDF}>
             📄 Export PDF
