@@ -26,6 +26,8 @@ import BalanceSheet from "./screens/BalanceSheet";
 import AllReports from "./screens/AllReports";
 import ProfitReport from "./screens/ProfitReport";
 import CreateUser from "./screens/CreateUser";
+import HotelVoucher from "./screens/HotelVoucher";
+
 
 // VIEWS
 import PackagesView from "./screens/PackagesView";
@@ -78,6 +80,7 @@ export default function App() {
       {page === "allreports" && <AllReports onNavigate={navigate} />}
       {page === "profitReport" && <ProfitReport onNavigate={navigate} />}
       {page === "createUser" && <CreateUser onNavigate={navigate} />}
+      {page === "hotelVoucher" && <HotelVoucher onNavigate={navigate} />}
 
       {/* VIEW */}
       {page === "packages_view" && (
