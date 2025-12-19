@@ -75,4 +75,22 @@
   background:linear-gradient(135deg,#0d47a1,#1976d2);
   border-radius:5px;
 }
+/* PDF MODE FIX */
+.pdf-mode {
+  width: 1200px !important;
+  max-width: 1200px !important;
+}
+
+.pdf-mode * {
+  box-sizing: border-box !important;
+}
+
+.section-title {
+  page-break-inside: avoid;
+}
+
+table {
+  page-break-inside: avoid;
+}
+
 

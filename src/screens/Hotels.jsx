@@ -2,12 +2,34 @@ import React, { useState, useRef } from "react";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 
+/* =========================
+   HELPERS
+========================= */
+
+// Date display helper → 01/DEC/2025
+const showDate = (val) => {
+  if (!val) return "";
+  const d = new Date(val);
+  const day = String(d.getDate()).padStart(2, "0");
+  const mon = d.toLocaleString("en-US", { month: "short" }).toUpperCase();
+  const year = d.getFullYear();
+  return `${day}/${mon}/${year}`;
+};
+
+// Nights auto calculation
+const calcNights = (inD, outD) => {
+  if (!inD || !outD) return "";
+  const diff =
+    (new Date(outD) - new Date(inD)) / (1000 * 60 * 60 * 24);
+  return diff > 0 ? diff : "";
+};
+
 export default function Hotels({ onNavigate }) {
   const [customerName, setCustomerName] = useState("");
   const [refNo, setRefNo] = useState("");
   const [bookingDate, setBookingDate] = useState("");
 
-  // ALWAYS ARRAY → NO MAP ERROR
+  // ALWAYS ARRAY
   const [rows, setRows] = useState([]);
 
   const addRow = () =>
@@ -32,6 +54,11 @@ export default function Hotels({ onNavigate }) {
     const u = [...rows];
     u[i][field] = value;
 
+    // ✅ AUTO NIGHTS CALC
+    if (field === "checkIn" || field === "checkOut") {
+      u[i].nights = calcNights(u[i].checkIn, u[i].checkOut);
+    }
+
     const nights = Number(u[i].nights);
     const rooms = Number(u[i].rooms);
     const rate = Number(u[i].rate);
@@ -48,13 +75,13 @@ export default function Hotels({ onNavigate }) {
   const pdfRef = useRef(null);
 
   const exportPDF = async () => {
-    const canvas = await html2canvas(pdfRef.current, { scale: 4 });
-    const imgData = canvas.toDataURL("image/jpeg");
+    const canvas = await html2canvas(pdfRef.current, { scale: 3 });
+    const imgData = canvas.toDataURL("image/png");
 
     const pdf = new jsPDF("l", "mm", "a4");
     pdf.addImage(
       imgData,
-      "JPEG",
+      "PNG",
       0,
       0,
       pdf.internal.pageSize.getWidth(),
@@ -95,13 +122,20 @@ export default function Hotels({ onNavigate }) {
     <div className="container-fluid py-3" style={{ background: "#eef4f7" }}>
       {/* TOP BAR */}
       <div className="d-flex justify-content-between mb-3">
-        <button className="btn btn-dark btn-sm" onClick={() => onNavigate("dashboard")}>
+        <button
+          className="btn btn-dark btn-sm"
+          onClick={() => onNavigate("dashboard")}
+        >
           ← Back
         </button>
 
         <div className="d-flex gap-2">
-          <button className="btn btn-primary btn-sm" onClick={saveData}>💾 Save</button>
-          <button className="btn btn-success btn-sm" onClick={exportPDF}>📄 Export PDF</button>
+          <button className="btn btn-primary btn-sm" onClick={saveData}>
+            💾 Save
+          </button>
+          <button className="btn btn-success btn-sm" onClick={exportPDF}>
+            📄 Export PDF
+          </button>
         </div>
       </div>
 
@@ -138,6 +172,7 @@ export default function Hotels({ onNavigate }) {
               value={bookingDate}
               onChange={(e) => setBookingDate(e.target.value)}
             />
+            <small className="text-muted">{showDate(bookingDate)}</small>
           </div>
         </div>
 
@@ -164,99 +199,96 @@ export default function Hotels({ onNavigate }) {
           </thead>
 
           <tbody>
-            {Array.isArray(rows) &&
-              rows.map((r, i) => (
-                <>
-                  {/* FULL WIDTH HOTEL NAME ROW */}
-                  <tr key={i + "-hotelname"}>
-                    <td colSpan={9}>
-                      <input
-                        className="form-control form-control-sm fw-bold"
-                        placeholder="HOTEL NAME (Full Row)"
-                        value={r.hotel}
-                        onChange={(e) => updateRow(i, "hotel", e.target.value)}
-                      />
-                    </td>
-                  </tr>
+            {rows.map((r, i) => (
+              <React.Fragment key={i}>
+                <tr>
+                  <td colSpan={9}>
+                    <input
+                      className="form-control form-control-sm fw-bold"
+                      placeholder="HOTEL NAME (Full Row)"
+                      value={r.hotel}
+                      onChange={(e) => updateRow(i, "hotel", e.target.value)}
+                    />
+                  </td>
+                </tr>
 
-                  {/* DETAIL ROW */}
-                  <tr key={i}>
-                    <td>
-                      <input
-                        type="date"
-                        className="form-control form-control-sm"
-                        value={r.checkIn}
-                        onChange={(e) => updateRow(i, "checkIn", e.target.value)}
-                      />
-                    </td>
+                <tr>
+                  <td>
+                    <input
+                      type="date"
+                      className="form-control form-control-sm"
+                      value={r.checkIn}
+                      onChange={(e) => updateRow(i, "checkIn", e.target.value)}
+                    />
+                    <small className="text-muted">{showDate(r.checkIn)}</small>
+                  </td>
 
-                    <td>
-                      <input
-                        type="date"
-                        className="form-control form-control-sm"
-                        value={r.checkOut}
-                        onChange={(e) => updateRow(i, "checkOut", e.target.value)}
-                      />
-                    </td>
+                  <td>
+                    <input
+                      type="date"
+                      className="form-control form-control-sm"
+                      value={r.checkOut}
+                      onChange={(e) => updateRow(i, "checkOut", e.target.value)}
+                    />
+                    <small className="text-muted">{showDate(r.checkOut)}</small>
+                  </td>
 
-                    <td>
-                      <input
-                        type="number"
-                        className="form-control form-control-sm"
-                        value={r.nights}
-                        onChange={(e) => updateRow(i, "nights", e.target.value)}
-                      />
-                    </td>
+                  <td>
+                    <input
+                      type="number"
+                      className="form-control form-control-sm"
+                      value={r.nights}
+                      readOnly
+                    />
+                  </td>
 
-                    <td>
-                      <input
-                        type="text"
-                        className="form-control form-control-sm"
-                        value={r.location}
-                        onChange={(e) => updateRow(i, "location", e.target.value)}
-                      />
-                    </td>
+                  <td>
+                    <input
+                      className="form-control form-control-sm"
+                      value={r.location}
+                      onChange={(e) => updateRow(i, "location", e.target.value)}
+                    />
+                  </td>
 
-                    <td>
-                      <input
-                        type="number"
-                        className="form-control form-control-sm"
-                        value={r.rooms}
-                        onChange={(e) => updateRow(i, "rooms", e.target.value)}
-                      />
-                    </td>
+                  <td>
+                    <input
+                      type="number"
+                      className="form-control form-control-sm"
+                      value={r.rooms}
+                      onChange={(e) => updateRow(i, "rooms", e.target.value)}
+                    />
+                  </td>
 
-                    <td>
-                      <input
-                        type="text"
-                        className="form-control form-control-sm"
-                        value={r.type}
-                        onChange={(e) => updateRow(i, "type", e.target.value)}
-                      />
-                    </td>
+                  <td>
+                    <input
+                      className="form-control form-control-sm"
+                      value={r.type}
+                      onChange={(e) => updateRow(i, "type", e.target.value)}
+                    />
+                  </td>
 
-                    <td>
-                      <input
-                        type="number"
-                        className="form-control form-control-sm"
-                        value={r.rate}
-                        onChange={(e) => updateRow(i, "rate", e.target.value)}
-                      />
-                    </td>
+                  <td>
+                    <input
+                      type="number"
+                      className="form-control form-control-sm"
+                      value={r.rate}
+                      onChange={(e) => updateRow(i, "rate", e.target.value)}
+                    />
+                  </td>
 
-                    <td className="fw-bold">{r.total}</td>
+                  <td className="fw-bold">{r.total}</td>
 
-                    <td>
-                      <button
-                        className="btn btn-link text-danger"
-                        onClick={() => removeRow(i)}
-                      >
-                        ✖
-                      </button>
-                    </td>
-                  </tr>
-                </>
-              ))}
+                  <td>
+                    <button
+                      className="btn btn-link text-danger"
+                      onClick={() => removeRow(i)}
+                    >
+                      ✖
+                    </button>
+                  </td>
+                </tr>
+              </React.Fragment>
+            ))}
           </tbody>
         </table>
 

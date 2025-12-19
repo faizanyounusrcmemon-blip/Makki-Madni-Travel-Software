@@ -3,9 +3,28 @@ import React, { useState, useRef } from "react";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 
+  const calcNights = (inD, outD) => {
+    if (!inD || !outD) return "";
+    const diff =
+      (new Date(outD) - new Date(inD)) / (1000 * 60 * 60 * 24);
+    return diff > 0 ? diff : "";
+  };
+
+
 export default function Packages({ onNavigate }) {
   // BACKEND REF NO
   const [refNo, setRefNo] = useState("");
+
+// DATE DISPLAY HELPER
+  const showDate = (val) => {
+    if (!val) return "";
+    const d = new Date(val);
+    const day = String(d.getDate()).padStart(2, "0");
+    const mon = d.toLocaleString("en-US", { month: "short" }).toUpperCase();
+    const year = d.getFullYear();
+    return `${day}/${mon}/${year}`;
+  };
+
 
   // CUSTOMER
   const [customerName, setCustomerName] = useState("");
@@ -60,6 +79,10 @@ export default function Packages({ onNavigate }) {
   const handleHotelChange = (i, field, value) => {
     const rows = [...hotels];
     rows[i][field] = value;
+
+    if (field === "checkIn" || field === "checkOut") {
+      rows[i].nights = calcNights(rows[i].checkIn, rows[i].checkOut);
+    }
 
     const rate = Number(rows[i].rate);
     const rooms = Number(rows[i].rooms);
@@ -117,16 +140,49 @@ export default function Packages({ onNavigate }) {
   // PDF
   // ============================
   const handleExportPDF = async () => {
-    const canvas = await html2canvas(quoteRef.current, { scale: 4 });
-    const img = canvas.toDataURL("image/jpeg");
 
-    const pdf = new jsPDF("l", "mm", "a4");
+    quoteRef.current.classList.add("pdf-mode");
+
+    const canvas = await html2canvas(quoteRef.current, {
+      scale: 2,
+      useCORS: true,
+      backgroundColor: "#ffffff",
+  });
+
+    const img = canvas.toDataURL("image/png");
+
+    const pdf = new jsPDF({
+      orientation: "landscape",
+      unit: "mm",
+      format: "a4",
+  });
+
     const w = pdf.internal.pageSize.getWidth();
     const h = pdf.internal.pageSize.getHeight();
 
+    const imgProps = pdf.getImageProperties(img);
+    const pdfWidth = w - 20; // margins
+    const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+
     pdf.text("MAKKI MADNI TRAVEL", w / 2, 10, { align: "center" });
-    pdf.addImage(img, "JPEG", 0, 15, w, h - 20);
+
+    let position = 15;
+    let heightLeft = pdfHeight;
+    const x = (w - pdfWidth) / 2;
+
+    pdf.addImage(img, "PNG", x, position, pdfWidth, pdfHeight);
+    heightLeft -= h;
+
+    while (heightLeft > 0) {
+      position = heightLeft - pdfHeight + 15;
+      pdf.addPage();
+      pdf.addImage(img, "PNG", x, position, pdfWidth, pdfHeight);
+      heightLeft -= h;
+    }
+
     pdf.save(`${refNo || "quotation"}.pdf`);
+
+    quoteRef.current.classList.remove("pdf-mode");
   };
 
   // ============================
@@ -264,6 +320,7 @@ export default function Packages({ onNavigate }) {
               value={bookingDate}
               onChange={(e) => setBookingDate(e.target.value)}
             />
+            <small className="text-muted">{showDate(bookingDate)}</small>
           </div>
         </div>
 
@@ -298,6 +355,7 @@ export default function Packages({ onNavigate }) {
                         setFlights(updated);
                       }}
                     />
+                    <small className="text-muted">{showDate(f.date)}</small>
 
                     <input
                       type="text"
@@ -441,6 +499,7 @@ export default function Packages({ onNavigate }) {
                         handleHotelChange(i, "checkIn", e.target.value)
                       }
                     />
+                    <small className="text-muted">{showDate(h.checkIn)}</small>
                   </td>
 
                   <td>
@@ -452,6 +511,7 @@ export default function Packages({ onNavigate }) {
                         handleHotelChange(i, "checkOut", e.target.value)
                       }
                     />
+                    <small className="text-muted">{showDate(h.checkOut)}</small>
                   </td>
 
                   <td>
@@ -459,9 +519,7 @@ export default function Packages({ onNavigate }) {
                       type="number"
                       className="form-control form-control-sm"
                       value={h.nights}
-                      onChange={(e) =>
-                        handleHotelChange(i, "nights", e.target.value)
-                      }
+                      readOnly
                     />
                   </td>
 
