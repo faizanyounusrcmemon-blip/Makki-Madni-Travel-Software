@@ -242,6 +242,8 @@ export default function Packages({ onNavigate }) {
   // ============================
   const handleSavePackage = async () => {
     const payload = {
+      ref_no: refNo || null,
+      
       customer_name: customerName,
       booking_date: bookingDate,
 
