@@ -27,7 +27,7 @@ import AllReports from "./screens/AllReports";
 import ProfitReport from "./screens/ProfitReport";
 import CreateUser from "./screens/CreateUser";
 import HotelVoucher from "./screens/HotelVoucher";
-
+import DeletedReports from "./screens/DeletedReports";
 
 // VIEWS
 import PackagesView from "./screens/PackagesView";
@@ -40,14 +40,16 @@ export default function App() {
   const [page, setPage] = useState("dashboard");
   const [detail, setDetail] = useState(null);
 
-  const loggedIn = !!localStorage.getItem("token");
+  // ✅ ONLY sessionStorage (auto logout on browser close)
+  const loggedIn = !!sessionStorage.getItem("user");
 
+  // NAVIGATION
   const navigate = (p, d = null) => {
     setPage(p);
     setDetail(d);
   };
 
-  /* 🔐 LOGIN GUARD */
+  // 🔐 LOGIN GUARD
   if (!loggedIn) {
     return <Login onLogin={() => window.location.reload()} />;
   }
@@ -82,21 +84,28 @@ export default function App() {
       {page === "createUser" && <CreateUser onNavigate={navigate} />}
       {page === "hotelVoucher" && <HotelVoucher onNavigate={navigate} />}
 
-      {/* VIEW */}
+      {/* VIEWS */}
       {page === "packages_view" && (
         <PackagesView id={detail} onNavigate={navigate} />
       )}
+
       {page === "hotels_view" && (
         <HotelsView id={detail} onNavigate={navigate} />
       )}
+
       {page === "ticket_view" && (
         <TicketingView id={detail} onNavigate={navigate} />
       )}
+
       {page === "visa_view" && (
         <VisaView id={detail} onNavigate={navigate} />
       )}
+
       {page === "transport_view" && (
         <TransportView id={detail} onNavigate={navigate} />
+      )}
+      {page === "deletedReports" && (
+        <DeletedReports onNavigate={navigate} />
       )}
     </div>
   );
