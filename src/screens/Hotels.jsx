@@ -25,6 +25,7 @@ const calcNights = (inD, outD) => {
 };
 
 export default function Hotels({ onNavigate }) {
+  const [searchRef, setSearchRef] = useState("");
   const [customerName, setCustomerName] = useState("");
   const [refNo, setRefNo] = useState("");
   const [bookingDate, setBookingDate] = useState("");
@@ -89,9 +90,35 @@ export default function Hotels({ onNavigate }) {
     );
     pdf.save("hotels.pdf");
   };
+// ===============================
+// LOAD HOTEL (EDIT MODE)
+// ===============================
+   const loadHotel = async () => {
+     if (!searchRef) return alert("Search Ref No likho");
+
+     const res = await fetch(
+     `${import.meta.env.VITE_BACKEND_URL}/api/hotels/get/${searchRef}`
+   );
+     const data = await res.json();
+
+     if (!data.success) return alert("Record not found");
+
+     const d = data.row;
+
+  // ✅ YAHI LINE SAB SE IMPORTANT HAI
+     setRefNo(d.ref_no);
+
+     setCustomerName(d.customer_name);
+     setBookingDate(d.booking_date);
+     setRows(d.hotels || []);
+
+     alert("Hotel load ho gaya — ab edit karo");
+   };
+
 
   const saveData = async () => {
     const payload = {
+      ref_no: refNo || null,
       customer_name: customerName,
       booking_date: bookingDate,
       hotels: rows,
@@ -130,9 +157,27 @@ export default function Hotels({ onNavigate }) {
         </button>
 
         <div className="d-flex gap-2">
-          <button className="btn btn-primary btn-sm" onClick={saveData}>
+          <button 
+            className="btn btn-primary btn-sm"
+            onClick={saveData}
+           >
             💾 Save
-          </button>
+           </button>
+          <input
+            className="form-control form-control-sm"
+            style={{ width: "140px" }}
+            placeholder="Search Ref"
+            value={searchRef}
+            onChange={(e) => setSearchRef(e.target.value)}
+          />
+
+          <button
+            className="btn btn-warning btn-sm"
+            onClick={loadHotel}
+           >
+            🔄 Load / Edit
+           </button>
+
           <button className="btn btn-success btn-sm" onClick={exportPDF}>
             📄 Export PDF
           </button>

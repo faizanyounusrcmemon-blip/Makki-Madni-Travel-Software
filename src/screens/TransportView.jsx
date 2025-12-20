@@ -12,22 +12,24 @@ export default function TransportView({ id, onNavigate }) {
     fetch(`${import.meta.env.VITE_BACKEND_URL}/api/transport/get/${id}`)
       .then((r) => r.json())
       .then((res) => {
-        // ✅ jsonb safe parse
+        if (!res.success) return;
+
+        const row = res.row;
+
         let rows = [];
-        if (res.rows) {
-          if (Array.isArray(res.rows)) {
-            rows = res.rows;
-          } else {
+        if (row.rows) {
+          if (Array.isArray(row.rows)) rows = row.rows;
+          else {
             try {
-              rows = JSON.parse(res.rows);
+              rows = JSON.parse(row.rows);
             } catch {
               rows = [];
             }
           }
         }
 
-        res.rows = rows;
-        setData(res);
+        row.rows = rows;
+        setData(row);
       });
   }, [id]);
 
@@ -36,15 +38,7 @@ export default function TransportView({ id, onNavigate }) {
     const img = canvas.toDataURL("image/jpeg");
 
     const pdf = new jsPDF("l", "mm", "a4");
-    pdf.addImage(
-      img,
-      "JPEG",
-      0,
-      0,
-      pdf.internal.pageSize.width,
-      pdf.internal.pageSize.height
-    );
-
+    pdf.addImage(img, "JPEG", 0, 0, pdf.internal.pageSize.width, pdf.internal.pageSize.height);
     pdf.save(`${data?.ref_no || "transport"}.pdf`);
   };
 
@@ -52,29 +46,19 @@ export default function TransportView({ id, onNavigate }) {
 
   return (
     <div className="container mt-3">
-      <button
-        className="btn btn-secondary btn-sm"
-        onClick={() => onNavigate("allreports")}
-      >
+      <button className="btn btn-secondary btn-sm" onClick={() => onNavigate("allreports")}>
         ⬅ Back
       </button>
 
-      <button
-        className="btn btn-success btn-sm ms-2"
-        onClick={exportPDF}
-      >
+      <button className="btn btn-success btn-sm ms-2" onClick={exportPDF}>
         📄 Export PDF
       </button>
 
       <div ref={ref} className="bg-white p-3 border mt-3">
-        <h3 className="fw-bold text-center">
-          TRANSPORT — {data.ref_no}
-        </h3>
+        <h3 className="fw-bold text-center">TRANSPORT — {data.ref_no}</h3>
 
         <p><b>Customer:</b> {data.customer_name}</p>
         <p><b>Booking Date:</b> {data.booking_date}</p>
-        <p><b>Persons:</b> {data.persons}</p>
-        <p><b>Rate (SAR):</b> {data.rate}</p>
 
         <hr />
 
@@ -84,24 +68,20 @@ export default function TransportView({ id, onNavigate }) {
           <thead>
             <tr>
               <th>Description</th>
-              <th className="text-end">Amount (SAR)</th>
+              <th className="text-end">SAR</th>
             </tr>
           </thead>
           <tbody>
             {data.rows.length === 0 && (
               <tr>
-                <td colSpan="2" className="text-center">
-                  No transport rows
-                </td>
+                <td colSpan="2" className="text-center">No transport rows</td>
               </tr>
             )}
 
             {data.rows.map((r, i) => (
               <tr key={i}>
-                <td>{r.text || r.description}</td>
-                <td className="text-end">
-                  {Number(r.amount || 0).toLocaleString()}
-                </td>
+                <td>{r.description}</td>
+                <td className="text-end">{Number(r.sar || 0).toLocaleString()}</td>
               </tr>
             ))}
           </tbody>
@@ -109,21 +89,11 @@ export default function TransportView({ id, onNavigate }) {
 
         <hr />
 
-        <h5 className="fw-bold">Totals</h5>
-
-        <p>
-          <b>Total SAR:</b>{" "}
-          {Number(data.total_sar || 0).toLocaleString()}
-        </p>
-
-        <p>
-          <b>PKR Rate:</b>{" "}
-          {Number(data.pkr_rate || 0).toLocaleString()}
-        </p>
+        <p><b>Total SAR:</b> {Number(data.total_sar || 0).toLocaleString()}</p>
+        <p><b>PKR Rate:</b> {data.pkr_rate}</p>
 
         <h4 className="fw-bold text-success">
-          Total PKR:{" "}
-          {Number(data.total_pkr || 0).toLocaleString()}
+          Total PKR: {Number(data.total_pkr || 0).toLocaleString()}
         </h4>
       </div>
     </div>

@@ -12,28 +12,8 @@ export default function HotelsView({ id, onNavigate }) {
     fetch(`${import.meta.env.VITE_BACKEND_URL}/api/hotels/get/${id}`)
       .then((r) => r.json())
       .then((res) => {
-        // ✅ jsonb safe parse helper
-        const safe = (v) => {
-          if (!v) return [];
-          if (Array.isArray(v)) return v;
-          try {
-            return JSON.parse(v);
-          } catch {
-            return [];
-          }
-        };
-
-        res.hotel_name = safe(res.hotel_name);
-        res.hotel_location = safe(res.hotel_location);
-        res.hotel_checkin = safe(res.hotel_checkin);
-        res.hotel_checkout = safe(res.hotel_checkout);
-        res.hotel_nights = safe(res.hotel_nights);
-        res.hotel_rooms = safe(res.hotel_rooms);
-        res.hotel_type = safe(res.hotel_type);
-        res.hotel_rate = safe(res.hotel_rate);
-        res.hotel_total = safe(res.hotel_total);
-
-        setData(res);
+        if (!res.success) return;
+        setData(res.row); // ✅ FIX
       });
   }, [id]);
 
@@ -84,24 +64,25 @@ export default function HotelsView({ id, onNavigate }) {
 
         <h5 className="fw-bold">Hotel Details</h5>
 
-        {data.hotel_name.length === 0 && (
+        {Array.isArray(data.hotels) && data.hotels.length === 0 && (
           <p className="text-center">No hotels added</p>
         )}
 
-        {data.hotel_name.map((h, i) => (
-          <div key={i} className="border p-2 mb-2">
-            <b>{h}</b><br />
-            <b>Location:</b> {data.hotel_location[i]}<br />
-            <b>Type:</b> {data.hotel_type[i]}<br />
-            <b>Check-in:</b> {data.hotel_checkin[i]} |
-            <b> Check-out:</b> {data.hotel_checkout[i]}<br />
-            <b>Nights:</b> {data.hotel_nights[i]} |
-            <b> Rooms:</b> {data.hotel_rooms[i]}<br />
-            <b>Rate (SAR):</b> {data.hotel_rate[i]}<br />
-            <b>Total (SAR):</b>{" "}
-            {Number(data.hotel_total[i] || 0).toLocaleString()}
-          </div>
-        ))}
+        {Array.isArray(data.hotels) &&
+          data.hotels.map((h, i) => (
+            <div key={i} className="border p-2 mb-2">
+              <b>{h.hotel}</b><br />
+              <b>Location:</b> {h.location}<br />
+              <b>Type:</b> {h.type}<br />
+              <b>Check-in:</b> {h.checkIn} |
+              <b> Check-out:</b> {h.checkOut}<br />
+              <b>Nights:</b> {h.nights} |
+              <b> Rooms:</b> {h.rooms}<br />
+              <b>Rate (SAR):</b> {h.rate}<br />
+              <b>Total (SAR):</b>{" "}
+              {Number(h.total || 0).toLocaleString()}
+            </div>
+          ))}
 
         <hr />
 

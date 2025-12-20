@@ -3,14 +3,22 @@ import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 
 export default function Transport({ onNavigate }) {
+  // =========================
+  // BASIC STATES
+  // =========================
+  const [searchRef, setSearchRef] = useState("");
   const [refNo, setRefNo] = useState("");
   const [customerName, setCustomerName] = useState("");
   const [bookingDate, setBookingDate] = useState("");
 
+  // =========================
   // TRANSPORT ROWS
+  // =========================
   const [rows, setRows] = useState([]);
 
+  // =========================
   // SUMMARY
+  // =========================
   const [pkrRate, setPkrRate] = useState(0);
 
   const quoteRef = useRef(null);
@@ -49,7 +57,33 @@ export default function Transport({ onNavigate }) {
   const totalPkr = totalSar * pkrRate;
 
   // =========================
-  // SAVE
+  // LOAD / EDIT (HOTELS JESA)
+  // =========================
+  const loadTransport = async () => {
+    if (!searchRef) return alert("Ref No likho");
+
+    const res = await fetch(
+      `${import.meta.env.VITE_BACKEND_URL}/api/transport/get/${searchRef}`
+    );
+    const data = await res.json();
+
+    if (!data.success) return alert("Record not found");
+
+    const d = data.row;
+
+    // 🔴 MOST IMPORTANT
+    setRefNo(d.ref_no);
+
+    setCustomerName(d.customer_name);
+    setBookingDate(d.booking_date);
+    setRows(d.rows || []);
+    setPkrRate(d.pkr_rate || 0);
+
+    alert("Transport load ho gaya — ab edit karo");
+  };
+
+  // =========================
+  // SAVE (NEW + EDIT SAFE)
   // =========================
   const saveData = async () => {
     if (!customerName || !bookingDate) {
@@ -58,14 +92,13 @@ export default function Transport({ onNavigate }) {
     }
 
     const payload = {
-      ref_no: refNo || null,
+      ref_no: refNo || null,          // ✅ EDIT FIX
       customer_name: customerName,
       booking_date: bookingDate,
-
-      rows,                 // ✅ jsonb
-      total_sar: totalSar,  // ✅ numeric
-      pkr_rate: pkrRate,    // ✅ numeric (FIXED)
-      total_pkr: totalPkr,  // ✅ numeric
+      rows,
+      total_sar: totalSar,
+      pkr_rate: pkrRate,
+      total_pkr: totalPkr,
     };
 
     const res = await fetch(
@@ -80,6 +113,7 @@ export default function Transport({ onNavigate }) {
     const data = await res.json();
 
     if (data.success) {
+      setRefNo(data.ref_no);
       alert("Transport saved successfully");
       onNavigate("dashboard");
     } else {
@@ -99,7 +133,7 @@ export default function Transport({ onNavigate }) {
     const h = pdf.internal.pageSize.getHeight();
 
     pdf.addImage(img, "JPEG", 0, 0, w, h);
-    pdf.save("transport.pdf");
+    pdf.save(`${refNo || "transport"}.pdf`);
   };
 
   // =========================
@@ -120,6 +154,19 @@ export default function Transport({ onNavigate }) {
           <button className="btn btn-primary btn-sm" onClick={saveData}>
             💾 Save
           </button>
+
+          <input
+            className="form-control form-control-sm"
+            style={{ width: 140 }}
+            placeholder="Search Ref"
+            value={searchRef}
+            onChange={(e) => setSearchRef(e.target.value)}
+          />
+
+          <button className="btn btn-warning btn-sm" onClick={loadTransport}>
+            🔄 Load / Edit
+          </button>
+
           <button className="btn btn-success btn-sm" onClick={exportPDF}>
             📄 Export PDF
           </button>

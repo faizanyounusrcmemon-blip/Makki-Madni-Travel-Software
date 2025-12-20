@@ -189,6 +189,7 @@ export default function Packages({ onNavigate }) {
 // LOAD SAVED PACKAGE (EDIT MODE)
 // =======================================
    const loadPackage = async () => {
+     
      if (!searchRef) return alert("Search Ref No likho");
 
      const res = await fetch(
@@ -199,6 +200,8 @@ export default function Packages({ onNavigate }) {
      if (!data.success) return alert("Record not found");
 
      const d = data.row;
+
+     setRefNo(d.ref_no); // ✅ VERY IMPORTANT
 
   // BASIC
      setCustomerName(d.customer_name);
@@ -243,7 +246,6 @@ export default function Packages({ onNavigate }) {
   const handleSavePackage = async () => {
     const payload = {
       ref_no: refNo || null,
-      
       customer_name: customerName,
       booking_date: bookingDate,
 

@@ -3,17 +3,30 @@ import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 
 export default function Ticketing({ onNavigate }) {
+
+  // =========================
+  // EDIT SYSTEM STATES (NEW)
+  // =========================
+  const [searchRef, setSearchRef] = useState(""); // 🔍 search box
+
+  // =========================
+  // BASIC INFO
+  // =========================
   const [customerName, setCustomerName] = useState("");
   const [refNo, setRefNo] = useState("");
   const [bookingDate, setBookingDate] = useState("");
 
-  // Flight Rows (FROM / TO / DATE)
+  // =========================
+  // FLIGHT ROWS
+  // =========================
   const [flights, setFlights] = useState([
     { from: "", to: "", date: "" },
     { from: "", to: "", date: "" },
   ]);
 
-  // Adult / Child / Infant
+  // =========================
+  // PASSENGERS
+  // =========================
   const [adultQty, setAdultQty] = useState(0);
   const [adultRate, setAdultRate] = useState(0);
 
@@ -28,36 +41,60 @@ export default function Ticketing({ onNavigate }) {
     childQty * childRate +
     infantQty * infantRate;
 
-  // PKR CONVERSION
+  // =========================
+  // PKR
+  // =========================
   const [ticketRate, setTicketRate] = useState(0);
   const totalPKR = totalSAR * ticketRate;
 
   const pdfRef = useRef(null);
 
-  // Export PDF
-  const exportPDF = async () => {
-    const canvas = await html2canvas(pdfRef.current, {
-      scale: 4,
-    });
+  // =========================
+  // LOAD (EDIT MODE) ✅
+  // =========================
+  const loadTicketing = async () => {
+    if (!searchRef) return alert("Search Ref No likho");
 
-    const img = canvas.toDataURL("image/jpeg");
-    const pdf = new jsPDF("l", "mm", "a4");
+    const res = await fetch(
+      `${import.meta.env.VITE_BACKEND_URL}/api/ticketing/get/${searchRef}`
+    );
+    const data = await res.json();
 
-    pdf.addImage(
-      img,
-      "JPEG",
-      0,
-      0,
-      pdf.internal.pageSize.getWidth(),
-      pdf.internal.pageSize.getHeight()
+    if (!data.success) return alert("Record not found");
+
+    const d = data.row;
+
+    // 🔥 MOST IMPORTANT LINE
+    setRefNo(d.ref_no);
+
+    setCustomerName(d.customer_name);
+    setBookingDate(d.booking_date);
+
+    setFlights(
+      d.flight_from.map((_, i) => ({
+        from: d.flight_from[i],
+        to: d.flight_to[i],
+        date: d.flight_date[i],
+      }))
     );
 
-    pdf.save("ticketing.pdf");
+    setAdultQty(d.adult_qty);
+    setAdultRate(d.adult_rate);
+    setChildQty(d.child_qty);
+    setChildRate(d.child_rate);
+    setInfantQty(d.infant_qty);
+    setInfantRate(d.infant_rate);
+    setTicketRate(d.pkr_rate);
+
+    alert("Ticketing load ho gaya — ab edit karo");
   };
 
-  // SAVE API
+  // =========================
+  // SAVE (NEW + EDIT SAFE)
+  // =========================
   const saveData = async () => {
     const payload = {
+      ref_no: refNo || null,   // 🔥 EDIT FIX
       customer_name: customerName,
       booking_date: bookingDate,
       flights,
@@ -96,17 +133,59 @@ export default function Ticketing({ onNavigate }) {
     }
   };
 
+  // =========================
+  // PDF
+  // =========================
+  const exportPDF = async () => {
+    const canvas = await html2canvas(pdfRef.current, { scale: 4 });
+    const img = canvas.toDataURL("image/jpeg");
+
+    const pdf = new jsPDF("l", "mm", "a4");
+    pdf.addImage(
+      img,
+      "JPEG",
+      0,
+      0,
+      pdf.internal.pageSize.getWidth(),
+      pdf.internal.pageSize.getHeight()
+    );
+
+    pdf.save("ticketing.pdf");
+  };
+
+  // =========================
+  // UI
+  // =========================
   return (
     <div className="container-fluid py-3" style={{ background: "#eef4f7" }}>
-      {/* TOP ACTION BAR */}
+
+      {/* TOP BAR */}
       <div className="d-flex justify-content-between mb-3">
-        <button className="btn btn-dark btn-sm" onClick={() => onNavigate("dashboard")}>
+        <button
+          className="btn btn-dark btn-sm"
+          onClick={() => onNavigate("dashboard")}
+        >
           ← Back
         </button>
 
         <div className="d-flex gap-2">
           <button className="btn btn-primary btn-sm" onClick={saveData}>
             💾 Save
+          </button>
+
+          <input
+            className="form-control form-control-sm"
+            style={{ width: 140 }}
+            placeholder="Search Ref"
+            value={searchRef}
+            onChange={(e) => setSearchRef(e.target.value)}
+          />
+
+          <button
+            className="btn btn-warning btn-sm"
+            onClick={loadTicketing}
+          >
+            🔄 Load / Edit
           </button>
 
           <button className="btn btn-success btn-sm" onClick={exportPDF}>
@@ -119,11 +198,7 @@ export default function Ticketing({ onNavigate }) {
       <div
         ref={pdfRef}
         className="bg-white p-3"
-        style={{
-          maxWidth: "1100px",
-          margin: "0 auto",
-          border: "1px solid #ccc",
-        }}
+        style={{ maxWidth: "1100px", margin: "0 auto", border: "1px solid #ccc" }}
       >
         <h3 className="text-center fw-bold">MAKKI MADNI TRAVEL</h3>
         <h4 className="fw-bold mb-3">TICKETING QUOTATION</h4>
@@ -155,9 +230,7 @@ export default function Ticketing({ onNavigate }) {
           </div>
         </div>
 
-        {/* ================================
-            FLIGHT DETAILS SECTION
-        ================================= */}
+        {/* FLIGHT DETAILS */}
         <h6 className="bg-info text-white p-1">Flight Details</h6>
 
         <table className="table table-sm">
@@ -168,13 +241,11 @@ export default function Ticketing({ onNavigate }) {
               <th>Date</th>
             </tr>
           </thead>
-
           <tbody>
             {flights.map((f, i) => (
               <tr key={i}>
                 <td>
-                  <input
-                    className="form-control form-control-sm"
+                  <input className="form-control form-control-sm"
                     value={f.from}
                     onChange={(e) => {
                       const u = [...flights];
@@ -185,8 +256,7 @@ export default function Ticketing({ onNavigate }) {
                 </td>
 
                 <td>
-                  <input
-                    className="form-control form-control-sm"
+                  <input className="form-control form-control-sm"
                     value={f.to}
                     onChange={(e) => {
                       const u = [...flights];
@@ -197,9 +267,7 @@ export default function Ticketing({ onNavigate }) {
                 </td>
 
                 <td>
-                  <input
-                    type="date"
-                    className="form-control form-control-sm"
+                  <input type="date" className="form-control form-control-sm"
                     value={f.date}
                     onChange={(e) => {
                       const u = [...flights];
@@ -213,110 +281,47 @@ export default function Ticketing({ onNavigate }) {
           </tbody>
         </table>
 
-        {/* ================================
-            PASSENGER FARE SECTION
-        ================================= */}
+        {/* PASSENGER FARES */}
         <h6 className="bg-info text-white p-1">Passenger Fares</h6>
 
         <table className="table table-sm">
-          <thead>
-            <tr>
-              <th>Type</th>
-              <th>Qty</th>
-              <th>Rate</th>
-              <th>Total</th>
-            </tr>
-          </thead>
-
           <tbody>
-            {/* Adult */}
             <tr>
               <td>Adult</td>
-
-              <td>
-                <input
-                  type="number"
-                  className="form-control form-control-sm"
-                  value={adultQty}
-                  onChange={(e) => setAdultQty(+e.target.value)}
-                />
-              </td>
-
-              <td>
-                <input
-                  type="number"
-                  className="form-control form-control-sm"
-                  value={adultRate}
-                  onChange={(e) => setAdultRate(+e.target.value)}
-                />
-              </td>
-
+              <td><input type="number" className="form-control form-control-sm"
+                value={adultQty} onChange={(e) => setAdultQty(+e.target.value)} /></td>
+              <td><input type="number" className="form-control form-control-sm"
+                value={adultRate} onChange={(e) => setAdultRate(+e.target.value)} /></td>
               <td className="fw-bold">{adultQty * adultRate}</td>
             </tr>
 
-            {/* Child */}
             <tr>
               <td>Child</td>
-
-              <td>
-                <input
-                  type="number"
-                  className="form-control form-control-sm"
-                  value={childQty}
-                  onChange={(e) => setChildQty(+e.target.value)}
-                />
-              </td>
-
-              <td>
-                <input
-                  type="number"
-                  className="form-control form-control-sm"
-                  value={childRate}
-                  onChange={(e) => setChildRate(+e.target.value)}
-                />
-              </td>
-
+              <td><input type="number" className="form-control form-control-sm"
+                value={childQty} onChange={(e) => setChildQty(+e.target.value)} /></td>
+              <td><input type="number" className="form-control form-control-sm"
+                value={childRate} onChange={(e) => setChildRate(+e.target.value)} /></td>
               <td className="fw-bold">{childQty * childRate}</td>
             </tr>
 
-            {/* Infant */}
             <tr>
               <td>Infant</td>
-
-              <td>
-                <input
-                  type="number"
-                  className="form-control form-control-sm"
-                  value={infantQty}
-                  onChange={(e) => setInfantQty(+e.target.value)}
-                />
-              </td>
-
-              <td>
-                <input
-                  type="number"
-                  className="form-control form-control-sm"
-                  value={infantRate}
-                  onChange={(e) => setInfantRate(+e.target.value)}
-                />
-              </td>
-
+              <td><input type="number" className="form-control form-control-sm"
+                value={infantQty} onChange={(e) => setInfantQty(+e.target.value)} /></td>
+              <td><input type="number" className="form-control form-control-sm"
+                value={infantRate} onChange={(e) => setInfantRate(+e.target.value)} /></td>
               <td className="fw-bold">{infantQty * infantRate}</td>
             </tr>
 
-            {/* GRAND TOTAL */}
             <tr className="table-info">
               <td className="fw-bold">Total SAR</td>
-              <td></td>
-              <td></td>
+              <td></td><td></td>
               <td className="fw-bold">{totalSAR}</td>
             </tr>
           </tbody>
         </table>
 
-        {/* ================================
-            SUMMARY (PKR)
-        ================================= */}
+        {/* SUMMARY */}
         <h6 className="bg-info text-white p-1">Summary</h6>
 
         <table className="table table-sm">
@@ -324,17 +329,13 @@ export default function Ticketing({ onNavigate }) {
             <tr>
               <td>Total SAR</td>
               <td className="fw-bold">{totalSAR}</td>
-
               <td>Rate</td>
               <td>
-                <input
-                  type="number"
-                  className="form-control form-control-sm"
+                <input type="number" className="form-control form-control-sm"
                   value={ticketRate}
                   onChange={(e) => setTicketRate(+e.target.value)}
                 />
               </td>
-
               <td className="fw-bold">{totalPKR.toLocaleString()}</td>
             </tr>
           </tbody>

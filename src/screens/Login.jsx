@@ -32,8 +32,8 @@ export default function Login({ onLogin }) {
         return;
       }
 
-      localStorage.setItem("token", data.token);
-      localStorage.setItem("user", JSON.stringify(data.user));
+      // ✅ FIX: sessionStorage (auto logout on browser close)
+      sessionStorage.setItem("user", JSON.stringify(data.user));
 
       onLogin();
 
@@ -92,7 +92,7 @@ export default function Login({ onLogin }) {
         </div>
       </div>
 
-      {/* STYLES */}
+      {/* STYLES (UNCHANGED) */}
       <style>{`
         .login-wrapper {
           height: 100vh;

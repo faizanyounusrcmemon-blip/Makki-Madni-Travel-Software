@@ -3,51 +3,58 @@ import React, { useEffect, useState } from "react";
 export default function AllReports({ onNavigate }) {
   const [rows, setRows] = useState([]);
   const [filtered, setFiltered] = useState([]);
-
   const [search, setSearch] = useState("");
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
 
-  // LOAD REPORT DATA
-  const loadData = () => {
-    fetch(`${import.meta.env.VITE_BACKEND_URL}/api/reports/all`)
-      .then((res) => res.json())
-      .then((data) => {
-        setRows(data);
-        setFiltered(data);
-      });
+  // LOAD
+  const loadData = async () => {
+    const res = await fetch(
+      `${import.meta.env.VITE_BACKEND_URL}/api/reports/all`
+    );
+    const data = await res.json();
+    setRows(data);
+    setFiltered(data);
   };
 
   useEffect(() => {
     loadData();
   }, []);
 
-  // DELETE WITH PASSWORD
-  const handleDelete = async (type, id) => {
-    const pass = prompt("Enter delete password:");
+  // 🔥 SOFT DELETE (PASSWORD = 786)
+  const handleDelete = async (type, ref_no) => {
+    const pass = prompt("Enter delete password (786)");
 
     if (pass !== "786") {
-      return alert("❌ Wrong Password!");
+      alert("❌ Wrong Password");
+      return;
     }
 
     let endpoint = "";
-
     if (type === "Packages") endpoint = "bookings";
     if (type === "Hotels") endpoint = "hotels";
     if (type === "Ticketing") endpoint = "ticketing";
     if (type === "Transport") endpoint = "transport";
     if (type === "Visa") endpoint = "visa";
 
-    await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/${endpoint}/delete/${id}`, {
-      method: "DELETE",
-    });
+    const res = await fetch(
+      `${import.meta.env.VITE_BACKEND_URL}/api/${endpoint}/delete/${ref_no}`,
+      { method: "DELETE" }
+    );
 
-    alert("Deleted!");
+    const data = await res.json();
+
+    if (!data.success) {
+      alert(data.error || "Delete failed");
+      return;
+    }
+
+    alert("✅ Soft Deleted");
     loadData();
   };
 
-  // VIEW BUTTON — FIXED
-  const handleView = (type, id) => {
+  // VIEW
+  const handleView = (type, ref_no) => {
     const page =
       type === "Packages"
         ? "packages_view"
@@ -57,36 +64,31 @@ export default function AllReports({ onNavigate }) {
         ? "ticket_view"
         : type === "Transport"
         ? "transport_view"
-        : type === "Visa"
-        ? "visa_view"
-        : "";
+        : "visa_view";
 
-    onNavigate(page, id); // ONLY ID SENT ✔
+    onNavigate(page, ref_no);
   };
 
-  // SEARCH + DATE FILTER
+  // FILTER
   useEffect(() => {
     let temp = [...rows];
 
-    if (search.trim() !== "") {
+    if (search)
       temp = temp.filter(
         (r) =>
-          r.ref_no?.toLowerCase().includes(search.toLowerCase()) ||
-          r.customer_name?.toLowerCase().includes(search.toLowerCase())
+          r.ref_no.toLowerCase().includes(search.toLowerCase()) ||
+          r.customer_name.toLowerCase().includes(search.toLowerCase())
       );
-    }
 
-    if (fromDate !== "") {
+    if (fromDate)
       temp = temp.filter(
         (r) => new Date(r.booking_date) >= new Date(fromDate)
       );
-    }
 
-    if (toDate !== "") {
+    if (toDate)
       temp = temp.filter(
         (r) => new Date(r.booking_date) <= new Date(toDate)
       );
-    }
 
     setFiltered(temp);
   }, [search, fromDate, toDate, rows]);
@@ -95,49 +97,39 @@ export default function AllReports({ onNavigate }) {
     <div className="container mt-3">
       <h3 className="fw-bold mb-3">All Reports</h3>
 
-      {/* FILTER BAR */}
-      <div className="d-flex gap-3 mb-3">
+      <div className="d-flex gap-2 mb-3">
         <input
-          type="text"
-          placeholder="Search Ref No / Customer"
           className="form-control"
-          style={{ maxWidth: "250px" }}
+          placeholder="Search Ref / Customer"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
 
-        <div>
-          <label className="small fw-bold">From</label>
-          <input
-            type="date"
-            className="form-control form-control-sm"
-            value={fromDate}
-            onChange={(e) => setFromDate(e.target.value)}
-          />
-        </div>
+        <input
+          type="date"
+          className="form-control"
+          value={fromDate}
+          onChange={(e) => setFromDate(e.target.value)}
+        />
 
-        <div>
-          <label className="small fw-bold">To</label>
-          <input
-            type="date"
-            className="form-control form-control-sm"
-            value={toDate}
-            onChange={(e) => setToDate(e.target.value)}
-          />
-        </div>
+        <input
+          type="date"
+          className="form-control"
+          value={toDate}
+          onChange={(e) => setToDate(e.target.value)}
+        />
       </div>
 
-      {/* TABLE */}
       <table className="table table-bordered table-sm">
         <thead className="table-dark">
           <tr>
             <th>Type</th>
-            <th>Ref No</th>
+            <th>Ref</th>
             <th>Customer</th>
             <th>Date</th>
             <th>PKR</th>
-            <th style={{ width: "80px" }}>View</th>
-            <th style={{ width: "80px" }}>Delete</th>
+            <th>View</th>
+            <th>Delete</th>
           </tr>
         </thead>
 
@@ -147,24 +139,22 @@ export default function AllReports({ onNavigate }) {
               <td>{r.type}</td>
               <td>{r.ref_no}</td>
               <td>{r.customer_name}</td>
-              <td>{r.booking_date}</td>
+              <td>{new Date(r.booking_date).toLocaleDateString()}</td>
               <td>{Number(r.total_pkr).toLocaleString()}</td>
 
-              {/* VIEW */}
               <td className="text-center">
                 <button
                   className="btn btn-info btn-sm"
-                  onClick={() => handleView(r.type, r.id)}
+                  onClick={() => handleView(r.type, r.ref_no)}
                 >
-                  👁 View
+                  👁
                 </button>
               </td>
 
-              {/* DELETE */}
               <td className="text-center">
                 <button
                   className="btn btn-danger btn-sm"
-                  onClick={() => handleDelete(r.type, r.id)}
+                  onClick={() => handleDelete(r.type, r.ref_no)}
                 >
                   ❌
                 </button>
@@ -175,7 +165,7 @@ export default function AllReports({ onNavigate }) {
           {filtered.length === 0 && (
             <tr>
               <td colSpan={7} className="text-center text-muted">
-                No Records Found
+                No Records
               </td>
             </tr>
           )}

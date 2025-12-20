@@ -2,6 +2,9 @@ import React, { useEffect, useState, useRef } from "react";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 
+const fmtDate = (d) =>
+  d ? new Date(d).toLocaleDateString("en-GB") : "";
+
 export default function TicketingView({ id, onNavigate }) {
   const [data, setData] = useState(null);
   const ref = useRef(null);
@@ -12,8 +15,11 @@ export default function TicketingView({ id, onNavigate }) {
     fetch(`${import.meta.env.VITE_BACKEND_URL}/api/ticketing/get/${id}`)
       .then((r) => r.json())
       .then((res) => {
-        // 👇 jsonb safe parse
-        const safeParse = (v) => {
+        if (!res.success) return;
+
+        const row = res.row;
+
+        const safe = (v) => {
           if (!v) return [];
           if (Array.isArray(v)) return v;
           try {
@@ -23,19 +29,19 @@ export default function TicketingView({ id, onNavigate }) {
           }
         };
 
-        res.flight_from = safeParse(res.flight_from);
-        res.flight_to = safeParse(res.flight_to);
-        res.flight_date = safeParse(res.flight_date);
+        row.flight_from = safe(row.flight_from);
+        row.flight_to = safe(row.flight_to);
+        row.flight_date = safe(row.flight_date);
 
-        setData(res);
+        setData(row);
       });
   }, [id]);
 
   const exportPDF = async () => {
     const canvas = await html2canvas(ref.current, { scale: 3 });
     const img = canvas.toDataURL("image/jpeg");
-    const pdf = new jsPDF("l", "mm", "a4");
 
+    const pdf = new jsPDF("l", "mm", "a4");
     pdf.addImage(
       img,
       "JPEG",
@@ -44,7 +50,6 @@ export default function TicketingView({ id, onNavigate }) {
       pdf.internal.pageSize.width,
       pdf.internal.pageSize.height
     );
-
     pdf.save(`${data?.ref_no || "ticketing"}.pdf`);
   };
 
@@ -52,36 +57,28 @@ export default function TicketingView({ id, onNavigate }) {
 
   return (
     <div className="container mt-3">
-      <button
-        className="btn btn-secondary btn-sm"
-        onClick={() => onNavigate("allreports")}
-      >
+      <button className="btn btn-secondary btn-sm" onClick={() => onNavigate("allreports")}>
         ⬅ Back
       </button>
 
-      <button
-        className="btn btn-success btn-sm ms-2"
-        onClick={exportPDF}
-      >
+      <button className="btn btn-success btn-sm ms-2" onClick={exportPDF}>
         📄 Export PDF
       </button>
 
       <div ref={ref} className="bg-white p-3 border mt-3">
-        <h3 className="fw-bold text-center">
-          TICKETING — {data.ref_no}
-        </h3>
+        <h3 className="fw-bold text-center">TICKETING — {data.ref_no}</h3>
 
         <p><b>Customer:</b> {data.customer_name}</p>
-        <p><b>Booking Date:</b> {data.booking_date}</p>
+        <p><b>Booking Date:</b> {fmtDate(data.booking_date)}</p>
 
         <hr />
 
         <h5 className="fw-bold">Flight Routes</h5>
         {data.flight_from.length === 0 && <p>No routes</p>}
 
-        {data.flight_from.map((from, i) => (
+        {data.flight_from.map((f, i) => (
           <p key={i}>
-            {from} → {data.flight_to[i]} ({data.flight_date[i]})
+            {f} → {data.flight_to[i]} ({fmtDate(data.flight_date[i])})
           </p>
         ))}
 
@@ -94,21 +91,12 @@ export default function TicketingView({ id, onNavigate }) {
 
         <hr />
 
-        <h5 className="fw-bold">Amounts</h5>
-
-        <p>
-          <b>Total SAR:</b>{" "}
-          {Number(data.total_sar || 0).toLocaleString()}
-        </p>
-
-        <p>
-          <b>PKR Rate:</b>{" "}
-          {Number(data.pkr_rate || 0).toLocaleString()}
-        </p>
+        <h5 className="fw-bold">Totals</h5>
+        <p><b>Total SAR:</b> {Number(data.total_sar || 0).toLocaleString()}</p>
+        <p><b>PKR Rate:</b> {data.pkr_rate}</p>
 
         <h4 className="fw-bold text-success">
-          Total PKR:{" "}
-          {Number(data.total_pkr || 0).toLocaleString()}
+          Total PKR: {Number(data.total_pkr || 0).toLocaleString()}
         </h4>
       </div>
     </div>
