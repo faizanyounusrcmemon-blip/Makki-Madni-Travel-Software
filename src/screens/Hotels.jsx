@@ -29,6 +29,9 @@ export default function Hotels({ onNavigate }) {
   const [customerName, setCustomerName] = useState("");
   const [refNo, setRefNo] = useState("");
   const [bookingDate, setBookingDate] = useState("");
+  const [sarRate, setSarRate] = useState(0);
+  const hotelPKR = hotelsTotal * sarRate;
+
 
   // ALWAYS ARRAY
   const [rows, setRows] = useState([]);
@@ -111,6 +114,8 @@ export default function Hotels({ onNavigate }) {
      setCustomerName(d.customer_name);
      setBookingDate(d.booking_date);
      setRows(d.hotels || []);
+     setSarRate(d.sar_rate || 0);
+
 
      alert("Hotel load ho gaya — ab edit karo");
    };
@@ -123,6 +128,7 @@ export default function Hotels({ onNavigate }) {
       booking_date: bookingDate,
       hotels: rows,
       hotels_total: hotelsTotal,
+      sar_rate: sarRate,
       total_pkr: hotelPKR,
     };
 
@@ -346,13 +352,13 @@ export default function Hotels({ onNavigate }) {
               <td>Hotels SAR</td>
               <td className="fw-bold">{hotelsTotal}</td>
 
-              <td>Rate</td>
+              <td>SAR Rate</td>
               <td>
                 <input
                   type="number"
                   className="form-control form-control-sm"
-                  value={hotelRate}
-                  onChange={(e) => setHotelRate(+e.target.value)}
+                  value={sarRate}
+                  onChange={(e) => setSarRate(+e.target.value)}
                 />
               </td>
 
