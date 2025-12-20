@@ -32,16 +32,17 @@ export default function Hotels({ onNavigate }) {
 
 
  // ALWAYS ARRAY
-const [rows, setRows] = useState([]);
+  const [rows, setRows] = useState([]);
 
 // SAR RATE (SUMMARY)
-const [sarRate, setSarRate] = useState(0);
+  const [sarRate, setSarRate] = useState(0);
 
 // TOTAL SAR
-const hotelsTotal = rows.reduce((s, r) => s + r.total, 0);
+  const hotelsTotal = rows.reduce((s, r) => s + r.total, 0);
 
 // TOTAL PKR
-const hotelPKR = hotelsTotal * sarRate;
+  const hotelPKR = hotelsTotal * sarRate;
+
 
   const addRow = () =>
     setRows([
