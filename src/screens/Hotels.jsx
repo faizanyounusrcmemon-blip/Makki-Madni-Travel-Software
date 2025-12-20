@@ -29,12 +29,19 @@ export default function Hotels({ onNavigate }) {
   const [customerName, setCustomerName] = useState("");
   const [refNo, setRefNo] = useState("");
   const [bookingDate, setBookingDate] = useState("");
-  const [sarRate, setSarRate] = useState(0);
-  const hotelPKR = hotelsTotal * sarRate;
 
 
-  // ALWAYS ARRAY
-  const [rows, setRows] = useState([]);
+ // ALWAYS ARRAY
+const [rows, setRows] = useState([]);
+
+// SAR RATE (SUMMARY)
+const [sarRate, setSarRate] = useState(0);
+
+// TOTAL SAR
+const hotelsTotal = rows.reduce((s, r) => s + r.total, 0);
+
+// TOTAL PKR
+const hotelPKR = hotelsTotal * sarRate;
 
   const addRow = () =>
     setRows([
