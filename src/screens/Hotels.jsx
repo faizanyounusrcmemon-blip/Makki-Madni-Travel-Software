@@ -30,10 +30,25 @@ export default function Hotels({ onNavigate }) {
   const [refNo, setRefNo] = useState("");
   const [bookingDate, setBookingDate] = useState("");
 
-
- // ALWAYS ARRAY
+  // =========================
+  // HOTEL ROWS (ALWAYS ARRAY)
+  // =========================
   const [rows, setRows] = useState([]);
 
+  // =========================
+  // SAR RATE (SUMMARY)
+  // =========================
+  const [sarRate, setSarRate] = useState(0);
+
+  // =========================
+  // CALCULATIONS
+  // =========================
+  const hotelsTotal = rows.reduce((s, r) => s + (Number(r.total) || 0), 0);
+  const hotelPKR = hotelsTotal * sarRate;
+
+  // =========================
+  // ROW HANDLERS
+  // =========================
   const addRow = () =>
     setRows([
       ...rows,
@@ -56,24 +71,21 @@ export default function Hotels({ onNavigate }) {
     const u = [...rows];
     u[i][field] = value;
 
-    // ✅ AUTO NIGHTS CALC
     if (field === "checkIn" || field === "checkOut") {
       u[i].nights = calcNights(u[i].checkIn, u[i].checkOut);
     }
 
-    const nights = Number(u[i].nights);
-    const rooms = Number(u[i].rooms);
-    const rate = Number(u[i].rate);
+    const nights = Number(u[i].nights) || 0;
+    const rooms = Number(u[i].rooms) || 0;
+    const rate = Number(u[i].rate) || 0;
 
     u[i].total = nights * rooms * rate;
     setRows(u);
   };
 
-  const hotelsTotal = rows.reduce((s, r) => s + r.total, 0);
-
-  const [hotelRate, setHotelRate] = useState(0);
-  const hotelPKR = hotelsTotal * hotelRate;
-
+  // =========================
+  // PDF
+  // =========================
   const pdfRef = useRef(null);
 
   const exportPDF = async () => {
@@ -91,34 +103,34 @@ export default function Hotels({ onNavigate }) {
     );
     pdf.save("hotels.pdf");
   };
-// ===============================
-// LOAD HOTEL (EDIT MODE)
-// ===============================
-   const loadHotel = async () => {
-     if (!searchRef) return alert("Search Ref No likho");
 
-     const res = await fetch(
-     `${import.meta.env.VITE_BACKEND_URL}/api/hotels/get/${searchRef}`
-   );
-     const data = await res.json();
+  // ===============================
+  // LOAD HOTEL (EDIT MODE)
+  // ===============================
+  const loadHotel = async () => {
+    if (!searchRef) return alert("Search Ref No likho");
 
-     if (!data.success) return alert("Record not found");
+    const res = await fetch(
+      `${import.meta.env.VITE_BACKEND_URL}/api/hotels/get/${searchRef}`
+    );
+    const data = await res.json();
 
-     const d = data.row;
+    if (!data.success) return alert("Record not found");
 
-  // ✅ YAHI LINE SAB SE IMPORTANT HAI
-     setRefNo(d.ref_no);
+    const d = data.row;
 
-     setCustomerName(d.customer_name);
-     setBookingDate(d.booking_date);
-     setRows(d.hotels || []);
-     setSarRate(d.sar_rate || 0);
+    setRefNo(d.ref_no);
+    setCustomerName(d.customer_name);
+    setBookingDate(d.booking_date);
+    setRows(d.hotels || []);
+    setSarRate(d.sar_rate || 0);
 
+    alert("Hotel load ho gaya — ab edit karo");
+  };
 
-     alert("Hotel load ho gaya — ab edit karo");
-   };
-
-
+  // ===============================
+  // SAVE
+  // ===============================
   const saveData = async () => {
     const payload = {
       ref_no: refNo || null,
@@ -149,6 +161,9 @@ export default function Hotels({ onNavigate }) {
     }
   };
 
+  // ===============================
+  // UI
+  // ===============================
   return (
     <div className="container-fluid py-3" style={{ background: "#eef4f7" }}>
       {/* TOP BAR */}
@@ -161,12 +176,10 @@ export default function Hotels({ onNavigate }) {
         </button>
 
         <div className="d-flex gap-2">
-          <button 
-            className="btn btn-primary btn-sm"
-            onClick={saveData}
-           >
+          <button className="btn btn-primary btn-sm" onClick={saveData}>
             💾 Save
-           </button>
+          </button>
+
           <input
             className="form-control form-control-sm"
             style={{ width: "140px" }}
@@ -175,12 +188,9 @@ export default function Hotels({ onNavigate }) {
             onChange={(e) => setSearchRef(e.target.value)}
           />
 
-          <button
-            className="btn btn-warning btn-sm"
-            onClick={loadHotel}
-           >
+          <button className="btn btn-warning btn-sm" onClick={loadHotel}>
             🔄 Load / Edit
-           </button>
+          </button>
 
           <button className="btn btn-success btn-sm" onClick={exportPDF}>
             📄 Export PDF
@@ -225,7 +235,7 @@ export default function Hotels({ onNavigate }) {
           </div>
         </div>
 
-        {/* HOTELS SECTION */}
+        {/* HOTELS */}
         <h6 className="bg-info text-white p-1">Hotels</h6>
 
         <button className="btn btn-outline-primary btn-sm mb-2" onClick={addRow}>
