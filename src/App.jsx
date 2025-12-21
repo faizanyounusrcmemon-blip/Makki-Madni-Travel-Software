@@ -28,6 +28,7 @@ import ProfitReport from "./screens/ProfitReport";
 import CreateUser from "./screens/CreateUser";
 import HotelVoucher from "./screens/HotelVoucher";
 import DeletedReports from "./screens/DeletedReports";
+import Restore from "./screens/Restore";
 
 // VIEWS
 import PackagesView from "./screens/PackagesView";
@@ -83,6 +84,7 @@ export default function App() {
       {page === "profitReport" && <ProfitReport onNavigate={navigate} />}
       {page === "createUser" && <CreateUser onNavigate={navigate} />}
       {page === "hotelVoucher" && <HotelVoucher onNavigate={navigate} />}
+      {page === "restore" && <Restore onNavigate={navigate} />}
 
       {/* VIEWS */}
       {page === "packages_view" && (
