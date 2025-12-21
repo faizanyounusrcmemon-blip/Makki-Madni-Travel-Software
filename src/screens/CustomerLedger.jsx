@@ -1,21 +1,11 @@
 import React, { useState, useRef } from "react";
-import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
-
-/* =========================
-   DATE FORMATTER (SAFE)
-========================= */
-const fmtDate = (d) => {
-  if (!d) return "-";
-  const dt = new Date(d);
-  if (isNaN(dt)) return "-";
-  return dt.toLocaleDateString("en-GB");
-};
+import html2canvas from "html2canvas";
 
 export default function CustomerLedger({ onNavigate }) {
   const [refNo, setRefNo] = useState("");
-  const [rows, setRows] = useState([]);
   const [customerName, setCustomerName] = useState("");
+  const [rows, setRows] = useState([]);
   const [amount, setAmount] = useState("");
   const [date, setDate] = useState("");
   const [type, setType] = useState("payment");
@@ -34,19 +24,16 @@ export default function CustomerLedger({ onNavigate }) {
     );
     const data = await res.json();
 
-    if (!data.success) return alert(data.error);
-
-    setRows(data.rows || []);
-
-    // 🔥 customer name (sale row se)
-    const saleRow = data.rows?.find((r) => r.id === "SALE");
-    if (saleRow?.customer_name) {
-      setCustomerName(saleRow.customer_name);
+    if (data.success) {
+      setRows(data.rows || []);
+      setCustomerName(data.customer_name || "");
+    } else {
+      alert(data.error);
     }
   };
 
   /* =========================
-     SAVE PAYMENT / ADJUSTMENT
+     SAVE PAYMENT
   ========================= */
   const saveEntry = async () => {
     if (!amount || !date) return alert("Amount & Date required");
@@ -58,38 +45,37 @@ export default function CustomerLedger({ onNavigate }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ref_no: refNo,
-          payment_date: date,
+          payment_date: date, // ✅ correct date
           amount,
           payment_method: method,
-          type,
-        }),
+          type
+        })
       }
     );
 
     const data = await res.json();
-    if (!data.success) return alert(data.error);
-
-    setAmount("");
-    setDate("");
-    loadLedger();
+    if (data.success) {
+      setAmount("");
+      setDate("");
+      loadLedger();
+    } else {
+      alert(data.error);
+    }
   };
 
   /* =========================
      DELETE ENTRY
   ========================= */
   const del = async (id) => {
-    if (id === "SALE") return;
-
     const pass = prompt("Enter password");
     if (!pass) return;
 
     const r = await fetch(
       `${import.meta.env.VITE_BACKEND_URL}/api/customer-ledger/delete/${id}`,
       {
-        method: "DELETE",
+        method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ password: pass }),
-,
+        body: JSON.stringify({ password: pass })
       }
     );
 
@@ -102,28 +88,15 @@ export default function CustomerLedger({ onNavigate }) {
      EXPORT PDF
   ========================= */
   const exportPDF = async () => {
-    if (!rows.length) return alert("No data to export");
+    const canvas = await html2canvas(pdfRef.current, { scale: 2 });
+    const img = canvas.toDataURL("image/png");
 
-    const canvas = await html2canvas(pdfRef.current, {
-      scale: 2,
-      backgroundColor: "#ffffff",
-    });
-
-    const img = canvas.toDataURL("image/jpeg", 1.0);
     const pdf = new jsPDF("p", "mm", "a4");
-
     const w = pdf.internal.pageSize.getWidth();
     const h = (canvas.height * w) / canvas.width;
 
-    pdf.setFontSize(14);
-    pdf.text("CUSTOMER LEDGER", w / 2, 10, { align: "center" });
-
-    pdf.setFontSize(10);
-    pdf.text(`Ref No: ${refNo}`, 10, 18);
-    if (customerName) pdf.text(`Customer: ${customerName}`, 10, 24);
-
-    pdf.addImage(img, "JPEG", 0, 30, w, h);
-    pdf.save(`Ledger-${refNo}.pdf`);
+    pdf.addImage(img, "PNG", 0, 0, w, h);
+    pdf.save(`${refNo}_ledger.pdf`);
   };
 
   return (
@@ -132,12 +105,18 @@ export default function CustomerLedger({ onNavigate }) {
         ⬅ Back
       </button>
 
-      <h4 className="mt-2 text-info fw-bold">
-        📘 CUSTOMER LEDGER {refNo && `— ${refNo}`}
+      <h4 className="mt-3 text-info fw-bold">
+        📘 CUSTOMER LEDGER — {refNo}
       </h4>
 
+      {customerName && (
+        <div className="fw-bold text-light mb-2">
+          Customer: {customerName}
+        </div>
+      )}
+
       {/* LOAD */}
-      <div className="d-flex gap-2 mt-3">
+      <div className="d-flex gap-2 mt-2">
         <input
           className="form-control"
           placeholder="Ref No"
@@ -148,11 +127,11 @@ export default function CustomerLedger({ onNavigate }) {
           Load
         </button>
         <button className="btn btn-success" onClick={exportPDF}>
-          📄 Export PDF
+          Export PDF
         </button>
       </div>
 
-      {/* ENTRY FORM */}
+      {/* ENTRY */}
       <div className="row g-2 mt-3">
         <div className="col-md-3">
           <input
@@ -196,7 +175,7 @@ export default function CustomerLedger({ onNavigate }) {
       </div>
 
       <button className="btn btn-success mt-2" onClick={saveEntry}>
-        Save Entry
+        💾 Save Entry
       </button>
 
       {/* LEDGER TABLE */}
@@ -223,20 +202,22 @@ export default function CustomerLedger({ onNavigate }) {
 
             {rows.map((r) => (
               <tr key={r.id}>
-                <td>{fmtDate(r.date)}</td>
+                <td>
+                  {r.payment_date
+                    ? new Date(r.payment_date).toLocaleDateString("en-GB")
+                    : "-"}
+                </td>
                 <td>{r.description}</td>
                 <td>{r.debit || "-"}</td>
                 <td>{r.credit || "-"}</td>
                 <td className="fw-bold">{r.balance}</td>
                 <td>
-                  {r.id !== "SALE" && (
-                    <button
-                      className="btn btn-danger btn-sm"
-                      onClick={() => del(r.id)}
-                    >
-                      Del
-                    </button>
-                  )}
+                  <button
+                    className="btn btn-danger btn-sm"
+                    onClick={() => del(r.id)}
+                  >
+                    Del
+                  </button>
                 </td>
               </tr>
             ))}
