@@ -3,13 +3,13 @@ import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 
 /* =========================
-   DATE FORMATTER (SAFE)
+   SAFE DATE FORMATTER
 ========================= */
-const fmtDate = (d) => {
-  if (!d) return "-";
-  const dt = new Date(d);
-  if (isNaN(dt)) return "-";
-  return dt.toLocaleDateString("en-GB");
+const fmtDate = (val) => {
+  if (!val) return "-";
+  const d = new Date(val);
+  if (isNaN(d.getTime())) return "-";
+  return d.toLocaleDateString("en-GB");
 };
 
 export default function CustomerLedger({ onNavigate }) {
@@ -32,12 +32,13 @@ export default function CustomerLedger({ onNavigate }) {
       `${import.meta.env.VITE_BACKEND_URL}/api/customer-ledger/${refNo}`
     );
     const data = await res.json();
+
     if (data.success) setRows(data.rows);
     else alert(data.error);
   };
 
   /* =========================
-     SAVE ENTRY
+     SAVE PAYMENT / ADJUSTMENT
   ========================= */
   const saveEntry = async () => {
     if (!amount || !date) return alert("Amount & Date required");
@@ -49,7 +50,7 @@ export default function CustomerLedger({ onNavigate }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ref_no: refNo,
-          payment_date: date,
+          payment_date: date, // YYYY-MM-DD
           amount: Number(amount),
           payment_method: method,
           type,
@@ -80,7 +81,6 @@ export default function CustomerLedger({ onNavigate }) {
         body: JSON.stringify({ password: pass }),
       }
     );
-
     const d = await r.json();
     if (d.success) loadLedger();
     else alert(d.error);
@@ -90,17 +90,19 @@ export default function CustomerLedger({ onNavigate }) {
      EXPORT PDF
   ========================= */
   const exportPDF = async () => {
-    if (!rows.length) return alert("No data to export");
+    const canvas = await html2canvas(pdfRef.current, { scale: 3 });
+    const img = canvas.toDataURL("image/png");
 
-    const canvas = await html2canvas(pdfRef.current, { scale: 2 });
-    const img = canvas.toDataURL("image/jpeg");
-
-    const pdf = new jsPDF("p", "mm", "a4");
-    const w = pdf.internal.pageSize.getWidth();
-    const h = (canvas.height * w) / canvas.width;
-
-    pdf.addImage(img, "JPEG", 0, 0, w, h);
-    pdf.save(`${refNo || "ledger"}.pdf`);
+    const pdf = new jsPDF("l", "mm", "a4");
+    pdf.addImage(
+      img,
+      "PNG",
+      0,
+      0,
+      pdf.internal.pageSize.getWidth(),
+      pdf.internal.pageSize.getHeight()
+    );
+    pdf.save(`Ledger-${refNo || "customer"}.pdf`);
   };
 
   return (
@@ -113,7 +115,7 @@ export default function CustomerLedger({ onNavigate }) {
         📘 CUSTOMER LEDGER {refNo && `— ${refNo}`}
       </h4>
 
-      {/* LOAD */}
+      {/* TOP BAR */}
       <div className="d-flex gap-2 mt-3">
         <input
           className="form-control"
@@ -129,7 +131,7 @@ export default function CustomerLedger({ onNavigate }) {
         </button>
       </div>
 
-      {/* ENTRY */}
+      {/* ENTRY FORM */}
       <div className="row g-2 mt-3">
         <div className="col-md-3">
           <input
@@ -142,9 +144,9 @@ export default function CustomerLedger({ onNavigate }) {
 
         <div className="col-md-3">
           <input
-            type="number"
             className="form-control"
             placeholder="Amount"
+            type="number"
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
           />
@@ -201,11 +203,11 @@ export default function CustomerLedger({ onNavigate }) {
 
             {rows.map((r) => (
               <tr key={r.id}>
-                <td>{fmtDate(r.created_at)}</td>
+                <td>{fmtDate(r.created_at || r.payment_date)}</td>
                 <td>{r.description}</td>
                 <td>{r.debit || "-"}</td>
                 <td>{r.credit || "-"}</td>
-                <td className="fw-bold">{r.balance}</td>
+                <td className="fw-bold">{Number(r.balance).toLocaleString()}</td>
                 <td>
                   <button
                     className="btn btn-danger btn-sm"
