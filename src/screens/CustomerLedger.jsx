@@ -1,11 +1,22 @@
 import React, { useState, useRef } from "react";
-import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
+import jsPDF from "jspdf";
+
+/* =========================
+   DATE FORMATTER (SAFE)
+========================= */
+const fmtDate = (val) => {
+  if (!val) return "-";
+  const d = new Date(val);
+  if (isNaN(d.getTime())) return "-";
+  return d.toLocaleDateString("en-GB"); // DD/MM/YYYY
+};
 
 export default function CustomerLedger({ onNavigate }) {
   const [refNo, setRefNo] = useState("");
   const [customerName, setCustomerName] = useState("");
   const [rows, setRows] = useState([]);
+
   const [amount, setAmount] = useState("");
   const [date, setDate] = useState("");
   const [type, setType] = useState("payment");
@@ -33,7 +44,7 @@ export default function CustomerLedger({ onNavigate }) {
   };
 
   /* =========================
-     SAVE PAYMENT
+     SAVE PAYMENT / ADJUSTMENT
   ========================= */
   const saveEntry = async () => {
     if (!amount || !date) return alert("Amount & Date required");
@@ -45,11 +56,11 @@ export default function CustomerLedger({ onNavigate }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ref_no: refNo,
-          payment_date: date, // ✅ correct date
-          amount,
+          payment_date: date,
+          amount: Number(amount),
           payment_method: method,
-          type
-        })
+          type,
+        }),
       }
     );
 
@@ -75,7 +86,7 @@ export default function CustomerLedger({ onNavigate }) {
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ password: pass })
+        body: JSON.stringify({ password: pass }),
       }
     );
 
@@ -88,15 +99,20 @@ export default function CustomerLedger({ onNavigate }) {
      EXPORT PDF
   ========================= */
   const exportPDF = async () => {
-    const canvas = await html2canvas(pdfRef.current, { scale: 2 });
+    const canvas = await html2canvas(pdfRef.current, { scale: 3 });
     const img = canvas.toDataURL("image/png");
 
     const pdf = new jsPDF("p", "mm", "a4");
-    const w = pdf.internal.pageSize.getWidth();
-    const h = (canvas.height * w) / canvas.width;
+    pdf.addImage(
+      img,
+      "PNG",
+      10,
+      10,
+      190,
+      (canvas.height * 190) / canvas.width
+    );
 
-    pdf.addImage(img, "PNG", 0, 0, w, h);
-    pdf.save(`${refNo}_ledger.pdf`);
+    pdf.save(`${refNo || "customer-ledger"}.pdf`);
   };
 
   return (
@@ -105,17 +121,15 @@ export default function CustomerLedger({ onNavigate }) {
         ⬅ Back
       </button>
 
-      <h4 className="mt-3 text-info fw-bold">
-        📘 CUSTOMER LEDGER — {refNo}
+      <h4 className="mt-2 text-info fw-bold">
+        📘 CUSTOMER LEDGER {refNo && `— ${refNo}`}
       </h4>
 
       {customerName && (
-        <div className="fw-bold text-light mb-2">
-          Customer: {customerName}
-        </div>
+        <p className="fw-bold text-success">Customer: {customerName}</p>
       )}
 
-      {/* LOAD */}
+      {/* TOP BAR */}
       <div className="d-flex gap-2 mt-2">
         <input
           className="form-control"
@@ -127,11 +141,11 @@ export default function CustomerLedger({ onNavigate }) {
           Load
         </button>
         <button className="btn btn-success" onClick={exportPDF}>
-          Export PDF
+          📄 Export PDF
         </button>
       </div>
 
-      {/* ENTRY */}
+      {/* ENTRY FORM */}
       <div className="row g-2 mt-3">
         <div className="col-md-3">
           <input
@@ -202,11 +216,7 @@ export default function CustomerLedger({ onNavigate }) {
 
             {rows.map((r) => (
               <tr key={r.id}>
-                <td>
-                  {r.payment_date
-                    ? new Date(r.payment_date).toLocaleDateString("en-GB")
-                    : "-"}
-                </td>
+                <td>{fmtDate(r.payment_date || r.created_at)}</td>
                 <td>{r.description}</td>
                 <td>{r.debit || "-"}</td>
                 <td>{r.credit || "-"}</td>
