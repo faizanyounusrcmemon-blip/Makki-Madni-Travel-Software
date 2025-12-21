@@ -6,25 +6,28 @@ import jsPDF from "jspdf";
    HELPERS
 ========================= */
 
-// DATE (payment_date > created_at)
+// DATE FIX (payment_date > created_at)
 const fmtDate = (row) => {
   const v = row?.payment_date || row?.created_at;
   if (!v) return "-";
+
+  // Postgres timestamp safe parse
   const d = new Date(v);
   if (isNaN(d.getTime())) return "-";
-  return d.toLocaleDateString("en-GB");
+
+  return d.toLocaleDateString("en-GB"); // DD/MM/YYYY
 };
 
-// 300000 -> 300,000
+// 300000 → 300,000
 const formatAmount = (v) => {
   if (v === null || v === undefined) return "-";
   return Number(v).toLocaleString("en-US");
 };
 
-// "300,000" -> 300000
+// "300,000" → 300000
 const parseAmount = (v) => Number(String(v).replace(/,/g, ""));
 
-// NUMBER → WORDS (ENGLISH)
+// NUMBER → WORDS
 const numberToWords = (num) => {
   if (!num) return "";
   const a = [
@@ -107,10 +110,13 @@ export default function CustomerLedger({ onNavigate }) {
   };
 
   /* =========================
-     DELETE ENTRY
+     DELETE ENTRY (FIXED)
   ========================= */
   const del = async (id) => {
-    if (id === "SALE") return alert("Sale entry delete نہیں ہو سکتی");
+    if (!id || id === "SALE") {
+      alert("Sale entry delete نہیں ہو سکتی");
+      return;
+    }
 
     const pass = prompt("Enter password");
     if (!pass) return;
