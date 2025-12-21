@@ -89,6 +89,7 @@ export default function Navbar({ onNavigate }) {
               <div onClick={() => go("createUser")}>Create User</div>
               <div onClick={() => go("hotelVoucher")}>🏨 Hotel Voucher</div>
               <div onClick={() => go("deletedReports")}>🗑 Deleted Reports</div>
+              <div onClick={() => go("restore")}>♻ Restore</div>
             </div>
           )}
         </div>
