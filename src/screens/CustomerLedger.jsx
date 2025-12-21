@@ -3,8 +3,10 @@ import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 
 /* =========================
-   DATE FORMATTER (SAFE)
+   HELPERS
 ========================= */
+
+// Date formatter (SAFE)
 const fmtDate = (val) => {
   if (!val) return "-";
   const d = new Date(val);
@@ -12,10 +14,25 @@ const fmtDate = (val) => {
   return d.toLocaleDateString("en-GB"); // DD/MM/YYYY
 };
 
+// 300000 -> 300,000
+const formatAmount = (val) => {
+  if (val === null || val === undefined || val === "") return "";
+  return Number(val).toLocaleString("en-US");
+};
+
+// "300,000" -> 300000
+const parseAmount = (val) => {
+  return Number(String(val).replace(/,/g, ""));
+};
+
 export default function CustomerLedger({ onNavigate }) {
   const [refNo, setRefNo] = useState("");
   const [rows, setRows] = useState([]);
-  const [amount, setAmount] = useState("");
+
+  // amount states
+  const [amountRaw, setAmountRaw] = useState("");
+  const [amountDisplay, setAmountDisplay] = useState("");
+
   const [date, setDate] = useState("");
   const [type, setType] = useState("payment");
   const [method, setMethod] = useState("Cash");
@@ -41,10 +58,10 @@ export default function CustomerLedger({ onNavigate }) {
   };
 
   /* =========================
-     SAVE PAYMENT / ADJUSTMENT
+     SAVE ENTRY
   ========================= */
   const saveEntry = async () => {
-    if (!amount || !date) return alert("Amount & Date required");
+    if (!amountRaw || !date) return alert("Amount & Date required");
 
     const res = await fetch(
       `${import.meta.env.VITE_BACKEND_URL}/api/customer-ledger/payment`,
@@ -54,7 +71,7 @@ export default function CustomerLedger({ onNavigate }) {
         body: JSON.stringify({
           ref_no: refNo,
           payment_date: date,
-          amount: Number(amount),
+          amount: amountRaw, // ✅ pure number
           payment_method: method,
           type,
         }),
@@ -63,7 +80,8 @@ export default function CustomerLedger({ onNavigate }) {
 
     const data = await res.json();
     if (data.success) {
-      setAmount("");
+      setAmountRaw("");
+      setAmountDisplay("");
       setDate("");
       loadLedger();
     } else {
@@ -72,7 +90,7 @@ export default function CustomerLedger({ onNavigate }) {
   };
 
   /* =========================
-     DELETE ENTRY (FIXED)
+     DELETE ENTRY
   ========================= */
   const del = async (id) => {
     if (id === "SALE") return alert("Sale entry delete نہیں ہو سکتی");
@@ -83,7 +101,7 @@ export default function CustomerLedger({ onNavigate }) {
     const r = await fetch(
       `${import.meta.env.VITE_BACKEND_URL}/api/customer-ledger/delete/${id}`,
       {
-        method: "DELETE", // ✅ FIX
+        method: "POST", // backend compatible
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ password: pass }),
       }
@@ -116,7 +134,10 @@ export default function CustomerLedger({ onNavigate }) {
 
   return (
     <div className="container p-3">
-      <button className="btn btn-secondary btn-sm" onClick={() => onNavigate("dashboard")}>
+      <button
+        className="btn btn-secondary btn-sm"
+        onClick={() => onNavigate("dashboard")}
+      >
         ⬅ Back
       </button>
 
@@ -155,8 +176,13 @@ export default function CustomerLedger({ onNavigate }) {
           <input
             className="form-control"
             placeholder="Amount"
-            value={amount}
-            onChange={(e) => setAmount(e.target.value)}
+            value={amountDisplay}
+            onChange={(e) => {
+              const raw = parseAmount(e.target.value);
+              if (isNaN(raw)) return;
+              setAmountRaw(raw);
+              setAmountDisplay(formatAmount(raw));
+            }}
           />
         </div>
 
@@ -211,11 +237,13 @@ export default function CustomerLedger({ onNavigate }) {
 
             {rows.map((r) => (
               <tr key={r.id}>
-                <td>{fmtDate(r.date)}</td> {/* ✅ FIXED */}
+                <td>{fmtDate(r.payment_date || r.created_at)}</td>
                 <td>{r.description}</td>
-                <td>{r.debit || "-"}</td>
-                <td>{r.credit || "-"}</td>
-                <td className="fw-bold">{r.balance}</td>
+                <td>{r.debit ? formatAmount(r.debit) : "-"}</td>
+                <td>{r.credit ? formatAmount(r.credit) : "-"}</td>
+                <td className="fw-bold">
+                  {formatAmount(r.balance)}
+                </td>
                 <td>
                   {r.id !== "SALE" && (
                     <button
