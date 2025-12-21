@@ -1,4 +1,6 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
+import html2canvas from "html2canvas";
+import jsPDF from "jspdf";
 
 /* =========================
    HELPERS
@@ -56,6 +58,8 @@ export default function PurchaseLedger({ onNavigate }) {
   const [type, setType] = useState("payment");
   const [method, setMethod] = useState("Cash");
 
+  const pdfRef = useRef(null);
+
   /* =========================
      LOAD LEDGER
   ========================= */
@@ -84,7 +88,7 @@ export default function PurchaseLedger({ onNavigate }) {
         body: JSON.stringify({
           ref_no: ref,
           payment_date: date,
-          amount: amountRaw, // ✅ RAW NUMBER
+          amount: amountRaw,
           payment_method: method,
           type
         })
@@ -101,23 +105,41 @@ export default function PurchaseLedger({ onNavigate }) {
   };
 
   /* =========================
-     DELETE ENTRY
+     DELETE ENTRY ✅ FINAL FIX
   ========================= */
   const del = async (id) => {
-    const pass = prompt("Enter password");
+    if (!id || isNaN(id)) {
+      alert("یہ entry delete نہیں ہو سکتی");
+      return;
+    }
+
+    const pass = prompt("Password?");
     if (!pass) return;
 
     const r = await fetch(
       `${import.meta.env.VITE_BACKEND_URL}/api/purchase-ledger/delete/${id}`,
       {
-        method: "POST",
+        method: "DELETE", // ✅ FIX
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ password: pass })
       }
     );
+
     const d = await r.json();
     if (d.success) load();
     else alert(d.error);
+  };
+
+  /* =========================
+     EXPORT PDF
+  ========================= */
+  const exportPDF = async () => {
+    const canvas = await html2canvas(pdfRef.current, { scale: 3 });
+    const img = canvas.toDataURL("image/png");
+
+    const pdf = new jsPDF("p", "mm", "a4");
+    pdf.addImage(img, "PNG", 10, 10, 190, (canvas.height * 190) / canvas.width);
+    pdf.save(`${ref || "purchase-ledger"}.pdf`);
   };
 
   return (
@@ -138,20 +160,15 @@ export default function PurchaseLedger({ onNavigate }) {
           value={ref}
           onChange={(e) => setRef(e.target.value)}
         />
-        <button className="btn btn-primary" onClick={load}>
-          Load
-        </button>
+        <button className="btn btn-primary" onClick={load}>Load</button>
+        <button className="btn btn-success" onClick={exportPDF}>📄 Export PDF</button>
       </div>
 
       {/* ENTRY */}
       <div className="row g-2 mt-3">
         <div className="col-md-3">
-          <input
-            type="date"
-            className="form-control"
-            value={date}
-            onChange={(e) => setDate(e.target.value)}
-          />
+          <input type="date" className="form-control"
+            value={date} onChange={(e) => setDate(e.target.value)} />
         </div>
 
         <div className="col-md-3">
@@ -174,22 +191,16 @@ export default function PurchaseLedger({ onNavigate }) {
         </div>
 
         <div className="col-md-3">
-          <select
-            className="form-control"
-            value={type}
-            onChange={(e) => setType(e.target.value)}
-          >
+          <select className="form-control" value={type}
+            onChange={(e) => setType(e.target.value)}>
             <option value="payment">Payment</option>
             <option value="adjustment">Adjustment</option>
           </select>
         </div>
 
         <div className="col-md-3">
-          <select
-            className="form-control"
-            value={method}
-            onChange={(e) => setMethod(e.target.value)}
-          >
+          <select className="form-control" value={method}
+            onChange={(e) => setMethod(e.target.value)}>
             <option>Cash</option>
             <option>Bank</option>
           </select>
@@ -201,45 +212,45 @@ export default function PurchaseLedger({ onNavigate }) {
       </button>
 
       {/* TABLE */}
-      <table className="table table-bordered table-sm mt-3">
-        <thead className="table-dark">
-          <tr>
-            <th>Date</th>
-            <th>Description</th>
-            <th>Debit</th>
-            <th>Credit</th>
-            <th>Balance</th>
-            <th width="60">❌</th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows.length === 0 && (
+      <div ref={pdfRef}>
+        <table className="table table-bordered table-sm mt-3">
+          <thead className="table-dark">
             <tr>
-              <td colSpan="6" className="text-center text-muted">
-                No ledger entries
-              </td>
+              <th>Date</th>
+              <th>Description</th>
+              <th>Debit</th>
+              <th>Credit</th>
+              <th>Balance</th>
+              <th width="60">❌</th>
             </tr>
-          )}
+          </thead>
+          <tbody>
+            {rows.length === 0 && (
+              <tr>
+                <td colSpan="6" className="text-center text-muted">
+                  No ledger entries
+                </td>
+              </tr>
+            )}
 
-          {rows.map((r) => (
-            <tr key={r.id}>
-              <td>{fmtDate(r.date || r.created_at)}</td>
-              <td>{r.description}</td>
-              <td>{r.debit ? fmtAmt(r.debit) : "-"}</td>
-              <td>{r.credit ? fmtAmt(r.credit) : "-"}</td>
-              <td className="fw-bold">{fmtAmt(r.balance)}</td>
-              <td>
-                <button
-                  className="btn btn-danger btn-sm"
-                  onClick={() => del(r.id)}
-                >
-                  Del
-                </button>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+            {rows.map((r) => (
+              <tr key={r.id}>
+                <td>{fmtDate(r.date || r.created_at)}</td>
+                <td>{r.description}</td>
+                <td>{r.debit ? fmtAmt(r.debit) : "-"}</td>
+                <td>{r.credit ? fmtAmt(r.credit) : "-"}</td>
+                <td className="fw-bold">{fmtAmt(r.balance)}</td>
+                <td>
+                  <button className="btn btn-danger btn-sm"
+                    onClick={() => del(r.id)}>
+                    Del
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }
