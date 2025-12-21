@@ -6,12 +6,11 @@ import jsPDF from "jspdf";
    HELPERS
 ========================= */
 
-// DATE FIX (payment_date > created_at)
-const fmtDate = (row) => {
-  const v = row?.payment_date || row?.created_at;
+// ✅ DATE: payment_date → created_at
+const getRowDate = (r) => {
+  const v = r.payment_date || r.created_at;
   if (!v) return "-";
 
-  // Postgres timestamp safe parse
   const d = new Date(v);
   if (isNaN(d.getTime())) return "-";
 
@@ -19,13 +18,13 @@ const fmtDate = (row) => {
 };
 
 // 300000 → 300,000
-const formatAmount = (v) => {
+const fmtAmt = (v) => {
   if (v === null || v === undefined) return "-";
   return Number(v).toLocaleString("en-US");
 };
 
 // "300,000" → 300000
-const parseAmount = (v) => Number(String(v).replace(/,/g, ""));
+const parseAmt = (v) => Number(String(v).replace(/,/g, ""));
 
 // NUMBER → WORDS
 const numberToWords = (num) => {
@@ -38,17 +37,17 @@ const numberToWords = (num) => {
   ];
   const b = ["", "", "Twenty", "Thirty", "Forty", "Fifty", "Sixty", "Seventy", "Eighty", "Ninety"];
 
-  const inWords = (n) => {
+  const w = (n) => {
     if (n < 20) return a[n];
     if (n < 100) return b[Math.floor(n / 10)] + (n % 10 ? " " + a[n % 10] : "");
     if (n < 1000)
-      return a[Math.floor(n / 100)] + " Hundred" + (n % 100 ? " " + inWords(n % 100) : "");
+      return a[Math.floor(n / 100)] + " Hundred" + (n % 100 ? " " + w(n % 100) : "");
     if (n < 1000000)
-      return inWords(Math.floor(n / 1000)) + " Thousand" + (n % 1000 ? " " + inWords(n % 1000) : "");
+      return w(Math.floor(n / 1000)) + " Thousand" + (n % 1000 ? " " + w(n % 1000) : "");
     return "";
   };
 
-  return inWords(num) + " Only";
+  return w(num) + " Only";
 };
 
 export default function CustomerLedger({ onNavigate }) {
@@ -56,7 +55,7 @@ export default function CustomerLedger({ onNavigate }) {
   const [rows, setRows] = useState([]);
 
   const [amountRaw, setAmountRaw] = useState(0);
-  const [amountDisplay, setAmountDisplay] = useState("");
+  const [amountDisp, setAmountDisp] = useState("");
   const [date, setDate] = useState("");
 
   const [type, setType] = useState("payment");
@@ -103,17 +102,18 @@ export default function CustomerLedger({ onNavigate }) {
     const d = await r.json();
     if (d.success) {
       setAmountRaw(0);
-      setAmountDisplay("");
+      setAmountDisp("");
       setDate("");
       loadLedger();
     } else alert(d.error);
   };
 
   /* =========================
-     DELETE ENTRY (FIXED)
+     DELETE ENTRY (FINAL FIX)
   ========================= */
   const del = async (id) => {
-    if (!id || id === "SALE") {
+    // ❌ Sale row OR invalid id
+    if (!id || isNaN(id)) {
       alert("Sale entry delete نہیں ہو سکتی");
       return;
     }
@@ -124,7 +124,7 @@ export default function CustomerLedger({ onNavigate }) {
     const r = await fetch(
       `${import.meta.env.VITE_BACKEND_URL}/api/customer-ledger/delete/${id}`,
       {
-        method: "POST",
+        method: "POST", // ✅ backend compatible
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ password: pass }),
       }
@@ -174,12 +174,12 @@ export default function CustomerLedger({ onNavigate }) {
           <input
             className="form-control"
             placeholder="Amount"
-            value={amountDisplay}
+            value={amountDisp}
             onChange={(e) => {
-              const raw = parseAmount(e.target.value);
+              const raw = parseAmt(e.target.value);
               if (isNaN(raw)) return;
               setAmountRaw(raw);
-              setAmountDisplay(formatAmount(raw));
+              setAmountDisp(fmtAmt(raw));
             }}
           />
           {amountRaw > 0 && (
@@ -223,14 +223,14 @@ export default function CustomerLedger({ onNavigate }) {
           </thead>
           <tbody>
             {rows.map((r) => (
-              <tr key={r.id}>
-                <td>{fmtDate(r)}</td>
+              <tr key={r.id || r.description}>
+                <td>{getRowDate(r)}</td>
                 <td>{r.description}</td>
-                <td>{r.debit ? formatAmount(r.debit) : "-"}</td>
-                <td>{r.credit ? formatAmount(r.credit) : "-"}</td>
-                <td className="fw-bold">{formatAmount(r.balance)}</td>
+                <td>{r.debit ? fmtAmt(r.debit) : "-"}</td>
+                <td>{r.credit ? fmtAmt(r.credit) : "-"}</td>
+                <td className="fw-bold">{fmtAmt(r.balance)}</td>
                 <td>
-                  {r.id !== "SALE" && (
+                  {r.id && !isNaN(r.id) && (
                     <button className="btn btn-danger btn-sm" onClick={() => del(r.id)}>
                       Del
                     </button>
