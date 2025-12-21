@@ -3,18 +3,19 @@ import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 
 /* =========================
-   SAFE DATE FORMATTER
+   DATE FORMATTER (SAFE)
 ========================= */
-const fmtDate = (val) => {
-  if (!val) return "-";
-  const d = new Date(val);
-  if (isNaN(d.getTime())) return "-";
-  return d.toLocaleDateString("en-GB");
+const fmtDate = (d) => {
+  if (!d) return "-";
+  const dt = new Date(d);
+  if (isNaN(dt)) return "-";
+  return dt.toLocaleDateString("en-GB");
 };
 
 export default function CustomerLedger({ onNavigate }) {
   const [refNo, setRefNo] = useState("");
   const [rows, setRows] = useState([]);
+  const [customerName, setCustomerName] = useState("");
   const [amount, setAmount] = useState("");
   const [date, setDate] = useState("");
   const [type, setType] = useState("payment");
@@ -33,8 +34,15 @@ export default function CustomerLedger({ onNavigate }) {
     );
     const data = await res.json();
 
-    if (data.success) setRows(data.rows);
-    else alert(data.error);
+    if (!data.success) return alert(data.error);
+
+    setRows(data.rows || []);
+
+    // 🔥 customer name (sale row se)
+    const saleRow = data.rows?.find((r) => r.id === "SALE");
+    if (saleRow?.customer_name) {
+      setCustomerName(saleRow.customer_name);
+    }
   };
 
   /* =========================
@@ -50,8 +58,8 @@ export default function CustomerLedger({ onNavigate }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ref_no: refNo,
-          payment_date: date, // YYYY-MM-DD
-          amount: Number(amount),
+          payment_date: date,
+          amount,
           payment_method: method,
           type,
         }),
@@ -59,28 +67,32 @@ export default function CustomerLedger({ onNavigate }) {
     );
 
     const data = await res.json();
-    if (data.success) {
-      setAmount("");
-      setDate("");
-      loadLedger();
-    } else alert(data.error);
+    if (!data.success) return alert(data.error);
+
+    setAmount("");
+    setDate("");
+    loadLedger();
   };
 
   /* =========================
      DELETE ENTRY
   ========================= */
   const del = async (id) => {
+    if (id === "SALE") return;
+
     const pass = prompt("Enter password");
     if (!pass) return;
 
     const r = await fetch(
       `${import.meta.env.VITE_BACKEND_URL}/api/customer-ledger/delete/${id}`,
       {
-        method: "POST",
+        method: "DELETE",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ password: pass }),
+,
       }
     );
+
     const d = await r.json();
     if (d.success) loadLedger();
     else alert(d.error);
@@ -90,19 +102,28 @@ export default function CustomerLedger({ onNavigate }) {
      EXPORT PDF
   ========================= */
   const exportPDF = async () => {
-    const canvas = await html2canvas(pdfRef.current, { scale: 3 });
-    const img = canvas.toDataURL("image/png");
+    if (!rows.length) return alert("No data to export");
 
-    const pdf = new jsPDF("l", "mm", "a4");
-    pdf.addImage(
-      img,
-      "PNG",
-      0,
-      0,
-      pdf.internal.pageSize.getWidth(),
-      pdf.internal.pageSize.getHeight()
-    );
-    pdf.save(`Ledger-${refNo || "customer"}.pdf`);
+    const canvas = await html2canvas(pdfRef.current, {
+      scale: 2,
+      backgroundColor: "#ffffff",
+    });
+
+    const img = canvas.toDataURL("image/jpeg", 1.0);
+    const pdf = new jsPDF("p", "mm", "a4");
+
+    const w = pdf.internal.pageSize.getWidth();
+    const h = (canvas.height * w) / canvas.width;
+
+    pdf.setFontSize(14);
+    pdf.text("CUSTOMER LEDGER", w / 2, 10, { align: "center" });
+
+    pdf.setFontSize(10);
+    pdf.text(`Ref No: ${refNo}`, 10, 18);
+    if (customerName) pdf.text(`Customer: ${customerName}`, 10, 24);
+
+    pdf.addImage(img, "JPEG", 0, 30, w, h);
+    pdf.save(`Ledger-${refNo}.pdf`);
   };
 
   return (
@@ -115,7 +136,7 @@ export default function CustomerLedger({ onNavigate }) {
         📘 CUSTOMER LEDGER {refNo && `— ${refNo}`}
       </h4>
 
-      {/* TOP BAR */}
+      {/* LOAD */}
       <div className="d-flex gap-2 mt-3">
         <input
           className="form-control"
@@ -146,7 +167,6 @@ export default function CustomerLedger({ onNavigate }) {
           <input
             className="form-control"
             placeholder="Amount"
-            type="number"
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
           />
@@ -176,7 +196,7 @@ export default function CustomerLedger({ onNavigate }) {
       </div>
 
       <button className="btn btn-success mt-2" onClick={saveEntry}>
-        💾 Save Entry
+        Save Entry
       </button>
 
       {/* LEDGER TABLE */}
@@ -203,18 +223,20 @@ export default function CustomerLedger({ onNavigate }) {
 
             {rows.map((r) => (
               <tr key={r.id}>
-                <td>{fmtDate(r.created_at || r.payment_date)}</td>
+                <td>{fmtDate(r.date)}</td>
                 <td>{r.description}</td>
                 <td>{r.debit || "-"}</td>
                 <td>{r.credit || "-"}</td>
-                <td className="fw-bold">{Number(r.balance).toLocaleString()}</td>
+                <td className="fw-bold">{r.balance}</td>
                 <td>
-                  <button
-                    className="btn btn-danger btn-sm"
-                    onClick={() => del(r.id)}
-                  >
-                    Del
-                  </button>
+                  {r.id !== "SALE" && (
+                    <button
+                      className="btn btn-danger btn-sm"
+                      onClick={() => del(r.id)}
+                    >
+                      Del
+                    </button>
+                  )}
                 </td>
               </tr>
             ))}
