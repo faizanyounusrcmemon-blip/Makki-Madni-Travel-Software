@@ -6,34 +6,56 @@ import jsPDF from "jspdf";
    HELPERS
 ========================= */
 
-// Date formatter (SAFE)
-const fmtDate = (val) => {
-  if (!val) return "-";
-  const d = new Date(val);
+// DATE (payment_date > created_at)
+const fmtDate = (row) => {
+  const v = row?.payment_date || row?.created_at;
+  if (!v) return "-";
+  const d = new Date(v);
   if (isNaN(d.getTime())) return "-";
-  return d.toLocaleDateString("en-GB"); // DD/MM/YYYY
+  return d.toLocaleDateString("en-GB");
 };
 
 // 300000 -> 300,000
-const formatAmount = (val) => {
-  if (val === null || val === undefined || val === "") return "";
-  return Number(val).toLocaleString("en-US");
+const formatAmount = (v) => {
+  if (v === null || v === undefined) return "-";
+  return Number(v).toLocaleString("en-US");
 };
 
 // "300,000" -> 300000
-const parseAmount = (val) => {
-  return Number(String(val).replace(/,/g, ""));
+const parseAmount = (v) => Number(String(v).replace(/,/g, ""));
+
+// NUMBER → WORDS (ENGLISH)
+const numberToWords = (num) => {
+  if (!num) return "";
+  const a = [
+    "", "One", "Two", "Three", "Four", "Five", "Six",
+    "Seven", "Eight", "Nine", "Ten", "Eleven", "Twelve",
+    "Thirteen", "Fourteen", "Fifteen", "Sixteen",
+    "Seventeen", "Eighteen", "Nineteen"
+  ];
+  const b = ["", "", "Twenty", "Thirty", "Forty", "Fifty", "Sixty", "Seventy", "Eighty", "Ninety"];
+
+  const inWords = (n) => {
+    if (n < 20) return a[n];
+    if (n < 100) return b[Math.floor(n / 10)] + (n % 10 ? " " + a[n % 10] : "");
+    if (n < 1000)
+      return a[Math.floor(n / 100)] + " Hundred" + (n % 100 ? " " + inWords(n % 100) : "");
+    if (n < 1000000)
+      return inWords(Math.floor(n / 1000)) + " Thousand" + (n % 1000 ? " " + inWords(n % 1000) : "");
+    return "";
+  };
+
+  return inWords(num) + " Only";
 };
 
 export default function CustomerLedger({ onNavigate }) {
   const [refNo, setRefNo] = useState("");
   const [rows, setRows] = useState([]);
 
-  // amount states
-  const [amountRaw, setAmountRaw] = useState("");
+  const [amountRaw, setAmountRaw] = useState(0);
   const [amountDisplay, setAmountDisplay] = useState("");
-
   const [date, setDate] = useState("");
+
   const [type, setType] = useState("payment");
   const [method, setMethod] = useState("Cash");
 
@@ -45,16 +67,13 @@ export default function CustomerLedger({ onNavigate }) {
   const loadLedger = async () => {
     if (!refNo) return alert("Ref No required");
 
-    const res = await fetch(
+    const r = await fetch(
       `${import.meta.env.VITE_BACKEND_URL}/api/customer-ledger/${refNo}`
     );
-    const data = await res.json();
+    const d = await r.json();
 
-    if (data.success) {
-      setRows(data.rows || []);
-    } else {
-      alert(data.error);
-    }
+    if (d.success) setRows(d.rows || []);
+    else alert(d.error);
   };
 
   /* =========================
@@ -63,7 +82,7 @@ export default function CustomerLedger({ onNavigate }) {
   const saveEntry = async () => {
     if (!amountRaw || !date) return alert("Amount & Date required");
 
-    const res = await fetch(
+    const r = await fetch(
       `${import.meta.env.VITE_BACKEND_URL}/api/customer-ledger/payment`,
       {
         method: "POST",
@@ -71,22 +90,20 @@ export default function CustomerLedger({ onNavigate }) {
         body: JSON.stringify({
           ref_no: refNo,
           payment_date: date,
-          amount: amountRaw, // ✅ pure number
+          amount: amountRaw,
           payment_method: method,
           type,
         }),
       }
     );
 
-    const data = await res.json();
-    if (data.success) {
-      setAmountRaw("");
+    const d = await r.json();
+    if (d.success) {
+      setAmountRaw(0);
       setAmountDisplay("");
       setDate("");
       loadLedger();
-    } else {
-      alert(data.error);
-    }
+    } else alert(d.error);
   };
 
   /* =========================
@@ -101,7 +118,7 @@ export default function CustomerLedger({ onNavigate }) {
     const r = await fetch(
       `${import.meta.env.VITE_BACKEND_URL}/api/customer-ledger/delete/${id}`,
       {
-        method: "POST", // backend compatible
+        method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ password: pass }),
       }
@@ -120,56 +137,31 @@ export default function CustomerLedger({ onNavigate }) {
     const img = canvas.toDataURL("image/png");
 
     const pdf = new jsPDF("p", "mm", "a4");
-    pdf.addImage(
-      img,
-      "PNG",
-      10,
-      10,
-      190,
-      (canvas.height * 190) / canvas.width
-    );
-
-    pdf.save(`${refNo || "customer-ledger"}.pdf`);
+    pdf.addImage(img, "PNG", 10, 10, 190, (canvas.height * 190) / canvas.width);
+    pdf.save(`${refNo}-ledger.pdf`);
   };
 
   return (
     <div className="container p-3">
-      <button
-        className="btn btn-secondary btn-sm"
-        onClick={() => onNavigate("dashboard")}
-      >
+      <button className="btn btn-secondary btn-sm" onClick={() => onNavigate("dashboard")}>
         ⬅ Back
       </button>
 
       <h4 className="mt-2 text-info fw-bold">
-        📘 CUSTOMER LEDGER {refNo && `— ${refNo}`}
+        📘 CUSTOMER LEDGER — {refNo}
       </h4>
 
-      {/* TOP BAR */}
+      {/* TOP */}
       <div className="d-flex gap-2 mt-2">
-        <input
-          className="form-control"
-          placeholder="Ref No"
-          value={refNo}
-          onChange={(e) => setRefNo(e.target.value)}
-        />
-        <button className="btn btn-primary" onClick={loadLedger}>
-          Load
-        </button>
-        <button className="btn btn-success" onClick={exportPDF}>
-          📄 Export PDF
-        </button>
+        <input className="form-control" value={refNo} onChange={(e) => setRefNo(e.target.value)} />
+        <button className="btn btn-primary" onClick={loadLedger}>Load</button>
+        <button className="btn btn-success" onClick={exportPDF}>📄 Export PDF</button>
       </div>
 
-      {/* ENTRY FORM */}
+      {/* ENTRY */}
       <div className="row g-2 mt-3">
         <div className="col-md-3">
-          <input
-            type="date"
-            className="form-control"
-            value={date}
-            onChange={(e) => setDate(e.target.value)}
-          />
+          <input type="date" className="form-control" value={date} onChange={(e) => setDate(e.target.value)} />
         </div>
 
         <div className="col-md-3">
@@ -184,25 +176,22 @@ export default function CustomerLedger({ onNavigate }) {
               setAmountDisplay(formatAmount(raw));
             }}
           />
+          {amountRaw > 0 && (
+            <small className="text-success fw-bold">
+              {numberToWords(amountRaw)}
+            </small>
+          )}
         </div>
 
         <div className="col-md-3">
-          <select
-            className="form-control"
-            value={type}
-            onChange={(e) => setType(e.target.value)}
-          >
+          <select className="form-control" value={type} onChange={(e) => setType(e.target.value)}>
             <option value="payment">Payment</option>
             <option value="adjustment">Adjustment</option>
           </select>
         </div>
 
         <div className="col-md-3">
-          <select
-            className="form-control"
-            value={method}
-            onChange={(e) => setMethod(e.target.value)}
-          >
+          <select className="form-control" value={method} onChange={(e) => setMethod(e.target.value)}>
             <option>Cash</option>
             <option>Bank</option>
           </select>
@@ -213,7 +202,7 @@ export default function CustomerLedger({ onNavigate }) {
         💾 Save Entry
       </button>
 
-      {/* LEDGER TABLE */}
+      {/* TABLE */}
       <div ref={pdfRef}>
         <table className="table table-bordered table-sm mt-3">
           <thead className="table-dark">
@@ -223,33 +212,20 @@ export default function CustomerLedger({ onNavigate }) {
               <th>Debit</th>
               <th>Credit</th>
               <th>Balance</th>
-              <th width="60">❌</th>
+              <th>❌</th>
             </tr>
           </thead>
           <tbody>
-            {rows.length === 0 && (
-              <tr>
-                <td colSpan="6" className="text-center text-muted">
-                  No ledger entries
-                </td>
-              </tr>
-            )}
-
             {rows.map((r) => (
               <tr key={r.id}>
-                <td>{fmtDate(r.payment_date || r.created_at)}</td>
+                <td>{fmtDate(r)}</td>
                 <td>{r.description}</td>
                 <td>{r.debit ? formatAmount(r.debit) : "-"}</td>
                 <td>{r.credit ? formatAmount(r.credit) : "-"}</td>
-                <td className="fw-bold">
-                  {formatAmount(r.balance)}
-                </td>
+                <td className="fw-bold">{formatAmount(r.balance)}</td>
                 <td>
                   {r.id !== "SALE" && (
-                    <button
-                      className="btn btn-danger btn-sm"
-                      onClick={() => del(r.id)}
-                    >
+                    <button className="btn btn-danger btn-sm" onClick={() => del(r.id)}>
                       Del
                     </button>
                   )}
