@@ -14,9 +14,7 @@ const fmtDate = (val) => {
 
 export default function CustomerLedger({ onNavigate }) {
   const [refNo, setRefNo] = useState("");
-  const [customerName, setCustomerName] = useState("");
   const [rows, setRows] = useState([]);
-
   const [amount, setAmount] = useState("");
   const [date, setDate] = useState("");
   const [type, setType] = useState("payment");
@@ -37,7 +35,6 @@ export default function CustomerLedger({ onNavigate }) {
 
     if (data.success) {
       setRows(data.rows || []);
-      setCustomerName(data.customer_name || "");
     } else {
       alert(data.error);
     }
@@ -75,16 +72,18 @@ export default function CustomerLedger({ onNavigate }) {
   };
 
   /* =========================
-     DELETE ENTRY
+     DELETE ENTRY (FIXED)
   ========================= */
   const del = async (id) => {
+    if (id === "SALE") return alert("Sale entry delete نہیں ہو سکتی");
+
     const pass = prompt("Enter password");
     if (!pass) return;
 
     const r = await fetch(
       `${import.meta.env.VITE_BACKEND_URL}/api/customer-ledger/delete/${id}`,
       {
-        method: "POST",
+        method: "DELETE", // ✅ FIX
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ password: pass }),
       }
@@ -124,10 +123,6 @@ export default function CustomerLedger({ onNavigate }) {
       <h4 className="mt-2 text-info fw-bold">
         📘 CUSTOMER LEDGER {refNo && `— ${refNo}`}
       </h4>
-
-      {customerName && (
-        <p className="fw-bold text-success">Customer: {customerName}</p>
-      )}
 
       {/* TOP BAR */}
       <div className="d-flex gap-2 mt-2">
@@ -216,18 +211,20 @@ export default function CustomerLedger({ onNavigate }) {
 
             {rows.map((r) => (
               <tr key={r.id}>
-                <td>{fmtDate(r.payment_date || r.created_at)}</td>
+                <td>{fmtDate(r.date)}</td> {/* ✅ FIXED */}
                 <td>{r.description}</td>
                 <td>{r.debit || "-"}</td>
                 <td>{r.credit || "-"}</td>
                 <td className="fw-bold">{r.balance}</td>
                 <td>
-                  <button
-                    className="btn btn-danger btn-sm"
-                    onClick={() => del(r.id)}
-                  >
-                    Del
-                  </button>
+                  {r.id !== "SALE" && (
+                    <button
+                      className="btn btn-danger btn-sm"
+                      onClick={() => del(r.id)}
+                    >
+                      Del
+                    </button>
+                  )}
                 </td>
               </tr>
             ))}
