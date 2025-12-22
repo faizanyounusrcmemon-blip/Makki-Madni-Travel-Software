@@ -5,27 +5,27 @@ export default function Purchase({ onNavigate }) {
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(false);
 
-  // 🔴 NEW: pending sales list
   const [pending, setPending] = useState([]);
+  const [isEdit, setIsEdit] = useState(false); // ✅ EDIT MODE
 
-  // ===============================
-  // LOAD PENDING PURCHASE LIST
-  // ===============================
+  /* ===============================
+     LOAD PENDING PURCHASE LIST
+  =============================== */
   const loadPending = async () => {
     const r = await fetch(
       `${import.meta.env.VITE_BACKEND_URL}/api/purchase/pending`
     );
     const d = await r.json();
-    if (d.success) setPending(d.rows);
+    if (d.success) setPending(d.rows || []);
   };
 
   useEffect(() => {
     loadPending();
   }, []);
 
-  // ===============================
-  // LOAD PACKAGE SALE DATA
-  // ===============================
+  /* ===============================
+     LOAD PACKAGE (SAVE / EDIT)
+  =============================== */
   const loadPackage = async (r = refNo) => {
     if (!r) return alert("Ref No required");
 
@@ -36,7 +36,6 @@ export default function Purchase({ onNavigate }) {
       `${import.meta.env.VITE_BACKEND_URL}/api/purchase/load/${r}`
     );
     const data = await res.json();
-
     setLoading(false);
 
     if (!data.success) {
@@ -45,29 +44,28 @@ export default function Purchase({ onNavigate }) {
       return;
     }
 
+    setIsEdit(data.is_edit === true); // ✅ backend flag
+
     setRows(
-      data.rows.map(r => ({
-        item: r.item,
+      data.rows.map((x) => ({
+        item: x.item,
 
-        // SALE
-        sale_sar: Number(r.sale_sar) || 0,
-        sale_rate: Number(r.sale_rate) || 0,
-        sale_pkr: Number(r.sale_pkr) || 0,
+        sale_sar: Number(x.sale_sar) || 0,
+        sale_rate: Number(x.sale_rate) || 0,
+        sale_pkr: Number(x.sale_pkr) || 0,
 
-        // PURCHASE
-        purchase_sar: "",
-        purchase_rate: "",
-        purchase_pkr: 0,
+        purchase_sar: Number(x.purchase_sar) || "",
+        purchase_rate: Number(x.purchase_rate) || "",
+        purchase_pkr: Number(x.purchase_pkr) || 0,
 
-        // PROFIT
-        profit: 0
+        profit: Number(x.profit) || 0,
       }))
     );
   };
 
-  // ===============================
-  // UPDATE PURCHASE
-  // ===============================
+  /* ===============================
+     UPDATE ROW
+  =============================== */
   const updateRow = (i, field, value) => {
     const copy = [...rows];
     const r = copy[i];
@@ -79,34 +77,36 @@ export default function Purchase({ onNavigate }) {
     setRows(copy);
   };
 
-  // ===============================
-  // SAVE PURCHASE
-  // ===============================
+  /* ===============================
+     SAVE / UPDATE PURCHASE
+  =============================== */
   const savePurchase = async () => {
     if (!rows.length) return alert("No data to save");
 
-    const payload = {
-      ref_no: refNo,
-      items: rows
-    };
+    const url = isEdit
+      ? "/api/purchase/update"
+      : "/api/purchase/save";
 
     const res = await fetch(
-      `${import.meta.env.VITE_BACKEND_URL}/api/purchase/save`,
+      `${import.meta.env.VITE_BACKEND_URL}${url}`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
+        body: JSON.stringify({
+          ref_no: refNo,
+          items: rows,
+        }),
       }
     );
 
     const data = await res.json();
 
     if (data.success) {
-      alert("Purchase Saved Successfully");
+      alert(isEdit ? "Purchase Updated" : "Purchase Saved");
 
-      // 🔥 refresh pending list
       setRows([]);
       setRefNo("");
+      setIsEdit(false);
       loadPending();
 
       onNavigate("dashboard");
@@ -115,12 +115,11 @@ export default function Purchase({ onNavigate }) {
     }
   };
 
-  // ===============================
-  // UI
-  // ===============================
+  /* ===============================
+     UI
+  =============================== */
   return (
     <div className="container p-3">
-      {/* TOP BAR */}
       <div className="d-flex justify-content-between mb-3">
         <button
           className="btn btn-secondary btn-sm"
@@ -130,28 +129,24 @@ export default function Purchase({ onNavigate }) {
         </button>
 
         <button className="btn btn-success btn-sm" onClick={savePurchase}>
-          💾 Save Purchase
+          {isEdit ? "✏️ Update Purchase" : "💾 Save Purchase"}
         </button>
       </div>
 
-      <h4>PURCHASE ENTRY</h4>
+      <h4>PURCHASE ENTRY {isEdit && "(EDIT MODE)"}</h4>
 
-      {/* 🔴 PENDING LIST */}
+      {/* 🔴 PENDING */}
       <div className="mb-3">
-        <h6 className="fw-bold text-danger">
-          ⏳ Pending Purchases (Sale done, purchase not added)
-        </h6>
+        <h6 className="fw-bold text-danger">⏳ Pending Purchases</h6>
 
         {pending.length === 0 ? (
           <p className="text-success">✅ No pending purchases</p>
         ) : (
           <ul className="list-group">
             {pending.map((p, i) => (
-              <li
-                key={i}
-                className="list-group-item d-flex justify-content-between align-items-center"
-              >
-                <span className="fw-bold">{p.ref_no}</span>
+              <li key={i}
+                className="list-group-item d-flex justify-content-between">
+                <b>{p.ref_no}</b>
                 <button
                   className="btn btn-sm btn-outline-primary"
                   onClick={() => loadPackage(p.ref_no)}
@@ -183,19 +178,18 @@ export default function Purchase({ onNavigate }) {
 
       {/* TABLE */}
       <table className="table table-bordered table-sm">
-        <thead className="table-light">
+        <thead>
           <tr>
             <th>Item</th>
-            <th>SALE SAR</th>
-            <th>RATE</th>
-            <th>SALE PKR</th>
-            <th>PURCHASE SAR</th>
-            <th>PURCHASE RATE</th>
-            <th>PURCHASE PKR</th>
-            <th>PROFIT</th>
+            <th>Sale SAR</th>
+            <th>Rate</th>
+            <th>Sale PKR</th>
+            <th>Purchase SAR</th>
+            <th>Purchase Rate</th>
+            <th>Purchase PKR</th>
+            <th>Profit</th>
           </tr>
         </thead>
-
         <tbody>
           {rows.length === 0 && (
             <tr>
@@ -236,13 +230,7 @@ export default function Purchase({ onNavigate }) {
 
               <td>{r.purchase_pkr.toLocaleString()}</td>
 
-              <td
-                className={
-                  r.profit >= 0
-                    ? "text-success fw-bold"
-                    : "text-danger fw-bold"
-                }
-              >
+              <td className={r.profit >= 0 ? "text-success fw-bold" : "text-danger fw-bold"}>
                 {r.profit.toLocaleString()}
               </td>
             </tr>

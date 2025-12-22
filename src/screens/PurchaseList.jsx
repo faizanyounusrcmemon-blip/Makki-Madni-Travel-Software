@@ -11,9 +11,9 @@ export default function PurchaseList({ onNavigate }) {
     loadList();
   }, []);
 
-  // ===============================
-  // LOAD LIST (FILTER + SEARCH)
-  // ===============================
+  /* ===============================
+     LOAD LIST (FILTER + SEARCH)
+  =============================== */
   const loadList = async () => {
     setLoading(true);
 
@@ -33,23 +33,23 @@ export default function PurchaseList({ onNavigate }) {
       } else {
         alert(data.error || "Failed to load list");
       }
-    } catch (err) {
+    } catch {
       alert("Server error");
     }
 
     setLoading(false);
   };
 
-  // ===============================
-  // DELETE PURCHASE (SOFT)
-  // ===============================
+  /* ===============================
+     DELETE PURCHASE
+  =============================== */
   const deletePurchase = async (refNo) => {
     if (!window.confirm(`Delete purchase ${refNo}?`)) return;
 
     try {
       const res = await fetch(
         `${import.meta.env.VITE_BACKEND_URL}/api/purchase/delete/${refNo}`,
-        { method: "DELETE" }   // ✅ FIXED
+        { method: "DELETE" }
       );
       const data = await res.json();
 
@@ -59,7 +59,7 @@ export default function PurchaseList({ onNavigate }) {
       } else {
         alert(data.error || "Delete failed");
       }
-    } catch (err) {
+    } catch {
       alert("Server error");
     }
   };
@@ -125,7 +125,7 @@ export default function PurchaseList({ onNavigate }) {
             <th>Purchase PKR</th>
             <th>Profit</th>
             <th>Date</th>
-            <th width="90">Action</th>
+            <th width="130">Action</th>
           </tr>
         </thead>
 
@@ -149,12 +149,9 @@ export default function PurchaseList({ onNavigate }) {
           {!loading &&
             rows.map((r, i) => (
               <tr key={i}>
-                <td>{r.ref_no}</td>
-
+                <td className="fw-bold">{r.ref_no}</td>
                 <td>{Number(r.sale_pkr).toLocaleString()}</td>
-
                 <td>{Number(r.purchase_pkr).toLocaleString()}</td>
-
                 <td
                   className={
                     Number(r.profit) >= 0
@@ -164,14 +161,22 @@ export default function PurchaseList({ onNavigate }) {
                 >
                   {Number(r.profit).toLocaleString()}
                 </td>
-
                 <td>
                   {r.created_at
-                    ? new Date(r.created_at).toLocaleDateString()
+                    ? new Date(r.created_at).toLocaleDateString("en-GB")
                     : ""}
                 </td>
 
-                <td>
+                <td className="d-flex gap-1">
+                  <button
+                    className="btn btn-info btn-sm"
+                    onClick={() =>
+                      onNavigate("purchase_detail", r.ref_no)
+                    }
+                  >
+                    Detail
+                  </button>
+
                   <button
                     className="btn btn-danger btn-sm"
                     onClick={() => deletePurchase(r.ref_no)}
