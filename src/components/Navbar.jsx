@@ -3,20 +3,22 @@ import React, { useState } from "react";
 export default function Navbar({ onNavigate }) {
   const [open, setOpen] = useState(null);
 
-  const user = JSON.parse(localStorage.getItem("user"));
+  // ✅ FIX: sessionStorage se user read
+  const user = JSON.parse(sessionStorage.getItem("user"));
 
   const go = (page) => {
     setOpen(null);
     onNavigate(page);
   };
 
+  // ✅ FIXED LOGOUT
   const logout = () => {
     if (!window.confirm("Logout karna hai?")) return;
 
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
+    // ✅ SAME storage clear jo login me use ho rahi hai
+    sessionStorage.removeItem("user");
 
-    window.location.reload(); // 🔑 safest
+    window.location.reload(); // redirect to login
   };
 
   return (
