@@ -15,6 +15,8 @@ import Visa from "./screens/Visa";
 // PURCHASE
 import Purchase from "./screens/Purchase";
 import PurchaseList from "./screens/PurchaseList";
+import PurchaseDetail from "./screens/PurchaseDetail";
+
 
 // LEDGERS
 import CustomerLedger from "./screens/CustomerLedger";
@@ -101,6 +103,11 @@ export default function App() {
 
       {page === "visa_view" && (
         <VisaView id={detail} onNavigate={navigate} />
+      )}
+
+        {/* PURCHASE DETAIL */}
+      {page === "purchase_detail" && (
+        <PurchaseDetail refNo={detail} onNavigate={navigate} />
       )}
 
       {page === "transport_view" && (
