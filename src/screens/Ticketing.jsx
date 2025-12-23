@@ -5,9 +5,9 @@ import jsPDF from "jspdf";
 export default function Ticketing({ onNavigate }) {
 
   // =========================
-  // EDIT SYSTEM STATES (NEW)
+  // EDIT SYSTEM STATES
   // =========================
-  const [searchRef, setSearchRef] = useState(""); // 🔍 search box
+  const [searchRef, setSearchRef] = useState("");
 
   // =========================
   // BASIC INFO
@@ -17,11 +17,11 @@ export default function Ticketing({ onNavigate }) {
   const [bookingDate, setBookingDate] = useState("");
 
   // =========================
-  // FLIGHT ROWS
+  // FLIGHT ROWS (WITH AIRLINE)
   // =========================
   const [flights, setFlights] = useState([
-    { from: "", to: "", date: "" },
-    { from: "", to: "", date: "" },
+    { from: "", to: "", date: "", airline: "" },
+    { from: "", to: "", date: "", airline: "" },
   ]);
 
   // =========================
@@ -50,7 +50,7 @@ export default function Ticketing({ onNavigate }) {
   const pdfRef = useRef(null);
 
   // =========================
-  // LOAD (EDIT MODE) ✅
+  // LOAD (EDIT MODE)
   // =========================
   const loadTicketing = async () => {
     if (!searchRef) return alert("Search Ref No likho");
@@ -64,17 +64,17 @@ export default function Ticketing({ onNavigate }) {
 
     const d = data.row;
 
-    // 🔥 MOST IMPORTANT LINE
     setRefNo(d.ref_no);
-
     setCustomerName(d.customer_name);
     setBookingDate(d.booking_date);
 
+    // 🔥 LOAD FLIGHTS + AIRLINE
     setFlights(
       d.flight_from.map((_, i) => ({
         from: d.flight_from[i],
         to: d.flight_to[i],
         date: d.flight_date[i],
+        airline: d.airline?.[i] || "",
       }))
     );
 
@@ -94,16 +94,20 @@ export default function Ticketing({ onNavigate }) {
   // =========================
   const saveData = async () => {
     const payload = {
-      ref_no: refNo || null,   // 🔥 EDIT FIX
+      ref_no: refNo || null,
       customer_name: customerName,
       booking_date: bookingDate,
+
+      // 🔥 AIRLINE INCLUDED
       flights,
+
       adultQty,
       adultRate,
       childQty,
       childRate,
       infantQty,
       infantRate,
+
       total_sar: totalSAR,
       pkr_rate: ticketRate,
       total_pkr: totalPKR,
@@ -150,7 +154,7 @@ export default function Ticketing({ onNavigate }) {
       pdf.internal.pageSize.getHeight()
     );
 
-    pdf.save("ticketing.pdf");
+    pdf.save(`${refNo || "ticketing"}.pdf`);
   };
 
   // =========================
@@ -239,13 +243,15 @@ export default function Ticketing({ onNavigate }) {
               <th>From</th>
               <th>To</th>
               <th>Date</th>
+              <th>Airline</th>
             </tr>
           </thead>
           <tbody>
             {flights.map((f, i) => (
               <tr key={i}>
                 <td>
-                  <input className="form-control form-control-sm"
+                  <input
+                    className="form-control form-control-sm"
                     value={f.from}
                     onChange={(e) => {
                       const u = [...flights];
@@ -256,7 +262,8 @@ export default function Ticketing({ onNavigate }) {
                 </td>
 
                 <td>
-                  <input className="form-control form-control-sm"
+                  <input
+                    className="form-control form-control-sm"
                     value={f.to}
                     onChange={(e) => {
                       const u = [...flights];
@@ -267,11 +274,26 @@ export default function Ticketing({ onNavigate }) {
                 </td>
 
                 <td>
-                  <input type="date" className="form-control form-control-sm"
+                  <input
+                    type="date"
+                    className="form-control form-control-sm"
                     value={f.date}
                     onChange={(e) => {
                       const u = [...flights];
                       u[i].date = e.target.value;
+                      setFlights(u);
+                    }}
+                  />
+                </td>
+
+                <td>
+                  <input
+                    className="form-control form-control-sm"
+                    placeholder="PIA / SAUDIA"
+                    value={f.airline}
+                    onChange={(e) => {
+                      const u = [...flights];
+                      u[i].airline = e.target.value;
                       setFlights(u);
                     }}
                   />
@@ -331,7 +353,9 @@ export default function Ticketing({ onNavigate }) {
               <td className="fw-bold">{totalSAR}</td>
               <td>Rate</td>
               <td>
-                <input type="number" className="form-control form-control-sm"
+                <input
+                  type="number"
+                  className="form-control form-control-sm"
                   value={ticketRate}
                   onChange={(e) => setTicketRate(+e.target.value)}
                 />
