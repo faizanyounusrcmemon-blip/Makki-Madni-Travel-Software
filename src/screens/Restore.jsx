@@ -3,7 +3,7 @@ import React, { useEffect, useState } from "react";
 export default function Restore({ onNavigate }) {
   const [files, setFiles] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [table, setTable] = useState("");
+  const [tableMap, setTableMap] = useState({});
 
   const TABLES = [
     "bookings",
@@ -18,39 +18,34 @@ export default function Restore({ onNavigate }) {
     "purchase_payments",
   ];
 
-  const formatDate = (d) => {
-    if (!d) return "-";
-    return new Date(d).toLocaleString("en-GB", {
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  };
+  const formatDate = (d) =>
+    d
+      ? new Date(d).toLocaleString("en-GB", {
+          day: "2-digit",
+          month: "short",
+          year: "numeric",
+          hour: "2-digit",
+          minute: "2-digit",
+        })
+      : "-";
 
-  // =========================
-  // LOAD BACKUPS
-  // =========================
   const loadBackups = async () => {
     const res = await fetch(
       `${import.meta.env.VITE_BACKEND_URL}/api/backup/list`
     );
     const data = await res.json();
-    if (data.success) setFiles(data.files);
+    if (data.success) setFiles(data.files || []);
   };
 
   useEffect(() => {
     loadBackups();
   }, []);
 
-  // =========================
-  // RESTORE
-  // =========================
   const restore = async (file, mode) => {
     const password = prompt("Restore Password");
     if (!password) return;
 
+    const table = tableMap[file] || "";
     if (mode === "table" && !table)
       return alert("❌ Please select table first");
 
@@ -66,11 +61,7 @@ export default function Restore({ onNavigate }) {
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          file,
-          table,
-          password,
-        }),
+        body: JSON.stringify({ file, table, password }),
       }
     );
 
@@ -80,40 +71,8 @@ export default function Restore({ onNavigate }) {
     alert(
       data.success
         ? "✅ Restore Completed Successfully"
-        : "❌ Restore Failed"
+        : "❌ Restore Failed: " + data.error
     );
-  };
-
-  // =========================
-  // DOWNLOAD
-  // =========================
-  const downloadBackup = (file) => {
-    window.open(
-      `${import.meta.env.VITE_BACKEND_URL}/api/backup/download/${file}`,
-      "_blank"
-    );
-  };
-
-  // =========================
-  // DELETE
-  // =========================
-  const deleteBackup = async (file) => {
-    const password = prompt("Delete Password");
-    if (!password) return;
-
-    setLoading(true);
-
-    const res = await fetch(
-      `${import.meta.env.VITE_BACKEND_URL}/api/backup/delete/${file}`,
-      { method: "DELETE" }
-    );
-
-    setLoading(false);
-
-    const data = await res.json();
-    if (!data.success) alert("❌ Delete failed");
-
-    loadBackups();
   };
 
   return (
@@ -145,8 +104,8 @@ export default function Restore({ onNavigate }) {
         </thead>
 
         <tbody>
-          {files.map((f, i) => (
-            <tr key={i}>
+          {files.map((f) => (
+            <tr key={f.name}>
               <td className="fw-bold">{f.name}</td>
               <td>{formatDate(f.created_at)}</td>
 
@@ -160,8 +119,13 @@ export default function Restore({ onNavigate }) {
 
                 <select
                   className="form-select form-select-sm d-inline w-auto me-1"
-                  value={table}
-                  onChange={(e) => setTable(e.target.value)}
+                  value={tableMap[f.name] || ""}
+                  onChange={(e) =>
+                    setTableMap({
+                      ...tableMap,
+                      [f.name]: e.target.value,
+                    })
+                  }
                 >
                   <option value="">Table</option>
                   {TABLES.map((t) => (
@@ -179,23 +143,8 @@ export default function Restore({ onNavigate }) {
                 </button>
               </td>
 
-              <td className="text-center">
-                <button
-                  className="btn btn-outline-secondary btn-sm"
-                  onClick={() => downloadBackup(f.name)}
-                >
-                  ⬇️
-                </button>
-              </td>
-
-              <td className="text-center">
-                <button
-                  className="btn btn-danger btn-sm"
-                  onClick={() => deleteBackup(f.name)}
-                >
-                  ❌
-                </button>
-              </td>
+              <td className="text-center">⬇️</td>
+              <td className="text-center">❌</td>
             </tr>
           ))}
 

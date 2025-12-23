@@ -2,18 +2,19 @@ import React, { useEffect, useState } from "react";
 import "./dashboard.css";
 
 export default function Dashboard({ onNavigate }) {
-  const [lastBackup, setLastBackup] = useState("");
+  const [lastBackup, setLastBackup] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  // ===========================
-  // LOAD LAST BACKUP INFO
-  // ===========================
+  /* =========================
+     LOAD LAST BACKUP INFO
+  ========================= */
   const loadLastBackup = async () => {
     try {
       const res = await fetch(
         `${import.meta.env.VITE_BACKEND_URL}/api/backup/last`
       );
       const data = await res.json();
+
       if (data.success) {
         setLastBackup(data.last_backup);
       }
@@ -26,11 +27,11 @@ export default function Dashboard({ onNavigate }) {
     loadLastBackup();
   }, []);
 
-  // ===========================
-  // MANUAL BACKUP (PASSWORD)
-  // ===========================
+  /* =========================
+     MANUAL BACKUP
+  ========================= */
   const runBackup = async () => {
-    const pass = prompt("Enter Backup Password:");
+    const pass = prompt("Enter Backup Password");
     if (pass !== "8515") {
       alert("❌ Wrong Password");
       return;
@@ -54,7 +55,7 @@ export default function Dashboard({ onNavigate }) {
         alert("✅ Backup Completed Successfully");
         loadLastBackup();
       } else {
-        alert("❌ Backup Failed: " + (data.error || ""));
+        alert("❌ Backup Failed");
       }
     } catch (err) {
       alert("❌ Server Error while running backup");
@@ -62,6 +63,17 @@ export default function Dashboard({ onNavigate }) {
 
     setLoading(false);
   };
+
+  const formatDate = (d) =>
+    d
+      ? new Date(d).toLocaleString("en-GB", {
+          day: "2-digit",
+          month: "short",
+          year: "numeric",
+          hour: "2-digit",
+          minute: "2-digit",
+        })
+      : "-";
 
   return (
     <div className="dashboard-container">
@@ -82,14 +94,13 @@ export default function Dashboard({ onNavigate }) {
             onClick={runBackup}
             disabled={loading}
             style={{
-              background: "linear-gradient(135deg, #ff9800, #ff5722)",
+              background: "linear-gradient(135deg,#ff9800,#ff5722)",
               border: "none",
               padding: "8px 16px",
               borderRadius: "20px",
               color: "white",
               fontWeight: "bold",
               cursor: "pointer",
-              boxShadow: "0 4px 10px rgba(0,0,0,0.3)",
             }}
           >
             {loading ? "⏳ Backup Running..." : "💾 Backup Now"}
@@ -106,7 +117,13 @@ export default function Dashboard({ onNavigate }) {
           >
             🕙 Last Backup:
             <br />
-            <b>{lastBackup || "Not yet"}</b>
+            <b>
+              {lastBackup
+                ? `${lastBackup.name} (${formatDate(
+                    lastBackup.created_at
+                  )})`
+                : "Not yet"}
+            </b>
           </div>
         </div>
       </div>
