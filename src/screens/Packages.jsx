@@ -29,6 +29,7 @@ export default function Packages({ onNavigate }) {
   // CUSTOMER
   const [customerName, setCustomerName] = useState("");
   const [bookingDate, setBookingDate] = useState("");
+  const [contactNo, setContactNo] = useState("");
   const [searchRef, setSearchRef] = useState("");
 
   // ============================
@@ -50,8 +51,8 @@ export default function Packages({ onNavigate }) {
   // FLIGHT DETAILS
   // ============================
   const [flights, setFlights] = useState([
-    { date: "", from: "", to: "" },
-    { date: "", from: "", to: "" },
+    { date: "", from: "", to: "", airline: "" },
+    { date: "", from: "", to: "", airline: "" },
   ]);
 
   // ============================
@@ -137,6 +138,22 @@ export default function Packages({ onNavigate }) {
 
   const quoteRef = useRef(null);
 
+// =========================
+// PDF FILE NAME HELPERS
+// =========================
+  const cleanName = (name) =>
+    name ? name.replace(/[^a-zA-Z0-9]/g, "_") : "Customer";
+
+  const formatDateForFile = (date) => {
+    if (!date) return "NoDate";
+    const d = new Date(date);
+    const day = String(d.getDate()).padStart(2, "0");
+    const mon = d.toLocaleString("en-US", { month: "short" }).toUpperCase();
+    const year = d.getFullYear();
+    return `${day}-${mon}-${year}`;
+  };
+
+
   // ============================
   // PDF
   // ============================
@@ -181,7 +198,9 @@ export default function Packages({ onNavigate }) {
       heightLeft -= h;
     }
 
-    pdf.save(`${refNo || "quotation"}.pdf`);
+    const fileName = `${cleanName(customerName)}_${formatDateForFile(bookingDate)}.pdf`;
+    pdf.save(fileName);
+
 
     quoteRef.current.classList.remove("pdf-mode");
   };
@@ -205,6 +224,7 @@ export default function Packages({ onNavigate }) {
 
   // BASIC
      setCustomerName(d.customer_name);
+     setContactNo(d.contact_no);
      setBookingDate(d.booking_date);
 
   // FLIGHT PERSONS
@@ -247,6 +267,7 @@ export default function Packages({ onNavigate }) {
     const payload = {
       ref_no: refNo || null,
       customer_name: customerName,
+      contact_no: contactNo,
       booking_date: bookingDate,
 
       // ✅ FLIGHT PERSONS (FIX)
@@ -388,6 +409,17 @@ export default function Packages({ onNavigate }) {
           </div>
 
           <div>
+            <label>Contact No</label>
+            <input
+              type="text"
+              className="form-control form-control-sm"
+              placeholder="03XXXXXXXXX"
+              value={contactNo}
+              onChange={(e) => setContactNo(e.target.value)}
+            />
+          </div>
+
+          <div>
             <label>Booking Date</label>
             <input
               type="date"
@@ -455,6 +487,19 @@ export default function Packages({ onNavigate }) {
                         setFlights(updated);
                       }}
                     />
+
+                   <input
+                     type="text"
+                     placeholder="Airline"
+                     className="form-control form-control-sm"
+                     style={{ width: "140px" }}
+                     value={f.airline}
+                     onChange={(e) => {
+                       const updated = [...flights];
+                       updated[idx].airline = e.target.value;
+                       setFlights(updated);
+                     }}
+                   />
                   </div>
                 ))}
               </td>

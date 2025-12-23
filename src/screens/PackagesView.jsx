@@ -2,6 +2,7 @@ import React, { useEffect, useState, useRef } from "react";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 
+/* ================= DATE FORMAT ================= */
 const fmtDate = (d) =>
   d
     ? new Date(d).toLocaleDateString("en-GB", {
@@ -11,10 +12,24 @@ const fmtDate = (d) =>
       })
     : "";
 
+/* ================= FILE NAME HELPERS ================= */
+const cleanName = (name) =>
+  name ? name.replace(/[^a-zA-Z0-9]/g, "_") : "Customer";
+
+const formatDateForFile = (date) => {
+  if (!date) return "NoDate";
+  const d = new Date(date);
+  const day = String(d.getDate()).padStart(2, "0");
+  const mon = d.toLocaleString("en-US", { month: "short" }).toUpperCase();
+  const year = d.getFullYear();
+  return `${day}-${mon}-${year}`;
+};
+
 export default function PackagesView({ id, onNavigate }) {
   const [data, setData] = useState(null);
   const ref = useRef(null);
 
+  /* ================= LOAD DATA ================= */
   useEffect(() => {
     if (!id) return;
 
@@ -26,6 +41,7 @@ export default function PackagesView({ id, onNavigate }) {
       });
   }, [id]);
 
+  /* ================= EXPORT PDF ================= */
   const exportPDF = async () => {
     const canvas = await html2canvas(ref.current, { scale: 2 });
     const img = canvas.toDataURL("image/jpeg");
@@ -35,7 +51,12 @@ export default function PackagesView({ id, onNavigate }) {
     const h = pdf.internal.pageSize.getHeight();
 
     pdf.addImage(img, "JPEG", 0, 0, w, h);
-    pdf.save(`${data?.ref_no || "package"}.pdf`);
+
+    const fileName = `${cleanName(data?.customer_name)}_${formatDateForFile(
+      data?.booking_date
+    )}.pdf`;
+
+    pdf.save(fileName);
   };
 
   if (!data) return <div className="p-4">Loading...</div>;
@@ -60,13 +81,27 @@ export default function PackagesView({ id, onNavigate }) {
         <h3 className="fw-bold text-center">MAKKI MADNI TRAVEL</h3>
         <h4 className="fw-bold mb-2">PACKAGE — {data.ref_no}</h4>
 
+        {/* ================= CUSTOMER ================= */}
         <p><b>Customer:</b> {data.customer_name}</p>
+        <p><b>Contact No:</b> {data.contact_no || "-"}</p>
         <p><b>Booking Date:</b> {fmtDate(data.booking_date)}</p>
 
         <hr />
 
         {/* ================= FLIGHT ================= */}
         <h5 className="fw-bold">✈️ Flight</h5>
+
+        {Array.isArray(data.flights) && data.flights.length > 0 && (
+          <div className="mb-2">
+            {data.flights.map((f, i) => (
+              <div key={i}>
+                {fmtDate(f.date)} — {f.from} → {f.to}{" "}
+                {f.airline && <b>({f.airline})</b>}
+              </div>
+            ))}
+          </div>
+        )}
+
         <p>
           Adults: {data.adult_count} × {data.adult_rate}<br />
           Child: {data.child_count} × {data.child_rate}<br />
