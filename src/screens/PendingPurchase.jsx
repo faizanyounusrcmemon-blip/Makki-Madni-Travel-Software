@@ -12,7 +12,7 @@ export default function PendingPurchase({ onNavigate }) {
       `${import.meta.env.VITE_BACKEND_URL}/api/purchase/pending`
     );
     const d = await r.json();
-    if (d.success) setRows(d.rows);
+    if (d.success) setRows(d.rows || []);
   };
 
   return (
@@ -24,15 +24,16 @@ export default function PendingPurchase({ onNavigate }) {
         ⬅ Back
       </button>
 
-      <h4 className="fw-bold text-danger">
-        ⏳ Pending Purchases (Sale Done, Purchase Missing)
+      <h4 className="fw-bold text-warning">
+        ⚠️ Pending / Partial Purchases
       </h4>
 
       <table className="table table-bordered table-sm mt-3">
-        <thead className="table-light">
+        <thead className="table-dark">
           <tr>
             <th>Ref No</th>
-            <th>Type</th>
+            <th>Status</th>
+            <th>Note</th>
             <th>Date</th>
             <th>Action</th>
           </tr>
@@ -41,8 +42,8 @@ export default function PendingPurchase({ onNavigate }) {
         <tbody>
           {rows.length === 0 && (
             <tr>
-              <td colSpan="4" className="text-center text-success">
-                🎉 No pending purchases
+              <td colSpan="5" className="text-center text-success">
+                🎉 All purchases completed
               </td>
             </tr>
           )}
@@ -50,14 +51,28 @@ export default function PendingPurchase({ onNavigate }) {
           {rows.map((r, i) => (
             <tr key={i}>
               <td className="fw-bold">{r.ref_no}</td>
-              <td>{r.type}</td>
+
+              <td>
+                {r.status === "PENDING" && (
+                  <span className="badge bg-danger">Pending</span>
+                )}
+                {r.status === "PARTIAL" && (
+                  <span className="badge bg-warning text-dark">
+                    Partial
+                  </span>
+                )}
+              </td>
+
+              <td>{r.note}</td>
+
               <td>{new Date(r.created_at).toLocaleDateString()}</td>
+
               <td>
                 <button
                   className="btn btn-primary btn-sm"
                   onClick={() => onNavigate("purchase", r.ref_no)}
                 >
-                  ➕ Add Purchase
+                  ➕ Complete Purchase
                 </button>
               </td>
             </tr>

@@ -6,10 +6,10 @@ export default function Purchase({ onNavigate }) {
   const [loading, setLoading] = useState(false);
 
   const [pending, setPending] = useState([]);
-  const [isEdit, setIsEdit] = useState(false); // ✅ EDIT MODE
+  const [isEdit, setIsEdit] = useState(false);
 
   /* ===============================
-     LOAD PENDING PURCHASE LIST
+     LOAD PENDING + PARTIAL LIST
   =============================== */
   const loadPending = async () => {
     const r = await fetch(
@@ -44,7 +44,7 @@ export default function Purchase({ onNavigate }) {
       return;
     }
 
-    setIsEdit(data.is_edit === true); // ✅ backend flag
+    setIsEdit(data.is_edit === true);
 
     setRows(
       data.rows.map((x) => ({
@@ -54,8 +54,8 @@ export default function Purchase({ onNavigate }) {
         sale_rate: Number(x.sale_rate) || 0,
         sale_pkr: Number(x.sale_pkr) || 0,
 
-        purchase_sar: Number(x.purchase_sar) || "",
-        purchase_rate: Number(x.purchase_rate) || "",
+        purchase_sar: x.purchase_sar ? Number(x.purchase_sar) : "",
+        purchase_rate: x.purchase_rate ? Number(x.purchase_rate) : "",
         purchase_pkr: Number(x.purchase_pkr) || 0,
 
         profit: Number(x.profit) || 0,
@@ -116,10 +116,21 @@ export default function Purchase({ onNavigate }) {
   };
 
   /* ===============================
+     PARTIAL CHECK
+  =============================== */
+  const isPartial =
+    rows.length > 0 &&
+    rows.some(
+      (r) => !r.purchase_sar || !r.purchase_rate
+    );
+
+  /* ===============================
      UI
   =============================== */
   return (
     <div className="container p-3">
+
+      {/* TOP BAR */}
       <div className="d-flex justify-content-between mb-3">
         <button
           className="btn btn-secondary btn-sm"
@@ -133,20 +144,46 @@ export default function Purchase({ onNavigate }) {
         </button>
       </div>
 
-      <h4>PURCHASE ENTRY {isEdit && "(EDIT MODE)"}</h4>
+      <h4 className="fw-bold">
+        PURCHASE ENTRY {isEdit && <span className="text-warning">(EDIT MODE)</span>}
+      </h4>
 
-      {/* 🔴 PENDING */}
+      {/* ⚠️ PARTIAL WARNING */}
+      {isPartial && (
+        <div className="alert alert-warning fw-bold mt-2">
+          ⚠️ This purchase is <u>PARTIALLY COMPLETED</u>.
+          Some items are missing purchase values.
+        </div>
+      )}
+
+      {/* 🔴 PENDING + 🟡 PARTIAL LIST */}
       <div className="mb-3">
-        <h6 className="fw-bold text-danger">⏳ Pending Purchases</h6>
+        <h6 className="fw-bold text-danger">⏳ Pending / Partial Purchases</h6>
 
         {pending.length === 0 ? (
           <p className="text-success">✅ No pending purchases</p>
         ) : (
           <ul className="list-group">
             {pending.map((p, i) => (
-              <li key={i}
-                className="list-group-item d-flex justify-content-between">
-                <b>{p.ref_no}</b>
+              <li
+                key={i}
+                className="list-group-item d-flex justify-content-between align-items-center"
+              >
+                <div>
+                  <b>{p.ref_no}</b>{" "}
+                  {p.status === "PENDING" && (
+                    <span className="badge bg-danger ms-2">Pending</span>
+                  )}
+                  {p.status === "PARTIAL" && (
+                    <span className="badge bg-warning text-dark ms-2">
+                      Partial
+                    </span>
+                  )}
+                  <div className="small text-muted">
+                    {p.note}
+                  </div>
+                </div>
+
                 <button
                   className="btn btn-sm btn-outline-primary"
                   onClick={() => loadPackage(p.ref_no)}
@@ -178,7 +215,7 @@ export default function Purchase({ onNavigate }) {
 
       {/* TABLE */}
       <table className="table table-bordered table-sm">
-        <thead>
+        <thead className="table-dark">
           <tr>
             <th>Item</th>
             <th>Sale SAR</th>
@@ -190,6 +227,7 @@ export default function Purchase({ onNavigate }) {
             <th>Profit</th>
           </tr>
         </thead>
+
         <tbody>
           {rows.length === 0 && (
             <tr>
@@ -230,7 +268,13 @@ export default function Purchase({ onNavigate }) {
 
               <td>{r.purchase_pkr.toLocaleString()}</td>
 
-              <td className={r.profit >= 0 ? "text-success fw-bold" : "text-danger fw-bold"}>
+              <td
+                className={
+                  r.profit >= 0
+                    ? "text-success fw-bold"
+                    : "text-danger fw-bold"
+                }
+              >
                 {r.profit.toLocaleString()}
               </td>
             </tr>
