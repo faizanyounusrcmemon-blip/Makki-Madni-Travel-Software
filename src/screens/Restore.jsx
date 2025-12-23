@@ -3,6 +3,7 @@ import React, { useEffect, useState } from "react";
 export default function Restore({ onNavigate }) {
   const [files, setFiles] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [progress, setProgress] = useState(0);
   const [tableMap, setTableMap] = useState({});
 
   const TABLES = [
@@ -18,61 +19,124 @@ export default function Restore({ onNavigate }) {
     "purchase_payments",
   ];
 
-  const formatDate = (d) =>
-    d
-      ? new Date(d).toLocaleString("en-GB", {
-          day: "2-digit",
-          month: "short",
-          year: "numeric",
-          hour: "2-digit",
-          minute: "2-digit",
-        })
-      : "-";
-
+  /* ================= LOAD BACKUPS ================= */
   const loadBackups = async () => {
-    const res = await fetch(
-      `${import.meta.env.VITE_BACKEND_URL}/api/backup/list`
-    );
-    const data = await res.json();
-    if (data.success) setFiles(data.files || []);
+    try {
+      const res = await fetch(
+        `${import.meta.env.VITE_BACKEND_URL}/api/backup/list`
+      );
+      const data = await res.json();
+      if (data.success) setFiles(data.files || []);
+    } catch {
+      alert("❌ Backup list load failed");
+    }
   };
 
   useEffect(() => {
     loadBackups();
   }, []);
 
+  /* ================= RESTORE ================= */
   const restore = async (file, mode) => {
     const password = prompt("Restore Password");
     if (!password) return;
 
-    const table = tableMap[file] || "";
-    if (mode === "table" && !table)
+    if (mode === "table" && !tableMap[file]) {
       return alert("❌ Please select table first");
+    }
 
     setLoading(true);
+    setProgress(20);
 
     const url =
       mode === "full"
         ? "/api/backup/restore/full"
         : "/api/backup/restore/table";
 
-    const res = await fetch(
-      `${import.meta.env.VITE_BACKEND_URL}${url}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ file, table, password }),
+    try {
+      const res = await fetch(
+        `${import.meta.env.VITE_BACKEND_URL}${url}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            file,
+            table: tableMap[file],
+            password,
+          }),
+        }
+      );
+
+      setProgress(70);
+      const data = await res.json();
+      setProgress(100);
+      setLoading(false);
+
+      if (data.success) {
+        alert("✅ Restore completed successfully");
+      } else {
+        alert("❌ Restore failed: " + data.error);
       }
-    );
+    } catch {
+      setLoading(false);
+      alert("❌ Restore error");
+    }
+  };
 
-    const data = await res.json();
-    setLoading(false);
+  /* ================= DOWNLOAD ================= */
+  const downloadBackup = async (file) => {
+    const password = prompt("Download Password");
+    if (!password) return;
 
-    alert(
-      data.success
-        ? "✅ Restore Completed Successfully"
-        : "❌ Restore Failed: " + data.error
-    );
+    try {
+      const res = await fetch(
+        `${import.meta.env.VITE_BACKEND_URL}/api/backup/download`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ file, password }),
+        }
+      );
+
+      if (!res.ok) throw new Error();
+
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = file;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+    } catch {
+      alert("❌ Download failed");
+    }
+  };
+
+  /* ================= DELETE ================= */
+  const deleteBackup = async (file) => {
+    const password = prompt("Delete Password");
+    if (!password) return;
+
+    try {
+      const res = await fetch(
+        `${import.meta.env.VITE_BACKEND_URL}/api/backup/delete`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ file, password }),
+        }
+      );
+
+      const data = await res.json();
+      if (!data.success) return alert("❌ Delete failed");
+
+      loadBackups();
+    } catch {
+      alert("❌ Delete error");
+    }
   };
 
   return (
@@ -87,8 +151,13 @@ export default function Restore({ onNavigate }) {
       <h3 className="fw-bold mt-3">🗄 Backup & Restore</h3>
 
       {loading && (
-        <div className="alert alert-info py-1 mt-2">
-          Processing… please wait
+        <div className="progress my-2">
+          <div
+            className="progress-bar progress-bar-striped progress-bar-animated"
+            style={{ width: `${progress}%` }}
+          >
+            {progress}%
+          </div>
         </div>
       )}
 
@@ -96,7 +165,6 @@ export default function Restore({ onNavigate }) {
         <thead className="table-dark">
           <tr>
             <th>Backup File</th>
-            <th>Date & Time</th>
             <th>Restore</th>
             <th>Download</th>
             <th>Delete</th>
@@ -106,8 +174,7 @@ export default function Restore({ onNavigate }) {
         <tbody>
           {files.map((f) => (
             <tr key={f.name}>
-              <td className="fw-bold">{f.name}</td>
-              <td>{formatDate(f.created_at)}</td>
+              <td>{f.name}</td>
 
               <td>
                 <button
@@ -143,14 +210,29 @@ export default function Restore({ onNavigate }) {
                 </button>
               </td>
 
-              <td className="text-center">⬇️</td>
-              <td className="text-center">❌</td>
+              <td className="text-center">
+                <button
+                  className="btn btn-outline-secondary btn-sm"
+                  onClick={() => downloadBackup(f.name)}
+                >
+                  ⬇️
+                </button>
+              </td>
+
+              <td className="text-center">
+                <button
+                  className="btn btn-danger btn-sm"
+                  onClick={() => deleteBackup(f.name)}
+                >
+                  ❌
+                </button>
+              </td>
             </tr>
           ))}
 
           {files.length === 0 && (
             <tr>
-              <td colSpan="5" className="text-center text-muted">
+              <td colSpan="4" className="text-center text-muted">
                 No backups found
               </td>
             </tr>
