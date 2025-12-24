@@ -18,20 +18,37 @@ export default function HotelVoucher({ onNavigate }) {
   const [confirmNo, setConfirmNo] = useState("");
   const voucherRef = useRef(null);
 
-  /* ================= LOAD HOTEL VOUCHER ================= */
+  /* ================= LOAD VOUCHER (PKG + HOT) ================= */
   const loadVoucher = async () => {
     try {
-      const res = await fetch(
-        `${import.meta.env.VITE_BACKEND_URL}/api/hotels/get/${ref}`
-      );
-      const d = await res.json();
+      let url = "";
+      let isPkg = false;
 
+      if (ref.startsWith("PKG-")) {
+        url = `${import.meta.env.VITE_BACKEND_URL}/api/bookings/voucher/${ref}`;
+        isPkg = true;
+      } else if (ref.startsWith("HOT-")) {
+        url = `${import.meta.env.VITE_BACKEND_URL}/api/hotels/get/${ref}`;
+      } else {
+        return alert("Invalid Ref No (PKG- / HOT-)");
+      }
+
+      const res = await fetch(url);
+      const d = await res.json();
       if (!d.success) return alert("Voucher not found");
 
-      // ✅ FIX: backend data row
-      setData(d.row);
-
-    } catch (err) {
+      // normalize data
+      if (isPkg) {
+        setData({
+          ref_no: d.ref_no,
+          customer_name: d.customer_name,
+          booking_date: d.booking_date,
+          hotels: d.hotels || [],
+        });
+      } else {
+        setData(d.row);
+      }
+    } catch {
       alert("Failed to load voucher");
     }
   };
@@ -67,7 +84,7 @@ export default function HotelVoucher({ onNavigate }) {
 
         <input
           className="form-control form-control-sm w-25"
-          placeholder="HOT-00001"
+          placeholder="PKG-00001 / HOT-00001"
           value={ref}
           onChange={(e) => setRef(e.target.value)}
         />
@@ -108,7 +125,7 @@ export default function HotelVoucher({ onNavigate }) {
           <div className="text-center small mb-3" style={{ color: "#444" }}>
             Shop #4 Daimon City Building, Near Zeenat-ul-Islam Masjid<br />
             Garden West Karachi<br />
-            ✉️ Makkimadnitravel@gmail.com | ☎️ 0335-7476744
+            ✉️ makkimadnitravel@gmail.com | ☎️ 0335-7476744
           </div>
 
           <hr />
@@ -124,7 +141,10 @@ export default function HotelVoucher({ onNavigate }) {
           </div>
 
           {/* CONFIRMATION NO */}
-          <div className="d-flex align-items-center gap-2 mb-3" style={{ maxWidth: 350 }}>
+          <div
+            className="d-flex align-items-center gap-2 mb-3"
+            style={{ maxWidth: 350 }}
+          >
             <b>Confirmation No:</b>
             <input
               type="text"
@@ -145,32 +165,48 @@ export default function HotelVoucher({ onNavigate }) {
             🏨 Hotel Details
           </h6>
 
+          {data?.hotels?.length === 0 && (
+            <div className="text-muted">No hotel service in this booking</div>
+          )}
+
           {data?.hotels?.map((h, i) => (
-            <div key={i} className="border rounded p-2 mb-2">
+            <div
+              key={i}
+              className="border rounded p-2 mb-2"
+              style={{ background: "#ffffff" }}
+            >
               <div><b>Hotel:</b> {h.hotel}</div>
               <div><b>Address:</b> {h.location}</div>
 
               <div className="row mt-2">
-                <div className="col">Check-in: <b>{showDate(h.checkIn)}</b></div>
-                <div className="col">Check-out: <b>{showDate(h.checkOut)}</b></div>
-                <div className="col">Nights: <b>{h.nights}</b></div>
+                <div className="col">
+                  Check-in: <b>{showDate(h.checkIn)}</b>
+                </div>
+                <div className="col">
+                  Check-out: <b>{showDate(h.checkOut)}</b>
+                </div>
+                <div className="col">
+                  Nights: <b>{h.nights}</b>
+                </div>
               </div>
             </div>
           ))}
 
-          {/* TIMING */}
-          <div className="mt-3 p-2 text-center fw-bold"
+          {/* ✅ CHECK-IN / CHECK-OUT TIMING (RESTORED) */}
+          <div
+            className="mt-3 p-2 text-center fw-bold"
             style={{
               background: "#e7f1ff",
               border: "1px dashed #0d6efd",
               borderRadius: "8px",
               color: "#0d6efd",
-            }}>
+            }}
+          >
             CHECK IN TIME: 02:00 PM &nbsp; | &nbsp;
             CHECK OUT TIME: 04:00 PM
           </div>
 
-          {/* FOOTER */}
+          {/* ✅ FOOTER (RESTORED) */}
           <div className="text-center small mt-3" style={{ color: "#555" }}>
             Please check your hotel details carefully.<br />
             This voucher is valid only for the mentioned booking.
