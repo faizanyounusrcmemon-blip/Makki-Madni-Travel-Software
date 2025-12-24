@@ -1,10 +1,12 @@
 import React, { useEffect, useState } from "react";
+import "./restore.css";
 
 export default function Restore({ onNavigate }) {
   const [files, setFiles] = useState([]);
   const [loading, setLoading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [tableMap, setTableMap] = useState({});
+  const [message, setMessage] = useState(null);
 
   const TABLES = [
     "bookings",
@@ -19,7 +21,18 @@ export default function Restore({ onNavigate }) {
     "purchase_payments",
   ];
 
-  /* ================= LOAD BACKUPS ================= */
+  const fmtDate = (d) => {
+    if (!d) return "-";
+    return new Date(d).toLocaleString("en-GB", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true,
+    });
+  };
+
   const loadBackups = async () => {
     try {
       const res = await fetch(
@@ -28,7 +41,7 @@ export default function Restore({ onNavigate }) {
       const data = await res.json();
       if (data.success) setFiles(data.files || []);
     } catch {
-      alert("❌ Backup list load failed");
+      setMessage({ type: "danger", text: "❌ Backup list load failed" });
     }
   };
 
@@ -36,17 +49,17 @@ export default function Restore({ onNavigate }) {
     loadBackups();
   }, []);
 
-  /* ================= RESTORE ================= */
   const restore = async (file, mode) => {
     const password = prompt("Restore Password");
     if (!password) return;
 
     if (mode === "table" && !tableMap[file]) {
-      return alert("❌ Please select table first");
+      return alert("❌ Table select karo");
     }
 
     setLoading(true);
-    setProgress(20);
+    setProgress(10);
+    setMessage(null);
 
     const url =
       mode === "full"
@@ -54,6 +67,7 @@ export default function Restore({ onNavigate }) {
         : "/api/backup/restore/table";
 
     try {
+      setProgress(40);
       const res = await fetch(
         `${import.meta.env.VITE_BACKEND_URL}${url}`,
         {
@@ -67,23 +81,22 @@ export default function Restore({ onNavigate }) {
         }
       );
 
-      setProgress(70);
+      setProgress(80);
       const data = await res.json();
       setProgress(100);
       setLoading(false);
 
-      if (data.success) {
-        alert("✅ Restore completed successfully");
-      } else {
-        alert("❌ Restore failed: " + data.error);
-      }
+      setMessage(
+        data.success
+          ? { type: "success", text: "✅ Restore completed successfully" }
+          : { type: "danger", text: "❌ Restore failed: " + data.error }
+      );
     } catch {
       setLoading(false);
-      alert("❌ Restore error");
+      setMessage({ type: "danger", text: "❌ Restore error" });
     }
   };
 
-  /* ================= DOWNLOAD ================= */
   const downloadBackup = async (file) => {
     const password = prompt("Download Password");
     if (!password) return;
@@ -98,24 +111,20 @@ export default function Restore({ onNavigate }) {
         }
       );
 
-      if (!res.ok) throw new Error();
-
       const blob = await res.blob();
       const url = window.URL.createObjectURL(blob);
 
       const a = document.createElement("a");
       a.href = url;
       a.download = file;
-      document.body.appendChild(a);
       a.click();
-      a.remove();
-      window.URL.revokeObjectURL(url);
+
+      setMessage({ type: "success", text: "⬇️ Download started" });
     } catch {
-      alert("❌ Download failed");
+      setMessage({ type: "danger", text: "❌ Download failed" });
     }
   };
 
-  /* ================= DELETE ================= */
   const deleteBackup = async (file) => {
     const password = prompt("Delete Password");
     if (!password) return;
@@ -131,114 +140,128 @@ export default function Restore({ onNavigate }) {
       );
 
       const data = await res.json();
-      if (!data.success) return alert("❌ Delete failed");
-
-      loadBackups();
+      if (data.success) {
+        setMessage({ type: "success", text: "🗑 Backup deleted successfully" });
+        loadBackups();
+      }
     } catch {
-      alert("❌ Delete error");
+      setMessage({ type: "danger", text: "❌ Delete error" });
     }
   };
 
   return (
-    <div className="container mt-4">
-      <button
-        className="btn btn-secondary btn-sm"
-        onClick={() => onNavigate("dashboard")}
-      >
-        ⬅ Back
-      </button>
+    <div className="restore-wrapper">
+      <div className="restore-card">
 
-      <h3 className="fw-bold mt-3">🗄 Backup & Restore</h3>
-
-      {loading && (
-        <div className="progress my-2">
-          <div
-            className="progress-bar progress-bar-striped progress-bar-animated"
-            style={{ width: `${progress}%` }}
-          >
-            {progress}%
-          </div>
+        <div className="restore-header">
+          <h2>🛡 VIP Backup & Restore</h2>
+          <p>Secure • Reliable • Professional</p>
         </div>
-      )}
 
-      <table className="table table-bordered table-sm mt-3">
-        <thead className="table-dark">
-          <tr>
-            <th>Backup File</th>
-            <th>Restore</th>
-            <th>Download</th>
-            <th>Delete</th>
-          </tr>
-        </thead>
+        <button
+          className="vip-btn vip-outline mb-3"
+          onClick={() => onNavigate("dashboard")}
+        >
+          ⬅ Dashboard
+        </button>
 
-        <tbody>
-          {files.map((f) => (
-            <tr key={f.name}>
-              <td>{f.name}</td>
+        {message && (
+          <div className={`alert alert-${message.type} text-center`}>
+            {message.text}
+          </div>
+        )}
 
-              <td>
-                <button
-                  className="btn btn-success btn-sm me-1"
-                  onClick={() => restore(f.name, "full")}
-                >
-                  Full
-                </button>
+        {loading && (
+          <div className="vip-progress">
+            <div className="vip-progress-bar" style={{ width: `${progress}%` }}>
+              {progress}%
+            </div>
+          </div>
+        )}
 
-                <select
-                  className="form-select form-select-sm d-inline w-auto me-1"
-                  value={tableMap[f.name] || ""}
-                  onChange={(e) =>
-                    setTableMap({
-                      ...tableMap,
-                      [f.name]: e.target.value,
-                    })
-                  }
-                >
-                  <option value="">Table</option>
-                  {TABLES.map((t) => (
-                    <option key={t} value={t}>
-                      {t}
-                    </option>
-                  ))}
-                </select>
-
-                <button
-                  className="btn btn-primary btn-sm"
-                  onClick={() => restore(f.name, "table")}
-                >
-                  Single
-                </button>
-              </td>
-
-              <td className="text-center">
-                <button
-                  className="btn btn-outline-secondary btn-sm"
-                  onClick={() => downloadBackup(f.name)}
-                >
-                  ⬇️
-                </button>
-              </td>
-
-              <td className="text-center">
-                <button
-                  className="btn btn-danger btn-sm"
-                  onClick={() => deleteBackup(f.name)}
-                >
-                  ❌
-                </button>
-              </td>
-            </tr>
-          ))}
-
-          {files.length === 0 && (
+        <table className="table vip-table mt-3">
+          <thead>
             <tr>
-              <td colSpan="4" className="text-center text-muted">
-                No backups found
-              </td>
+              <th>📁 Backup File</th>
+              <th>🕒 Date & Time</th>
+              <th>♻ Restore</th>
+              <th className="text-center">⬇</th>
+              <th className="text-center">🗑</th>
             </tr>
-          )}
-        </tbody>
-      </table>
+          </thead>
+
+          <tbody>
+            {files.map((f, i) => (
+              <tr key={f.name} className="vip-row">
+                <td>
+                  <div className="vip-file">
+                    <span className="vip-badge">{i + 1}</span>
+                    {f.name}
+                  </div>
+                </td>
+
+                <td className="vip-date">{fmtDate(f.created_at)}</td>
+
+                <td>
+                  <button
+                    className="vip-btn vip-success me-1"
+                    onClick={() => restore(f.name, "full")}
+                  >
+                    🔄 Full
+                  </button>
+
+                  <select
+                    className="form-select form-select-sm d-inline w-auto me-1"
+                    value={tableMap[f.name] || ""}
+                    onChange={(e) =>
+                      setTableMap({ ...tableMap, [f.name]: e.target.value })
+                    }
+                  >
+                    <option value="">Table</option>
+                    {TABLES.map((t) => (
+                      <option key={t} value={t}>{t}</option>
+                    ))}
+                  </select>
+
+                  <button
+                    className="vip-btn vip-primary"
+                    onClick={() => restore(f.name, "table")}
+                  >
+                    📦 Single
+                  </button>
+                </td>
+
+                <td className="text-center">
+                  <button
+                    className="vip-btn vip-outline"
+                    onClick={() => downloadBackup(f.name)}
+                  >
+                    ⬇
+                  </button>
+                </td>
+
+                <td className="text-center">
+                  <button
+                    className="vip-btn vip-danger"
+                    onClick={() => deleteBackup(f.name)}
+                  >
+                    ❌
+                  </button>
+                </td>
+              </tr>
+            ))}
+
+            {files.length === 0 && (
+              <tr>
+                <td colSpan="5" className="text-center text-muted">
+                  No backups found
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+
+      </div>
     </div>
   );
 }

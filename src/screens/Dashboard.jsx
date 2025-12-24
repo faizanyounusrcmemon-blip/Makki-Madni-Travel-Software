@@ -4,22 +4,19 @@ import "./dashboard.css";
 export default function Dashboard({ onNavigate }) {
   const [lastBackup, setLastBackup] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [message, setMessage] = useState(null);
 
-  /* =========================
-     LOAD LAST BACKUP INFO
-  ========================= */
+  /* LOAD LAST BACKUP */
   const loadLastBackup = async () => {
     try {
       const res = await fetch(
         `${import.meta.env.VITE_BACKEND_URL}/api/backup/last`
       );
       const data = await res.json();
-
-      if (data.success) {
-        setLastBackup(data.last_backup);
-      }
-    } catch (err) {
-      console.error("Backup info load failed", err);
+      if (data.success) setLastBackup(data.last_backup);
+    } catch {
+      setMessage({ type: "danger", text: "❌ Backup info load failed" });
     }
   };
 
@@ -27,19 +24,33 @@ export default function Dashboard({ onNavigate }) {
     loadLastBackup();
   }, []);
 
-  /* =========================
-     MANUAL BACKUP
-  ========================= */
+  /* DATE FORMAT AM / PM */
+  const formatDate = (d) =>
+    d
+      ? new Date(d).toLocaleString("en-GB", {
+          day: "2-digit",
+          month: "short",
+          year: "numeric",
+          hour: "2-digit",
+          minute: "2-digit",
+          hour12: true,
+        })
+      : "-";
+
+  /* RUN BACKUP */
   const runBackup = async () => {
     const pass = prompt("Enter Backup Password");
     if (pass !== "8515") {
-      alert("❌ Wrong Password");
+      setMessage({ type: "danger", text: "❌ Wrong password" });
       return;
     }
 
     setLoading(true);
+    setProgress(10);
+    setMessage(null);
 
     try {
+      setProgress(40);
       const res = await fetch(
         `${import.meta.env.VITE_BACKEND_URL}/api/backup/manual`,
         {
@@ -49,82 +60,74 @@ export default function Dashboard({ onNavigate }) {
         }
       );
 
+      setProgress(80);
       const data = await res.json();
+      setProgress(100);
 
       if (data.success) {
-        alert("✅ Backup Completed Successfully");
+        setMessage({ type: "success", text: "✅ Backup completed successfully" });
         loadLastBackup();
       } else {
-        alert("❌ Backup Failed");
+        setMessage({ type: "danger", text: "❌ Backup failed" });
       }
-    } catch (err) {
-      alert("❌ Server Error while running backup");
+    } catch {
+      setMessage({ type: "danger", text: "❌ Server error during backup" });
     }
 
-    setLoading(false);
+    setTimeout(() => {
+      setLoading(false);
+      setProgress(0);
+    }, 900);
   };
-
-  const formatDate = (d) =>
-    d
-      ? new Date(d).toLocaleString("en-GB", {
-          day: "2-digit",
-          month: "short",
-          year: "numeric",
-          hour: "2-digit",
-          minute: "2-digit",
-        })
-      : "-";
 
   return (
     <div className="dashboard-container">
       {/* HEADER */}
       <div className="dashboard-header">
         <h2>✈️ Makki Madni Travel</h2>
+        <i>Travel Management Dashboard</i>
+      </div>
 
-        {/* BACKUP PANEL */}
-        <div
-          style={{
-            marginTop: 10,
-            display: "flex",
-            gap: 15,
-            alignItems: "center",
-          }}
-        >
+      {/* TOP BAR */}
+      <div className="dashboard-topbar">
+        {/* LEFT EMPTY / TITLE SPACE */}
+        <div />
+
+        {/* RIGHT BACKUP BOX */}
+        <div className="backup-side-box">
           <button
+            className="vip-backup-btn"
             onClick={runBackup}
             disabled={loading}
-            style={{
-              background: "linear-gradient(135deg,#ff9800,#ff5722)",
-              border: "none",
-              padding: "8px 16px",
-              borderRadius: "20px",
-              color: "white",
-              fontWeight: "bold",
-              cursor: "pointer",
-            }}
           >
             {loading ? "⏳ Backup Running..." : "💾 Backup Now"}
           </button>
 
-          <div
-            style={{
-              background: "#222",
-              padding: "6px 12px",
-              borderRadius: "12px",
-              fontSize: "13px",
-              color: "#ffd700",
-            }}
-          >
-            🕙 Last Backup:
-            <br />
+          <div className="last-backup-box">
+            <span>🕙 Last Backup</span>
             <b>
               {lastBackup
-                ? `${lastBackup.name} (${formatDate(
-                    lastBackup.created_at
-                  )})`
+                ? `${lastBackup.name} · ${formatDate(lastBackup.created_at)}`
                 : "Not yet"}
             </b>
           </div>
+
+          {loading && (
+            <div className="vip-progress">
+              <div
+                className="vip-progress-bar"
+                style={{ width: `${progress}%` }}
+              >
+                {progress}%
+              </div>
+            </div>
+          )}
+
+          {message && (
+            <div className={`vip-alert ${message.type}`}>
+              {message.text}
+            </div>
+          )}
         </div>
       </div>
 
