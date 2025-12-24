@@ -3,7 +3,6 @@ import React, { useState } from "react";
 export default function Navbar({ onNavigate }) {
   const [open, setOpen] = useState(null);
 
-  // ✅ FIX: sessionStorage se user read
   const user = JSON.parse(sessionStorage.getItem("user"));
 
   const go = (page) => {
@@ -11,24 +10,17 @@ export default function Navbar({ onNavigate }) {
     onNavigate(page);
   };
 
-  // ✅ FIXED LOGOUT
   const logout = () => {
     if (!window.confirm("Logout karna hai?")) return;
-
-    // ✅ SAME storage clear jo login me use ho rahi hai
     sessionStorage.removeItem("user");
-
-    window.location.reload(); // redirect to login
+    window.location.reload();
   };
 
   return (
     <nav className="vip-navbar">
+
       {/* LOGO */}
-      <div
-        className="nav-logo"
-        onClick={() => go("dashboard")}
-        style={{ cursor: "pointer" }}
-      >
+      <div className="nav-logo" onClick={() => go("dashboard")}>
         ✈️ Makki Madni Travel
       </div>
 
@@ -79,29 +71,38 @@ export default function Navbar({ onNavigate }) {
           )}
         </div>
 
-        {/* REPORTS */}
+        {/* ✅ VOUCHERS (NEW) */}
         <div className="nav-item">
-          <span onClick={() => setOpen(open === "reports" ? null : "reports")}>
-            Reports ▾
+          <span onClick={() => setOpen(open === "voucher" ? null : "voucher")}>
+            Vouchers ▾
           </span>
-          {open === "reports" && (
+          {open === "voucher" && (
             <div className="vip-menu">
-              <div onClick={() => go("allreports")}>📈 All Reports</div>
-              <div onClick={() => go("profitReport")}>💰 Profit Report</div>
-              <div onClick={() => go("createUser")}>Create User</div>
               <div onClick={() => go("hotelVoucher")}>🏨 Hotel Voucher</div>
+              <div onClick={() => go("transportVoucher")}>🚐 Transport Voucher</div>
+            </div>
+          )}
+        </div>
+
+        {/* ✅ MASTER (NEW) */}
+        <div className="nav-item">
+          <span onClick={() => setOpen(open === "master" ? null : "master")}>
+            Master ▾
+          </span>
+          {open === "master" && (
+            <div className="vip-menu">
+              <div onClick={() => go("createUser")}>👤 Create User</div>
               <div onClick={() => go("deletedReports")}>🗑 Deleted Reports</div>
               <div onClick={() => go("restore")}>♻ Restore</div>
             </div>
           )}
         </div>
+
       </div>
 
-      {/* USER + LOGOUT */}
+      {/* USER */}
       <div className="nav-user">
-        <span className="user-name">
-          👤 {user?.name || "User"}
-        </span>
+        <span className="user-name">👤 {user?.name || "User"}</span>
         <button className="logout-btn" onClick={logout}>
           Logout
         </button>
@@ -123,6 +124,7 @@ export default function Navbar({ onNavigate }) {
           font-size: 20px;
           font-weight: bold;
           color: #ffd700;
+          cursor: pointer;
         }
 
         .nav-links {
@@ -144,6 +146,7 @@ export default function Navbar({ onNavigate }) {
           border-radius: 12px;
           overflow: hidden;
           box-shadow: 0 25px 40px rgba(0,0,0,0.7);
+          z-index: 9999;
         }
 
         .vip-menu div {
@@ -177,12 +180,11 @@ export default function Navbar({ onNavigate }) {
           color: white;
           font-size: 12px;
           cursor: pointer;
-          transition: 0.3s;
         }
 
         .logout-btn:hover {
-          transform: scale(1.05);
           opacity: 0.9;
+          transform: scale(1.05);
         }
       `}</style>
     </nav>
