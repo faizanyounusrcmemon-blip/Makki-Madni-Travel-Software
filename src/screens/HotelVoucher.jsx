@@ -202,8 +202,8 @@ export default function HotelVoucher({ onNavigate }) {
               color: "#0d6efd",
             }}
           >
-            CHECK IN TIME: 02:00 PM &nbsp; | &nbsp;
-            CHECK OUT TIME: 04:00 PM
+            CHECK IN TIME: 04:00 PM &nbsp; | &nbsp;
+            CHECK OUT TIME: 02:00 PM
           </div>
 
           {/* ✅ FOOTER (RESTORED) */}
@@ -216,3 +216,4 @@ export default function HotelVoucher({ onNavigate }) {
     </div>
   );
 }
+
