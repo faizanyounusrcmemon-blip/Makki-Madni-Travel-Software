@@ -1,9 +1,28 @@
 import React, { useEffect, useState } from "react";
 
+/* ================= HELPERS ================= */
+
+// 300000 → 300,000
+const fmtAmount = (v) =>
+  v ? Number(v).toLocaleString("en-US") : "-";
+
+// NUMBER → WORDS (PROPER)
+const numberToWords = (num) => {
+  if (!num) return "";
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "PKR",
+    currencyDisplay: "name",
+    maximumFractionDigits: 0,
+  })
+    .format(num)
+    .replace("Pakistani rupees", "Rupees");
+};
+
 export default function BankLedger({ onNavigate }) {
   const [rows, setRows] = useState([]);
+  const [msg, setMsg] = useState(null);
 
-  // MANUAL ENTRY STATES
   const [date, setDate] = useState("");
   const [amount, setAmount] = useState("");
   const [type, setType] = useState("deposit");
@@ -13,7 +32,6 @@ export default function BankLedger({ onNavigate }) {
     load();
   }, []);
 
-  // LOAD AUTO + MANUAL LEDGER
   const load = async () => {
     const r = await fetch(
       `${import.meta.env.VITE_BACKEND_URL}/api/bank-ledger`
@@ -22,14 +40,14 @@ export default function BankLedger({ onNavigate }) {
     if (d.success) setRows(d.rows);
   };
 
-  // SAVE MANUAL ENTRY
+  /* SAVE */
   const save = async () => {
     if (!date || !amount) {
-      alert("Date & Amount required");
+      setMsg({ type: "danger", text: "Date & Amount required" });
       return;
     }
 
-    await fetch(
+    const r = await fetch(
       `${import.meta.env.VITE_BACKEND_URL}/api/bank-ledger/transaction`,
       {
         method: "POST",
@@ -37,21 +55,51 @@ export default function BankLedger({ onNavigate }) {
         body: JSON.stringify({
           txn_date: date,
           type,
-          amount,
+          amount: amount.replace(/,/g, ""),
           comment
         })
       }
     );
 
-    setAmount("");
-    setComment("");
-    load();
+    const d = await r.json();
+
+    if (d.success) {
+      setMsg({ type: "success", text: d.message });
+      setAmount("");
+      setComment("");
+      load();
+    } else {
+      setMsg({ type: "danger", text: d.error });
+    }
+  };
+
+  /* DELETE */
+  const del = async (id) => {
+    const pass = prompt("Delete password");
+    if (!pass) return;
+
+    const r = await fetch(
+      `${import.meta.env.VITE_BACKEND_URL}/api/bank-ledger/transaction/${id}`,
+      {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password: pass })
+      }
+    );
+
+    const d = await r.json();
+
+    if (d.success) {
+      setMsg({ type: "success", text: d.message });
+      load();
+    } else {
+      setMsg({ type: "danger", text: d.error });
+    }
   };
 
   return (
     <div className="container p-3">
 
-      {/* BACK */}
       <button
         className="btn btn-secondary btn-sm mb-2"
         onClick={() => onNavigate("dashboard")}
@@ -59,50 +107,54 @@ export default function BankLedger({ onNavigate }) {
         ⬅ Back
       </button>
 
-      {/* HEADING */}
-      <h4 className="fw-bold text-success mb-3">
+      <h4 className="fw-bold text-success mb-2">
         🏦 BANK LEDGER (AUTO + MANUAL)
       </h4>
 
+      {/* MESSAGE */}
+      {msg && (
+        <div className={`alert alert-${msg.type} py-2`}>
+          {msg.text}
+        </div>
+      )}
+
       {/* MANUAL ENTRY */}
-      <div className="row g-2 mb-3">
+      <div className="row g-2 mb-2">
         <div className="col-md-2">
-          <input
-            type="date"
-            className="form-control"
+          <input type="date" className="form-control"
             value={date}
-            onChange={e => setDate(e.target.value)}
-          />
+            onChange={e => setDate(e.target.value)} />
         </div>
 
         <div className="col-md-2">
           <input
-            type="number"
             className="form-control"
             placeholder="Amount"
             value={amount}
-            onChange={e => setAmount(e.target.value)}
+            onChange={e =>
+              setAmount(
+                e.target.value
+                  .replace(/,/g, "")
+                  .replace(/\B(?=(\d{3})+(?!\d))/g, ",")
+              )
+            }
           />
         </div>
 
         <div className="col-md-2">
-          <select
-            className="form-control"
+          <select className="form-control"
             value={type}
-            onChange={e => setType(e.target.value)}
-          >
+            onChange={e => setType(e.target.value)}>
             <option value="deposit">Deposit</option>
             <option value="withdraw">Withdraw</option>
           </select>
         </div>
 
         <div className="col-md-4">
-          <input
-            className="form-control"
-            placeholder="Comment / Reason"
+          <input className="form-control"
+            placeholder="Comment"
             value={comment}
-            onChange={e => setComment(e.target.value)}
-          />
+            onChange={e => setComment(e.target.value)} />
         </div>
 
         <div className="col-md-2">
@@ -112,45 +164,53 @@ export default function BankLedger({ onNavigate }) {
         </div>
       </div>
 
-      {/* LEDGER TABLE */}
+      {/* AMOUNT IN WORDS */}
+      {amount && (
+        <div className="text-muted mb-3">
+          💬 <i>{numberToWords(amount.replace(/,/g, ""))}</i>
+        </div>
+      )}
+
+      {/* TABLE */}
       <table className="table table-bordered table-sm">
         <thead className="table-dark">
           <tr>
             <th>Date</th>
             <th>Description</th>
-            <th>Debit (Out)</th>
-            <th>Credit (In)</th>
+            <th>Debit</th>
+            <th>Credit</th>
             <th>Balance</th>
+            <th></th>
           </tr>
         </thead>
         <tbody>
+          {rows.map((r, i) => (
+            <tr key={i}>
+              <td>{new Date(r.txn_date).toLocaleDateString()}</td>
+              <td>{r.description}</td>
+              <td className="text-danger">{fmtAmount(r.debit)}</td>
+              <td className="text-success">{fmtAmount(r.credit)}</td>
+              <td><b>{fmtAmount(r.balance)}</b></td>
+              <td>
+                {r.source === "manual" && (
+                  <button
+                    className="btn btn-sm btn-danger"
+                    onClick={() => del(r.id)}
+                  >
+                    ❌
+                  </button>
+                )}
+              </td>
+            </tr>
+          ))}
+
           {rows.length === 0 && (
             <tr>
-              <td colSpan="5" className="text-center">
+              <td colSpan="6" className="text-center">
                 No entries
               </td>
             </tr>
           )}
-
-          {rows.map((r, i) => (
-            <tr key={i}>
-              <td>
-                {r.txn_date
-                  ? new Date(r.txn_date).toLocaleDateString()
-                  : r.date
-                  ? new Date(r.date).toLocaleDateString()
-                  : "-"}
-              </td>
-              <td>{r.description || r.comment || "-"}</td>
-              <td className="text-danger">
-                {r.debit || r.out || "-"}
-              </td>
-              <td className="text-success">
-                {r.credit || r.in || "-"}
-              </td>
-              <td><b>{r.balance}</b></td>
-            </tr>
-          ))}
         </tbody>
       </table>
 
