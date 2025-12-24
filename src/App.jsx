@@ -17,20 +17,22 @@ import Purchase from "./screens/Purchase";
 import PurchaseList from "./screens/PurchaseList";
 import PurchaseDetail from "./screens/PurchaseDetail";
 
-
 // LEDGERS
 import CustomerLedger from "./screens/CustomerLedger";
 import PurchaseLedger from "./screens/PurchaseLedger";
 import BankLedger from "./screens/BankLedger";
 import BalanceSheet from "./screens/BalanceSheet";
 
-// REPORTS
+// REPORTS / MASTER
 import AllReports from "./screens/AllReports";
 import ProfitReport from "./screens/ProfitReport";
 import CreateUser from "./screens/CreateUser";
-import HotelVoucher from "./screens/HotelVoucher";
 import DeletedReports from "./screens/DeletedReports";
 import Restore from "./screens/Restore";
+
+// VOUCHERS
+import HotelVoucher from "./screens/HotelVoucher";
+import TransportVoucher from "./screens/TransportVoucher";
 
 // VIEWS
 import PackagesView from "./screens/PackagesView";
@@ -43,10 +45,10 @@ export default function App() {
   const [page, setPage] = useState("dashboard");
   const [detail, setDetail] = useState(null);
 
-  // ✅ ONLY sessionStorage (auto logout on browser close)
+  // 🔐 LOGIN CHECK (sessionStorage)
   const loggedIn = !!sessionStorage.getItem("user");
 
-  // NAVIGATION
+  // NAVIGATION HANDLER
   const navigate = (p, d = null) => {
     setPage(p);
     setDetail(d);
@@ -61,60 +63,61 @@ export default function App() {
     <div>
       <Navbar onNavigate={navigate} />
 
-      {/* DASHBOARD */}
+      {/* ================= DASHBOARD ================= */}
       {page === "dashboard" && <Dashboard onNavigate={navigate} />}
 
-      {/* SALES */}
+      {/* ================= SALES ================= */}
       {page === "packages" && <Packages onNavigate={navigate} />}
       {page === "hotels" && <Hotels onNavigate={navigate} />}
       {page === "ticketing" && <Ticketing onNavigate={navigate} />}
       {page === "transport" && <Transport onNavigate={navigate} />}
       {page === "visa" && <Visa onNavigate={navigate} />}
 
-      {/* PURCHASE */}
+      {/* ================= PURCHASE ================= */}
       {page === "purchase" && <Purchase onNavigate={navigate} />}
       {page === "purchaseList" && <PurchaseList onNavigate={navigate} />}
+      {page === "purchase_detail" && (
+        <PurchaseDetail refNo={detail} onNavigate={navigate} />
+      )}
 
-      {/* LEDGERS */}
+      {/* ================= LEDGERS ================= */}
       {page === "customerLedger" && <CustomerLedger onNavigate={navigate} />}
       {page === "purchaseLedger" && <PurchaseLedger onNavigate={navigate} />}
       {page === "bankLedger" && <BankLedger onNavigate={navigate} />}
       {page === "balanceSheet" && <BalanceSheet onNavigate={navigate} />}
 
-      {/* REPORTS */}
+      {/* ================= REPORTS / MASTER ================= */}
       {page === "allreports" && <AllReports onNavigate={navigate} />}
       {page === "profitReport" && <ProfitReport onNavigate={navigate} />}
       {page === "createUser" && <CreateUser onNavigate={navigate} />}
-      {page === "hotelVoucher" && <HotelVoucher onNavigate={navigate} />}
+      {page === "deletedReports" && (
+        <DeletedReports onNavigate={navigate} />
+      )}
       {page === "restore" && <Restore onNavigate={navigate} />}
 
-      {/* VIEWS */}
+      {/* ================= VOUCHERS (FIXED) ================= */}
+      {page === "hotelVoucher" && (
+        <HotelVoucher onNavigate={navigate} />
+      )}
+      {page === "transportVoucher" && (
+        <TransportVoucher onNavigate={navigate} />
+      )}
+
+      {/* ================= DETAIL VIEWS ================= */}
       {page === "packages_view" && (
         <PackagesView id={detail} onNavigate={navigate} />
       )}
-
       {page === "hotels_view" && (
         <HotelsView id={detail} onNavigate={navigate} />
       )}
-
       {page === "ticket_view" && (
         <TicketingView id={detail} onNavigate={navigate} />
       )}
-
       {page === "visa_view" && (
         <VisaView id={detail} onNavigate={navigate} />
       )}
-
-        {/* PURCHASE DETAIL */}
-      {page === "purchase_detail" && (
-        <PurchaseDetail refNo={detail} onNavigate={navigate} />
-      )}
-
       {page === "transport_view" && (
         <TransportView id={detail} onNavigate={navigate} />
-      )}
-      {page === "deletedReports" && (
-        <DeletedReports onNavigate={navigate} />
       )}
     </div>
   );
