@@ -95,8 +95,20 @@ export default function AllReports({ onNavigate }) {
 
   return (
     <div className="container mt-3">
-      <h3 className="fw-bold mb-3">All Reports</h3>
 
+      {/* HEADER + BACK BUTTON */}
+      <div className="d-flex justify-content-between align-items-center mb-3">
+        <h3 className="fw-bold m-0">All Reports</h3>
+
+        <button
+          className="btn btn-secondary btn-sm"
+          onClick={() => onNavigate("dashboard")}
+        >
+          ⬅ Back
+        </button>
+      </div>
+
+      {/* FILTER BAR */}
       <div className="d-flex gap-2 mb-3">
         <input
           className="form-control"
@@ -120,6 +132,7 @@ export default function AllReports({ onNavigate }) {
         />
       </div>
 
+      {/* TABLE */}
       <table className="table table-bordered table-sm">
         <thead className="table-dark">
           <tr>
