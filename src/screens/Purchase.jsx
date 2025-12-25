@@ -1,5 +1,21 @@
 import React, { useEffect, useState } from "react";
 
+/* ===============================
+   HELPERS
+=============================== */
+
+// 30000 → 30,000
+const fmt = (v) => {
+  if (v === "" || v === null || v === undefined) return "";
+  return Number(v).toLocaleString("en-US");
+};
+
+// "30,000" → 30000
+const parse = (v) => {
+  if (!v) return 0;
+  return Number(String(v).replace(/,/g, ""));
+};
+
 export default function Purchase({ onNavigate }) {
   const [refNo, setRefNo] = useState("");
   const [rows, setRows] = useState([]);
@@ -9,7 +25,7 @@ export default function Purchase({ onNavigate }) {
   const [isEdit, setIsEdit] = useState(false);
 
   /* ===============================
-     LOAD PENDING + PARTIAL LIST
+     LOAD PENDING + PARTIAL
   =============================== */
   const loadPending = async () => {
     const r = await fetch(
@@ -24,7 +40,7 @@ export default function Purchase({ onNavigate }) {
   }, []);
 
   /* ===============================
-     LOAD PACKAGE (SAVE / EDIT)
+     LOAD PACKAGE
   =============================== */
   const loadPackage = async (r = refNo) => {
     if (!r) return alert("Ref No required");
@@ -54,8 +70,8 @@ export default function Purchase({ onNavigate }) {
         sale_rate: Number(x.sale_rate) || 0,
         sale_pkr: Number(x.sale_pkr) || 0,
 
-        purchase_sar: x.purchase_sar ? Number(x.purchase_sar) : "",
-        purchase_rate: x.purchase_rate ? Number(x.purchase_rate) : "",
+        purchase_sar: x.purchase_sar ? fmt(x.purchase_sar) : "",
+        purchase_rate: x.purchase_rate ? fmt(x.purchase_rate) : "",
         purchase_pkr: Number(x.purchase_pkr) || 0,
 
         profit: Number(x.profit) || 0,
@@ -64,37 +80,51 @@ export default function Purchase({ onNavigate }) {
   };
 
   /* ===============================
-     UPDATE ROW
+     UPDATE ROW (LIVE FORMAT)
   =============================== */
   const updateRow = (i, field, value) => {
     const copy = [...rows];
     const r = copy[i];
 
-    r[field] = Number(value) || 0;
-    r.purchase_pkr = r.purchase_sar * r.purchase_rate;
+    // user jo likhe wo string me rakho
+    r[field] = value;
+
+    const sar = parse(r.purchase_sar);
+    const rate = parse(r.purchase_rate);
+
+    r.purchase_pkr = sar * rate;
     r.profit = r.sale_pkr - r.purchase_pkr;
 
     setRows(copy);
   };
 
   /* ===============================
-     SAVE / UPDATE PURCHASE
+     SAVE PURCHASE (UPSERT)
   =============================== */
   const savePurchase = async () => {
     if (!rows.length) return alert("No data to save");
 
-    const url = isEdit
-      ? "/api/purchase/update"
-      : "/api/purchase/save";
+    const payload = rows.map((r) => ({
+      item: r.item,
+
+      sale_sar: r.sale_sar,
+      sale_rate: r.sale_rate,
+      sale_pkr: r.sale_pkr,
+
+      purchase_sar: parse(r.purchase_sar),
+      purchase_rate: parse(r.purchase_rate),
+      purchase_pkr: r.purchase_pkr,
+      profit: r.profit,
+    }));
 
     const res = await fetch(
-      `${import.meta.env.VITE_BACKEND_URL}${url}`,
+      `${import.meta.env.VITE_BACKEND_URL}/api/purchase/save`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ref_no: refNo,
-          items: rows,
+          items: payload,
         }),
       }
     );
@@ -102,7 +132,7 @@ export default function Purchase({ onNavigate }) {
     const data = await res.json();
 
     if (data.success) {
-      alert(isEdit ? "Purchase Updated" : "Purchase Saved");
+      alert("Purchase Saved Successfully");
 
       setRows([]);
       setRefNo("");
@@ -121,7 +151,7 @@ export default function Purchase({ onNavigate }) {
   const isPartial =
     rows.length > 0 &&
     rows.some(
-      (r) => !r.purchase_sar || !r.purchase_rate
+      (r) => !parse(r.purchase_sar) || !parse(r.purchase_rate)
     );
 
   /* ===============================
@@ -140,23 +170,23 @@ export default function Purchase({ onNavigate }) {
         </button>
 
         <button className="btn btn-success btn-sm" onClick={savePurchase}>
-          {isEdit ? "✏️ Update Purchase" : "💾 Save Purchase"}
+          💾 Save Purchase
         </button>
       </div>
 
       <h4 className="fw-bold">
-        PURCHASE ENTRY {isEdit && <span className="text-warning">(EDIT MODE)</span>}
+        PURCHASE ENTRY{" "}
+        {isEdit && <span className="text-warning">(EDIT MODE)</span>}
       </h4>
 
-      {/* ⚠️ PARTIAL WARNING */}
+      {/* PARTIAL WARNING */}
       {isPartial && (
         <div className="alert alert-warning fw-bold mt-2">
           ⚠️ This purchase is <u>PARTIALLY COMPLETED</u>.
-          Some items are missing purchase values.
         </div>
       )}
 
-      {/* 🔴 PENDING + 🟡 PARTIAL LIST */}
+      {/* PENDING LIST */}
       <div className="mb-3">
         <h6 className="fw-bold text-danger">⏳ Pending / Partial Purchases</h6>
 
@@ -179,9 +209,7 @@ export default function Purchase({ onNavigate }) {
                       Partial
                     </span>
                   )}
-                  <div className="small text-muted">
-                    {p.note}
-                  </div>
+                  <div className="small text-muted">{p.note}</div>
                 </div>
 
                 <button
@@ -240,13 +268,12 @@ export default function Purchase({ onNavigate }) {
           {rows.map((r, i) => (
             <tr key={i}>
               <td>{r.item}</td>
-              <td>{r.sale_sar}</td>
-              <td>{r.sale_rate}</td>
-              <td>{r.sale_pkr.toLocaleString()}</td>
+              <td>{fmt(r.sale_sar)}</td>
+              <td>{fmt(r.sale_rate)}</td>
+              <td>{fmt(r.sale_pkr)}</td>
 
               <td>
                 <input
-                  type="number"
                   className="form-control form-control-sm"
                   value={r.purchase_sar}
                   onChange={(e) =>
@@ -257,7 +284,6 @@ export default function Purchase({ onNavigate }) {
 
               <td>
                 <input
-                  type="number"
                   className="form-control form-control-sm"
                   value={r.purchase_rate}
                   onChange={(e) =>
@@ -266,7 +292,7 @@ export default function Purchase({ onNavigate }) {
                 />
               </td>
 
-              <td>{r.purchase_pkr.toLocaleString()}</td>
+              <td>{fmt(r.purchase_pkr)}</td>
 
               <td
                 className={
@@ -275,7 +301,7 @@ export default function Purchase({ onNavigate }) {
                     : "text-danger fw-bold"
                 }
               >
-                {r.profit.toLocaleString()}
+                {fmt(r.profit)}
               </td>
             </tr>
           ))}
