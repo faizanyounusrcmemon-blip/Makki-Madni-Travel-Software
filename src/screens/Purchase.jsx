@@ -1,18 +1,26 @@
 import React, { useEffect, useState } from "react";
 
 /* ===============================
-   HELPERS
+   HELPERS (DOT + COMMA SAFE)
 ================================ */
-// 30000 → 30,000
+
+// DISPLAY FORMAT
 const fmt = (v) => {
   if (v === "" || v === null || v === undefined) return "";
-  return Number(v).toLocaleString("en-US");
+  const n = Number(String(v).replace(/,/g, ""));
+  if (isNaN(n)) return v; // allow "30." or "."
+  return n.toLocaleString("en-US", {
+    maximumFractionDigits: 4,
+  });
 };
 
-// "30,000" → 30000
+// PARSE FOR CALCULATION
 const parse = (v) => {
-  if (!v) return 0;
-  return Number(String(v).replace(/,/g, ""));
+  if (v === "" || v === null || v === undefined) return "";
+  const x = String(v).replace(/,/g, "");
+  if (x === "." || x.endsWith(".")) return x; // 👈 dot typing allow
+  const n = parseFloat(x);
+  return isNaN(n) ? 0 : n;
 };
 
 export default function Purchase({ onNavigate }) {
@@ -69,26 +77,33 @@ export default function Purchase({ onNavigate }) {
         sale_rate: Number(x.sale_rate) || 0,
         sale_pkr: Number(x.sale_pkr) || 0,
 
-        purchase_sar: x.purchase_sar ? Number(x.purchase_sar) : "",
-        purchase_rate: x.purchase_rate ? Number(x.purchase_rate) : "",
-        purchase_pkr: Number(x.purchase_pkr) || 0,
+        // 👇 STRING rakha hai (typing safe)
+        purchase_sar: x.purchase_sar ? String(x.purchase_sar) : "",
+        purchase_rate: x.purchase_rate ? String(x.purchase_rate) : "",
 
+        purchase_pkr: Number(x.purchase_pkr) || 0,
         profit: Number(x.profit) || 0,
       }))
     );
   };
 
   /* ===============================
-     UPDATE ROW (WITH FORMAT)
+     UPDATE ROW (DOT SAFE)
   =============================== */
   const updateRow = (i, field, value) => {
     const copy = [...rows];
     const r = copy[i];
 
-    const num = parse(value);
-    r[field] = num;
+    // 👇 typing ke liye raw string
+    r[field] = value;
 
-    r.purchase_pkr = (r.purchase_sar || 0) * (r.purchase_rate || 0);
+    const sar = parse(r.purchase_sar);
+    const rate = parse(r.purchase_rate);
+
+    const sarNum = typeof sar === "number" ? sar : 0;
+    const rateNum = typeof rate === "number" ? rate : 0;
+
+    r.purchase_pkr = sarNum * rateNum;
     r.profit = r.sale_pkr - r.purchase_pkr;
 
     setRows(copy);
@@ -104,6 +119,13 @@ export default function Purchase({ onNavigate }) {
       ? "/api/purchase/update"
       : "/api/purchase/save";
 
+    // 👇 backend ko NUMBER bhejna
+    const payloadRows = rows.map((r) => ({
+      ...r,
+      purchase_sar: parseFloat(parse(r.purchase_sar)) || 0,
+      purchase_rate: parseFloat(parse(r.purchase_rate)) || 0,
+    }));
+
     const res = await fetch(
       `${import.meta.env.VITE_BACKEND_URL}${url}`,
       {
@@ -111,7 +133,7 @@ export default function Purchase({ onNavigate }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ref_no: refNo,
-          items: rows,
+          items: payloadRows,
         }),
       }
     );
@@ -135,7 +157,11 @@ export default function Purchase({ onNavigate }) {
   =============================== */
   const isPartial =
     rows.length > 0 &&
-    rows.some((r) => !r.purchase_sar || !r.purchase_rate);
+    rows.some(
+      (r) =>
+        !parseFloat(parse(r.purchase_sar)) ||
+        !parseFloat(parse(r.purchase_rate))
+    );
 
   /* ===============================
      UI
@@ -167,60 +193,6 @@ export default function Purchase({ onNavigate }) {
           ⚠️ This purchase is <u>PARTIALLY COMPLETED</u>.
         </div>
       )}
-
-      {/* PENDING LIST */}
-      <div className="mb-3">
-        <h6 className="fw-bold text-danger">⏳ Pending / Partial Purchases</h6>
-
-        {pending.length === 0 ? (
-          <p className="text-success">✅ No pending purchases</p>
-        ) : (
-          <ul className="list-group">
-            {pending.map((p, i) => (
-              <li
-                key={i}
-                className="list-group-item d-flex justify-content-between align-items-center"
-              >
-                <div>
-                  <b>{p.ref_no}</b>{" "}
-                  {p.status === "PENDING" && (
-                    <span className="badge bg-danger ms-2">Pending</span>
-                  )}
-                  {p.status === "PARTIAL" && (
-                    <span className="badge bg-warning text-dark ms-2">
-                      Partial
-                    </span>
-                  )}
-                </div>
-
-                <button
-                  className="btn btn-sm btn-outline-primary"
-                  onClick={() => loadPackage(p.ref_no)}
-                >
-                  Load
-                </button>
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
-
-      {/* LOAD BY REF */}
-      <div className="d-flex gap-2 mb-3">
-        <input
-          className="form-control form-control-sm"
-          placeholder="PACKAGE REF NO"
-          value={refNo}
-          onChange={(e) => setRefNo(e.target.value)}
-        />
-        <button
-          className="btn btn-primary btn-sm"
-          onClick={() => loadPackage()}
-          disabled={loading}
-        >
-          {loading ? "Loading..." : "Load"}
-        </button>
-      </div>
 
       {/* TABLE */}
       <table className="table table-bordered table-sm">
