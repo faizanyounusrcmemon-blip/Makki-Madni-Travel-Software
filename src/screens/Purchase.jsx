@@ -7,13 +7,16 @@ import React, { useEffect, useState } from "react";
 // 30000 → 30,000
 const fmt = (v) => {
   if (v === "" || v === null || v === undefined) return "";
-  return Number(v).toLocaleString("en-US");
+  const n = Number(String(v).replace(/,/g, ""));
+  if (isNaN(n)) return "";
+  return n.toLocaleString("en-US");
 };
 
 // "30,000" → 30000
 const parse = (v) => {
   if (!v) return 0;
-  return Number(String(v).replace(/,/g, ""));
+  const n = Number(String(v).replace(/,/g, ""));
+  return isNaN(n) ? 0 : n;
 };
 
 export default function Purchase({ onNavigate }) {
@@ -26,7 +29,7 @@ export default function Purchase({ onNavigate }) {
   const [isEdit, setIsEdit] = useState(false);
 
   /* ===============================
-     LOAD PENDING + PARTIAL
+     LOAD PENDING
   =============================== */
   const loadPending = async () => {
     const r = await fetch(
@@ -71,27 +74,25 @@ export default function Purchase({ onNavigate }) {
         sale_rate: Number(x.sale_rate) || 0,
         sale_pkr: Number(x.sale_pkr) || 0,
 
+        // 🔥 STRING VALUES
         purchase_sar: x.purchase_sar ? fmt(x.purchase_sar) : "",
         purchase_rate: x.purchase_rate ? fmt(x.purchase_rate) : "",
-        purchase_pkr: Number(x.purchase_pkr) || 0,
 
+        purchase_pkr: Number(x.purchase_pkr) || 0,
         profit: Number(x.profit) || 0,
       }))
     );
   };
 
   /* ===============================
-     UPDATE ROW (🔥 LIVE FORMAT FIX)
+     UPDATE ROW (LIVE, NO JUMP)
   =============================== */
-  const updateRow = (i, field, rawValue) => {
+  const updateRow = (i, field, value) => {
     const copy = [...rows];
     const r = copy[i];
 
-    // ✅ sirf numbers lo
-    const digits = rawValue.replace(/[^\d]/g, "");
-
-    // ✅ turant comma format
-    r[field] = digits ? fmt(digits) : "";
+    // allow typing freely (string)
+    r[field] = value.replace(/[^0-9,]/g, "");
 
     const sar = parse(r.purchase_sar);
     const rate = parse(r.purchase_rate);
@@ -103,7 +104,16 @@ export default function Purchase({ onNavigate }) {
   };
 
   /* ===============================
-     SAVE PURCHASE (UPSERT SAFE)
+     FORMAT ON BLUR (FINAL LOOK)
+  =============================== */
+  const formatRow = (i, field) => {
+    const copy = [...rows];
+    copy[i][field] = fmt(copy[i][field]);
+    setRows(copy);
+  };
+
+  /* ===============================
+     SAVE PURCHASE
   =============================== */
   const savePurchase = async () => {
     if (saving) return;
@@ -141,12 +151,10 @@ export default function Purchase({ onNavigate }) {
 
       if (data.success) {
         alert("Purchase Saved Successfully");
-
         setRows([]);
         setRefNo("");
         setIsEdit(false);
         loadPending();
-
         onNavigate("dashboard");
       } else {
         alert(data.error || "Save failed");
@@ -172,7 +180,6 @@ export default function Purchase({ onNavigate }) {
   =============================== */
   return (
     <div className="container p-3">
-
       {/* TOP BAR */}
       <div className="d-flex justify-content-between mb-3">
         <button
@@ -224,8 +231,6 @@ export default function Purchase({ onNavigate }) {
         <thead className="table-dark">
           <tr>
             <th>Item</th>
-            <th>Sale SAR</th>
-            <th>Rate</th>
             <th>Sale PKR</th>
             <th>Purchase SAR</th>
             <th>Purchase Rate</th>
@@ -235,19 +240,9 @@ export default function Purchase({ onNavigate }) {
         </thead>
 
         <tbody>
-          {rows.length === 0 && (
-            <tr>
-              <td colSpan="8" className="text-center text-muted">
-                No data loaded
-              </td>
-            </tr>
-          )}
-
           {rows.map((r, i) => (
             <tr key={i}>
               <td>{r.item}</td>
-              <td>{fmt(r.sale_sar)}</td>
-              <td>{fmt(r.sale_rate)}</td>
               <td>{fmt(r.sale_pkr)}</td>
 
               <td>
@@ -257,6 +252,7 @@ export default function Purchase({ onNavigate }) {
                   onChange={(e) =>
                     updateRow(i, "purchase_sar", e.target.value)
                   }
+                  onBlur={() => formatRow(i, "purchase_sar")}
                 />
               </td>
 
@@ -267,6 +263,7 @@ export default function Purchase({ onNavigate }) {
                   onChange={(e) =>
                     updateRow(i, "purchase_rate", e.target.value)
                   }
+                  onBlur={() => formatRow(i, "purchase_rate")}
                 />
               </td>
 
