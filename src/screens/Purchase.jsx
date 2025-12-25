@@ -26,7 +26,7 @@ export default function Purchase({ onNavigate }) {
   const [isEdit, setIsEdit] = useState(false);
 
   /* ===============================
-     LOAD PENDING
+     LOAD PENDING + PARTIAL
   =============================== */
   const loadPending = async () => {
     const r = await fetch(
@@ -81,16 +81,16 @@ export default function Purchase({ onNavigate }) {
   };
 
   /* ===============================
-     UPDATE ROW (🔥 LIVE FORMAT)
+     UPDATE ROW (🔥 LIVE FORMAT FIX)
   =============================== */
-  const updateRow = (i, field, raw) => {
+  const updateRow = (i, field, rawValue) => {
     const copy = [...rows];
     const r = copy[i];
 
-    // 👉 sirf digits lo
-    const digits = raw.replace(/[^\d]/g, "");
+    // ✅ sirf numbers lo
+    const digits = rawValue.replace(/[^\d]/g, "");
 
-    // 👉 live comma format
+    // ✅ turant comma format
     r[field] = digits ? fmt(digits) : "";
 
     const sar = parse(r.purchase_sar);
@@ -103,7 +103,7 @@ export default function Purchase({ onNavigate }) {
   };
 
   /* ===============================
-     SAVE PURCHASE
+     SAVE PURCHASE (UPSERT SAFE)
   =============================== */
   const savePurchase = async () => {
     if (saving) return;
@@ -173,6 +173,7 @@ export default function Purchase({ onNavigate }) {
   return (
     <div className="container p-3">
 
+      {/* TOP BAR */}
       <div className="d-flex justify-content-between mb-3">
         <button
           className="btn btn-secondary btn-sm"
@@ -201,8 +202,25 @@ export default function Purchase({ onNavigate }) {
         </div>
       )}
 
+      {/* LOAD BY REF */}
+      <div className="d-flex gap-2 mb-3">
+        <input
+          className="form-control form-control-sm"
+          placeholder="PACKAGE REF NO"
+          value={refNo}
+          onChange={(e) => setRefNo(e.target.value)}
+        />
+        <button
+          className="btn btn-primary btn-sm"
+          onClick={() => loadPackage()}
+          disabled={loading}
+        >
+          {loading ? "Loading..." : "Load"}
+        </button>
+      </div>
+
       {/* TABLE */}
-      <table className="table table-bordered table-sm mt-3">
+      <table className="table table-bordered table-sm">
         <thead className="table-dark">
           <tr>
             <th>Item</th>
@@ -217,6 +235,14 @@ export default function Purchase({ onNavigate }) {
         </thead>
 
         <tbody>
+          {rows.length === 0 && (
+            <tr>
+              <td colSpan="8" className="text-center text-muted">
+                No data loaded
+              </td>
+            </tr>
+          )}
+
           {rows.map((r, i) => (
             <tr key={i}>
               <td>{r.item}</td>
