@@ -14,22 +14,14 @@ const getRowDate = (r) => {
   return d.toLocaleDateString("en-GB");
 };
 
-// FORMAT (comma + decimal safe)
-const fmtAmt = (v) => {
-  if (v === "" || v === null || v === undefined) return "";
-  const n = Number(String(v).replace(/,/g, ""));
-  if (isNaN(n)) return v;
-  return n.toLocaleString("en-US", { maximumFractionDigits: 2 });
-};
+// AMOUNT FORMAT
+const fmtAmt = (v) =>
+  v === null || v === undefined || v === ""
+    ? "-"
+    : Number(v).toLocaleString("en-US");
 
-// PARSE
-const parseAmt = (v) => {
-  if (v === "" || v === null || v === undefined) return "";
-  const x = String(v).replace(/,/g, "");
-  if (x === "." || x.endsWith(".")) return x;
-  const n = parseFloat(x);
-  return isNaN(n) ? 0 : n;
-};
+// PARSE AMOUNT
+const parseAmt = (v) => Number(String(v).replace(/,/g, "") || 0);
 
 // NUMBER → WORDS
 const numberToWords = (num) => {
@@ -51,11 +43,14 @@ const numberToWords = (num) => {
 export default function CustomerLedger({ onNavigate }) {
   const [refNo, setRefNo] = useState("");
   const [rows, setRows] = useState([]);
+
   const [amountRaw, setAmountRaw] = useState(0);
   const [amountDisp, setAmountDisp] = useState("");
   const [date, setDate] = useState("");
   const [type, setType] = useState("payment");
   const [method, setMethod] = useState("Cash");
+
+  const [saving, setSaving] = useState(false);
 
   const pdfRef = useRef(null);
 
@@ -75,36 +70,48 @@ export default function CustomerLedger({ onNavigate }) {
   };
 
   /* =========================
-     SAVE ENTRY (FIXED)
+     SAVE ENTRY (FIXED 100%)
   ========================= */
   const saveEntry = async () => {
-    if (!refNo || amountRaw <= 0 || !date) {
-      alert("Ref No, Amount & Date required");
-      return;
-    }
+    if (!refNo) return alert("Ref No required");
+    if (!amountRaw || amountRaw <= 0)
+      return alert("Amount required");
+    if (!date) return alert("Date required");
 
-    const r = await fetch(
-      `${import.meta.env.VITE_BACKEND_URL}/api/customer-ledger/payment`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ref_no: refNo,
-          amount: amountRaw,
-          payment_date: date,
-          payment_method: method,
-          type,
-        }),
+    setSaving(true);
+
+    try {
+      const r = await fetch(
+        `${import.meta.env.VITE_BACKEND_URL}/api/customer-ledger/payment`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            ref_no: refNo,
+            amount: Number(amountRaw),
+            payment_date: date,
+            payment_method: method,
+            type,
+          }),
+        }
+      );
+
+      const d = await r.json();
+
+      if (!d.success) {
+        alert(d.error || "Save failed");
+      } else {
+        setAmountRaw(0);
+        setAmountDisp("");
+        setDate("");
+        await loadLedger();
+        alert("✅ Entry Saved Successfully");
       }
-    );
-
-    const d = await r.json();
-    if (d.success) {
-      setAmountRaw(0);
-      setAmountDisp("");
-      setDate("");
-      loadLedger();
-    } else alert(d.error);
+    } catch (err) {
+      alert("Server error");
+    } finally {
+      setSaving(false);
+    }
   };
 
   /* =========================
@@ -133,9 +140,44 @@ export default function CustomerLedger({ onNavigate }) {
     else alert(d.error);
   };
 
+  /* =========================
+     EXPORT PDF
+  ========================= */
+  const exportPDF = async () => {
+    const canvas = await html2canvas(pdfRef.current, { scale: 3 });
+    const img = canvas.toDataURL("image/png");
+
+    const pdf = new jsPDF("p", "mm", "a4");
+    const w = pdf.internal.pageSize.getWidth();
+
+    pdf.setFillColor(18, 97, 160);
+    pdf.rect(0, 0, w, 25, "F");
+
+    pdf.setTextColor(255, 255, 255);
+    pdf.setFontSize(18);
+    pdf.text("MAKKI MADNI TRAVEL", w / 2, 15, { align: "center" });
+
+    pdf.setFontSize(10);
+    pdf.text("Customer Ledger Statement", w / 2, 22, { align: "center" });
+
+    pdf.addImage(
+      img,
+      "PNG",
+      10,
+      30,
+      190,
+      (canvas.height * 190) / canvas.width
+    );
+
+    pdf.save(`${refNo}-ledger.pdf`);
+  };
+
   return (
     <div className="container p-3">
-      <button className="btn btn-secondary btn-sm" onClick={() => onNavigate("dashboard")}>
+      <button
+        className="btn btn-secondary btn-sm"
+        onClick={() => onNavigate("dashboard")}
+      >
         ⬅ Back
       </button>
 
@@ -146,11 +188,15 @@ export default function CustomerLedger({ onNavigate }) {
       <div className="d-flex gap-2 mt-2">
         <input
           className="form-control"
+          placeholder="Ref No"
           value={refNo}
           onChange={(e) => setRefNo(e.target.value)}
         />
         <button className="btn btn-primary" onClick={loadLedger}>
           Load
+        </button>
+        <button className="btn btn-success" onClick={exportPDF}>
+          📄 Export PDF
         </button>
       </div>
 
@@ -172,8 +218,10 @@ export default function CustomerLedger({ onNavigate }) {
             value={amountDisp}
             onChange={(e) => {
               const raw = parseAmt(e.target.value);
-              setAmountDisp(e.target.value);
-              if (typeof raw === "number") setAmountRaw(raw);
+              if (!isNaN(raw)) {
+                setAmountRaw(raw);
+                setAmountDisp(fmtAmt(raw));
+              }
             }}
           />
           {amountRaw > 0 && (
@@ -184,22 +232,34 @@ export default function CustomerLedger({ onNavigate }) {
         </div>
 
         <div className="col-md-3">
-          <select className="form-control" value={type} onChange={(e) => setType(e.target.value)}>
+          <select
+            className="form-control"
+            value={type}
+            onChange={(e) => setType(e.target.value)}
+          >
             <option value="payment">Payment</option>
             <option value="adjustment">Adjustment</option>
           </select>
         </div>
 
         <div className="col-md-3">
-          <select className="form-control" value={method} onChange={(e) => setMethod(e.target.value)}>
+          <select
+            className="form-control"
+            value={method}
+            onChange={(e) => setMethod(e.target.value)}
+          >
             <option>Cash</option>
             <option>Bank</option>
           </select>
         </div>
       </div>
 
-      <button className="btn btn-success mt-2" onClick={saveEntry}>
-        💾 Save Entry
+      <button
+        className="btn btn-success mt-2"
+        disabled={saving}
+        onClick={saveEntry}
+      >
+        {saving ? "Saving..." : "💾 Save Entry"}
       </button>
 
       {/* LEDGER TABLE */}
@@ -227,7 +287,10 @@ export default function CustomerLedger({ onNavigate }) {
                 <td className="fw-bold">{fmtAmt(r.balance)}</td>
                 <td>
                   {r.id !== "SALE" && r.id !== "CUSTOMER" && (
-                    <button className="btn btn-danger btn-sm" onClick={() => del(r.id)}>
+                    <button
+                      className="btn btn-danger btn-sm"
+                      onClick={() => del(r.id)}
+                    >
                       Del
                     </button>
                   )}
