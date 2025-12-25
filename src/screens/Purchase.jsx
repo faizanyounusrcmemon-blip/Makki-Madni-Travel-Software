@@ -20,13 +20,13 @@ export default function Purchase({ onNavigate }) {
   const [refNo, setRefNo] = useState("");
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [saving, setSaving] = useState(false); // 🔒 IMPORTANT
+  const [saving, setSaving] = useState(false);
 
   const [pending, setPending] = useState([]);
   const [isEdit, setIsEdit] = useState(false);
 
   /* ===============================
-     LOAD PENDING + PARTIAL
+     LOAD PENDING
   =============================== */
   const loadPending = async () => {
     const r = await fetch(
@@ -81,14 +81,17 @@ export default function Purchase({ onNavigate }) {
   };
 
   /* ===============================
-     UPDATE ROW (LIVE FORMAT)
+     UPDATE ROW (🔥 LIVE FORMAT)
   =============================== */
-  const updateRow = (i, field, value) => {
+  const updateRow = (i, field, raw) => {
     const copy = [...rows];
     const r = copy[i];
 
-    // user input string me hi rakho
-    r[field] = value;
+    // 👉 sirf digits lo
+    const digits = raw.replace(/[^\d]/g, "");
+
+    // 👉 live comma format
+    r[field] = digits ? fmt(digits) : "";
 
     const sar = parse(r.purchase_sar);
     const rate = parse(r.purchase_rate);
@@ -100,10 +103,10 @@ export default function Purchase({ onNavigate }) {
   };
 
   /* ===============================
-     SAVE PURCHASE (UPSERT SAFE)
+     SAVE PURCHASE
   =============================== */
   const savePurchase = async () => {
-    if (saving) return; // 🔒 DOUBLE SUBMIT STOP
+    if (saving) return;
     if (!rows.length) return alert("No data to save");
 
     setSaving(true);
@@ -148,10 +151,10 @@ export default function Purchase({ onNavigate }) {
       } else {
         alert(data.error || "Save failed");
       }
-    } catch (e) {
+    } catch {
       alert("Network error");
     } finally {
-      setSaving(false); // 🔓 UNLOCK
+      setSaving(false);
     }
   };
 
@@ -170,7 +173,6 @@ export default function Purchase({ onNavigate }) {
   return (
     <div className="container p-3">
 
-      {/* TOP BAR */}
       <div className="d-flex justify-content-between mb-3">
         <button
           className="btn btn-secondary btn-sm"
@@ -193,70 +195,14 @@ export default function Purchase({ onNavigate }) {
         {isEdit && <span className="text-warning">(EDIT MODE)</span>}
       </h4>
 
-      {/* PARTIAL WARNING */}
       {isPartial && (
         <div className="alert alert-warning fw-bold mt-2">
           ⚠️ This purchase is <u>PARTIALLY COMPLETED</u>.
         </div>
       )}
 
-      {/* PENDING LIST */}
-      <div className="mb-3">
-        <h6 className="fw-bold text-danger">⏳ Pending / Partial Purchases</h6>
-
-        {pending.length === 0 ? (
-          <p className="text-success">✅ No pending purchases</p>
-        ) : (
-          <ul className="list-group">
-            {pending.map((p, i) => (
-              <li
-                key={i}
-                className="list-group-item d-flex justify-content-between align-items-center"
-              >
-                <div>
-                  <b>{p.ref_no}</b>{" "}
-                  {p.status === "PENDING" && (
-                    <span className="badge bg-danger ms-2">Pending</span>
-                  )}
-                  {p.status === "PARTIAL" && (
-                    <span className="badge bg-warning text-dark ms-2">
-                      Partial
-                    </span>
-                  )}
-                  <div className="small text-muted">{p.note}</div>
-                </div>
-
-                <button
-                  className="btn btn-sm btn-outline-primary"
-                  onClick={() => loadPackage(p.ref_no)}
-                >
-                  Load
-                </button>
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
-
-      {/* LOAD BY REF */}
-      <div className="d-flex gap-2 mb-3">
-        <input
-          className="form-control form-control-sm"
-          placeholder="PACKAGE REF NO"
-          value={refNo}
-          onChange={(e) => setRefNo(e.target.value)}
-        />
-        <button
-          className="btn btn-primary btn-sm"
-          onClick={() => loadPackage()}
-          disabled={loading}
-        >
-          {loading ? "Loading..." : "Load"}
-        </button>
-      </div>
-
       {/* TABLE */}
-      <table className="table table-bordered table-sm">
+      <table className="table table-bordered table-sm mt-3">
         <thead className="table-dark">
           <tr>
             <th>Item</th>
@@ -271,14 +217,6 @@ export default function Purchase({ onNavigate }) {
         </thead>
 
         <tbody>
-          {rows.length === 0 && (
-            <tr>
-              <td colSpan="8" className="text-center text-muted">
-                No data loaded
-              </td>
-            </tr>
-          )}
-
           {rows.map((r, i) => (
             <tr key={i}>
               <td>{r.item}</td>
