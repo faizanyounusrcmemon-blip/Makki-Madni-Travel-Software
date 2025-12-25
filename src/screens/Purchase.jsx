@@ -4,21 +4,19 @@ import React, { useEffect, useState } from "react";
    HELPERS (DOT + COMMA SAFE)
 ================================ */
 
-// DISPLAY FORMAT
+// display ke liye
 const fmt = (v) => {
   if (v === "" || v === null || v === undefined) return "";
   const n = Number(String(v).replace(/,/g, ""));
-  if (isNaN(n)) return v; // allow "30." or "."
-  return n.toLocaleString("en-US", {
-    maximumFractionDigits: 4,
-  });
+  if (isNaN(n)) return v; // "." ya "30."
+  return n.toLocaleString("en-US", { maximumFractionDigits: 4 });
 };
 
-// PARSE FOR CALCULATION
+// calculation ke liye
 const parse = (v) => {
   if (v === "" || v === null || v === undefined) return "";
   const x = String(v).replace(/,/g, "");
-  if (x === "." || x.endsWith(".")) return x; // 👈 dot typing allow
+  if (x === "." || x.endsWith(".")) return x;
   const n = parseFloat(x);
   return isNaN(n) ? 0 : n;
 };
@@ -32,7 +30,7 @@ export default function Purchase({ onNavigate }) {
   const [isEdit, setIsEdit] = useState(false);
 
   /* ===============================
-     LOAD PENDING
+     LOAD PENDING + PARTIAL LIST
   =============================== */
   const loadPending = async () => {
     const r = await fetch(
@@ -47,7 +45,7 @@ export default function Purchase({ onNavigate }) {
   }, []);
 
   /* ===============================
-     LOAD PACKAGE
+     LOAD PACKAGE (SAVE / EDIT)
   =============================== */
   const loadPackage = async (r = refNo) => {
     if (!r) return alert("Ref No required");
@@ -77,7 +75,7 @@ export default function Purchase({ onNavigate }) {
         sale_rate: Number(x.sale_rate) || 0,
         sale_pkr: Number(x.sale_pkr) || 0,
 
-        // 👇 STRING rakha hai (typing safe)
+        // 👇 string rakha (dot typing ke liye)
         purchase_sar: x.purchase_sar ? String(x.purchase_sar) : "",
         purchase_rate: x.purchase_rate ? String(x.purchase_rate) : "",
 
@@ -94,8 +92,7 @@ export default function Purchase({ onNavigate }) {
     const copy = [...rows];
     const r = copy[i];
 
-    // 👇 typing ke liye raw string
-    r[field] = value;
+    r[field] = value; // 👈 raw string
 
     const sar = parse(r.purchase_sar);
     const rate = parse(r.purchase_rate);
@@ -110,7 +107,7 @@ export default function Purchase({ onNavigate }) {
   };
 
   /* ===============================
-     SAVE / UPDATE
+     SAVE / UPDATE PURCHASE
   =============================== */
   const savePurchase = async () => {
     if (!rows.length) return alert("No data to save");
@@ -119,7 +116,7 @@ export default function Purchase({ onNavigate }) {
       ? "/api/purchase/update"
       : "/api/purchase/save";
 
-    // 👇 backend ko NUMBER bhejna
+    // backend ko number bhejo
     const payloadRows = rows.map((r) => ({
       ...r,
       purchase_sar: parseFloat(parse(r.purchase_sar)) || 0,
@@ -184,8 +181,7 @@ export default function Purchase({ onNavigate }) {
       </div>
 
       <h4 className="fw-bold">
-        PURCHASE ENTRY{" "}
-        {isEdit && <span className="text-warning">(EDIT MODE)</span>}
+        PURCHASE ENTRY {isEdit && <span className="text-warning">(EDIT MODE)</span>}
       </h4>
 
       {isPartial && (
