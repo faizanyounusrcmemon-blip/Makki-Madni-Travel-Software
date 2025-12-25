@@ -20,6 +20,7 @@ export default function Purchase({ onNavigate }) {
   const [refNo, setRefNo] = useState("");
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false); // 🔒 IMPORTANT
 
   const [pending, setPending] = useState([]);
   const [isEdit, setIsEdit] = useState(false);
@@ -86,7 +87,7 @@ export default function Purchase({ onNavigate }) {
     const copy = [...rows];
     const r = copy[i];
 
-    // user jo likhe wo string me rakho
+    // user input string me hi rakho
     r[field] = value;
 
     const sar = parse(r.purchase_sar);
@@ -99,10 +100,13 @@ export default function Purchase({ onNavigate }) {
   };
 
   /* ===============================
-     SAVE PURCHASE (UPSERT)
+     SAVE PURCHASE (UPSERT SAFE)
   =============================== */
   const savePurchase = async () => {
+    if (saving) return; // 🔒 DOUBLE SUBMIT STOP
     if (!rows.length) return alert("No data to save");
+
+    setSaving(true);
 
     const payload = rows.map((r) => ({
       item: r.item,
@@ -117,31 +121,37 @@ export default function Purchase({ onNavigate }) {
       profit: r.profit,
     }));
 
-    const res = await fetch(
-      `${import.meta.env.VITE_BACKEND_URL}/api/purchase/save`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ref_no: refNo,
-          items: payload,
-        }),
+    try {
+      const res = await fetch(
+        `${import.meta.env.VITE_BACKEND_URL}/api/purchase/save`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            ref_no: refNo,
+            items: payload,
+          }),
+        }
+      );
+
+      const data = await res.json();
+
+      if (data.success) {
+        alert("Purchase Saved Successfully");
+
+        setRows([]);
+        setRefNo("");
+        setIsEdit(false);
+        loadPending();
+
+        onNavigate("dashboard");
+      } else {
+        alert(data.error || "Save failed");
       }
-    );
-
-    const data = await res.json();
-
-    if (data.success) {
-      alert("Purchase Saved Successfully");
-
-      setRows([]);
-      setRefNo("");
-      setIsEdit(false);
-      loadPending();
-
-      onNavigate("dashboard");
-    } else {
-      alert(data.error || "Save failed");
+    } catch (e) {
+      alert("Network error");
+    } finally {
+      setSaving(false); // 🔓 UNLOCK
     }
   };
 
@@ -169,8 +179,12 @@ export default function Purchase({ onNavigate }) {
           ⬅ Back
         </button>
 
-        <button className="btn btn-success btn-sm" onClick={savePurchase}>
-          💾 Save Purchase
+        <button
+          className="btn btn-success btn-sm"
+          onClick={savePurchase}
+          disabled={saving}
+        >
+          {saving ? "Saving..." : "💾 Save Purchase"}
         </button>
       </div>
 
