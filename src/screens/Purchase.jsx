@@ -2,28 +2,23 @@ import React, { useEffect, useState } from "react";
 
 /* ===============================
    HELPERS
-=============================== */
-
+================================ */
 // 30000 → 30,000
 const fmt = (v) => {
   if (v === "" || v === null || v === undefined) return "";
-  const n = Number(String(v).replace(/,/g, ""));
-  if (isNaN(n)) return "";
-  return n.toLocaleString("en-US");
+  return Number(v).toLocaleString("en-US");
 };
 
 // "30,000" → 30000
 const parse = (v) => {
   if (!v) return 0;
-  const n = Number(String(v).replace(/,/g, ""));
-  return isNaN(n) ? 0 : n;
+  return Number(String(v).replace(/,/g, ""));
 };
 
 export default function Purchase({ onNavigate }) {
   const [refNo, setRefNo] = useState("");
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [saving, setSaving] = useState(false);
 
   const [pending, setPending] = useState([]);
   const [isEdit, setIsEdit] = useState(false);
@@ -74,95 +69,64 @@ export default function Purchase({ onNavigate }) {
         sale_rate: Number(x.sale_rate) || 0,
         sale_pkr: Number(x.sale_pkr) || 0,
 
-        // 🔥 STRING VALUES
-        purchase_sar: x.purchase_sar ? fmt(x.purchase_sar) : "",
-        purchase_rate: x.purchase_rate ? fmt(x.purchase_rate) : "",
-
+        purchase_sar: x.purchase_sar ? Number(x.purchase_sar) : "",
+        purchase_rate: x.purchase_rate ? Number(x.purchase_rate) : "",
         purchase_pkr: Number(x.purchase_pkr) || 0,
+
         profit: Number(x.profit) || 0,
       }))
     );
   };
 
   /* ===============================
-     UPDATE ROW (LIVE, NO JUMP)
+     UPDATE ROW (WITH FORMAT)
   =============================== */
   const updateRow = (i, field, value) => {
     const copy = [...rows];
     const r = copy[i];
 
-    // allow typing freely (string)
-    r[field] = value.replace(/[^0-9,]/g, "");
+    const num = parse(value);
+    r[field] = num;
 
-    const sar = parse(r.purchase_sar);
-    const rate = parse(r.purchase_rate);
-
-    r.purchase_pkr = sar * rate;
+    r.purchase_pkr = (r.purchase_sar || 0) * (r.purchase_rate || 0);
     r.profit = r.sale_pkr - r.purchase_pkr;
 
     setRows(copy);
   };
 
   /* ===============================
-     FORMAT ON BLUR (FINAL LOOK)
-  =============================== */
-  const formatRow = (i, field) => {
-    const copy = [...rows];
-    copy[i][field] = fmt(copy[i][field]);
-    setRows(copy);
-  };
-
-  /* ===============================
-     SAVE PURCHASE
+     SAVE / UPDATE
   =============================== */
   const savePurchase = async () => {
-    if (saving) return;
     if (!rows.length) return alert("No data to save");
 
-    setSaving(true);
+    const url = isEdit
+      ? "/api/purchase/update"
+      : "/api/purchase/save";
 
-    const payload = rows.map((r) => ({
-      item: r.item,
-
-      sale_sar: r.sale_sar,
-      sale_rate: r.sale_rate,
-      sale_pkr: r.sale_pkr,
-
-      purchase_sar: parse(r.purchase_sar),
-      purchase_rate: parse(r.purchase_rate),
-      purchase_pkr: r.purchase_pkr,
-      profit: r.profit,
-    }));
-
-    try {
-      const res = await fetch(
-        `${import.meta.env.VITE_BACKEND_URL}/api/purchase/save`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            ref_no: refNo,
-            items: payload,
-          }),
-        }
-      );
-
-      const data = await res.json();
-
-      if (data.success) {
-        alert("Purchase Saved Successfully");
-        setRows([]);
-        setRefNo("");
-        setIsEdit(false);
-        loadPending();
-        onNavigate("dashboard");
-      } else {
-        alert(data.error || "Save failed");
+    const res = await fetch(
+      `${import.meta.env.VITE_BACKEND_URL}${url}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ref_no: refNo,
+          items: rows,
+        }),
       }
-    } catch {
-      alert("Network error");
-    } finally {
-      setSaving(false);
+    );
+
+    const data = await res.json();
+
+    if (data.success) {
+      alert(isEdit ? "Purchase Updated" : "Purchase Saved");
+      setRows([]);
+      setRefNo("");
+      setIsEdit(false);
+      loadPending();
+      onNavigate("dashboard");
+    } else {
+      alert(data.error || "Save failed");
     }
   };
 
@@ -171,15 +135,14 @@ export default function Purchase({ onNavigate }) {
   =============================== */
   const isPartial =
     rows.length > 0 &&
-    rows.some(
-      (r) => !parse(r.purchase_sar) || !parse(r.purchase_rate)
-    );
+    rows.some((r) => !r.purchase_sar || !r.purchase_rate);
 
   /* ===============================
      UI
   =============================== */
   return (
     <div className="container p-3">
+
       {/* TOP BAR */}
       <div className="d-flex justify-content-between mb-3">
         <button
@@ -189,12 +152,8 @@ export default function Purchase({ onNavigate }) {
           ⬅ Back
         </button>
 
-        <button
-          className="btn btn-success btn-sm"
-          onClick={savePurchase}
-          disabled={saving}
-        >
-          {saving ? "Saving..." : "💾 Save Purchase"}
+        <button className="btn btn-success btn-sm" onClick={savePurchase}>
+          {isEdit ? "✏️ Update Purchase" : "💾 Save Purchase"}
         </button>
       </div>
 
@@ -208,6 +167,43 @@ export default function Purchase({ onNavigate }) {
           ⚠️ This purchase is <u>PARTIALLY COMPLETED</u>.
         </div>
       )}
+
+      {/* PENDING LIST */}
+      <div className="mb-3">
+        <h6 className="fw-bold text-danger">⏳ Pending / Partial Purchases</h6>
+
+        {pending.length === 0 ? (
+          <p className="text-success">✅ No pending purchases</p>
+        ) : (
+          <ul className="list-group">
+            {pending.map((p, i) => (
+              <li
+                key={i}
+                className="list-group-item d-flex justify-content-between align-items-center"
+              >
+                <div>
+                  <b>{p.ref_no}</b>{" "}
+                  {p.status === "PENDING" && (
+                    <span className="badge bg-danger ms-2">Pending</span>
+                  )}
+                  {p.status === "PARTIAL" && (
+                    <span className="badge bg-warning text-dark ms-2">
+                      Partial
+                    </span>
+                  )}
+                </div>
+
+                <button
+                  className="btn btn-sm btn-outline-primary"
+                  onClick={() => loadPackage(p.ref_no)}
+                >
+                  Load
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
 
       {/* LOAD BY REF */}
       <div className="d-flex gap-2 mb-3">
@@ -231,6 +227,8 @@ export default function Purchase({ onNavigate }) {
         <thead className="table-dark">
           <tr>
             <th>Item</th>
+            <th>Sale SAR</th>
+            <th>Rate</th>
             <th>Sale PKR</th>
             <th>Purchase SAR</th>
             <th>Purchase Rate</th>
@@ -240,30 +238,40 @@ export default function Purchase({ onNavigate }) {
         </thead>
 
         <tbody>
+          {rows.length === 0 && (
+            <tr>
+              <td colSpan="8" className="text-center text-muted">
+                No data loaded
+              </td>
+            </tr>
+          )}
+
           {rows.map((r, i) => (
             <tr key={i}>
               <td>{r.item}</td>
+              <td>{fmt(r.sale_sar)}</td>
+              <td>{fmt(r.sale_rate)}</td>
               <td>{fmt(r.sale_pkr)}</td>
 
               <td>
                 <input
+                  type="text"
                   className="form-control form-control-sm"
-                  value={r.purchase_sar}
+                  value={fmt(r.purchase_sar)}
                   onChange={(e) =>
                     updateRow(i, "purchase_sar", e.target.value)
                   }
-                  onBlur={() => formatRow(i, "purchase_sar")}
                 />
               </td>
 
               <td>
                 <input
+                  type="text"
                   className="form-control form-control-sm"
-                  value={r.purchase_rate}
+                  value={fmt(r.purchase_rate)}
                   onChange={(e) =>
                     updateRow(i, "purchase_rate", e.target.value)
                   }
-                  onBlur={() => formatRow(i, "purchase_rate")}
                 />
               </td>
 
