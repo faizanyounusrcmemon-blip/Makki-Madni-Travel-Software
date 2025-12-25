@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 
 /* ===============================
-   HELPERS (FORMAT / PARSE)
+   HELPERS
 =============================== */
 
 // 30000 → 30,000
@@ -21,11 +21,12 @@ export default function Purchase({ onNavigate }) {
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(false);
 
+  // 🔴 IMPORTANT (pending list)
   const [pending, setPending] = useState([]);
   const [isEdit, setIsEdit] = useState(false);
 
   /* ===============================
-     LOAD PENDING + PARTIAL
+     LOAD PENDING + PARTIAL LIST
   =============================== */
   const loadPending = async () => {
     const r = await fetch(
@@ -70,13 +71,9 @@ export default function Purchase({ onNavigate }) {
         sale_rate: Number(x.sale_rate) || 0,
         sale_pkr: Number(x.sale_pkr) || 0,
 
-        // 🔴 STRING رکھ رہے ہیں تاکہ comma typing ہو
-        purchase_sar: x.purchase_sar
-          ? fmt(x.purchase_sar)
-          : "",
-        purchase_rate: x.purchase_rate
-          ? fmt(x.purchase_rate)
-          : "",
+        // 🔹 STRING for comma typing
+        purchase_sar: x.purchase_sar ? fmt(x.purchase_sar) : "",
+        purchase_rate: x.purchase_rate ? fmt(x.purchase_rate) : "",
 
         purchase_pkr: Number(x.purchase_pkr) || 0,
         profit: Number(x.profit) || 0,
@@ -85,13 +82,12 @@ export default function Purchase({ onNavigate }) {
   };
 
   /* ===============================
-     UPDATE ROW (WITH COMMA INPUT)
+     UPDATE ROW (comma + calc)
   =============================== */
   const updateRow = (i, field, value) => {
     const copy = [...rows];
     const r = copy[i];
 
-    // input formatted value
     r[field] = fmt(parse(value));
 
     const sar = parse(r.purchase_sar);
@@ -113,7 +109,7 @@ export default function Purchase({ onNavigate }) {
       ? "/api/purchase/update"
       : "/api/purchase/save";
 
-    // 🔴 backend کو pure numbers بھیجیں
+    // 🔹 backend ko clean numbers
     const cleanRows = rows.map((r) => ({
       ...r,
       purchase_sar: parse(r.purchase_sar),
@@ -171,26 +167,66 @@ export default function Purchase({ onNavigate }) {
           ⬅ Back
         </button>
 
-        <button
-          className="btn btn-success btn-sm"
-          onClick={savePurchase}
-        >
+        <button className="btn btn-success btn-sm" onClick={savePurchase}>
           {isEdit ? "✏️ Update Purchase" : "💾 Save Purchase"}
         </button>
       </div>
 
       <h4 className="fw-bold">
         PURCHASE ENTRY{" "}
-        {isEdit && (
-          <span className="text-warning">(EDIT MODE)</span>
-        )}
+        {isEdit && <span className="text-warning">(EDIT MODE)</span>}
       </h4>
 
+      {/* ⚠️ PARTIAL WARNING */}
       {isPartial && (
         <div className="alert alert-warning fw-bold mt-2">
-          ⚠️ PARTIAL PURCHASE (some values missing)
+          ⚠️ This purchase is <u>PARTIALLY COMPLETED</u>
         </div>
       )}
+
+      {/* 🔴 PENDING + 🟡 PARTIAL LIST (RESTORED) */}
+      <div className="mb-3">
+        <h6 className="fw-bold text-danger">
+          ⏳ Pending / Partial Purchases
+        </h6>
+
+        {pending.length === 0 ? (
+          <p className="text-success">✅ No pending purchases</p>
+        ) : (
+          <ul className="list-group">
+            {pending.map((p, i) => (
+              <li
+                key={i}
+                className="list-group-item d-flex justify-content-between align-items-center"
+              >
+                <div>
+                  <b>{p.ref_no}</b>
+                  {p.status === "PENDING" && (
+                    <span className="badge bg-danger ms-2">
+                      Pending
+                    </span>
+                  )}
+                  {p.status === "PARTIAL" && (
+                    <span className="badge bg-warning text-dark ms-2">
+                      Partial
+                    </span>
+                  )}
+                  <div className="small text-muted">
+                    {p.note}
+                  </div>
+                </div>
+
+                <button
+                  className="btn btn-sm btn-outline-primary"
+                  onClick={() => loadPackage(p.ref_no)}
+                >
+                  Load
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
 
       {/* LOAD BY REF */}
       <div className="d-flex gap-2 mb-3">
