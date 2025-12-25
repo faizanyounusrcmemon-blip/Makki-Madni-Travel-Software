@@ -8,20 +8,16 @@ import React, { useEffect, useState } from "react";
 const formatInput = (v) => {
   if (v === "") return "";
 
-  // sirf digits + dot
   let clean = v.replace(/[^0-9.]/g, "");
 
-  // ek se zyada dot allow nahi
+  // ek se zyada dot nahi
   const parts = clean.split(".");
   if (parts.length > 2) {
     clean = parts[0] + "." + parts.slice(1).join("");
   }
 
   const [int, dec] = clean.split(".");
-
-  // integer part me comma
-  const intFmt =
-    int === "" ? "" : Number(int).toLocaleString("en-US");
+  const intFmt = int ? Number(int).toLocaleString("en-US") : "";
 
   return dec !== undefined ? `${intFmt}.${dec}` : intFmt;
 };
@@ -41,7 +37,7 @@ export default function Purchase({ onNavigate }) {
   const [isEdit, setIsEdit] = useState(false);
 
   /* ===============================
-     LOAD PENDING + PARTIAL LIST
+     LOAD PENDING + PARTIAL
   =============================== */
   const loadPending = async () => {
     const r = await fetch(
@@ -100,13 +96,12 @@ export default function Purchase({ onNavigate }) {
   };
 
   /* ===============================
-     UPDATE ROW (FIXED)
+     UPDATE ROW
   =============================== */
   const updateRow = (i, field, value) => {
     const copy = [...rows];
     const r = copy[i];
 
-    // 🔴 YAHI MAIN FIX HAI
     r[field] = formatInput(value);
 
     const sar = parseNumber(r.purchase_sar);
@@ -119,15 +114,12 @@ export default function Purchase({ onNavigate }) {
   };
 
   /* ===============================
-     SAVE / UPDATE
+     SAVE / UPDATE (UPSERT)
   =============================== */
   const savePurchase = async () => {
     if (!rows.length) return alert("No data to save");
 
-    const url = isEdit
-      ? "/api/purchase/update"
-      : "/api/purchase/save";
-
+    // 🔴 FIX: hamesha SAVE route
     const cleanRows = rows.map((r) => ({
       ...r,
       purchase_sar: parseNumber(r.purchase_sar),
@@ -135,7 +127,7 @@ export default function Purchase({ onNavigate }) {
     }));
 
     const res = await fetch(
-      `${import.meta.env.VITE_BACKEND_URL}${url}`,
+      `${import.meta.env.VITE_BACKEND_URL}/api/purchase/save`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
