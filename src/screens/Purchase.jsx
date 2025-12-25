@@ -1,24 +1,19 @@
 import React, { useEffect, useState } from "react";
 
 /* ===============================
-   HELPERS (DOT + COMMA SAFE)
-================================ */
+   HELPERS (FORMAT / PARSE)
+=============================== */
 
-// display ke liye
+// 30000 → 30,000
 const fmt = (v) => {
   if (v === "" || v === null || v === undefined) return "";
-  const n = Number(String(v).replace(/,/g, ""));
-  if (isNaN(n)) return v; // "." ya "30."
-  return n.toLocaleString("en-US", { maximumFractionDigits: 4 });
+  return Number(v).toLocaleString("en-US");
 };
 
-// calculation ke liye
+// "30,000" → 30000
 const parse = (v) => {
-  if (v === "" || v === null || v === undefined) return "";
-  const x = String(v).replace(/,/g, "");
-  if (x === "." || x.endsWith(".")) return x;
-  const n = parseFloat(x);
-  return isNaN(n) ? 0 : n;
+  if (!v) return 0;
+  return Number(String(v).replace(/,/g, ""));
 };
 
 export default function Purchase({ onNavigate }) {
@@ -30,7 +25,7 @@ export default function Purchase({ onNavigate }) {
   const [isEdit, setIsEdit] = useState(false);
 
   /* ===============================
-     LOAD PENDING + PARTIAL LIST
+     LOAD PENDING + PARTIAL
   =============================== */
   const loadPending = async () => {
     const r = await fetch(
@@ -45,7 +40,7 @@ export default function Purchase({ onNavigate }) {
   }, []);
 
   /* ===============================
-     LOAD PACKAGE (SAVE / EDIT)
+     LOAD PACKAGE
   =============================== */
   const loadPackage = async (r = refNo) => {
     if (!r) return alert("Ref No required");
@@ -75,9 +70,13 @@ export default function Purchase({ onNavigate }) {
         sale_rate: Number(x.sale_rate) || 0,
         sale_pkr: Number(x.sale_pkr) || 0,
 
-        // 👇 string rakha (dot typing ke liye)
-        purchase_sar: x.purchase_sar ? String(x.purchase_sar) : "",
-        purchase_rate: x.purchase_rate ? String(x.purchase_rate) : "",
+        // 🔴 STRING رکھ رہے ہیں تاکہ comma typing ہو
+        purchase_sar: x.purchase_sar
+          ? fmt(x.purchase_sar)
+          : "",
+        purchase_rate: x.purchase_rate
+          ? fmt(x.purchase_rate)
+          : "",
 
         purchase_pkr: Number(x.purchase_pkr) || 0,
         profit: Number(x.profit) || 0,
@@ -86,28 +85,26 @@ export default function Purchase({ onNavigate }) {
   };
 
   /* ===============================
-     UPDATE ROW (DOT SAFE)
+     UPDATE ROW (WITH COMMA INPUT)
   =============================== */
   const updateRow = (i, field, value) => {
     const copy = [...rows];
     const r = copy[i];
 
-    r[field] = value; // 👈 raw string
+    // input formatted value
+    r[field] = fmt(parse(value));
 
     const sar = parse(r.purchase_sar);
     const rate = parse(r.purchase_rate);
 
-    const sarNum = typeof sar === "number" ? sar : 0;
-    const rateNum = typeof rate === "number" ? rate : 0;
-
-    r.purchase_pkr = sarNum * rateNum;
+    r.purchase_pkr = sar * rate;
     r.profit = r.sale_pkr - r.purchase_pkr;
 
     setRows(copy);
   };
 
   /* ===============================
-     SAVE / UPDATE PURCHASE
+     SAVE / UPDATE
   =============================== */
   const savePurchase = async () => {
     if (!rows.length) return alert("No data to save");
@@ -116,11 +113,11 @@ export default function Purchase({ onNavigate }) {
       ? "/api/purchase/update"
       : "/api/purchase/save";
 
-    // backend ko number bhejo
-    const payloadRows = rows.map((r) => ({
+    // 🔴 backend کو pure numbers بھیجیں
+    const cleanRows = rows.map((r) => ({
       ...r,
-      purchase_sar: parseFloat(parse(r.purchase_sar)) || 0,
-      purchase_rate: parseFloat(parse(r.purchase_rate)) || 0,
+      purchase_sar: parse(r.purchase_sar),
+      purchase_rate: parse(r.purchase_rate),
     }));
 
     const res = await fetch(
@@ -130,7 +127,7 @@ export default function Purchase({ onNavigate }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ref_no: refNo,
-          items: payloadRows,
+          items: cleanRows,
         }),
       }
     );
@@ -139,6 +136,7 @@ export default function Purchase({ onNavigate }) {
 
     if (data.success) {
       alert(isEdit ? "Purchase Updated" : "Purchase Saved");
+
       setRows([]);
       setRefNo("");
       setIsEdit(false);
@@ -155,9 +153,7 @@ export default function Purchase({ onNavigate }) {
   const isPartial =
     rows.length > 0 &&
     rows.some(
-      (r) =>
-        !parseFloat(parse(r.purchase_sar)) ||
-        !parseFloat(parse(r.purchase_rate))
+      (r) => !parse(r.purchase_sar) || !parse(r.purchase_rate)
     );
 
   /* ===============================
@@ -175,20 +171,43 @@ export default function Purchase({ onNavigate }) {
           ⬅ Back
         </button>
 
-        <button className="btn btn-success btn-sm" onClick={savePurchase}>
+        <button
+          className="btn btn-success btn-sm"
+          onClick={savePurchase}
+        >
           {isEdit ? "✏️ Update Purchase" : "💾 Save Purchase"}
         </button>
       </div>
 
       <h4 className="fw-bold">
-        PURCHASE ENTRY {isEdit && <span className="text-warning">(EDIT MODE)</span>}
+        PURCHASE ENTRY{" "}
+        {isEdit && (
+          <span className="text-warning">(EDIT MODE)</span>
+        )}
       </h4>
 
       {isPartial && (
         <div className="alert alert-warning fw-bold mt-2">
-          ⚠️ This purchase is <u>PARTIALLY COMPLETED</u>.
+          ⚠️ PARTIAL PURCHASE (some values missing)
         </div>
       )}
+
+      {/* LOAD BY REF */}
+      <div className="d-flex gap-2 mb-3">
+        <input
+          className="form-control form-control-sm"
+          placeholder="PACKAGE REF NO"
+          value={refNo}
+          onChange={(e) => setRefNo(e.target.value)}
+        />
+        <button
+          className="btn btn-primary btn-sm"
+          onClick={() => loadPackage()}
+          disabled={loading}
+        >
+          {loading ? "Loading..." : "Load"}
+        </button>
+      </div>
 
       {/* TABLE */}
       <table className="table table-bordered table-sm">
@@ -217,15 +236,14 @@ export default function Purchase({ onNavigate }) {
           {rows.map((r, i) => (
             <tr key={i}>
               <td>{r.item}</td>
-              <td>{fmt(r.sale_sar)}</td>
-              <td>{fmt(r.sale_rate)}</td>
+              <td>{r.sale_sar}</td>
+              <td>{r.sale_rate}</td>
               <td>{fmt(r.sale_pkr)}</td>
 
               <td>
                 <input
-                  type="text"
                   className="form-control form-control-sm"
-                  value={fmt(r.purchase_sar)}
+                  value={r.purchase_sar}
                   onChange={(e) =>
                     updateRow(i, "purchase_sar", e.target.value)
                   }
@@ -234,9 +252,8 @@ export default function Purchase({ onNavigate }) {
 
               <td>
                 <input
-                  type="text"
                   className="form-control form-control-sm"
-                  value={fmt(r.purchase_rate)}
+                  value={r.purchase_rate}
                   onChange={(e) =>
                     updateRow(i, "purchase_rate", e.target.value)
                   }
