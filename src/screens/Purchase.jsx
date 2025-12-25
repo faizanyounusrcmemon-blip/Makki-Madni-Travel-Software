@@ -1,19 +1,35 @@
 import React, { useEffect, useState } from "react";
 
 /* ===============================
-   HELPERS
+   HELPERS (DOT + COMMA SAFE)
 =============================== */
 
-// 30000 → 30,000
-const fmt = (v) => {
-  if (v === "" || v === null || v === undefined) return "";
-  return Number(v).toLocaleString("en-US");
+// typing ke waqt (comma + decimal allowed)
+const formatInput = (v) => {
+  if (v === "") return "";
+
+  // sirf digits + dot
+  let clean = v.replace(/[^0-9.]/g, "");
+
+  // ek se zyada dot allow nahi
+  const parts = clean.split(".");
+  if (parts.length > 2) {
+    clean = parts[0] + "." + parts.slice(1).join("");
+  }
+
+  const [int, dec] = clean.split(".");
+
+  // integer part me comma
+  const intFmt =
+    int === "" ? "" : Number(int).toLocaleString("en-US");
+
+  return dec !== undefined ? `${intFmt}.${dec}` : intFmt;
 };
 
-// "30,000" → 30000
-const parse = (v) => {
+// calculation / backend ke liye
+const parseNumber = (v) => {
   if (!v) return 0;
-  return Number(String(v).replace(/,/g, ""));
+  return parseFloat(String(v).replace(/,/g, "")) || 0;
 };
 
 export default function Purchase({ onNavigate }) {
@@ -21,7 +37,6 @@ export default function Purchase({ onNavigate }) {
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(false);
 
-  // 🔴 IMPORTANT (pending list)
   const [pending, setPending] = useState([]);
   const [isEdit, setIsEdit] = useState(false);
 
@@ -71,9 +86,12 @@ export default function Purchase({ onNavigate }) {
         sale_rate: Number(x.sale_rate) || 0,
         sale_pkr: Number(x.sale_pkr) || 0,
 
-        // 🔹 STRING for comma typing
-        purchase_sar: x.purchase_sar ? fmt(x.purchase_sar) : "",
-        purchase_rate: x.purchase_rate ? fmt(x.purchase_rate) : "",
+        purchase_sar: x.purchase_sar
+          ? formatInput(String(x.purchase_sar))
+          : "",
+        purchase_rate: x.purchase_rate
+          ? formatInput(String(x.purchase_rate))
+          : "",
 
         purchase_pkr: Number(x.purchase_pkr) || 0,
         profit: Number(x.profit) || 0,
@@ -82,16 +100,17 @@ export default function Purchase({ onNavigate }) {
   };
 
   /* ===============================
-     UPDATE ROW (comma + calc)
+     UPDATE ROW (FIXED)
   =============================== */
   const updateRow = (i, field, value) => {
     const copy = [...rows];
     const r = copy[i];
 
-    r[field] = fmt(parse(value));
+    // 🔴 YAHI MAIN FIX HAI
+    r[field] = formatInput(value);
 
-    const sar = parse(r.purchase_sar);
-    const rate = parse(r.purchase_rate);
+    const sar = parseNumber(r.purchase_sar);
+    const rate = parseNumber(r.purchase_rate);
 
     r.purchase_pkr = sar * rate;
     r.profit = r.sale_pkr - r.purchase_pkr;
@@ -109,11 +128,10 @@ export default function Purchase({ onNavigate }) {
       ? "/api/purchase/update"
       : "/api/purchase/save";
 
-    // 🔹 backend ko clean numbers
     const cleanRows = rows.map((r) => ({
       ...r,
-      purchase_sar: parse(r.purchase_sar),
-      purchase_rate: parse(r.purchase_rate),
+      purchase_sar: parseNumber(r.purchase_sar),
+      purchase_rate: parseNumber(r.purchase_rate),
     }));
 
     const res = await fetch(
@@ -132,7 +150,6 @@ export default function Purchase({ onNavigate }) {
 
     if (data.success) {
       alert(isEdit ? "Purchase Updated" : "Purchase Saved");
-
       setRows([]);
       setRefNo("");
       setIsEdit(false);
@@ -149,7 +166,9 @@ export default function Purchase({ onNavigate }) {
   const isPartial =
     rows.length > 0 &&
     rows.some(
-      (r) => !parse(r.purchase_sar) || !parse(r.purchase_rate)
+      (r) =>
+        !parseNumber(r.purchase_sar) ||
+        !parseNumber(r.purchase_rate)
     );
 
   /* ===============================
@@ -167,24 +186,28 @@ export default function Purchase({ onNavigate }) {
           ⬅ Back
         </button>
 
-        <button className="btn btn-success btn-sm" onClick={savePurchase}>
+        <button
+          className="btn btn-success btn-sm"
+          onClick={savePurchase}
+        >
           {isEdit ? "✏️ Update Purchase" : "💾 Save Purchase"}
         </button>
       </div>
 
       <h4 className="fw-bold">
         PURCHASE ENTRY{" "}
-        {isEdit && <span className="text-warning">(EDIT MODE)</span>}
+        {isEdit && (
+          <span className="text-warning">(EDIT MODE)</span>
+        )}
       </h4>
 
-      {/* ⚠️ PARTIAL WARNING */}
       {isPartial && (
         <div className="alert alert-warning fw-bold mt-2">
           ⚠️ This purchase is <u>PARTIALLY COMPLETED</u>
         </div>
       )}
 
-      {/* 🔴 PENDING + 🟡 PARTIAL LIST (RESTORED) */}
+      {/* PENDING LIST */}
       <div className="mb-3">
         <h6 className="fw-bold text-danger">
           ⏳ Pending / Partial Purchases
@@ -261,20 +284,12 @@ export default function Purchase({ onNavigate }) {
         </thead>
 
         <tbody>
-          {rows.length === 0 && (
-            <tr>
-              <td colSpan="8" className="text-center text-muted">
-                No data loaded
-              </td>
-            </tr>
-          )}
-
           {rows.map((r, i) => (
             <tr key={i}>
               <td>{r.item}</td>
               <td>{r.sale_sar}</td>
               <td>{r.sale_rate}</td>
-              <td>{fmt(r.sale_pkr)}</td>
+              <td>{r.sale_pkr.toLocaleString()}</td>
 
               <td>
                 <input
@@ -296,7 +311,7 @@ export default function Purchase({ onNavigate }) {
                 />
               </td>
 
-              <td>{fmt(r.purchase_pkr)}</td>
+              <td>{r.purchase_pkr.toLocaleString()}</td>
 
               <td
                 className={
@@ -305,7 +320,7 @@ export default function Purchase({ onNavigate }) {
                     : "text-danger fw-bold"
                 }
               >
-                {fmt(r.profit)}
+                {r.profit.toLocaleString()}
               </td>
             </tr>
           ))}
