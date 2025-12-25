@@ -1,7 +1,15 @@
 import React, { useEffect, useState } from "react";
-import { Eye, EyeOff, Save, UserPlus } from "lucide-react";
+import {
+  Eye,
+  EyeOff,
+  Save,
+  UserPlus,
+  Trash2,
+  ArrowLeft,
+  Pencil
+} from "lucide-react";
 
-export default function CreateUser() {
+export default function CreateUser({ onNavigate }) {
   const [name, setName] = useState("");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -10,12 +18,9 @@ export default function CreateUser() {
 
   const [users, setUsers] = useState([]);
   const [editUser, setEditUser] = useState(null);
-  const [editPassword, setEditPassword] = useState("");
   const [showRowPass, setShowRowPass] = useState({});
 
-  /* ===============================
-     LOAD USERS
-  =============================== */
+  /* ================= LOAD USERS ================= */
   const loadUsers = async () => {
     const res = await fetch(
       `${import.meta.env.VITE_BACKEND_URL}/api/users/list`
@@ -28,23 +33,18 @@ export default function CreateUser() {
     loadUsers();
   }, []);
 
-  /* ===============================
-     CREATE USER
-  =============================== */
+  /* ================= CREATE ================= */
   const save = async () => {
     if (!name || !username || !password)
       return alert("All fields required");
 
-    await fetch(
-      `${import.meta.env.VITE_BACKEND_URL}/api/users/create`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, username, password, role })
-      }
-    );
+    await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/users/create`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name, username, password, role })
+    });
 
-    alert("User Created");
+    alert("✅ User Created");
     setName("");
     setUsername("");
     setPassword("");
@@ -52,73 +52,80 @@ export default function CreateUser() {
     loadUsers();
   };
 
-  /* ===============================
-     UPDATE PASSWORD
-  =============================== */
-  const updatePassword = async () => {
-    if (!editPassword) return alert("Password required");
+  /* ================= UPDATE ================= */
+  const updateUser = async () => {
+    await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/users/update`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(editUser)
+    });
 
-    await fetch(
-      `${import.meta.env.VITE_BACKEND_URL}/api/users/update-password`,
+    alert("✅ User Updated");
+    setEditUser(null);
+    loadUsers();
+  };
+
+  /* ================= DELETE ================= */
+  const deleteUser = async (u) => {
+    const pass = prompt("Enter delete password");
+    if (pass !== "786") return alert("❌ Wrong Password");
+
+    const res = await fetch(
+      `${import.meta.env.VITE_BACKEND_URL}/api/users/delete/${u.id}`,
       {
-        method: "POST",
+        method: "DELETE",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          username: editUser.username,
-          password: editPassword
-        })
+        body: JSON.stringify({ password: pass })
       }
     );
 
-    alert("Password Updated");
-    setEditUser(null);
-    setEditPassword("");
+    const d = await res.json();
+    if (!d.success) return alert(d.error || "Delete failed");
+
+    alert("🗑 User Deleted");
     loadUsers();
   };
 
   return (
     <div className="container p-3">
-      {/* ================= CREATE USER ================= */}
+
+      {/* HEADER */}
+      <div className="d-flex justify-content-between align-items-center mb-3">
+        <h3 className="fw-bold">👤 User Management</h3>
+        <button
+          className="btn btn-secondary btn-sm"
+          onClick={() => onNavigate("dashboard")}
+        >
+          <ArrowLeft size={14} /> Back
+        </button>
+      </div>
+
+      {/* CREATE USER */}
       <div className="card shadow mb-4">
         <div className="card-body">
-          <h4 className="mb-3">👤 Create User</h4>
+          <h5 className="mb-3">➕ Create User</h5>
 
-          <input
-            className="form-control mb-2"
-            placeholder="Full Name"
-            value={name}
-            onChange={e => setName(e.target.value)}
-          />
+          <input className="form-control mb-2" placeholder="Full Name"
+            value={name} onChange={e => setName(e.target.value)} />
 
-          <input
-            className="form-control mb-2"
-            placeholder="Username"
-            value={username}
-            onChange={e => setUsername(e.target.value)}
-          />
+          <input className="form-control mb-2" placeholder="Username"
+            value={username} onChange={e => setUsername(e.target.value)} />
 
           <div className="input-group mb-2">
-            <input
-              type={showPass ? "text" : "password"}
+            <input type={showPass ? "text" : "password"}
               className="form-control"
               placeholder="Password"
               value={password}
-              onChange={e => setPassword(e.target.value)}
-            />
-            <span
-              className="input-group-text"
+              onChange={e => setPassword(e.target.value)} />
+            <span className="input-group-text"
               style={{ cursor: "pointer" }}
-              onClick={() => setShowPass(!showPass)}
-            >
+              onClick={() => setShowPass(!showPass)}>
               {showPass ? <EyeOff size={16} /> : <Eye size={16} />}
             </span>
           </div>
 
-          <select
-            className="form-control mb-3"
-            value={role}
-            onChange={e => setRole(e.target.value)}
-          >
+          <select className="form-control mb-3"
+            value={role} onChange={e => setRole(e.target.value)}>
             <option value="user">User</option>
             <option value="admin">Admin</option>
           </select>
@@ -129,10 +136,10 @@ export default function CreateUser() {
         </div>
       </div>
 
-      {/* ================= USER LIST ================= */}
+      {/* USER LIST */}
       <div className="card shadow">
         <div className="card-body">
-          <h4 className="mb-3">👥 Users List</h4>
+          <h5 className="mb-3">👥 Users List</h5>
 
           <table className="table table-bordered table-sm">
             <thead className="table-dark">
@@ -141,37 +148,27 @@ export default function CreateUser() {
                 <th>Username</th>
                 <th>Password</th>
                 <th>Role</th>
-                <th width="120">Action</th>
+                <th width="160">Action</th>
               </tr>
             </thead>
             <tbody>
-              {users.length === 0 && (
-                <tr>
-                  <td colSpan="5" className="text-center text-muted">
-                    No users
-                  </td>
-                </tr>
-              )}
-
               {users.map(u => (
-                <tr key={u.username}>
+                <tr key={u.id}>
                   <td>{u.name}</td>
                   <td>{u.username}</td>
 
                   <td>
-                    {showRowPass[u.username]
-                      ? u.password
-                      : "••••••••"}
+                    {showRowPass[u.id] ? u.password : "••••••••"}
                     <span
                       style={{ cursor: "pointer", marginLeft: 8 }}
                       onClick={() =>
                         setShowRowPass({
                           ...showRowPass,
-                          [u.username]: !showRowPass[u.username]
+                          [u.id]: !showRowPass[u.id]
                         })
                       }
                     >
-                      {showRowPass[u.username]
+                      {showRowPass[u.id]
                         ? <EyeOff size={14} />
                         : <Eye size={14} />}
                     </span>
@@ -189,49 +186,66 @@ export default function CreateUser() {
 
                   <td>
                     <button
-                      className="btn btn-sm btn-warning"
-                      onClick={() => setEditUser(u)}
+                      className="btn btn-sm btn-warning me-1"
+                      onClick={() => setEditUser({ ...u, password: "" })}
                     >
-                      Change Password
+                      <Pencil size={14} />
+                    </button>
+
+                    <button
+                      className="btn btn-sm btn-danger"
+                      onClick={() => deleteUser(u)}
+                    >
+                      <Trash2 size={14} />
                     </button>
                   </td>
                 </tr>
               ))}
+
+              {users.length === 0 && (
+                <tr>
+                  <td colSpan="5" className="text-center text-muted">
+                    No users
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
       </div>
 
-      {/* ================= CHANGE PASSWORD ================= */}
+      {/* EDIT USER */}
       {editUser && (
         <div className="card shadow mt-3">
           <div className="card-body">
-            <h5>
-              🔐 Change Password — <b>{editUser.username}</b>
-            </h5>
+            <h5>✏ Edit User</h5>
 
-            <input
-              type="password"
+            <input className="form-control mb-2"
+              value={editUser.name}
+              onChange={e => setEditUser({ ...editUser, name: e.target.value })} />
+
+            <input className="form-control mb-2"
+              value={editUser.username}
+              onChange={e => setEditUser({ ...editUser, username: e.target.value })} />
+
+            <input type="password"
               className="form-control mb-2"
-              placeholder="New Password"
-              value={editPassword}
-              onChange={e => setEditPassword(e.target.value)}
-            />
+              placeholder="New Password (optional)"
+              value={editUser.password}
+              onChange={e => setEditUser({ ...editUser, password: e.target.value })} />
 
-            <button
-              className="btn btn-primary me-2"
-              onClick={updatePassword}
-            >
+            <select className="form-control mb-3"
+              value={editUser.role}
+              onChange={e => setEditUser({ ...editUser, role: e.target.value })}>
+              <option value="user">User</option>
+              <option value="admin">Admin</option>
+            </select>
+
+            <button className="btn btn-primary me-2" onClick={updateUser}>
               <Save size={16} /> Save
             </button>
-
-            <button
-              className="btn btn-secondary"
-              onClick={() => {
-                setEditUser(null);
-                setEditPassword("");
-              }}
-            >
+            <button className="btn btn-secondary"
+              onClick={() => setEditUser(null)}>
               Cancel
             </button>
           </div>
