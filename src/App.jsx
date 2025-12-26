@@ -33,6 +33,7 @@ import Restore from "./screens/Restore";
 // VOUCHERS
 import HotelVoucher from "./screens/HotelVoucher";
 import TransportVoucher from "./screens/TransportVoucher";
+import ManageUsers from "./screens/ManageUsers";
 
 // VIEWS
 import PackagesView from "./screens/PackagesView";
@@ -71,6 +72,7 @@ export default function App() {
       {page === "hotels" && <Hotels onNavigate={navigate} />}
       {page === "ticketing" && <Ticketing onNavigate={navigate} />}
       {page === "transport" && <Transport onNavigate={navigate} />}
+      {page === "manageUsers" && <ManageUsers onNavigate={navigate} />}
       {page === "visa" && <Visa onNavigate={navigate} />}
 
       {/* ================= PURCHASE ================= */}
