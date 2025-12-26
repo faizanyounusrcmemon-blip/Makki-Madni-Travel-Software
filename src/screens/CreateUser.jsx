@@ -38,13 +38,24 @@ export default function CreateUser({ onNavigate }) {
     if (!name || !username || !password)
       return alert("All fields required");
 
-    await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/users/create`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, username, password, role })
-    });
+    const res = await fetch(
+      `${import.meta.env.VITE_BACKEND_URL}/api/users/create`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, username, password, role })
+      }
+    );
 
-    alert("✅ User Created");
+    const d = await res.json();
+
+    if (!d.success) {
+      alert(d.error || "User create failed");
+      return;
+    }
+
+    alert("✅ User Created Successfully");
+
     setName("");
     setUsername("");
     setPassword("");
@@ -54,11 +65,21 @@ export default function CreateUser({ onNavigate }) {
 
   /* ================= UPDATE ================= */
   const updateUser = async () => {
-    await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/users/update`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(editUser)
-    });
+    const res = await fetch(
+      `${import.meta.env.VITE_BACKEND_URL}/api/users/update`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(editUser)
+      }
+    );
+
+    const d = await res.json();
+
+    if (!d.success) {
+      alert(d.error || "Update failed");
+      return;
+    }
 
     alert("✅ User Updated");
     setEditUser(null);
@@ -105,27 +126,42 @@ export default function CreateUser({ onNavigate }) {
         <div className="card-body">
           <h5 className="mb-3">➕ Create User</h5>
 
-          <input className="form-control mb-2" placeholder="Full Name"
-            value={name} onChange={e => setName(e.target.value)} />
+          <input
+            className="form-control mb-2"
+            placeholder="Full Name"
+            value={name}
+            onChange={e => setName(e.target.value)}
+          />
 
-          <input className="form-control mb-2" placeholder="Username"
-            value={username} onChange={e => setUsername(e.target.value)} />
+          <input
+            className="form-control mb-2"
+            placeholder="Username"
+            value={username}
+            onChange={e => setUsername(e.target.value)}
+          />
 
           <div className="input-group mb-2">
-            <input type={showPass ? "text" : "password"}
+            <input
+              type={showPass ? "text" : "password"}
               className="form-control"
               placeholder="Password"
               value={password}
-              onChange={e => setPassword(e.target.value)} />
-            <span className="input-group-text"
+              onChange={e => setPassword(e.target.value)}
+            />
+            <span
+              className="input-group-text"
               style={{ cursor: "pointer" }}
-              onClick={() => setShowPass(!showPass)}>
+              onClick={() => setShowPass(!showPass)}
+            >
               {showPass ? <EyeOff size={16} /> : <Eye size={16} />}
             </span>
           </div>
 
-          <select className="form-control mb-3"
-            value={role} onChange={e => setRole(e.target.value)}>
+          <select
+            className="form-control mb-3"
+            value={role}
+            onChange={e => setRole(e.target.value)}
+          >
             <option value="user">User</option>
             <option value="admin">Admin</option>
           </select>
@@ -175,11 +211,13 @@ export default function CreateUser({ onNavigate }) {
                   </td>
 
                   <td>
-                    <span className={
-                      u.role === "admin"
-                        ? "badge bg-danger"
-                        : "badge bg-secondary"
-                    }>
+                    <span
+                      className={
+                        u.role === "admin"
+                          ? "badge bg-danger"
+                          : "badge bg-secondary"
+                      }
+                    >
                       {u.role}
                     </span>
                   </td>
@@ -220,23 +258,39 @@ export default function CreateUser({ onNavigate }) {
           <div className="card-body">
             <h5>✏ Edit User</h5>
 
-            <input className="form-control mb-2"
+            <input
+              className="form-control mb-2"
               value={editUser.name}
-              onChange={e => setEditUser({ ...editUser, name: e.target.value })} />
+              onChange={e =>
+                setEditUser({ ...editUser, name: e.target.value })
+              }
+            />
 
-            <input className="form-control mb-2"
+            <input
+              className="form-control mb-2"
               value={editUser.username}
-              onChange={e => setEditUser({ ...editUser, username: e.target.value })} />
+              onChange={e =>
+                setEditUser({ ...editUser, username: e.target.value })
+              }
+            />
 
-            <input type="password"
+            <input
+              type="password"
               className="form-control mb-2"
               placeholder="New Password (optional)"
               value={editUser.password}
-              onChange={e => setEditUser({ ...editUser, password: e.target.value })} />
+              onChange={e =>
+                setEditUser({ ...editUser, password: e.target.value })
+              }
+            />
 
-            <select className="form-control mb-3"
+            <select
+              className="form-control mb-3"
               value={editUser.role}
-              onChange={e => setEditUser({ ...editUser, role: e.target.value })}>
+              onChange={e =>
+                setEditUser({ ...editUser, role: e.target.value })
+              }
+            >
               <option value="user">User</option>
               <option value="admin">Admin</option>
             </select>
@@ -244,8 +298,10 @@ export default function CreateUser({ onNavigate }) {
             <button className="btn btn-primary me-2" onClick={updateUser}>
               <Save size={16} /> Save
             </button>
-            <button className="btn btn-secondary"
-              onClick={() => setEditUser(null)}>
+            <button
+              className="btn btn-secondary"
+              onClick={() => setEditUser(null)}
+            >
               Cancel
             </button>
           </div>
