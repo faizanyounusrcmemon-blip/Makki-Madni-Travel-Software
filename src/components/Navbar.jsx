@@ -85,10 +85,12 @@ export default function Navbar({ onNavigate }) {
               {can("customer_ledger") && <div onClick={() => go("customerLedger")}>📒 Customer Ledger</div>}
               {can("purchase_ledger") && <div onClick={() => go("purchaseLedger")}>📦 Purchase Ledger</div>}
               {can("bank_ledger") && <div onClick={() => go("bankLedger")}>🏦 Bank Ledger</div>}
+              {can("expense_ledger") && <div onClick={() => go("expenseLedger")}>💸 Expense Ledger</div>}
               {can("balance_sheet") && <div onClick={() => go("balanceSheet")}>📊 Balance Sheet</div>}
 
               {!can("customer_ledger") &&
                !can("purchase_ledger") &&
+               !can("expense_ledger") &&
                !can("bank_ledger") &&
                !can("balance_sheet") && (
                 <div style={{ opacity: 0.5, cursor: "not-allowed" }}>
