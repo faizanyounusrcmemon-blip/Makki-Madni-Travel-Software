@@ -1,38 +1,20 @@
 import React, { useEffect, useState } from "react";
 
-/* ================= HELPERS ================= */
+// helper
+const fmt = (v) => (v ? Number(v).toLocaleString("en-US") : "-");
 
-// 300000 → 300,000
-const fmtAmount = (v) =>
-  v ? Number(v).toLocaleString("en-US") : "-";
-
-// NUMBER → WORDS
-const numberToWords = (num) => {
-  if (!num) return "";
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "PKR",
-    currencyDisplay: "name",
-    maximumFractionDigits: 0,
-  })
-    .format(num)
-    .replace("Pakistani rupees", "Rupees");
-};
-
-export default function BankLedger({ onNavigate }) {
+export default function ExpenseLedger({ onNavigate }) {
   const [rows, setRows] = useState([]);
   const [filtered, setFiltered] = useState([]);
   const [msg, setMsg] = useState(null);
 
-  // ✅ TODAY DATE DEFAULT
   const today = new Date().toISOString().slice(0, 10);
 
   const [date, setDate] = useState(today);
+  const [title, setTitle] = useState("");
   const [amount, setAmount] = useState("");
-  const [type, setType] = useState("deposit");
-  const [comment, setComment] = useState("");
+  const [remarks, setRemarks] = useState("");
 
-  // ✅ DATE FILTER
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
 
@@ -42,52 +24,49 @@ export default function BankLedger({ onNavigate }) {
 
   const load = async () => {
     const r = await fetch(
-      `${import.meta.env.VITE_BACKEND_URL}/api/bank-ledger`
+      `${import.meta.env.VITE_BACKEND_URL}/api/expense-ledger`
     );
     const d = await r.json();
     if (d.success) {
-      const list = d.rows.slice().reverse(); // latest on top
-      setRows(list);
-      setFiltered(list);
+      setRows(d.rows);
+      setFiltered(d.rows);
     }
   };
 
-  /* ================= FILTER ================= */
+  /* FILTER */
   useEffect(() => {
     let temp = [...rows];
 
-    if (fromDate) {
+    if (fromDate)
       temp = temp.filter(
-        (r) => new Date(r.txn_date) >= new Date(fromDate)
+        (r) => new Date(r.expense_date) >= new Date(fromDate)
       );
-    }
 
-    if (toDate) {
+    if (toDate)
       temp = temp.filter(
-        (r) => new Date(r.txn_date) <= new Date(toDate)
+        (r) => new Date(r.expense_date) <= new Date(toDate)
       );
-    }
 
     setFiltered(temp);
   }, [fromDate, toDate, rows]);
 
-  /* ================= SAVE ================= */
+  /* SAVE */
   const save = async () => {
-    if (!date || !amount) {
-      setMsg({ type: "danger", text: "Date & Amount required" });
+    if (!date || !title || !amount) {
+      setMsg({ type: "danger", text: "Date, Title & Amount required" });
       return;
     }
 
     const r = await fetch(
-      `${import.meta.env.VITE_BACKEND_URL}/api/bank-ledger/transaction`,
+      `${import.meta.env.VITE_BACKEND_URL}/api/expense-ledger/add`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          txn_date: date,
-          type,
+          expense_date: date,
+          title,
           amount: amount.replace(/,/g, ""),
-          comment,
+          remarks,
         }),
       }
     );
@@ -96,21 +75,22 @@ export default function BankLedger({ onNavigate }) {
 
     if (d.success) {
       setMsg({ type: "success", text: d.message });
+      setTitle("");
       setAmount("");
-      setComment("");
+      setRemarks("");
       load();
     } else {
       setMsg({ type: "danger", text: d.error });
     }
   };
 
-  /* ================= DELETE ================= */
+  /* DELETE */
   const del = async (id) => {
     const pass = prompt("Delete password");
     if (!pass) return;
 
     const r = await fetch(
-      `${import.meta.env.VITE_BACKEND_URL}/api/bank-ledger/transaction/${id}`,
+      `${import.meta.env.VITE_BACKEND_URL}/api/expense-ledger/delete/${id}`,
       {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
@@ -137,11 +117,8 @@ export default function BankLedger({ onNavigate }) {
         ⬅ Back
       </button>
 
-      <h4 className="fw-bold text-success mb-2">
-        🏦 BANK LEDGER
-      </h4>
+      <h4 className="fw-bold text-danger mb-2">💸 EXPENSE LEDGER</h4>
 
-      {/* MESSAGE */}
       {msg && (
         <div className={`alert alert-${msg.type} py-2`}>
           {msg.text}
@@ -156,29 +133,35 @@ export default function BankLedger({ onNavigate }) {
             className="form-control"
             value={fromDate}
             onChange={(e) => setFromDate(e.target.value)}
-            placeholder="From Date"
           />
         </div>
-
         <div className="col-md-3">
           <input
             type="date"
             className="form-control"
             value={toDate}
             onChange={(e) => setToDate(e.target.value)}
-            placeholder="To Date"
           />
         </div>
       </div>
 
-      {/* MANUAL ENTRY */}
-      <div className="row g-2 mb-2">
+      {/* ENTRY */}
+      <div className="row g-2 mb-3">
         <div className="col-md-2">
           <input
             type="date"
             className="form-control"
             value={date}
             onChange={(e) => setDate(e.target.value)}
+          />
+        </div>
+
+        <div className="col-md-3">
+          <input
+            className="form-control"
+            placeholder="Expense Title"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
           />
         </div>
 
@@ -197,79 +180,57 @@ export default function BankLedger({ onNavigate }) {
           />
         </div>
 
-        <div className="col-md-2">
-          <select
-            className="form-control"
-            value={type}
-            onChange={(e) => setType(e.target.value)}
-          >
-            <option value="deposit">Deposit</option>
-            <option value="withdraw">Withdraw</option>
-          </select>
-        </div>
-
-        <div className="col-md-4">
+        <div className="col-md-3">
           <input
             className="form-control"
-            placeholder="Comment"
-            value={comment}
-            onChange={(e) => setComment(e.target.value)}
+            placeholder="Remarks"
+            value={remarks}
+            onChange={(e) => setRemarks(e.target.value)}
           />
         </div>
 
         <div className="col-md-2">
-          <button className="btn btn-success w-100" onClick={save}>
+          <button className="btn btn-danger w-100" onClick={save}>
             Save
           </button>
         </div>
       </div>
-
-      {/* AMOUNT IN WORDS */}
-      {amount && (
-        <div className="text-muted mb-3">
-          💬 <i>{numberToWords(amount.replace(/,/g, ""))}</i>
-        </div>
-      )}
 
       {/* TABLE */}
       <table className="table table-bordered table-sm">
         <thead className="table-dark">
           <tr>
             <th>Date</th>
-            <th>Description</th>
-            <th>Debit</th>
-            <th>Credit</th>
-            <th>Balance</th>
+            <th>Title</th>
+            <th>Remarks</th>
+            <th>Amount</th>
             <th></th>
           </tr>
         </thead>
         <tbody>
-          {filtered.map((r, i) => (
-            <tr key={i}>
-              <td>{new Date(r.txn_date).toLocaleDateString()}</td>
-              <td>{r.description}</td>
-              <td className="text-danger">{fmtAmount(r.debit)}</td>
-              <td className="text-success">{fmtAmount(r.credit)}</td>
-              <td>
-                <b>{fmtAmount(r.balance)}</b>
+          {filtered.map((r) => (
+            <tr key={r.id}>
+              <td>{new Date(r.expense_date).toLocaleDateString()}</td>
+              <td>{r.title}</td>
+              <td>{r.remarks}</td>
+              <td className="text-danger fw-bold">
+                {fmt(r.amount)}
               </td>
               <td>
-                {r.source === "manual" && (
-                  <button
-                    className="btn btn-sm btn-danger"
-                    onClick={() => del(r.id)}
-                  >
-                    ❌
-                  </button>
-                )}
+                <button
+                  className="btn btn-sm btn-danger"
+                  onClick={() => del(r.id)}
+                >
+                  ❌
+                </button>
               </td>
             </tr>
           ))}
 
           {filtered.length === 0 && (
             <tr>
-              <td colSpan="6" className="text-center">
-                No entries
+              <td colSpan="5" className="text-center">
+                No expenses
               </td>
             </tr>
           )}

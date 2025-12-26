@@ -15,7 +15,7 @@ export default function ManageUsers({ onNavigate }) {
     "purchase_entry", "purchase_list",
 
     // LEDGER
-    "customer_ledger", "purchase_ledger", "bank_ledger", "balance_sheet",
+    "customer_ledger", "purchase_ledger", "bank_ledger", "expense_ledger", "balance_sheet",
 
     // VOUCHERS
     "hotel_voucher", "transport_voucher",
