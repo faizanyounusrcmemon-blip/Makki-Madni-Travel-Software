@@ -24,7 +24,7 @@ export default function ManageUsers({ onNavigate }) {
     "all_reports", "profit_report",
 
     // MASTER
-    "create_user", "manage_users", "deleted_reports", "restore"
+    "create_user", "manage_users", "deleted_reports", "restore", "system_storage"
   ];
 
   /* LOAD USERS */
