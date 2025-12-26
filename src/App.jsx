@@ -29,7 +29,7 @@ import ProfitReport from "./screens/ProfitReport";
 import CreateUser from "./screens/CreateUser";
 import DeletedReports from "./screens/DeletedReports";
 import Restore from "./screens/Restore";
-import SystemCapacity from "./screens/SystemCapacity";
+import SystemStorage from "./screens/SystemStorage";
 
 
 // VOUCHERS
@@ -76,7 +76,7 @@ export default function App() {
       {page === "transport" && <Transport onNavigate={navigate} />}
       {page === "manageUsers" && <ManageUsers onNavigate={navigate} />}
       {page === "visa" && <Visa onNavigate={navigate} />}
-      {page === "systemCapacity" && <SystemCapacity onNavigate={navigate} />}
+      {page === "systemStorage" && <SystemStorage onNavigate={navigate} />}
 
       {/* ================= PURCHASE ================= */}
       {page === "purchase" && <Purchase onNavigate={navigate} />}
