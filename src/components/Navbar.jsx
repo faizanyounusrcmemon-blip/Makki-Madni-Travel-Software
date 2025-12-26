@@ -127,7 +127,7 @@ export default function Navbar({ onNavigate }) {
             <div className="vip-menu">
               {can("all_reports") && <div onClick={() => go("allreports")}>📈 All Reports</div>}
               {can("profit_report") && <div onClick={() => go("profitReport")}>💰 Profit Report</div>}
-
+              {can("system-capacity") && <div onClick={() => go("systemCapacity")}>📊 System Capacity</div>}
               {!can("all_reports") && !can("profit_report") && (
                 <div style={{ opacity: 0.5, cursor: "not-allowed" }}>
                   No access
