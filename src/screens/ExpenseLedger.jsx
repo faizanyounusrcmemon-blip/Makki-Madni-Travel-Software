@@ -5,14 +5,14 @@ export default function ExpenseLedger({ onNavigate }) {
 
   const [rows, setRows] = useState([]);
 
-  // ADD / ENTRY STATES (OLD)
+  // ADD EXPENSE STATES
   const [date, setDate] = useState(today);
   const [title, setTitle] = useState("");
   const [amount, setAmount] = useState("");
   const [method, setMethod] = useState("Cash");
   const [remarks, setRemarks] = useState("");
 
-  // 🔥 FILTER STATES (NEW)
+  // FILTER STATES
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
   const [search, setSearch] = useState("");
@@ -22,10 +22,10 @@ export default function ExpenseLedger({ onNavigate }) {
   ========================= */
   const load = async () => {
     const r = await fetch(
-      `${import.meta.env.VITE_BACKEND_URL}/api/expense-ledger`
+      `${import.meta.env.VITE_BACKEND_URL}/api/expenseledger`
     );
     const d = await r.json();
-    if (d.success) setRows(d.rows);
+    if (d.success) setRows(d.rows || []);
   };
 
   useEffect(() => {
@@ -36,8 +36,10 @@ export default function ExpenseLedger({ onNavigate }) {
      SAVE EXPENSE
   ========================= */
   const save = async () => {
+    if (!date || !title || !amount) return alert("Missing fields");
+
     const r = await fetch(
-      `${import.meta.env.VITE_BACKEND_URL}/api/expense-ledger/add`,
+      `${import.meta.env.VITE_BACKEND_URL}/api/expenseledger/add`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -68,7 +70,7 @@ export default function ExpenseLedger({ onNavigate }) {
     if (!pass) return;
 
     const r = await fetch(
-      `${import.meta.env.VITE_BACKEND_URL}/api/expense-ledger/delete/${id}`,
+      `${import.meta.env.VITE_BACKEND_URL}/api/expenseledger/delete/${id}`,
       {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
@@ -82,7 +84,7 @@ export default function ExpenseLedger({ onNavigate }) {
   };
 
   /* =========================
-     FILTERED ROWS (DATE + TITLE)
+     FILTERED ROWS
   ========================= */
   const filteredRows = rows.filter((r) => {
     const d = r.expense_date?.slice(0, 10);
@@ -99,6 +101,16 @@ export default function ExpenseLedger({ onNavigate }) {
     return true;
   });
 
+  /* =========================
+     TOTAL (FULL / FILTERED)
+  ========================= */
+  const totalAmount = filteredRows.reduce(
+    (sum, r) => sum + Number(r.amount || 0),
+    0
+  );
+
+  const isFiltered = fromDate || toDate || search;
+
   return (
     <div className="container p-3">
       <button
@@ -113,7 +125,7 @@ export default function ExpenseLedger({ onNavigate }) {
       </h4>
 
       {/* =========================
-         ADD EXPENSE (OLD)
+         ADD EXPENSE
       ========================= */}
       <div className="row g-2 mb-3">
         <div className="col-md-2">
@@ -177,14 +189,13 @@ export default function ExpenseLedger({ onNavigate }) {
       </div>
 
       {/* =========================
-         FILTERS (NEW)
+         FILTERS
       ========================= */}
       <div className="row g-2 mb-2">
         <div className="col-md-2">
           <input
             type="date"
             className="form-control"
-            placeholder="From"
             value={fromDate}
             onChange={(e) => setFromDate(e.target.value)}
           />
@@ -194,7 +205,6 @@ export default function ExpenseLedger({ onNavigate }) {
           <input
             type="date"
             className="form-control"
-            placeholder="To"
             value={toDate}
             onChange={(e) => setToDate(e.target.value)}
           />
@@ -254,6 +264,27 @@ export default function ExpenseLedger({ onNavigate }) {
           )}
         </tbody>
       </table>
+
+      {/* =========================
+         TOTAL (VISIBLE)
+      ========================= */}
+      <div className="d-flex justify-content-end mt-3">
+        <div
+          style={{
+            background: "#111",
+            color: "#ffc107",
+            padding: "10px 18px",
+            borderRadius: "6px",
+            fontSize: "18px",
+            fontWeight: "bold",
+            minWidth: "260px",
+            textAlign: "right",
+          }}
+        >
+          {isFiltered ? "Filtered Total" : "Total Expense"}:{" "}
+          {totalAmount.toLocaleString()}
+        </div>
+      </div>
     </div>
   );
 }
