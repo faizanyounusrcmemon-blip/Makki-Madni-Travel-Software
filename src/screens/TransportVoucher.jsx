@@ -2,17 +2,19 @@ import React, { useState, useRef } from "react";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 
-/* ================= DATE FORMAT (FIXED) ================= */
+/* ================= DATE FORMAT (01/dec/2025) ================= */
 const showDate = (val) => {
   if (!val) return "";
   const d = new Date(val);
   if (isNaN(d)) return "";
 
   const day = String(d.getDate()).padStart(2, "0");
-  const month = d.toLocaleString("en-US", { month: "short" }).toUpperCase();
+  const month = d
+    .toLocaleString("en-US", { month: "short" })
+    .toLowerCase(); // 🔥 lowercase month
   const year = d.getFullYear();
 
-  return `${day}/${month}/${year}`; // ✅ 01/DEC/2025
+  return `${day}/${month}/${year}`;
 };
 
 export default function TransportVoucher({ onNavigate }) {
@@ -53,23 +55,49 @@ export default function TransportVoucher({ onNavigate }) {
     }
   };
 
-  /* ================= PDF ================= */
+  /* ================= PDF (SINGLE PAGE AUTO FIT) ================= */
   const exportPDF = async () => {
-    const canvas = await html2canvas(voucherRef.current, { scale: 3 });
-    const img = canvas.toDataURL("image/png");
+    const element = voucherRef.current;
+
+    const canvas = await html2canvas(element, {
+      scale: 2,
+      useCORS: true,
+    });
+
+    const imgData = canvas.toDataURL("image/png");
     const pdf = new jsPDF("p", "mm", "a4");
-    const w = pdf.internal.pageSize.getWidth();
-    const h = (canvas.height * w) / canvas.width;
-    pdf.addImage(img, "PNG", 0, 0, w, h);
+
+    const pageWidth = pdf.internal.pageSize.getWidth();
+    const pageHeight = pdf.internal.pageSize.getHeight();
+
+    const imgWidth = pageWidth;
+    let imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+    if (imgHeight > pageHeight) {
+      const scale = pageHeight / imgHeight;
+      pdf.addImage(
+        imgData,
+        "PNG",
+        0,
+        0,
+        imgWidth * scale,
+        pageHeight
+      );
+    } else {
+      pdf.addImage(imgData, "PNG", 0, 0, imgWidth, imgHeight);
+    }
+
     pdf.save(`Transport-Voucher-${data.ref_no}.pdf`);
   };
 
   return (
     <div className="container py-3">
-
       {/* TOP BAR */}
       <div className="d-flex gap-2 mb-3">
-        <button className="btn btn-secondary btn-sm" onClick={() => onNavigate("dashboard")}>
+        <button
+          className="btn btn-secondary btn-sm"
+          onClick={() => onNavigate("dashboard")}
+        >
           ⬅ Back
         </button>
 
@@ -104,7 +132,6 @@ export default function TransportVoucher({ onNavigate }) {
             fontFamily: "Segoe UI",
           }}
         >
-
           {/* HEADER */}
           <div
             style={{
@@ -116,35 +143,28 @@ export default function TransportVoucher({ onNavigate }) {
               marginBottom: 25,
             }}
           >
-            <h1 style={{ fontWeight: 800, letterSpacing: 2 }}>
-              ✈ MAKKI MADNI TRAVEL
-            </h1>
-
-            <div style={{ fontSize: 14, opacity: 0.9 }}>
-              Shop #4 Daimon City Building, Near Zeenat-ul-Islam Masjid
-              <br />
-              Garden West Karachi
-              <br />
+            <h1 style={{ fontWeight: 800 }}>✈ MAKKI MADNI TRAVEL</h1>
+            <div style={{ fontSize: 14 }}>
+              Shop #4 Daimon City Building, Near Zeenat-ul-Islam Masjid<br />
+              Garden West Karachi<br />
               ✉ makkimadnitravel@gmail.com | ☎ 0335-7476744
             </div>
-
             <div
               style={{
                 marginTop: 12,
-                display: "inline-block",
                 background: "#ffc107",
                 color: "#000",
                 padding: "6px 24px",
                 borderRadius: 30,
                 fontWeight: 700,
-                letterSpacing: 1,
+                display: "inline-block",
               }}
             >
               TRANSPORT VOUCHER
             </div>
           </div>
 
-          {/* INFO BAR */}
+          {/* INFO */}
           <div
             style={{
               display: "flex",
@@ -184,23 +204,13 @@ export default function TransportVoucher({ onNavigate }) {
                 background: "linear-gradient(135deg,#e0c3fc,#8ec5fc)",
                 borderRadius: 20,
                 padding: 22,
-                marginBottom: 22,
-                boxShadow: "0 15px 30px rgba(0,0,0,.2)",
+                marginBottom: 18,
               }}
             >
-              <div
-                style={{
-                  fontSize: 18,
-                  fontWeight: 800,
-                  color: "#3f0071",
-                  marginBottom: 12,
-                }}
-              >
-                🚐 {r.text || r.description}
-              </div>
+              <b>🚐 {r.text || r.description}</b>
 
-              <div className="row g-3">
-                <div className="col">
+              <div className="row g-3 mt-2">
+                <div className="col-md-3">
                   <label className="small fw-bold">Vehicle</label>
                   <input
                     className="form-control form-control-sm"
@@ -211,7 +221,7 @@ export default function TransportVoucher({ onNavigate }) {
                   />
                 </div>
 
-                <div className="col">
+                <div className="col-md-3">
                   <label className="small fw-bold">Pick-up Date</label>
                   <input
                     type="date"
@@ -221,14 +231,14 @@ export default function TransportVoucher({ onNavigate }) {
                       setPickupDates({ ...pickupDates, [i]: e.target.value })
                     }
                   />
-                  <div className="small text-dark mt-1">
-                    {pickupDates[i] && showDate(pickupDates[i])}
-                  </div>
+                  {pickupDates[i] && (
+                    <div className="small mt-1">
+                      {showDate(pickupDates[i])}
+                    </div>
+                  )}
                 </div>
-              </div>
 
-              <div className="row g-3 mt-2">
-                <div className="col">
+                <div className="col-md-3">
                   <label className="small fw-bold">Contact</label>
                   <input
                     className="form-control form-control-sm"
@@ -242,7 +252,7 @@ export default function TransportVoucher({ onNavigate }) {
                   />
                 </div>
 
-                <div className="col">
+                <div className="col-md-3">
                   <label className="small fw-bold">Alternate</label>
                   <input
                     className="form-control form-control-sm"
@@ -259,20 +269,17 @@ export default function TransportVoucher({ onNavigate }) {
             </div>
           ))}
 
-          {/* URDU NOTE */}
+          {/* NOTE */}
           <div
             style={{
-              marginTop: 30,
-              background: "linear-gradient(90deg,#fff1eb,#ace0f9)",
-              padding: 20,
-              borderRadius: 16,
-              fontSize: 15,
-              lineHeight: 1.8,
+              marginTop: 20,
+              background: "#fff1eb",
+              padding: 16,
+              borderRadius: 14,
               fontWeight: 600,
             }}
           >
-            <b>اہم ہدایات:</b>
-            <br />
+            <b>اہم ہدایات:</b><br />
             براہِ کرم ڈرائیور اور گاڑی کی تفصیلات وقت پر کنفرم کریں۔
             کسی بھی مسئلے کی صورت میں مکّی مدنی ٹریول سے فوری رابطہ کریں۔
           </div>
