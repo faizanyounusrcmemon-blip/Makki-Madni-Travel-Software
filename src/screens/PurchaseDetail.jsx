@@ -2,8 +2,28 @@ import React, { useEffect, useRef, useState } from "react";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 
+/* ================= HELPERS ================= */
 const fmt = (n) => Number(n || 0).toLocaleString("en-US");
-const fmtDate = (d) => new Date(d).toLocaleDateString("en-GB");
+
+const fmtDate = (row) => {
+  const v =
+    row?.payment_date ||
+    row?.booking_date ||
+    row?.created_at;
+
+  if (!v) return "-";
+
+  const d = new Date(v);
+  if (isNaN(d)) return "-";
+
+  const day = String(d.getDate()).padStart(2, "0");
+  const month = d
+    .toLocaleString("en-US", { month: "short" })
+    .toLowerCase();
+  const year = d.getFullYear();
+
+  return `${day}/${month}/${year}`;
+};
 
 export default function PurchaseDetail({ refNo, onNavigate }) {
   const [rows, setRows] = useState([]);
@@ -34,36 +54,18 @@ export default function PurchaseDetail({ refNo, onNavigate }) {
     }
   };
 
+  /* ================= PDF ================= */
   const exportPDF = async () => {
-    const canvas = await html2canvas(boxRef.current, { scale: 3 });
+    const canvas = await html2canvas(boxRef.current, { scale: 2 });
     const img = canvas.toDataURL("image/png");
-    const pdf = new jsPDF("p", "mm", "a4");
-    pdf.addImage(
-      img,
-      "PNG",
-      10,
-      10,
-      190,
-      (canvas.height * 190) / canvas.width
-    );
-    pdf.save(`${displayRef}-purchase-detail.pdf`);
-  };
 
-  if (!refNo) {
-    return (
-      <div className="container p-3">
-        <div className="alert alert-danger">
-          Ref No missing
-        </div>
-        <button
-          className="btn btn-secondary btn-sm"
-          onClick={() => onNavigate("purchaseList")}
-        >
-          ⬅ Back
-        </button>
-      </div>
-    );
-  }
+    const pdf = new jsPDF("l", "mm", "a4");
+    const w = pdf.internal.pageSize.getWidth();
+    const h = (canvas.height * w) / canvas.width;
+
+    pdf.addImage(img, "PNG", 0, 0, w, h);
+    pdf.save(`${rows[0]?.ref_no || refNo}-purchase-detail.pdf`);
+  };
 
   if (error) {
     return (
@@ -74,15 +76,12 @@ export default function PurchaseDetail({ refNo, onNavigate }) {
         >
           ⬅ Back
         </button>
-        <div className="alert alert-warning">{error}</div>
+        <div className="alert alert-danger">{error}</div>
       </div>
     );
   }
 
   if (!rows.length) return <div className="p-3">Loading...</div>;
-
-  // ✅ FINAL SOURCE OF TRUTH
-  const displayRef = rows[0]?.ref_no || refNo;
 
   return (
     <div className="container p-3">
@@ -100,34 +99,50 @@ export default function PurchaseDetail({ refNo, onNavigate }) {
       </div>
 
       <div ref={boxRef}>
-        {/* 🔥 CLEAR REF DISPLAY */}
-        <h4 className="fw-bold mb-1">
-          PURCHASE DETAIL
-        </h4>
-        <h6 className="text-primary fw-bold">
-          Ref No: {displayRef}
-        </h6>
+        {/* ================= HEADER ================= */}
+        <h4 className="fw-bold mb-1">PURCHASE DETAIL</h4>
 
-        <p className="text-muted">
-          Date: {fmtDate(rows[0].created_at)}
-        </p>
+        <div className="fw-bold text-primary">
+          Ref No: {rows[0].ref_no}
+        </div>
 
+        {/* 🔥 DATE – HIGH VISIBILITY */}
+        <div className="fw-bold mb-2" style={{ color: "#ffc107" }}>
+          Date: {fmtDate(rows[0])}
+        </div>
+
+        {/* ================= TABLE ================= */}
         <table className="table table-bordered table-sm">
-          <thead className="table-dark">
+          <thead className="table-dark text-center">
             <tr>
-              <th>Item</th>
-              <th>Sale PKR</th>
-              <th>Purchase PKR</th>
-              <th>Profit</th>
+              <th rowSpan="2">Item</th>
+              <th colSpan="3">Sale</th>
+              <th colSpan="3">Purchase</th>
+              <th rowSpan="2">Profit (PKR)</th>
+            </tr>
+            <tr>
+              <th>SAR</th>
+              <th>Rate</th>
+              <th>PKR</th>
+              <th>SAR</th>
+              <th>Rate</th>
+              <th>PKR</th>
             </tr>
           </thead>
 
           <tbody>
             {rows.map((r, i) => (
-              <tr key={i}>
-                <td>{r.item}</td>
+              <tr key={i} className="text-end">
+                <td className="text-start">{r.item}</td>
+
+                <td>{fmt(r.sale_sar)}</td>
+                <td>{fmt(r.sale_rate)}</td>
                 <td>{fmt(r.sale_pkr)}</td>
+
+                <td>{fmt(r.purchase_sar)}</td>
+                <td>{fmt(r.purchase_rate)}</td>
                 <td>{fmt(r.purchase_pkr)}</td>
+
                 <td
                   className={
                     Number(r.profit) >= 0
@@ -141,10 +156,14 @@ export default function PurchaseDetail({ refNo, onNavigate }) {
             ))}
           </tbody>
 
-          <tfoot className="table-light fw-bold">
+          <tfoot className="table-light fw-bold text-end">
             <tr>
-              <td>TOTAL</td>
+              <td className="text-start">TOTAL</td>
+              <td>{fmt(totals.sale_sar)}</td>
+              <td>-</td>
               <td>{fmt(totals.sale_pkr)}</td>
+              <td>{fmt(totals.purchase_sar)}</td>
+              <td>-</td>
               <td>{fmt(totals.purchase_pkr)}</td>
               <td>{fmt(totals.profit)}</td>
             </tr>
