@@ -77,6 +77,7 @@ export default function Purchase({ onNavigate }) {
     setRows(
       data.rows.map((x) => ({
         item: x.item,
+        item_label: x.item_label,     // 👁️ display text
 
         sale_sar: Number(x.sale_sar) || 0,
         sale_rate: Number(x.sale_rate) || 0,
@@ -278,7 +279,7 @@ export default function Purchase({ onNavigate }) {
         <tbody>
           {rows.map((r, i) => (
             <tr key={i}>
-              <td>{r.item}</td>
+              <td>{r.item_label || r.item}</td>
               <td>{r.sale_sar}</td>
               <td>{r.sale_rate}</td>
               <td>{r.sale_pkr.toLocaleString()}</td>
@@ -321,3 +322,4 @@ export default function Purchase({ onNavigate }) {
     </div>
   );
 }
+
