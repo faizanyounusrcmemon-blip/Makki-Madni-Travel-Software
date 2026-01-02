@@ -10,6 +10,7 @@ export default function Restore({ onNavigate }) {
 
   const TABLES = [
     "bookings",
+    "expense_ledger",
     "hotels",
     "ticketing",
     "visa",
@@ -265,3 +266,4 @@ export default function Restore({ onNavigate }) {
     </div>
   );
 }
+
