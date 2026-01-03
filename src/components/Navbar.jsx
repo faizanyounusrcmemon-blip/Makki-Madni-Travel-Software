@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import "./Navbar.css";
 
 export default function Navbar({ onNavigate }) {
   const [open, setOpen] = useState(null);
@@ -17,151 +18,78 @@ export default function Navbar({ onNavigate }) {
     window.location.reload();
   };
 
-  // admin = full access, user = permission based
   const can = (perm) => isAdmin || user?.[perm] === true;
 
   return (
     <nav className="vip-navbar">
       {/* LOGO */}
       <div className="nav-logo" onClick={() => go("dashboard")}>
-        ✈️ Makki Madni Travel
+        ✈ Makki Madni Travel
       </div>
 
-      {/* MENU */}
+      {/* MENUS */}
       <div className="nav-links">
 
-        {/* SALES (ALWAYS SHOW) */}
-        <div className="nav-item">
-          <span onClick={() => setOpen(open === "sales" ? null : "sales")}>
-            Sales ▾
-          </span>
-          {open === "sales" && (
-            <div className="vip-menu">
-              {can("packages") && <div onClick={() => go("packages")}>📦 Packages</div>}
-              {can("ticketing") && <div onClick={() => go("ticketing")}>🎫 Ticketing</div>}
-              {can("transport") && <div onClick={() => go("transport")}>🚐 Transport</div>}
-              {can("visa") && <div onClick={() => go("visa")}>🛂 Visa</div>}
-              {can("hotels") && <div onClick={() => go("hotels")}>🏨 Hotels</div>}
+        {[
+          {
+            key: "sales",
+            title: "Sales",
+            items: [
+              can("packages") && ["packages", "📦 Packages"],
+              can("ticketing") && ["ticketing", "🎫 Ticketing"],
+              can("transport") && ["transport", "🚐 Transport"],
+              can("visa") && ["visa", "🛂 Visa"],
+              can("hotels") && ["hotels", "🏨 Hotels"],
+            ],
+          },
+          {
+            key: "ledger",
+            title: "Ledger",
+            items: [
+              can("customer_ledger") && ["customerLedger", "📒 Customer Ledger"],
+              can("purchase_ledger") && ["purchaseLedger", "📦 Purchase Ledger"],
+              can("bank_ledger") && ["bankLedger", "🏦 Bank Ledger"],
+              can("expense_ledger") && ["expenseLedger", "💸 Expense Ledger"],
+              can("balance_sheet") && ["balanceSheet", "📊 Balance Sheet"],
+            ],
+          },
+          {
+            key: "reports",
+            title: "Reports",
+            items: [
+              can("all_reports") && ["allreports", "📈 All Reports"],
+              can("profit_report") && ["profitReport", "💰 Profit Report"],
+              can("system_storage") && ["systemStorage", "💾 System Storage"],
+            ],
+          },
+          {
+            key: "master",
+            title: "Master",
+            items: [
+              can("create_user") && ["createUser", "👤 Create User"],
+              can("restore") && ["restore", "♻ Restore"],
+            ],
+          },
+        ].map((m) => (
+          <div key={m.key} className="nav-item">
+            <span
+              className="nav-title"
+              onClick={() => setOpen(open === m.key ? null : m.key)}
+            >
+              {m.title} ▾
+            </span>
 
-              {!can("packages") &&
-               !can("ticketing") &&
-               !can("transport") &&
-               !can("visa") &&
-               !can("hotels") && (
-                <div style={{ opacity: 0.5, cursor: "not-allowed" }}>
-                  No access
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-
-        {/* PURCHASE (ALWAYS SHOW) */}
-        <div className="nav-item">
-          <span onClick={() => setOpen(open === "purchase" ? null : "purchase")}>
-            Purchase ▾
-          </span>
-          {open === "purchase" && (
-            <div className="vip-menu">
-              {can("purchase_entry") && <div onClick={() => go("purchase")}>🧾 Purchase Entry</div>}
-              {can("purchase_list") && <div onClick={() => go("purchaseList")}>📑 Purchase List</div>}
-
-              {!can("purchase_entry") && !can("purchase_list") && (
-                <div style={{ opacity: 0.5, cursor: "not-allowed" }}>
-                  No access
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-
-        {/* LEDGER (ALWAYS SHOW) */}
-        <div className="nav-item">
-          <span onClick={() => setOpen(open === "ledger" ? null : "ledger")}>
-            Ledger ▾
-          </span>
-          {open === "ledger" && (
-            <div className="vip-menu">
-              {can("customer_ledger") && <div onClick={() => go("customerLedger")}>📒 Customer Ledger</div>}
-              {can("purchase_ledger") && <div onClick={() => go("purchaseLedger")}>📦 Purchase Ledger</div>}
-              {can("bank_ledger") && <div onClick={() => go("bankLedger")}>🏦 Bank Ledger</div>}
-              {can("expense_ledger") && <div onClick={() => go("expenseLedger")}>💸 Expense Ledger</div>}
-              {can("balance_sheet") && <div onClick={() => go("balanceSheet")}>📊 Balance Sheet</div>}
-
-              {!can("customer_ledger") &&
-               !can("purchase_ledger") &&
-               !can("expense_ledger") &&
-               !can("bank_ledger") &&
-               !can("balance_sheet") && (
-                <div style={{ opacity: 0.5, cursor: "not-allowed" }}>
-                  No access
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-
-        {/* VOUCHERS (ALWAYS SHOW) */}
-        <div className="nav-item">
-          <span onClick={() => setOpen(open === "voucher" ? null : "voucher")}>
-            Vouchers ▾
-          </span>
-          {open === "voucher" && (
-            <div className="vip-menu">
-              {can("hotel_voucher") && <div onClick={() => go("hotelVoucher")}>🏨 Hotel Voucher</div>}
-              {can("transport_voucher") && <div onClick={() => go("transportVoucher")}>🚐 Transport Voucher</div>}
-
-              {!can("hotel_voucher") && !can("transport_voucher") && (
-                <div style={{ opacity: 0.5, cursor: "not-allowed" }}>
-                  No access
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-
-        {/* REPORTS (ALWAYS SHOW) */}
-        <div className="nav-item">
-          <span onClick={() => setOpen(open === "reports" ? null : "reports")}>
-            Reports ▾
-          </span>
-          {open === "reports" && (
-            <div className="vip-menu">
-              {can("all_reports") && <div onClick={() => go("allreports")}>📈 All Reports</div>}
-              {can("profit_report") && <div onClick={() => go("profitReport")}>💰 Profit Report</div>}
-              {can("system_storage") && <div onClick={() => go("systemStorage")}>📊 System Storage</div>}
-              {!can("all_reports") && !can("profit_report") &&  !can("system_storage") && (
-                <div style={{ opacity: 0.5, cursor: "not-allowed" }}>
-                  No access
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-
-        {/* MASTER (ALWAYS SHOW) */}
-        <div className="nav-item">
-          <span onClick={() => setOpen(open === "master" ? null : "master")}>
-            Master ▾
-          </span>
-          {open === "master" && (
-            <div className="vip-menu">
-              {can("create_user") && <div onClick={() => go("createUser")}>👤 Create User</div>}
-              {can("manage_users") && <div onClick={() => go("manageUsers")}>🛠 Manage Users</div>}
-              {can("deleted_reports") && <div onClick={() => go("deletedReports")}>🗑 Deleted Reports</div>}
-              {can("restore") && <div onClick={() => go("restore")}>♻ Restore</div>}
-
-              {!can("create_user") &&
-               !can("manage_users") &&
-               !can("deleted_reports") &&
-               !can("restore") && (
-                <div style={{ opacity: 0.5, cursor: "not-allowed" }}>
-                  No access
-                </div>
-              )}
-            </div>
-          )}
-        </div>
+            {open === m.key && (
+              <div className="menu-box">
+                {m.items.filter(Boolean).map(([page, label]) => (
+                  <a key={page} onClick={() => go(page)}>
+                    {label}
+                  </a>
+                ))}
+              </div>
+            )}
+          </div>
+        ))}
       </div>
 
       {/* USER */}
@@ -171,61 +99,6 @@ export default function Navbar({ onNavigate }) {
           Logout
         </button>
       </div>
-
-      {/* STYLES (UNCHANGED) */}
-      <style>{`
-        .vip-navbar {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          padding: 14px 28px;
-          background: linear-gradient(135deg, #000428, #004e92);
-          color: #fff;
-        }
-        .nav-logo {
-          font-size: 20px;
-          font-weight: bold;
-          color: #ffd700;
-          cursor: pointer;
-        }
-        .nav-links {
-          display: flex;
-          gap: 26px;
-        }
-        .nav-item {
-          position: relative;
-          cursor: pointer;
-        }
-        .vip-menu {
-          position: absolute;
-          top: 36px;
-          left: 0;
-          min-width: 220px;
-          background: linear-gradient(145deg, #0f2027, #203a43, #2c5364);
-          border-radius: 12px;
-          z-index: 9999;
-        }
-        .vip-menu div {
-          padding: 12px 18px;
-        }
-        .vip-menu div:hover {
-          background: rgba(255,215,0,0.15);
-          color: #ffd700;
-        }
-        .nav-user {
-          display: flex;
-          gap: 12px;
-        }
-        .logout-btn {
-          background: linear-gradient(135deg, #ff4b2b, #ff416c);
-          border: none;
-          padding: 6px 14px;
-          border-radius: 20px;
-          color: white;
-          font-size: 12px;
-          cursor: pointer;
-        }
-      `}</style>
     </nav>
   );
 }
