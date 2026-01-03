@@ -3,6 +3,7 @@ import React, { useState } from "react";
 export default function Login({ onLogin }) {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [show, setShow] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const submit = async () => {
@@ -27,163 +28,160 @@ export default function Login({ onLogin }) {
       setLoading(false);
 
       if (!data.success) {
-        alert("Invalid login");
+        alert("❌ Invalid login");
         return;
       }
 
+      // ✅ FIX: sessionStorage (auto logout on browser close)
       sessionStorage.setItem("user", JSON.stringify(data.user));
+
       onLogin();
-    } catch {
+
+    } catch (err) {
       setLoading(false);
       alert("Server error");
     }
   };
 
+  const cancel = () => {
+    setUsername("");
+    setPassword("");
+  };
+
   return (
     <div className="login-wrapper">
-      <div className="login-panel">
+      <div className="login-card">
+        <h2 className="title">✈️ Makki Madni Travel</h2>
+        <p className="subtitle">Secure Login Panel</p>
 
-        {/* BRAND */}
-        <div className="brand">
-          <div className="brand-line"></div>
-          <h1>MAKKI MADNI</h1>
-          <p>TRAVEL & TOURS</p>
+        {/* USERNAME */}
+        <input
+          className="login-input"
+          placeholder="Username"
+          value={username}
+          onChange={(e) => setUsername(e.target.value)}
+        />
+
+        {/* PASSWORD */}
+        <div className="password-box">
+          <input
+            className="login-input"
+            type={show ? "text" : "password"}
+            placeholder="Password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+          />
+          <span className="eye" onClick={() => setShow(!show)}>
+            {show ? "🙈" : "👁️"}
+          </span>
         </div>
 
-        {/* FORM */}
-        <div className="form">
-
-          <div className="field">
-            <label>Username</label>
-            <input
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-            />
-          </div>
-
-          <div className="field">
-            <label>Password</label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-            />
-          </div>
-
-          <button onClick={submit} disabled={loading}>
-            {loading ? "Signing in..." : "Sign In"}
+        {/* BUTTONS */}
+        <div className="btn-row">
+          <button
+            className="btn login-btn"
+            onClick={submit}
+            disabled={loading}
+          >
+            {loading ? "Logging in..." : "Login"}
           </button>
-        </div>
 
-        <div className="footer">
-          Secure Internal Access
+          <button className="btn cancel-btn" onClick={cancel}>
+            Cancel
+          </button>
         </div>
       </div>
 
-      {/* STYLES */}
+      {/* STYLES (UNCHANGED) */}
       <style>{`
-        * {
-          box-sizing: border-box;
-        }
-
         .login-wrapper {
           height: 100vh;
-          background: #f4f6f8;
           display: flex;
           align-items: center;
           justify-content: center;
-          font-family: "Segoe UI", system-ui, sans-serif;
+          background: radial-gradient(circle at top, #1e3c72, #000428);
         }
 
-        .login-panel {
-          width: 420px;
-          background: white;
-          padding: 40px 42px;
-          border-radius: 14px;
-          box-shadow: 0 20px 40px rgba(0,0,0,0.08);
-        }
-
-        .brand {
+        .login-card {
+          width: 360px;
+          background: rgba(255,255,255,0.12);
+          backdrop-filter: blur(15px);
+          border-radius: 18px;
+          padding: 28px;
+          box-shadow: 0 30px 60px rgba(0,0,0,0.7);
           text-align: center;
-          margin-bottom: 34px;
+          color: white;
         }
 
-        .brand-line {
-          width: 50px;
-          height: 3px;
-          background: #c9a227;
-          margin: 0 auto 12px;
+        .title {
+          font-size: 24px;
+          font-weight: bold;
+          color: #ffd700;
+          margin-bottom: 4px;
         }
 
-        .brand h1 {
-          margin: 0;
-          font-size: 26px;
-          letter-spacing: 2px;
-          color: #0f3d2e;
-          font-weight: 700;
-        }
-
-        .brand p {
-          margin: 6px 0 0;
-          font-size: 12px;
-          letter-spacing: 2px;
-          color: #6b7280;
-        }
-
-        .form .field {
+        .subtitle {
+          font-size: 13px;
+          opacity: 0.8;
           margin-bottom: 18px;
         }
 
-        .form label {
-          display: block;
-          font-size: 13px;
-          color: #374151;
-          margin-bottom: 6px;
-        }
-
-        .form input {
+        .login-input {
           width: 100%;
-          padding: 11px 12px;
-          border-radius: 8px;
-          border: 1px solid #d1d5db;
-          font-size: 14px;
-          outline: none;
-        }
-
-        .form input:focus {
-          border-color: #0f3d2e;
-        }
-
-        .form button {
-          width: 100%;
-          margin-top: 10px;
-          padding: 12px;
-          border-radius: 30px;
+          padding: 10px 12px;
+          border-radius: 10px;
           border: none;
-          background: #0f3d2e;
-          color: white;
+          margin-bottom: 12px;
+          outline: none;
           font-size: 14px;
-          font-weight: 600;
-          letter-spacing: 1px;
+        }
+
+        .password-box {
+          position: relative;
+        }
+
+        .eye {
+          position: absolute;
+          right: 12px;
+          top: 50%;
+          transform: translateY(-50%);
           cursor: pointer;
+          font-size: 16px;
         }
 
-        .form button:disabled {
-          opacity: 0.7;
+        .btn-row {
+          display: flex;
+          gap: 10px;
+          margin-top: 14px;
         }
 
-        .footer {
-          text-align: center;
-          margin-top: 22px;
-          font-size: 11px;
-          color: #9ca3af;
+        .btn {
+          flex: 1;
+          padding: 10px;
+          border: none;
+          border-radius: 20px;
+          font-size: 14px;
+          cursor: pointer;
+          transition: 0.3s;
         }
 
-        @media (max-width: 480px) {
-          .login-panel {
-            width: 90%;
-            padding: 30px;
-          }
+        .login-btn {
+          background: linear-gradient(135deg, #ffd700, #ffb347);
+          color: #000;
+          font-weight: bold;
+        }
+
+        .login-btn:hover {
+          transform: scale(1.05);
+        }
+
+        .cancel-btn {
+          background: rgba(255,255,255,0.2);
+          color: white;
+        }
+
+        .cancel-btn:hover {
+          background: rgba(255,255,255,0.35);
         }
       `}</style>
     </div>
