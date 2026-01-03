@@ -3,7 +3,6 @@ import React, { useState } from "react";
 export default function Login({ onLogin }) {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
-  const [show, setShow] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const submit = async () => {
@@ -28,7 +27,7 @@ export default function Login({ onLogin }) {
       setLoading(false);
 
       if (!data.success) {
-        alert("❌ Invalid login");
+        alert("Invalid login");
         return;
       }
 
@@ -41,180 +40,150 @@ export default function Login({ onLogin }) {
   };
 
   return (
-    <div className="login-bg">
-      <div className="login-card">
+    <div className="login-wrapper">
+      <div className="login-panel">
 
-        {/* LOGO */}
-        <div className="logo-box">
-          ✈️
+        {/* BRAND */}
+        <div className="brand">
+          <div className="brand-line"></div>
+          <h1>MAKKI MADNI</h1>
+          <p>TRAVEL & TOURS</p>
         </div>
 
-        <h2 className="title">Makki Madni Travel</h2>
-        <p className="subtitle">Secure Admin Login</p>
+        {/* FORM */}
+        <div className="form">
 
-        {/* USERNAME */}
-        <div className="field">
-          <input
-            required
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-          />
-          <label>Username</label>
+          <div className="field">
+            <label>Username</label>
+            <input
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+            />
+          </div>
+
+          <div className="field">
+            <label>Password</label>
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+            />
+          </div>
+
+          <button onClick={submit} disabled={loading}>
+            {loading ? "Signing in..." : "Sign In"}
+          </button>
         </div>
 
-        {/* PASSWORD */}
-        <div className="field">
-          <input
-            required
-            type={show ? "text" : "password"}
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-          />
-          <label>Password</label>
-          <span className="eye" onClick={() => setShow(!show)}>
-            {show ? "🙈" : "👁️"}
-          </span>
+        <div className="footer">
+          Secure Internal Access
         </div>
-
-        {/* BUTTON */}
-        <button className="login-btn" onClick={submit} disabled={loading}>
-          {loading ? <span className="spinner"></span> : "LOGIN"}
-        </button>
-
-        <p className="footer">© Makki Madni Travel</p>
       </div>
 
       {/* STYLES */}
       <style>{`
-        .login-bg {
+        * {
+          box-sizing: border-box;
+        }
+
+        .login-wrapper {
           height: 100vh;
+          background: #f4f6f8;
           display: flex;
           align-items: center;
           justify-content: center;
-          background: linear-gradient(270deg, #0f2027, #203a43, #2c5364);
-          background-size: 600% 600%;
-          animation: bgMove 10s ease infinite;
+          font-family: "Segoe UI", system-ui, sans-serif;
         }
 
-        @keyframes bgMove {
-          0% { background-position: 0% 50%; }
-          50% { background-position: 100% 50%; }
-          100% { background-position: 0% 50%; }
+        .login-panel {
+          width: 420px;
+          background: white;
+          padding: 40px 42px;
+          border-radius: 14px;
+          box-shadow: 0 20px 40px rgba(0,0,0,0.08);
         }
 
-        .login-card {
-          width: 380px;
-          padding: 35px 30px;
-          background: rgba(255,255,255,0.12);
-          backdrop-filter: blur(18px);
-          border-radius: 22px;
-          box-shadow: 0 25px 60px rgba(0,0,0,0.8);
+        .brand {
           text-align: center;
-          color: white;
+          margin-bottom: 34px;
         }
 
-        .logo-box {
-          width: 70px;
-          height: 70px;
-          margin: auto;
-          border-radius: 50%;
-          background: linear-gradient(135deg, #ffd700, #ff9f1c);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-size: 28px;
-          box-shadow: 0 0 25px rgba(255,215,0,0.8);
-          margin-bottom: 12px;
+        .brand-line {
+          width: 50px;
+          height: 3px;
+          background: #c9a227;
+          margin: 0 auto 12px;
         }
 
-        .title {
-          color: #ffd700;
-          font-weight: bold;
-          margin-bottom: 4px;
+        .brand h1 {
+          margin: 0;
+          font-size: 26px;
+          letter-spacing: 2px;
+          color: #0f3d2e;
+          font-weight: 700;
         }
 
-        .subtitle {
-          font-size: 13px;
-          opacity: 0.85;
-          margin-bottom: 22px;
+        .brand p {
+          margin: 6px 0 0;
+          font-size: 12px;
+          letter-spacing: 2px;
+          color: #6b7280;
         }
 
-        .field {
-          position: relative;
+        .form .field {
           margin-bottom: 18px;
         }
 
-        .field input {
-          width: 100%;
-          padding: 12px 14px;
-          border-radius: 12px;
-          border: none;
-          outline: none;
-          font-size: 14px;
-          background: rgba(255,255,255,0.9);
-        }
-
-        .field label {
-          position: absolute;
-          left: 14px;
-          top: 50%;
-          transform: translateY(-50%);
+        .form label {
+          display: block;
           font-size: 13px;
-          color: #666;
-          pointer-events: none;
-          transition: 0.3s;
+          color: #374151;
+          margin-bottom: 6px;
         }
 
-        .field input:focus + label,
-        .field input:not(:placeholder-shown) + label {
-          top: -6px;
-          font-size: 11px;
-          color: #ffd700;
-        }
-
-        .eye {
-          position: absolute;
-          right: 12px;
-          top: 50%;
-          transform: translateY(-50%);
-          cursor: pointer;
-        }
-
-        .login-btn {
+        .form input {
           width: 100%;
+          padding: 11px 12px;
+          border-radius: 8px;
+          border: 1px solid #d1d5db;
+          font-size: 14px;
+          outline: none;
+        }
+
+        .form input:focus {
+          border-color: #0f3d2e;
+        }
+
+        .form button {
+          width: 100%;
+          margin-top: 10px;
           padding: 12px;
           border-radius: 30px;
           border: none;
-          background: linear-gradient(135deg, #ffd700, #ff9f1c);
-          color: #000;
-          font-weight: bold;
+          background: #0f3d2e;
+          color: white;
+          font-size: 14px;
+          font-weight: 600;
           letter-spacing: 1px;
           cursor: pointer;
-          transition: 0.3s;
         }
 
-        .login-btn:hover {
-          transform: scale(1.05);
-        }
-
-        .spinner {
-          width: 18px;
-          height: 18px;
-          border: 3px solid rgba(0,0,0,0.2);
-          border-top: 3px solid #000;
-          border-radius: 50%;
-          animation: spin 1s linear infinite;
-          display: inline-block;
-        }
-
-        @keyframes spin {
-          100% { transform: rotate(360deg); }
+        .form button:disabled {
+          opacity: 0.7;
         }
 
         .footer {
-          margin-top: 18px;
+          text-align: center;
+          margin-top: 22px;
           font-size: 11px;
-          opacity: 0.7;
+          color: #9ca3af;
+        }
+
+        @media (max-width: 480px) {
+          .login-panel {
+            width: 90%;
+            padding: 30px;
+          }
         }
       `}</style>
     </div>
