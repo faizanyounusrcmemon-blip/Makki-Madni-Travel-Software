@@ -22,6 +22,8 @@ export default function Restore({ onNavigate }) {
     "purchase_payments",
   ];
 
+  /* ================= HELPERS ================= */
+
   const fmtDate = (d) => {
     if (!d) return "-";
     return new Date(d).toLocaleString("en-GB", {
@@ -33,6 +35,17 @@ export default function Restore({ onNavigate }) {
       hour12: true,
     });
   };
+
+  // BYTES → KB / MB
+  const fmtSize = (bytes) => {
+    if (!bytes) return "-";
+    if (bytes < 1024) return bytes + " B";
+    if (bytes < 1024 * 1024)
+      return (bytes / 1024).toFixed(1) + " KB";
+    return (bytes / (1024 * 1024)).toFixed(2) + " MB";
+  };
+
+  /* ================= LOAD BACKUPS ================= */
 
   const loadBackups = async () => {
     try {
@@ -49,6 +62,8 @@ export default function Restore({ onNavigate }) {
   useEffect(() => {
     loadBackups();
   }, []);
+
+  /* ================= RESTORE ================= */
 
   const restore = async (file, mode) => {
     const password = prompt("Restore Password");
@@ -98,6 +113,8 @@ export default function Restore({ onNavigate }) {
     }
   };
 
+  /* ================= DOWNLOAD ================= */
+
   const downloadBackup = async (file) => {
     const password = prompt("Download Password");
     if (!password) return;
@@ -126,6 +143,8 @@ export default function Restore({ onNavigate }) {
     }
   };
 
+  /* ================= DELETE ================= */
+
   const deleteBackup = async (file) => {
     const password = prompt("Delete Password");
     if (!password) return;
@@ -149,6 +168,8 @@ export default function Restore({ onNavigate }) {
       setMessage({ type: "danger", text: "❌ Delete error" });
     }
   };
+
+  /* ================= UI ================= */
 
   return (
     <div className="restore-wrapper">
@@ -185,6 +206,7 @@ export default function Restore({ onNavigate }) {
             <tr>
               <th>📁 Backup File</th>
               <th>🕒 Date & Time</th>
+              <th>📦 Size</th>
               <th>♻ Restore</th>
               <th className="text-center">⬇</th>
               <th className="text-center">🗑</th>
@@ -202,6 +224,10 @@ export default function Restore({ onNavigate }) {
                 </td>
 
                 <td className="vip-date">{fmtDate(f.created_at)}</td>
+
+                <td className="vip-size">
+                  {fmtSize(f.metadata?.size)}
+                </td>
 
                 <td>
                   <button
@@ -254,7 +280,7 @@ export default function Restore({ onNavigate }) {
 
             {files.length === 0 && (
               <tr>
-                <td colSpan="5" className="text-center text-muted">
+                <td colSpan="6" className="text-center text-muted">
                   No backups found
                 </td>
               </tr>
@@ -266,4 +292,3 @@ export default function Restore({ onNavigate }) {
     </div>
   );
 }
-
