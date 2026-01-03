@@ -21,6 +21,7 @@ export default function CreateUser({ onNavigate }) {
   const [editUser, setEditUser] = useState(null);
   const [showRowPass, setShowRowPass] = useState({});
 
+  /* ================= LOAD USERS ================= */
   const loadUsers = async () => {
     const res = await fetch(
       `${import.meta.env.VITE_BACKEND_URL}/api/users/list`
@@ -33,6 +34,7 @@ export default function CreateUser({ onNavigate }) {
     loadUsers();
   }, []);
 
+  /* ================= CREATE ================= */
   const save = async () => {
     if (!name || !username || !password)
       return alert("All fields required");
@@ -49,6 +51,7 @@ export default function CreateUser({ onNavigate }) {
     const d = await res.json();
     if (!d.success) return alert(d.error);
 
+    alert("🎉 User Created Successfully");
     setName("");
     setUsername("");
     setPassword("");
@@ -56,6 +59,7 @@ export default function CreateUser({ onNavigate }) {
     loadUsers();
   };
 
+  /* ================= UPDATE ================= */
   const updateUser = async () => {
     const res = await fetch(
       `${import.meta.env.VITE_BACKEND_URL}/api/users/update`,
@@ -69,13 +73,15 @@ export default function CreateUser({ onNavigate }) {
     const d = await res.json();
     if (!d.success) return alert(d.error);
 
+    alert("✅ User Updated");
     setEditUser(null);
     loadUsers();
   };
 
+  /* ================= DELETE ================= */
   const deleteUser = async (u) => {
     const pass = prompt("Enter delete password");
-    if (pass !== "786") return alert("Wrong Password");
+    if (pass !== "786") return alert("❌ Wrong Password");
 
     await fetch(
       `${import.meta.env.VITE_BACKEND_URL}/api/users/delete/${u.id}`,
@@ -86,21 +92,22 @@ export default function CreateUser({ onNavigate }) {
       }
     );
 
+    alert("🗑 User Deleted");
     loadUsers();
   };
 
   return (
-    <div className="user-bg">
+    <div className="user-wrap">
       <div className="container py-4">
 
         {/* HEADER */}
-        <div className="d-flex justify-content-between align-items-center mb-4">
+        <div className="d-flex justify-content-between align-items-center mb-4 text-white">
           <h3 className="fw-bold">
             <Users size={22} className="me-2" />
             User Management
           </h3>
           <button
-            className="btn btn-outline-secondary btn-sm"
+            className="btn btn-light btn-sm"
             onClick={() => onNavigate("dashboard")}
           >
             <ArrowLeft size={14} /> Back
@@ -108,9 +115,9 @@ export default function CreateUser({ onNavigate }) {
         </div>
 
         {/* CREATE USER */}
-        <div className="card soft-card mb-4">
+        <div className="card glass-card mb-4">
           <div className="card-body">
-            <h5 className="mb-3">Create New User</h5>
+            <h5 className="fw-bold text-white mb-3">➕ Create New User</h5>
 
             <div className="row g-2">
               <div className="col-md-3">
@@ -169,15 +176,15 @@ export default function CreateUser({ onNavigate }) {
           </div>
         </div>
 
-        {/* USERS TABLE */}
-        <div className="card soft-card">
+        {/* USER LIST */}
+        <div className="card glass-card">
           <div className="card-body">
-            <h5 className="mb-3">Users List</h5>
+            <h5 className="fw-bold text-white mb-3">👥 Users List</h5>
 
             <div className="table-responsive">
-              <table className="table align-middle">
+              <table className="table table-borderless align-middle text-white">
                 <thead>
-                  <tr>
+                  <tr className="text-white-50">
                     <th>Name</th>
                     <th>Username</th>
                     <th>Password</th>
@@ -210,8 +217,8 @@ export default function CreateUser({ onNavigate }) {
                         <span
                           className={`badge ${
                             u.role === "admin"
-                              ? "bg-danger"
-                              : "bg-secondary"
+                              ? "bg-purple"
+                              : "bg-info"
                           }`}
                         >
                           {u.role}
@@ -219,13 +226,13 @@ export default function CreateUser({ onNavigate }) {
                       </td>
                       <td>
                         <button
-                          className="btn btn-sm btn-outline-warning me-1"
+                          className="btn btn-sm btn-warning me-1"
                           onClick={() => setEditUser({ ...u, password: "" })}
                         >
                           <Pencil size={14} />
                         </button>
                         <button
-                          className="btn btn-sm btn-outline-danger"
+                          className="btn btn-sm btn-danger"
                           onClick={() => deleteUser(u)}
                         >
                           <Trash2 size={14} />
@@ -241,9 +248,9 @@ export default function CreateUser({ onNavigate }) {
 
         {/* EDIT USER */}
         {editUser && (
-          <div className="card soft-card mt-4">
+          <div className="card glass-card mt-4">
             <div className="card-body">
-              <h5>Edit User</h5>
+              <h5 className="fw-bold text-white mb-3">✏ Edit User</h5>
 
               <input
                 className="form-control mb-2"
@@ -264,7 +271,7 @@ export default function CreateUser({ onNavigate }) {
               <input
                 type="password"
                 className="form-control mb-2"
-                placeholder="New Password (optional)"
+                placeholder="New Password"
                 value={editUser.password}
                 onChange={e =>
                   setEditUser({ ...editUser, password: e.target.value })
@@ -282,11 +289,11 @@ export default function CreateUser({ onNavigate }) {
                 <option value="admin">Admin</option>
               </select>
 
-              <button className="btn btn-primary me-2" onClick={updateUser}>
+              <button className="btn btn-success me-2" onClick={updateUser}>
                 <Save size={16} /> Save
               </button>
               <button
-                className="btn btn-outline-secondary"
+                className="btn btn-light"
                 onClick={() => setEditUser(null)}
               >
                 Cancel
@@ -299,24 +306,24 @@ export default function CreateUser({ onNavigate }) {
 
       {/* STYLES */}
       <style>{`
-        .user-bg {
+        .user-wrap {
           min-height: 100vh;
-          background: linear-gradient(135deg, #f8fafc, #eef2f7);
+          background: linear-gradient(135deg, #141e30, #243b55);
         }
 
-        .soft-card {
-          border: none;
-          border-radius: 16px;
-          box-shadow: 0 15px 35px rgba(0,0,0,0.06);
+        .glass-card {
+          background: rgba(255,255,255,0.12);
+          backdrop-filter: blur(14px);
+          border-radius: 18px;
+          border: 1px solid rgba(255,255,255,0.2);
+        }
+
+        .bg-purple {
+          background: linear-gradient(135deg, #7f00ff, #e100ff);
         }
 
         .pointer {
           cursor: pointer;
-        }
-
-        table th {
-          font-size: 13px;
-          color: #6b7280;
         }
       `}</style>
     </div>
