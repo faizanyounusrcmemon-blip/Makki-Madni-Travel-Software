@@ -1,223 +1,191 @@
 import React, { useEffect, useState } from "react";
 
-/* ================= FORMAT ================= */
-const money = (v) =>
-  Number(v || 0).toLocaleString("en-US");
+/* ================= AMOUNT FORMAT ================= */
+const fmt = (v) =>
+  Number(v || 0).toLocaleString("en-US", {
+    maximumFractionDigits: 0,
+  });
 
 export default function BalanceSheet({ onNavigate }) {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    load();
+    loadData();
   }, []);
 
-  const load = async () => {
-    const r = await fetch(
-      `${import.meta.env.VITE_BACKEND_URL}/api/balance-sheet`
-    );
-    const d = await r.json();
-    if (d.success) setData(d);
-    setLoading(false);
+  const loadData = async () => {
+    try {
+      const res = await fetch(
+        `${import.meta.env.VITE_BACKEND_URL}/api/balance-sheet`
+      );
+      const d = await res.json();
+
+      if (d.success) setData(d);
+      else alert(d.error || "Failed to load balance sheet");
+    } catch {
+      alert("Server error");
+    } finally {
+      setLoading(false);
+    }
   };
 
-  if (loading) return <div className="p-5">Loading...</div>;
+  if (loading) return <div className="p-4 text-white">Loading...</div>;
 
-  const receivable = data.customers.filter((r) => r.balance > 0);
-  const payable = data.purchases.filter((r) => r.balance > 0);
+  /* ================= FILTER ================= */
+  const customerRows = data.customers.filter((r) => r.balance > 0);
+  const purchaseRows = data.purchases.filter((r) => r.balance > 0);
 
-  const rTotal = receivable.reduce((a, b) => a + Number(b.balance), 0);
-  const pTotal = payable.reduce((a, b) => a + Number(b.balance), 0);
-  const net = rTotal - pTotal;
+  /* ================= TOTALS ================= */
+  const customerTotals = customerRows.reduce(
+    (a, r) => {
+      a.sale += Number(r.sale_total || 0);
+      a.received += Number(r.received || 0);
+      a.balance += Number(r.balance || 0);
+      return a;
+    },
+    { sale: 0, received: 0, balance: 0 }
+  );
+
+  const purchaseTotals = purchaseRows.reduce(
+    (a, r) => {
+      a.purchase += Number(r.purchase_total || 0);
+      a.paid += Number(r.paid || 0);
+      a.balance += Number(r.balance || 0);
+      return a;
+    },
+    { purchase: 0, paid: 0, balance: 0 }
+  );
+
+  const netPosition = customerTotals.balance - purchaseTotals.balance;
 
   return (
-    <div className="bs-wrap">
+    <div className="container p-4 text-white">
 
       {/* HEADER */}
-      <div className="bs-header">
-        <div>
-          <h2>Balance Sheet</h2>
-          <span>Financial Position Overview</span>
-        </div>
-        <button onClick={() => onNavigate("dashboard")}>
-          Back
+      <div className="d-flex justify-content-between align-items-center mb-4">
+        <h3>📊 BALANCE SHEET</h3>
+        <button
+          className="btn btn-secondary"
+          onClick={() => onNavigate("dashboard")}
+        >
+          ⬅ Back
         </button>
       </div>
 
-      {/* SUMMARY */}
-      <div className="bs-summary">
-        <div className="card green">
-          <small>Receivable</small>
-          <h3>PKR {money(rTotal)}</h3>
-        </div>
+      {/* ================= CUSTOMER RECEIVABLE ================= */}
+      <h5 className="text-info">💰 Customer Receivable</h5>
+      <table className="table table-dark table-bordered mt-2">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Ref No</th>
+            <th>Total Sale</th>
+            <th>Received</th>
+            <th>Balance</th>
+          </tr>
+        </thead>
+        <tbody>
+          {customerRows.map((r, i) => (
+            <tr key={i}>
+              <td>{i + 1}</td>
+              <td>{r.ref_no}</td>
+              <td>{fmt(r.sale_total)}</td>
+              <td>{fmt(r.received)}</td>
+              <td className="text-danger fw-bold">{fmt(r.balance)}</td>
+            </tr>
+          ))}
 
-        <div className="card red">
-          <small>Payable</small>
-          <h3>PKR {money(pTotal)}</h3>
-        </div>
+          {customerRows.length > 0 && (
+            <tr className="table-secondary text-dark fw-bold">
+              <td colSpan="2" className="text-end">GRAND TOTAL</td>
+              <td>{fmt(customerTotals.sale)}</td>
+              <td>{fmt(customerTotals.received)}</td>
+              <td>{fmt(customerTotals.balance)}</td>
+            </tr>
+          )}
+        </tbody>
+      </table>
 
-        <div className={`card ${net >= 0 ? "green" : "red"}`}>
-          <small>Net Position</small>
-          <h3>PKR {money(Math.abs(net))}</h3>
-          <span>{net >= 0 ? "You will receive" : "You will pay"}</span>
-        </div>
+      {/* ================= SUPPLIER PAYABLE ================= */}
+      <h5 className="text-warning mt-4">📦 Supplier Payable</h5>
+      <table className="table table-dark table-bordered mt-2">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Ref No</th>
+            <th>Total Purchase</th>
+            <th>Paid</th>
+            <th>Balance</th>
+          </tr>
+        </thead>
+        <tbody>
+          {purchaseRows.map((r, i) => (
+            <tr key={i}>
+              <td>{i + 1}</td>
+              <td>{r.ref_no}</td>
+              <td>{fmt(r.purchase_total)}</td>
+              <td>{fmt(r.paid)}</td>
+              <td className="text-danger fw-bold">{fmt(r.balance)}</td>
+            </tr>
+          ))}
+
+          {purchaseRows.length > 0 && (
+            <tr className="table-secondary text-dark fw-bold">
+              <td colSpan="2" className="text-end">GRAND TOTAL</td>
+              <td>{fmt(purchaseTotals.purchase)}</td>
+              <td>{fmt(purchaseTotals.paid)}</td>
+              <td>{fmt(purchaseTotals.balance)}</td>
+            </tr>
+          )}
+        </tbody>
+      </table>
+
+      {/* ================= SUMMARY ================= */}
+      <div className="mt-5 p-4 rounded bg-dark border border-light">
+        <h4 className="mb-3">📌 SUMMARY</h4>
+
+        <table className="table table-dark table-bordered mb-0">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Details</th>
+              <th>Amount</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>1</td>
+              <td>💰 Lene Hain (Customer)</td>
+              <td className="text-success fw-bold">
+                {fmt(customerTotals.balance)}
+              </td>
+            </tr>
+            <tr>
+              <td>2</td>
+              <td>📦 Dene Hain (Supplier)</td>
+              <td className="text-danger fw-bold">
+                {fmt(purchaseTotals.balance)}
+              </td>
+            </tr>
+            <tr className="table-secondary text-dark fw-bold">
+              <td>3</td>
+              <td>
+                🔄 Net Position<br />
+                <small>
+                  {netPosition >= 0
+                    ? "Aap lene wale ho"
+                    : "Aap dene wale ho"}
+                </small>
+              </td>
+              <td className={netPosition >= 0 ? "text-success" : "text-danger"}>
+                {fmt(Math.abs(netPosition))}
+              </td>
+            </tr>
+          </tbody>
+        </table>
       </div>
 
-      {/* DETAILS */}
-      <div className="bs-grid">
-
-        {/* RECEIVABLE */}
-        <div className="panel">
-          <h4 className="green">Customer Receivable</h4>
-
-          {receivable.map((r, i) => (
-            <div key={i} className="row">
-              <div>
-                <strong>{r.ref_no}</strong>
-                <span>Sale: {money(r.sale_total)}</span>
-              </div>
-              <div className="amount green">
-                {money(r.balance)}
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {/* PAYABLE */}
-        <div className="panel">
-          <h4 className="red">Supplier Payable</h4>
-
-          {payable.map((r, i) => (
-            <div key={i} className="row">
-              <div>
-                <strong>{r.ref_no}</strong>
-                <span>Purchase: {money(r.purchase_total)}</span>
-              </div>
-              <div className="amount red">
-                {money(r.balance)}
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* STYLES */}
-      <style>{`
-        .bs-wrap {
-          padding: 30px;
-          background: #f5f7fa;
-          min-height: 100vh;
-          font-family: "Segoe UI", system-ui;
-        }
-
-        .bs-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          margin-bottom: 25px;
-        }
-
-        .bs-header h2 {
-          margin: 0;
-          font-weight: 600;
-        }
-
-        .bs-header span {
-          font-size: 13px;
-          color: #6b7280;
-        }
-
-        .bs-header button {
-          padding: 6px 14px;
-          border-radius: 6px;
-          border: 1px solid #ccc;
-          background: white;
-          cursor: pointer;
-        }
-
-        .bs-summary {
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-          gap: 16px;
-          margin-bottom: 30px;
-        }
-
-        .card {
-          background: white;
-          padding: 20px;
-          border-radius: 14px;
-          box-shadow: 0 10px 25px rgba(0,0,0,0.06);
-        }
-
-        .card small {
-          color: #6b7280;
-          font-size: 12px;
-        }
-
-        .card h3 {
-          margin: 8px 0 2px;
-          font-weight: 700;
-        }
-
-        .card span {
-          font-size: 12px;
-          color: #6b7280;
-        }
-
-        .green h3 { color: #0f766e; }
-        .red h3 { color: #b91c1c; }
-
-        .bs-grid {
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-          gap: 20px;
-        }
-
-        .panel {
-          background: white;
-          padding: 18px;
-          border-radius: 14px;
-          box-shadow: 0 10px 25px rgba(0,0,0,0.06);
-        }
-
-        .panel h4 {
-          margin-bottom: 14px;
-          font-weight: 600;
-        }
-
-        .panel h4.green { color: #0f766e; }
-        .panel h4.red { color: #b91c1c; }
-
-        .row {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          padding: 12px 0;
-          border-bottom: 1px dashed #e5e7eb;
-        }
-
-        .row:last-child {
-          border-bottom: none;
-        }
-
-        .row span {
-          font-size: 12px;
-          color: #6b7280;
-        }
-
-        .amount {
-          font-weight: 700;
-        }
-
-        .amount.green { color: #0f766e; }
-        .amount.red { color: #b91c1c; }
-
-        @media (max-width: 600px) {
-          .bs-wrap {
-            padding: 16px;
-          }
-        }
-      `}</style>
     </div>
   );
 }
