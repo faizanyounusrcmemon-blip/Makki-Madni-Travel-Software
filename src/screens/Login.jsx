@@ -32,9 +32,7 @@ export default function Login({ onLogin }) {
         return;
       }
 
-      // ✅ FIX: sessionStorage (auto logout on browser close)
       sessionStorage.setItem("user", JSON.stringify(data.user));
-
       onLogin();
 
     } catch (err) {
@@ -54,7 +52,6 @@ export default function Login({ onLogin }) {
         <h2 className="title">✈️ Makki Madni Travel</h2>
         <p className="subtitle">Secure Login Panel</p>
 
-        {/* USERNAME */}
         <input
           className="login-input"
           placeholder="Username"
@@ -62,7 +59,6 @@ export default function Login({ onLogin }) {
           onChange={(e) => setUsername(e.target.value)}
         />
 
-        {/* PASSWORD */}
         <div className="password-box">
           <input
             className="login-input"
@@ -76,7 +72,6 @@ export default function Login({ onLogin }) {
           </span>
         </div>
 
-        {/* BUTTONS */}
         <div className="btn-row">
           <button
             className="btn login-btn"
@@ -92,7 +87,6 @@ export default function Login({ onLogin }) {
         </div>
       </div>
 
-      {/* STYLES (UNCHANGED) */}
       <style>{`
         .login-wrapper {
           height: 100vh;
@@ -171,7 +165,10 @@ export default function Login({ onLogin }) {
           font-weight: bold;
         }
 
+        /* ✅ CHANGE: hover red */
         .login-btn:hover {
+          background: red;
+          color: white;
           transform: scale(1.05);
         }
 
@@ -180,8 +177,10 @@ export default function Login({ onLogin }) {
           color: white;
         }
 
+        /* ✅ CHANGE: hover red */
         .cancel-btn:hover {
-          background: rgba(255,255,255,0.35);
+          background: red;
+          color: white;
         }
       `}</style>
     </div>
