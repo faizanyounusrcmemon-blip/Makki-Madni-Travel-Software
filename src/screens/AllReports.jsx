@@ -7,7 +7,7 @@ export default function AllReports({ onNavigate }) {
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
 
-  // LOAD
+  /* ================= LOAD ================= */
   const loadData = async () => {
     const res = await fetch(
       `${import.meta.env.VITE_BACKEND_URL}/api/reports/all`
@@ -21,10 +21,9 @@ export default function AllReports({ onNavigate }) {
     loadData();
   }, []);
 
-  // 🔥 SOFT DELETE (PASSWORD = 786)
+  /* ================= DELETE ================= */
   const handleDelete = async (type, ref_no) => {
     const pass = prompt("Enter delete password (786)");
-
     if (pass !== "786") {
       alert("❌ Wrong Password");
       return;
@@ -43,7 +42,6 @@ export default function AllReports({ onNavigate }) {
     );
 
     const data = await res.json();
-
     if (!data.success) {
       alert(data.error || "Delete failed");
       return;
@@ -53,7 +51,7 @@ export default function AllReports({ onNavigate }) {
     loadData();
   };
 
-  // VIEW
+  /* ================= VIEW ================= */
   const handleView = (type, ref_no) => {
     const page =
       type === "Packages"
@@ -69,7 +67,7 @@ export default function AllReports({ onNavigate }) {
     onNavigate(page, ref_no);
   };
 
-  // FILTER
+  /* ================= FILTER ================= */
   useEffect(() => {
     let temp = [...rows];
 
@@ -93,97 +91,127 @@ export default function AllReports({ onNavigate }) {
     setFiltered(temp);
   }, [search, fromDate, toDate, rows]);
 
+  /* ================= UI ================= */
   return (
-    <div className="container mt-3">
+    <div className="container py-4">
 
-      {/* HEADER + BACK BUTTON */}
+      {/* HEADER */}
       <div className="d-flex justify-content-between align-items-center mb-3">
-        <h3 className="fw-bold m-0">All Reports</h3>
-
+        <h4 className="fw-bold mb-0">📊 All Reports</h4>
         <button
-          className="btn btn-secondary btn-sm"
+          className="btn btn-outline-secondary btn-sm"
           onClick={() => onNavigate("dashboard")}
         >
           ⬅ Back
         </button>
       </div>
 
-      {/* FILTER BAR */}
-      <div className="d-flex gap-2 mb-3">
-        <input
-          className="form-control"
-          placeholder="Search Ref / Customer"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-        />
+      {/* FILTER CARD */}
+      <div className="card shadow-sm mb-3">
+        <div className="card-body">
+          <div className="row g-2">
+            <div className="col-md-6">
+              <input
+                className="form-control form-control-sm"
+                placeholder="🔍 Search Ref / Customer"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
+            </div>
 
-        <input
-          type="date"
-          className="form-control"
-          value={fromDate}
-          onChange={(e) => setFromDate(e.target.value)}
-        />
+            <div className="col-md-3">
+              <input
+                type="date"
+                className="form-control form-control-sm"
+                value={fromDate}
+                onChange={(e) => setFromDate(e.target.value)}
+              />
+            </div>
 
-        <input
-          type="date"
-          className="form-control"
-          value={toDate}
-          onChange={(e) => setToDate(e.target.value)}
-        />
+            <div className="col-md-3">
+              <input
+                type="date"
+                className="form-control form-control-sm"
+                value={toDate}
+                onChange={(e) => setToDate(e.target.value)}
+              />
+            </div>
+          </div>
+        </div>
       </div>
 
-      {/* TABLE */}
-      <table className="table table-bordered table-sm">
-        <thead className="table-dark">
-          <tr>
-            <th>Type</th>
-            <th>Ref</th>
-            <th>Customer</th>
-            <th>Date</th>
-            <th>PKR</th>
-            <th>View</th>
-            <th>Delete</th>
-          </tr>
-        </thead>
+      {/* TABLE CARD */}
+      <div className="card shadow-sm">
+        <div className="card-body p-0">
+          <div className="table-responsive">
+            <table className="table table-hover table-sm mb-0">
+              <thead className="table-light">
+                <tr>
+                  <th>Type</th>
+                  <th>Ref</th>
+                  <th>Customer</th>
+                  <th>Date</th>
+                  <th>PKR</th>
+                  <th className="text-center">View</th>
+                  <th className="text-center">Delete</th>
+                </tr>
+              </thead>
 
-        <tbody>
-          {filtered.map((r, i) => (
-            <tr key={i}>
-              <td>{r.type}</td>
-              <td>{r.ref_no}</td>
-              <td>{r.customer_name}</td>
-              <td>{new Date(r.booking_date).toLocaleDateString()}</td>
-              <td>{Number(r.total_pkr).toLocaleString()}</td>
+              <tbody>
+                {filtered.map((r, i) => (
+                  <tr key={i}>
+                    <td>
+                      <span className="badge bg-info text-dark">
+                        {r.type}
+                      </span>
+                    </td>
 
-              <td className="text-center">
-                <button
-                  className="btn btn-info btn-sm"
-                  onClick={() => handleView(r.type, r.ref_no)}
-                >
-                  👁
-                </button>
-              </td>
+                    <td className="fw-bold">{r.ref_no}</td>
+                    <td>{r.customer_name}</td>
 
-              <td className="text-center">
-                <button
-                  className="btn btn-danger btn-sm"
-                  onClick={() => handleDelete(r.type, r.ref_no)}
-                >
-                  ❌
-                </button>
-              </td>
-            </tr>
-          ))}
+                    <td>
+                      {new Date(r.booking_date).toLocaleDateString("en-GB")}
+                    </td>
 
-          {filtered.length === 0 && (
-            <tr>
-              <td colSpan={7} className="text-center text-muted">
-                No Records
-              </td>
-            </tr>
-          )}
-        </tbody>
-      </table>
+                    <td>
+                      <span className="badge bg-success">
+                        {Number(r.total_pkr).toLocaleString()}
+                      </span>
+                    </td>
+
+                    <td className="text-center">
+                      <button
+                        className="btn btn-outline-info btn-sm"
+                        onClick={() => handleView(r.type, r.ref_no)}
+                      >
+                        👁
+                      </button>
+                    </td>
+
+                    <td className="text-center">
+                      <button
+                        className="btn btn-outline-danger btn-sm"
+                        onClick={() => handleDelete(r.type, r.ref_no)}
+                      >
+                        ❌
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+
+                {filtered.length === 0 && (
+                  <tr>
+                    <td colSpan={7} className="text-center text-muted py-3">
+                      No Records Found
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
     </div>
   );
 }
