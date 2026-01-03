@@ -24,7 +24,6 @@ export default function BankLedger({ onNavigate }) {
   const [filtered, setFiltered] = useState([]);
   const [msg, setMsg] = useState(null);
 
-  // ✅ TODAY DATE DEFAULT
   const today = new Date().toISOString().slice(0, 10);
 
   const [date, setDate] = useState(today);
@@ -32,7 +31,6 @@ export default function BankLedger({ onNavigate }) {
   const [type, setType] = useState("deposit");
   const [comment, setComment] = useState("");
 
-  // ✅ DATE FILTER
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
 
@@ -46,7 +44,7 @@ export default function BankLedger({ onNavigate }) {
     );
     const d = await r.json();
     if (d.success) {
-      const list = d.rows.slice().reverse(); // latest on top
+      const list = d.rows.slice().reverse();
       setRows(list);
       setFiltered(list);
     }
@@ -56,17 +54,15 @@ export default function BankLedger({ onNavigate }) {
   useEffect(() => {
     let temp = [...rows];
 
-    if (fromDate) {
+    if (fromDate)
       temp = temp.filter(
         (r) => new Date(r.txn_date) >= new Date(fromDate)
       );
-    }
 
-    if (toDate) {
+    if (toDate)
       temp = temp.filter(
         (r) => new Date(r.txn_date) <= new Date(toDate)
       );
-    }
 
     setFiltered(temp);
   }, [fromDate, toDate, rows]);
@@ -129,17 +125,20 @@ export default function BankLedger({ onNavigate }) {
   };
 
   return (
-    <div className="container p-3">
-      <button
-        className="btn btn-secondary btn-sm mb-2"
-        onClick={() => onNavigate("dashboard")}
-      >
-        ⬅ Back
-      </button>
+    <div className="container py-4">
 
-      <h4 className="fw-bold text-success mb-2">
-        🏦 BANK LEDGER
-      </h4>
+      {/* HEADER */}
+      <div className="d-flex justify-content-between align-items-center mb-3">
+        <h4 className="fw-bold text-success mb-0">
+          🏦 Bank Ledger
+        </h4>
+        <button
+          className="btn btn-outline-secondary btn-sm"
+          onClick={() => onNavigate("dashboard")}
+        >
+          ⬅ Back
+        </button>
+      </div>
 
       {/* MESSAGE */}
       {msg && (
@@ -148,133 +147,163 @@ export default function BankLedger({ onNavigate }) {
         </div>
       )}
 
-      {/* DATE FILTER */}
-      <div className="row g-2 mb-2">
-        <div className="col-md-3">
-          <input
-            type="date"
-            className="form-control"
-            value={fromDate}
-            onChange={(e) => setFromDate(e.target.value)}
-            placeholder="From Date"
-          />
-        </div>
+      {/* FILTER CARD */}
+      <div className="card shadow-sm mb-3">
+        <div className="card-body">
+          <div className="row g-2">
+            <div className="col-md-3">
+              <label className="form-label small">From Date</label>
+              <input
+                type="date"
+                className="form-control form-control-sm"
+                value={fromDate}
+                onChange={(e) => setFromDate(e.target.value)}
+              />
+            </div>
 
-        <div className="col-md-3">
-          <input
-            type="date"
-            className="form-control"
-            value={toDate}
-            onChange={(e) => setToDate(e.target.value)}
-            placeholder="To Date"
-          />
-        </div>
-      </div>
-
-      {/* MANUAL ENTRY */}
-      <div className="row g-2 mb-2">
-        <div className="col-md-2">
-          <input
-            type="date"
-            className="form-control"
-            value={date}
-            onChange={(e) => setDate(e.target.value)}
-          />
-        </div>
-
-        <div className="col-md-2">
-          <input
-            className="form-control"
-            placeholder="Amount"
-            value={amount}
-            onChange={(e) =>
-              setAmount(
-                e.target.value
-                  .replace(/,/g, "")
-                  .replace(/\B(?=(\d{3})+(?!\d))/g, ",")
-              )
-            }
-          />
-        </div>
-
-        <div className="col-md-2">
-          <select
-            className="form-control"
-            value={type}
-            onChange={(e) => setType(e.target.value)}
-          >
-            <option value="deposit">Deposit</option>
-            <option value="withdraw">Withdraw</option>
-          </select>
-        </div>
-
-        <div className="col-md-4">
-          <input
-            className="form-control"
-            placeholder="Comment"
-            value={comment}
-            onChange={(e) => setComment(e.target.value)}
-          />
-        </div>
-
-        <div className="col-md-2">
-          <button className="btn btn-success w-100" onClick={save}>
-            Save
-          </button>
+            <div className="col-md-3">
+              <label className="form-label small">To Date</label>
+              <input
+                type="date"
+                className="form-control form-control-sm"
+                value={toDate}
+                onChange={(e) => setToDate(e.target.value)}
+              />
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* AMOUNT IN WORDS */}
-      {amount && (
-        <div className="text-muted mb-3">
-          💬 <i>{numberToWords(amount.replace(/,/g, ""))}</i>
-        </div>
-      )}
+      {/* ENTRY CARD */}
+      <div className="card shadow-sm mb-3">
+        <div className="card-body">
+          <h6 className="fw-bold mb-2">➕ Add Transaction</h6>
 
-      {/* TABLE */}
-      <table className="table table-bordered table-sm">
-        <thead className="table-dark">
-          <tr>
-            <th>Date</th>
-            <th>Description</th>
-            <th>Debit</th>
-            <th>Credit</th>
-            <th>Balance</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody>
-          {filtered.map((r, i) => (
-            <tr key={i}>
-              <td>{new Date(r.txn_date).toLocaleDateString()}</td>
-              <td>{r.description}</td>
-              <td className="text-danger">{fmtAmount(r.debit)}</td>
-              <td className="text-success">{fmtAmount(r.credit)}</td>
-              <td>
-                <b>{fmtAmount(r.balance)}</b>
-              </td>
-              <td>
-                {r.source === "manual" && (
-                  <button
-                    className="btn btn-sm btn-danger"
-                    onClick={() => del(r.id)}
-                  >
-                    ❌
-                  </button>
-                )}
-              </td>
-            </tr>
-          ))}
+          <div className="row g-2 align-items-end">
+            <div className="col-md-2">
+              <label className="form-label small">Date</label>
+              <input
+                type="date"
+                className="form-control form-control-sm"
+                value={date}
+                onChange={(e) => setDate(e.target.value)}
+              />
+            </div>
 
-          {filtered.length === 0 && (
-            <tr>
-              <td colSpan="6" className="text-center">
-                No entries
-              </td>
-            </tr>
+            <div className="col-md-2">
+              <label className="form-label small">Amount</label>
+              <input
+                className="form-control form-control-sm"
+                placeholder="Amount"
+                value={amount}
+                onChange={(e) =>
+                  setAmount(
+                    e.target.value
+                      .replace(/,/g, "")
+                      .replace(/\B(?=(\d{3})+(?!\d))/g, ",")
+                  )
+                }
+              />
+            </div>
+
+            <div className="col-md-2">
+              <label className="form-label small">Type</label>
+              <select
+                className="form-control form-control-sm"
+                value={type}
+                onChange={(e) => setType(e.target.value)}
+              >
+                <option value="deposit">Deposit</option>
+                <option value="withdraw">Withdraw</option>
+              </select>
+            </div>
+
+            <div className="col-md-4">
+              <label className="form-label small">Comment</label>
+              <input
+                className="form-control form-control-sm"
+                placeholder="Comment"
+                value={comment}
+                onChange={(e) => setComment(e.target.value)}
+              />
+            </div>
+
+            <div className="col-md-2">
+              <button
+                className="btn btn-success btn-sm w-100"
+                onClick={save}
+              >
+                💾 Save
+              </button>
+            </div>
+          </div>
+
+          {amount && (
+            <div className="text-muted small mt-2">
+              💬 <i>{numberToWords(amount.replace(/,/g, ""))}</i>
+            </div>
           )}
-        </tbody>
-      </table>
+        </div>
+      </div>
+
+      {/* TABLE CARD */}
+      <div className="card shadow-sm">
+        <div className="card-body p-0">
+          <div className="table-responsive">
+            <table className="table table-hover table-sm mb-0">
+              <thead className="table-light">
+                <tr>
+                  <th>Date</th>
+                  <th>Description</th>
+                  <th>Debit</th>
+                  <th>Credit</th>
+                  <th>Balance</th>
+                  <th></th>
+                </tr>
+              </thead>
+
+              <tbody>
+                {filtered.map((r, i) => (
+                  <tr key={i}>
+                    <td>
+                      {new Date(r.txn_date).toLocaleDateString("en-GB")}
+                    </td>
+                    <td>{r.description}</td>
+                    <td className="text-danger">
+                      {fmtAmount(r.debit)}
+                    </td>
+                    <td className="text-success">
+                      {fmtAmount(r.credit)}
+                    </td>
+                    <td className="fw-bold">
+                      {fmtAmount(r.balance)}
+                    </td>
+                    <td className="text-center">
+                      {r.source === "manual" && (
+                        <button
+                          className="btn btn-outline-danger btn-sm"
+                          onClick={() => del(r.id)}
+                        >
+                          ❌
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+
+                {filtered.length === 0 && (
+                  <tr>
+                    <td colSpan="6" className="text-center text-muted py-3">
+                      No entries
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
     </div>
   );
 }
