@@ -18,38 +18,39 @@ export default function ProfitReport({ onNavigate }) {
       `${import.meta.env.VITE_BACKEND_URL}/api/profit-report?${qs}`
     );
     const d = await r.json();
-
     if (d.success) setData(d.report);
     else alert(d.error);
   };
 
   return (
-    <div className="profit-bg">
+    <div className="profit-wrap">
       <div className="container py-4">
 
         {/* HEADER */}
         <div className="d-flex justify-content-between align-items-center mb-4">
           <div>
-            <h3 className="fw-bold mb-0">Profit Report</h3>
-            <small className="text-muted">
-              Business performance summary
+            <h3 className="fw-bold text-white mb-0">
+              💰 Profit Dashboard
+            </h3>
+            <small className="text-white-50">
+              Colorful business performance
             </small>
           </div>
 
           <button
-            className="btn btn-outline-secondary btn-sm"
+            className="btn btn-light btn-sm"
             onClick={() => onNavigate("dashboard")}
           >
             ⬅ Back
           </button>
         </div>
 
-        {/* FILTERS */}
-        <div className="card soft-card mb-4">
+        {/* FILTER CARD */}
+        <div className="card glass-card mb-4">
           <div className="card-body">
             <div className="row g-2 align-items-end">
               <div className="col-md-3">
-                <label className="form-label small">Year</label>
+                <label className="form-label text-white">Year</label>
                 <input
                   className="form-control"
                   value={year}
@@ -58,7 +59,7 @@ export default function ProfitReport({ onNavigate }) {
               </div>
 
               <div className="col-md-3">
-                <label className="form-label small">Month</label>
+                <label className="form-label text-white">Month</label>
                 <select
                   className="form-control"
                   value={month}
@@ -77,104 +78,103 @@ export default function ProfitReport({ onNavigate }) {
 
               <div className="col-md-2">
                 <button
-                  className="btn btn-success w-100"
+                  className="btn btn-warning w-100 fw-bold"
                   onClick={load}
                 >
-                  Load Report
+                  🚀 Load
                 </button>
               </div>
             </div>
           </div>
         </div>
 
-        {/* SUMMARY CARDS */}
+        {/* DASHBOARD */}
         {data && (
           <>
+            {/* SUMMARY CARDS */}
             <div className="row g-3 mb-4">
               <div className="col-md-3">
-                <div className="summary-card">
-                  <small>Total Sales</small>
-                  <h5>PKR {fmt(data.total_sales)}</h5>
+                <div className="stat-card blue">
+                  <span>Total Sales</span>
+                  <h4>PKR {fmt(data.total_sales)}</h4>
                 </div>
               </div>
 
               <div className="col-md-3">
-                <div className="summary-card">
-                  <small>Total Purchase</small>
-                  <h5>PKR {fmt(data.total_purchase)}</h5>
+                <div className="stat-card purple">
+                  <span>Total Purchase</span>
+                  <h4>PKR {fmt(data.total_purchase)}</h4>
                 </div>
               </div>
 
               <div className="col-md-3">
-                <div className="summary-card green">
-                  <small>Base Profit</small>
-                  <h5>PKR {fmt(data.base_profit)}</h5>
+                <div className="stat-card green">
+                  <span>Base Profit</span>
+                  <h4>PKR {fmt(data.base_profit)}</h4>
                 </div>
               </div>
 
               <div className="col-md-3">
-                <div className="summary-card red">
-                  <small>Total Expense</small>
-                  <h5>PKR {fmt(data.total_expense)}</h5>
+                <div className="stat-card red">
+                  <span>Total Expense</span>
+                  <h4>PKR {fmt(data.total_expense)}</h4>
                 </div>
               </div>
             </div>
 
-            {/* REPORT DETAIL */}
-            <div className="card report-card">
+            {/* NET PROFIT */}
+            <div className="card net-profit-card mb-4">
+              <div className="card-body text-center">
+                <small>🌟 NET PROFIT</small>
+                <h2>
+                  PKR {fmt(data.net_profit)}
+                </h2>
+              </div>
+            </div>
+
+            {/* DETAIL TABLE */}
+            <div className="card glass-card">
               <div className="card-body">
-                <h5 className="fw-bold mb-3">
-                  Detailed Profit Calculation
+                <h5 className="text-white fw-bold mb-3">
+                  📊 Detailed Breakdown
                 </h5>
 
-                <table className="table mb-0">
+                <table className="table table-borderless text-white">
                   <tbody>
                     <tr>
                       <td>Total Sales</td>
-                      <td className="text-end">
+                      <td className="text-end text-info">
                         {fmt(data.total_sales)}
                       </td>
                     </tr>
-
                     <tr>
                       <td>Total Purchase</td>
-                      <td className="text-end">
+                      <td className="text-end text-primary">
                         {fmt(data.total_purchase)}
                       </td>
                     </tr>
-
                     <tr>
                       <td>Base Profit</td>
                       <td className="text-end text-success fw-bold">
                         {fmt(data.base_profit)}
                       </td>
                     </tr>
-
                     <tr>
-                      <td>Purchase Adjustment (+)</td>
+                      <td>Purchase Adjustment</td>
                       <td className="text-end text-warning fw-bold">
                         {fmt(data.purchase_adjustment)}
                       </td>
                     </tr>
-
                     <tr>
-                      <td>Customer Adjustment (–)</td>
+                      <td>Customer Adjustment</td>
                       <td className="text-end text-danger fw-bold">
                         {fmt(data.customer_adjustment)}
                       </td>
                     </tr>
-
                     <tr>
-                      <td>Total Expense (–)</td>
+                      <td>Total Expense</td>
                       <td className="text-end text-danger fw-bold">
                         {fmt(data.total_expense)}
-                      </td>
-                    </tr>
-
-                    <tr className="net-row">
-                      <td>NET PROFIT</td>
-                      <td className="text-end">
-                        PKR {fmt(data.net_profit)}
                       </td>
                     </tr>
                   </tbody>
@@ -187,55 +187,66 @@ export default function ProfitReport({ onNavigate }) {
 
       {/* STYLES */}
       <style>{`
-        .profit-bg {
+        .profit-wrap {
           min-height: 100vh;
-          background: #f5f7fa;
+          background: linear-gradient(135deg, #1d2671, #c33764);
         }
 
-        .soft-card {
-          border: none;
-          border-radius: 16px;
-          box-shadow: 0 12px 30px rgba(0,0,0,0.06);
-        }
-
-        .summary-card {
-          background: white;
-          padding: 16px;
-          border-radius: 14px;
-          box-shadow: 0 10px 25px rgba(0,0,0,0.06);
-        }
-
-        .summary-card small {
-          color: #6b7280;
-        }
-
-        .summary-card h5 {
-          margin-top: 6px;
-          font-weight: 700;
-        }
-
-        .summary-card.green h5 {
-          color: #0f766e;
-        }
-
-        .summary-card.red h5 {
-          color: #b91c1c;
-        }
-
-        .report-card {
-          border: none;
+        .glass-card {
+          background: rgba(255,255,255,0.12);
+          backdrop-filter: blur(14px);
           border-radius: 18px;
-          box-shadow: 0 18px 40px rgba(0,0,0,0.08);
+          border: 1px solid rgba(255,255,255,0.2);
         }
 
-        .report-card table td {
-          padding: 10px 6px;
+        .stat-card {
+          padding: 18px;
+          border-radius: 18px;
+          color: white;
+          box-shadow: 0 15px 35px rgba(0,0,0,0.25);
         }
 
-        .net-row td {
+        .stat-card span {
+          font-size: 13px;
+          opacity: 0.9;
+        }
+
+        .stat-card h4 {
+          margin-top: 6px;
           font-weight: 800;
-          font-size: 16px;
-          border-top: 2px solid #e5e7eb;
+        }
+
+        .blue {
+          background: linear-gradient(135deg, #2193b0, #6dd5ed);
+        }
+
+        .purple {
+          background: linear-gradient(135deg, #7f00ff, #e100ff);
+        }
+
+        .green {
+          background: linear-gradient(135deg, #11998e, #38ef7d);
+        }
+
+        .red {
+          background: linear-gradient(135deg, #cb2d3e, #ef473a);
+        }
+
+        .net-profit-card {
+          background: linear-gradient(135deg, #f7971e, #ffd200);
+          border-radius: 20px;
+          box-shadow: 0 20px 45px rgba(0,0,0,0.3);
+        }
+
+        .net-profit-card small {
+          color: #000;
+          opacity: 0.7;
+        }
+
+        .net-profit-card h2 {
+          font-weight: 900;
+          color: #000;
+          margin-top: 6px;
         }
       `}</style>
     </div>
