@@ -22,15 +22,12 @@ export default function Navbar({ onNavigate }) {
 
   return (
     <nav className="vip-navbar">
-      {/* LOGO */}
       <div className="nav-logo" onClick={() => go("dashboard")}>
         ✈ Makki Madni Travel
       </div>
 
-      {/* MENUS */}
       <div className="nav-links">
 
-        {/* SALES */}
         <div className="nav-item">
           <span className="nav-title" onClick={() => setOpen(open === "sales" ? null : "sales")}>
             Sales ▾
@@ -46,7 +43,6 @@ export default function Navbar({ onNavigate }) {
           )}
         </div>
 
-        {/* PURCHASE */}
         <div className="nav-item">
           <span className="nav-title" onClick={() => setOpen(open === "purchase" ? null : "purchase")}>
             Purchase ▾
@@ -59,7 +55,6 @@ export default function Navbar({ onNavigate }) {
           )}
         </div>
 
-        {/* LEDGER */}
         <div className="nav-item">
           <span className="nav-title" onClick={() => setOpen(open === "ledger" ? null : "ledger")}>
             Ledger ▾
@@ -75,7 +70,6 @@ export default function Navbar({ onNavigate }) {
           )}
         </div>
 
-        {/* VOUCHERS */}
         <div className="nav-item">
           <span className="nav-title" onClick={() => setOpen(open === "voucher" ? null : "voucher")}>
             Vouchers ▾
@@ -88,7 +82,6 @@ export default function Navbar({ onNavigate }) {
           )}
         </div>
 
-        {/* REPORTS */}
         <div className="nav-item">
           <span className="nav-title" onClick={() => setOpen(open === "reports" ? null : "reports")}>
             Reports ▾
@@ -102,7 +95,6 @@ export default function Navbar({ onNavigate }) {
           )}
         </div>
 
-        {/* MASTER */}
         <div className="nav-item">
           <span className="nav-title" onClick={() => setOpen(open === "master" ? null : "master")}>
             Master ▾
@@ -119,7 +111,6 @@ export default function Navbar({ onNavigate }) {
 
       </div>
 
-      {/* USER */}
       <div className="nav-user">
         <span className="user-name">👤 {user?.name || "User"}</span>
         <button className="logout-btn" onClick={logout}>
