@@ -20,7 +20,6 @@ export default function BalanceSheet({ onNavigate }) {
         `${import.meta.env.VITE_BACKEND_URL}/api/balance-sheet`
       );
       const d = await res.json();
-
       if (d.success) setData(d);
       else alert(d.error || "Failed to load balance sheet");
     } catch {
@@ -30,7 +29,7 @@ export default function BalanceSheet({ onNavigate }) {
     }
   };
 
-  if (loading) return <div className="p-4 text-white">Loading...</div>;
+  if (loading) return <div className="p-4">Loading...</div>;
 
   /* ================= FILTER ================= */
   const customerRows = data.customers.filter((r) => r.balance > 0);
@@ -60,13 +59,13 @@ export default function BalanceSheet({ onNavigate }) {
   const netPosition = customerTotals.balance - purchaseTotals.balance;
 
   return (
-    <div className="container p-4 text-white">
+    <div className="container py-4">
 
       {/* HEADER */}
       <div className="d-flex justify-content-between align-items-center mb-4">
-        <h3>📊 BALANCE SHEET</h3>
+        <h3 className="fw-bold mb-0">Balance Sheet</h3>
         <button
-          className="btn btn-secondary"
+          className="btn btn-outline-secondary btn-sm"
           onClick={() => onNavigate("dashboard")}
         >
           ⬅ Back
@@ -74,116 +73,140 @@ export default function BalanceSheet({ onNavigate }) {
       </div>
 
       {/* ================= CUSTOMER RECEIVABLE ================= */}
-      <h5 className="text-info">💰 Customer Receivable</h5>
-      <table className="table table-dark table-bordered mt-2">
-        <thead>
-          <tr>
-            <th>#</th>
-            <th>Ref No</th>
-            <th>Total Sale</th>
-            <th>Received</th>
-            <th>Balance</th>
-          </tr>
-        </thead>
-        <tbody>
-          {customerRows.map((r, i) => (
-            <tr key={i}>
-              <td>{i + 1}</td>
-              <td>{r.ref_no}</td>
-              <td>{fmt(r.sale_total)}</td>
-              <td>{fmt(r.received)}</td>
-              <td className="text-danger fw-bold">{fmt(r.balance)}</td>
-            </tr>
-          ))}
+      <div className="card shadow-sm mb-4 border-0">
+        <div className="card-header bg-white fw-bold text-success">
+          Customer Receivable
+        </div>
 
-          {customerRows.length > 0 && (
-            <tr className="table-secondary text-dark fw-bold">
-              <td colSpan="2" className="text-end">GRAND TOTAL</td>
-              <td>{fmt(customerTotals.sale)}</td>
-              <td>{fmt(customerTotals.received)}</td>
-              <td>{fmt(customerTotals.balance)}</td>
-            </tr>
-          )}
-        </tbody>
-      </table>
+        <div className="table-responsive">
+          <table className="table table-sm mb-0">
+            <thead className="table-light">
+              <tr>
+                <th>#</th>
+                <th>Ref No</th>
+                <th>Total Sale</th>
+                <th>Received</th>
+                <th className="text-danger">Balance</th>
+              </tr>
+            </thead>
+            <tbody>
+              {customerRows.map((r, i) => (
+                <tr key={i}>
+                  <td>{i + 1}</td>
+                  <td className="fw-bold">{r.ref_no}</td>
+                  <td>{fmt(r.sale_total)}</td>
+                  <td>{fmt(r.received)}</td>
+                  <td className="fw-bold text-danger">
+                    {fmt(r.balance)}
+                  </td>
+                </tr>
+              ))}
+
+              {customerRows.length > 0 && (
+                <tr className="table-success fw-bold">
+                  <td colSpan="2" className="text-end">
+                    TOTAL
+                  </td>
+                  <td>{fmt(customerTotals.sale)}</td>
+                  <td>{fmt(customerTotals.received)}</td>
+                  <td>{fmt(customerTotals.balance)}</td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
 
       {/* ================= SUPPLIER PAYABLE ================= */}
-      <h5 className="text-warning mt-4">📦 Supplier Payable</h5>
-      <table className="table table-dark table-bordered mt-2">
-        <thead>
-          <tr>
-            <th>#</th>
-            <th>Ref No</th>
-            <th>Total Purchase</th>
-            <th>Paid</th>
-            <th>Balance</th>
-          </tr>
-        </thead>
-        <tbody>
-          {purchaseRows.map((r, i) => (
-            <tr key={i}>
-              <td>{i + 1}</td>
-              <td>{r.ref_no}</td>
-              <td>{fmt(r.purchase_total)}</td>
-              <td>{fmt(r.paid)}</td>
-              <td className="text-danger fw-bold">{fmt(r.balance)}</td>
-            </tr>
-          ))}
+      <div className="card shadow-sm mb-4 border-0">
+        <div className="card-header bg-white fw-bold text-warning">
+          Supplier Payable
+        </div>
 
-          {purchaseRows.length > 0 && (
-            <tr className="table-secondary text-dark fw-bold">
-              <td colSpan="2" className="text-end">GRAND TOTAL</td>
-              <td>{fmt(purchaseTotals.purchase)}</td>
-              <td>{fmt(purchaseTotals.paid)}</td>
-              <td>{fmt(purchaseTotals.balance)}</td>
-            </tr>
-          )}
-        </tbody>
-      </table>
+        <div className="table-responsive">
+          <table className="table table-sm mb-0">
+            <thead className="table-light">
+              <tr>
+                <th>#</th>
+                <th>Ref No</th>
+                <th>Total Purchase</th>
+                <th>Paid</th>
+                <th className="text-danger">Balance</th>
+              </tr>
+            </thead>
+            <tbody>
+              {purchaseRows.map((r, i) => (
+                <tr key={i}>
+                  <td>{i + 1}</td>
+                  <td className="fw-bold">{r.ref_no}</td>
+                  <td>{fmt(r.purchase_total)}</td>
+                  <td>{fmt(r.paid)}</td>
+                  <td className="fw-bold text-danger">
+                    {fmt(r.balance)}
+                  </td>
+                </tr>
+              ))}
+
+              {purchaseRows.length > 0 && (
+                <tr className="table-warning fw-bold">
+                  <td colSpan="2" className="text-end">
+                    TOTAL
+                  </td>
+                  <td>{fmt(purchaseTotals.purchase)}</td>
+                  <td>{fmt(purchaseTotals.paid)}</td>
+                  <td>{fmt(purchaseTotals.balance)}</td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
 
       {/* ================= SUMMARY ================= */}
-      <div className="mt-5 p-4 rounded bg-dark border border-light">
-        <h4 className="mb-3">📌 SUMMARY</h4>
+      <div className="card shadow-sm border-0">
+        <div className="card-body">
+          <h5 className="fw-bold mb-3">Summary</h5>
 
-        <table className="table table-dark table-bordered mb-0">
-          <thead>
-            <tr>
-              <th>#</th>
-              <th>Details</th>
-              <th>Amount</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>1</td>
-              <td>💰 Lene Hain (Customer)</td>
-              <td className="text-success fw-bold">
-                {fmt(customerTotals.balance)}
-              </td>
-            </tr>
-            <tr>
-              <td>2</td>
-              <td>📦 Dene Hain (Supplier)</td>
-              <td className="text-danger fw-bold">
-                {fmt(purchaseTotals.balance)}
-              </td>
-            </tr>
-            <tr className="table-secondary text-dark fw-bold">
-              <td>3</td>
-              <td>
-                🔄 Net Position<br />
-                <small>
+          <div className="row text-center">
+            <div className="col-md-4 mb-3">
+              <div className="p-3 rounded bg-light">
+                <small className="text-muted">Receivable</small>
+                <h5 className="fw-bold text-success mt-1">
+                  PKR {fmt(customerTotals.balance)}
+                </h5>
+              </div>
+            </div>
+
+            <div className="col-md-4 mb-3">
+              <div className="p-3 rounded bg-light">
+                <small className="text-muted">Payable</small>
+                <h5 className="fw-bold text-danger mt-1">
+                  PKR {fmt(purchaseTotals.balance)}
+                </h5>
+              </div>
+            </div>
+
+            <div className="col-md-4 mb-3">
+              <div className="p-3 rounded bg-light">
+                <small className="text-muted">Net Position</small>
+                <h5
+                  className={`fw-bold mt-1 ${
+                    netPosition >= 0
+                      ? "text-success"
+                      : "text-danger"
+                  }`}
+                >
+                  PKR {fmt(Math.abs(netPosition))}
+                </h5>
+                <small className="text-muted">
                   {netPosition >= 0
-                    ? "Aap lene wale ho"
-                    : "Aap dene wale ho"}
+                    ? "You will receive"
+                    : "You will pay"}
                 </small>
-              </td>
-              <td className={netPosition >= 0 ? "text-success" : "text-danger"}>
-                {fmt(Math.abs(netPosition))}
-              </td>
-            </tr>
-          </tbody>
-        </table>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
     </div>
