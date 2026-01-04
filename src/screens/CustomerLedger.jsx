@@ -170,7 +170,7 @@ export default function CustomerLedger({ onNavigate }) {
   };
 
   /* =========================
-     EXPORT PDF (OLD STYLE — SAFE)
+     EXPORT PDF
   ========================= */
   const exportPDF = async () => {
     const canvas = await html2canvas(pdfRef.current, { scale: 3 });
@@ -230,15 +230,22 @@ export default function CustomerLedger({ onNavigate }) {
                 className="list-group-item d-flex justify-content-between align-items-center"
               >
                 <div>
-                  <b>{p.ref_no}</b>
+                  <div className="fw-bold">{p.ref_no}</div>
+
+                  {/* ✅ CUSTOMER NAME */}
+                  <div className="fw-bold text-primary">
+                    {p.customer_name || "-"}
+                  </div>
+
                   {p.status === "PENDING" && (
-                    <span className="badge bg-danger ms-2">Pending</span>
+                    <span className="badge bg-danger mt-1">Pending</span>
                   )}
                   {p.status === "PARTIAL" && (
-                    <span className="badge bg-warning text-dark ms-2">
+                    <span className="badge bg-warning text-dark mt-1">
                       Partial
                     </span>
                   )}
+
                   <div className="small text-muted">{p.note}</div>
                 </div>
 
