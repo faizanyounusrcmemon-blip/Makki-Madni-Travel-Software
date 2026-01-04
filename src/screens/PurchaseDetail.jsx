@@ -106,7 +106,10 @@ export default function PurchaseDetail({ refNo, onNavigate }) {
           Ref No: {rows[0].ref_no}
         </div>
 
-        {/* 🔥 DATE – HIGH VISIBILITY */}
+        <div className="fw-bold text-success mb-1">
+          Customer: {rows[0].customer_name || "-"}
+        </div>
+
         <div className="fw-bold mb-2" style={{ color: "#ffc107" }}>
           Date: {fmtDate(rows[0])}
         </div>
