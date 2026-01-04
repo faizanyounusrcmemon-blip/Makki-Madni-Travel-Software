@@ -115,7 +115,7 @@ export default function PurchaseList({ onNavigate }) {
         </div>
       </div>
 
-      {/* TABLE CARD */}
+      {/* TABLE */}
       <div className="card shadow-sm">
         <div className="card-body p-0">
           <div className="table-responsive">
@@ -123,6 +123,7 @@ export default function PurchaseList({ onNavigate }) {
               <thead className="table-light">
                 <tr>
                   <th>Ref No</th>
+                  <th>Customer</th>
                   <th>Sale</th>
                   <th>Purchase</th>
                   <th>Profit</th>
@@ -134,7 +135,7 @@ export default function PurchaseList({ onNavigate }) {
               <tbody>
                 {loading && (
                   <tr>
-                    <td colSpan="6" className="text-center py-3">
+                    <td colSpan="7" className="text-center py-3">
                       Loading...
                     </td>
                   </tr>
@@ -142,7 +143,7 @@ export default function PurchaseList({ onNavigate }) {
 
                 {!loading && rows.length === 0 && (
                   <tr>
-                    <td colSpan="6" className="text-center text-muted py-3">
+                    <td colSpan="7" className="text-center text-muted py-3">
                       No records found
                     </td>
                   </tr>
@@ -152,6 +153,10 @@ export default function PurchaseList({ onNavigate }) {
                   rows.map((r, i) => (
                     <tr key={i}>
                       <td className="fw-bold">{r.ref_no}</td>
+
+                      <td className="fw-bold text-primary">
+                        {r.customer_name || "-"}
+                      </td>
 
                       <td>
                         <span className="badge bg-primary">
