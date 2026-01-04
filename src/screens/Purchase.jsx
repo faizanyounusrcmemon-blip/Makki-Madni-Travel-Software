@@ -216,7 +216,10 @@ export default function Purchase({ onNavigate }) {
                 className="list-group-item d-flex justify-content-between align-items-center"
               >
                 <div>
-                  <b>{p.ref_no}</b>
+                  <b>{p.ref_no}</b> 
+                   <div className="small fw-bold text-primary">   
+                      {p.customer_name} 
+                   </div>
                   {p.status === "PENDING" && (
                     <span className="badge bg-danger ms-2">
                       Pending
@@ -322,4 +325,5 @@ export default function Purchase({ onNavigate }) {
     </div>
   );
 }
+
 
