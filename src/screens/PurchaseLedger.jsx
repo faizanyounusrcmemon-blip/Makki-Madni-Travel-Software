@@ -19,9 +19,11 @@ const numberToWords = (num) => {
 
   const w = (n) => {
     if (n < 20) return a[n];
-    if (n < 100) return b[Math.floor(n/10)] + (n%10?" "+a[n%10]:"");
-    if (n < 1000) return a[Math.floor(n/100)]+" Hundred"+(n%100?" "+w(n%100):"");
-    if (n < 1000000) return w(Math.floor(n/1000))+" Thousand"+(n%1000?" "+w(n%1000):"");
+    if (n < 100) return b[Math.floor(n/10)] + (n%10 ? " "+a[n%10] : "");
+    if (n < 1000)
+      return a[Math.floor(n/100)]+" Hundred"+(n%100 ? " "+w(n%100) : "");
+    if (n < 1000000)
+      return w(Math.floor(n/1000))+" Thousand"+(n%1000 ? " "+w(n%1000) : "");
     return "";
   };
   return w(num) + " Only";
@@ -130,19 +132,29 @@ export default function PurchaseLedger({ onNavigate }) {
   };
 
   /* =========================
-     EXPORT PDF (OLD SAFE)
+     EXPORT PDF
   ========================= */
   const exportPDF = async () => {
     const canvas = await html2canvas(pdfRef.current, { scale: 3 });
     const img = canvas.toDataURL("image/png");
     const pdf = new jsPDF("p", "mm", "a4");
-    pdf.addImage(img, "PNG", 10, 10, 190, (canvas.height * 190) / canvas.width);
+    pdf.addImage(
+      img,
+      "PNG",
+      10,
+      10,
+      190,
+      (canvas.height * 190) / canvas.width
+    );
     pdf.save(`${ref || "purchase-ledger"}.pdf`);
   };
 
   return (
     <div className="container p-3">
-      <button className="btn btn-secondary btn-sm" onClick={() => onNavigate("dashboard")}>
+      <button
+        className="btn btn-secondary btn-sm"
+        onClick={() => onNavigate("dashboard")}
+      >
         ⬅ Back
       </button>
 
@@ -150,23 +162,46 @@ export default function PurchaseLedger({ onNavigate }) {
         🧾 PURCHASE LEDGER — {ref}
       </h4>
 
-      {/* ⏳ PENDING LIST */}
+      {/* =========================
+         PENDING / PARTIAL LIST
+      ========================= */}
       <div className="mb-3">
         <h6 className="fw-bold text-danger">⏳ Pending / Partial Purchases</h6>
+
         {pending.length === 0 ? (
           <div className="text-success">✅ No pending purchases</div>
         ) : (
           <ul className="list-group">
             {pending.map((p, i) => (
-              <li key={i} className="list-group-item d-flex justify-content-between">
+              <li
+                key={i}
+                className="list-group-item d-flex justify-content-between align-items-center"
+              >
                 <div>
-                  <b>{p.ref_no}</b>
-                  <span className={`badge ms-2 ${p.status==="PENDING"?"bg-danger":"bg-warning text-dark"}`}>
+                  <div className="fw-bold">{p.ref_no}</div>
+
+                  {/* ✅ CUSTOMER NAME */}
+                  <div className="fw-bold text-primary">
+                    {p.customer_name || "-"}
+                  </div>
+
+                  <span
+                    className={`badge mt-1 ${
+                      p.status === "PENDING"
+                        ? "bg-danger"
+                        : "bg-warning text-dark"
+                    }`}
+                  >
                     {p.status}
                   </span>
+
                   <div className="small text-muted">{p.note}</div>
                 </div>
-                <button className="btn btn-sm btn-outline-primary" onClick={() => load(p.ref_no)}>
+
+                <button
+                  className="btn btn-sm btn-outline-primary"
+                  onClick={() => load(p.ref_no)}
+                >
                   Load
                 </button>
               </li>
@@ -175,31 +210,50 @@ export default function PurchaseLedger({ onNavigate }) {
         )}
       </div>
 
-      {/* TOP */}
+      {/* =========================
+         TOP CONTROLS
+      ========================= */}
       <div className="d-flex gap-2 mt-2">
-        <input className="form-control" placeholder="Ref No"
-          value={ref} onChange={(e)=>setRef(e.target.value)} />
-        <button className="btn btn-primary" onClick={() => load()}>Load</button>
-        <button className="btn btn-success" onClick={exportPDF}>📄 Export PDF</button>
+        <input
+          className="form-control"
+          placeholder="Ref No"
+          value={ref}
+          onChange={(e) => setRef(e.target.value)}
+        />
+        <button className="btn btn-primary" onClick={() => load()}>
+          Load
+        </button>
+        <button className="btn btn-success" onClick={exportPDF}>
+          📄 Export PDF
+        </button>
       </div>
 
-      {/* ENTRY */}
+      {/* =========================
+         ENTRY FORM
+      ========================= */}
       <div className="row g-2 mt-3">
         <div className="col-md-3">
-          <input type="date" className="form-control"
-            value={date} onChange={(e)=>setDate(e.target.value)} />
+          <input
+            type="date"
+            className="form-control"
+            value={date}
+            onChange={(e) => setDate(e.target.value)}
+          />
         </div>
 
         <div className="col-md-3">
-          <input className="form-control" placeholder="Amount"
+          <input
+            className="form-control"
+            placeholder="Amount"
             value={amountDisp}
-            onChange={(e)=>{
+            onChange={(e) => {
               const raw = parseAmt(e.target.value);
               if (!isNaN(raw)) {
                 setAmountRaw(raw);
                 setAmountDisp(fmtAmt(raw));
               }
-            }} />
+            }}
+          />
           {amountRaw > 0 && (
             <small className="text-success fw-bold">
               {numberToWords(amountRaw)}
@@ -208,16 +262,22 @@ export default function PurchaseLedger({ onNavigate }) {
         </div>
 
         <div className="col-md-3">
-          <select className="form-control" value={type}
-            onChange={(e)=>setType(e.target.value)}>
+          <select
+            className="form-control"
+            value={type}
+            onChange={(e) => setType(e.target.value)}
+          >
             <option value="payment">Payment</option>
             <option value="adjustment">Adjustment</option>
           </select>
         </div>
 
         <div className="col-md-3">
-          <select className="form-control" value={method}
-            onChange={(e)=>setMethod(e.target.value)}>
+          <select
+            className="form-control"
+            value={method}
+            onChange={(e) => setMethod(e.target.value)}
+          >
             <option>Cash</option>
             <option>Bank</option>
           </select>
@@ -228,7 +288,9 @@ export default function PurchaseLedger({ onNavigate }) {
         💾 Save Entry
       </button>
 
-      {/* TABLE */}
+      {/* =========================
+         LEDGER TABLE
+      ========================= */}
       <div ref={pdfRef}>
         <table className="table table-bordered table-sm mt-3">
           <thead className="table-dark">
@@ -258,7 +320,10 @@ export default function PurchaseLedger({ onNavigate }) {
                 <td className="fw-bold">{fmtAmt(r.balance)}</td>
                 <td>
                   {r.id !== "PURCHASE" && (
-                    <button className="btn btn-danger btn-sm" onClick={() => del(r.id)}>
+                    <button
+                      className="btn btn-danger btn-sm"
+                      onClick={() => del(r.id)}
+                    >
                       Del
                     </button>
                   )}
