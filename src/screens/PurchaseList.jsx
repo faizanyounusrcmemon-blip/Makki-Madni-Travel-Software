@@ -97,6 +97,19 @@ export default function PurchaseList({ onNavigate }) {
     );
   }, [rows]);
 
+  /* ===============================
+     FORMAT DATE AS 01/DEC/2025
+  =============================== */
+  const formatDate = (dateStr) => {
+    if (!dateStr) return "";
+    const date = new Date(dateStr);
+    return date.toLocaleDateString("en-GB", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    }).toUpperCase(); // 01/DEC/2025
+  };
+
   return (
     <div className="container py-4">
       {/* HEADER */}
@@ -220,11 +233,7 @@ export default function PurchaseList({ onNavigate }) {
                           {Number(r.profit).toLocaleString()}
                         </span>
                       </td>
-                      <td>
-                        {r.created_at
-                          ? new Date(r.created_at).toLocaleDateString("en-GB")
-                          : ""}
-                      </td>
+                      <td>{formatDate(r.created_at)}</td>
                       <td className="text-center">
                         <div className="btn-group btn-group-sm">
                           <button
