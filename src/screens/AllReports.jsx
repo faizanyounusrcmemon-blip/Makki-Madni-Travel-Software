@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 
 export default function AllReports({ onNavigate }) {
   const [rows, setRows] = useState([]);
@@ -91,10 +91,17 @@ export default function AllReports({ onNavigate }) {
     setFiltered(temp);
   }, [search, fromDate, toDate, rows]);
 
+  /* ================= TOTAL (AUTO UPDATE) ================= */
+  const totalPKR = useMemo(() => {
+    return filtered.reduce(
+      (sum, r) => sum + Number(r.total_pkr || 0),
+      0
+    );
+  }, [filtered]);
+
   /* ================= UI ================= */
   return (
     <div className="container py-4">
-
       {/* HEADER */}
       <div className="d-flex justify-content-between align-items-center mb-3">
         <h4 className="fw-bold mb-0">📊 All Reports</h4>
@@ -199,6 +206,19 @@ export default function AllReports({ onNavigate }) {
                   </tr>
                 ))}
 
+                {/* ===== TOTAL ROW ===== */}
+                {filtered.length > 0 && (
+                  <tr className="table-dark">
+                    <td colSpan={4} className="fw-bold text-end">
+                      TOTAL
+                    </td>
+                    <td className="fw-bold">
+                      {totalPKR.toLocaleString()}
+                    </td>
+                    <td colSpan={2}></td>
+                  </tr>
+                )}
+
                 {filtered.length === 0 && (
                   <tr>
                     <td colSpan={7} className="text-center text-muted py-3">
@@ -211,7 +231,6 @@ export default function AllReports({ onNavigate }) {
           </div>
         </div>
       </div>
-
     </div>
   );
 }
