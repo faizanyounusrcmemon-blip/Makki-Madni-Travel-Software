@@ -257,7 +257,7 @@ export default function BankLedger({ onNavigate }) {
                 <tr key={i}>
                   {/* DATE FORMATTED */}
                   <td>
-                    <span className="text-muted fw-bold">{formatDate(r.txn_date)}</span>
+                    <span className="text-muted">{formatDate(r.txn_date)}</span>
                   </td>
 
                   {/* DESCRIPTION KHUBSORAT */}
@@ -292,3 +292,4 @@ export default function BankLedger({ onNavigate }) {
     </div>
   );
 }
+
