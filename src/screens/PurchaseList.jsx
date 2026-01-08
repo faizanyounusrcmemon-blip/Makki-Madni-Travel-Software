@@ -4,12 +4,26 @@ export default function PurchaseList({ onNavigate }) {
   const [rows, setRows] = useState([]);
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
-  const [ref, setRef] = useState("");
+  const [search, setSearch] = useState(""); // ⬅ ref + customer
   const [loading, setLoading] = useState(false);
 
+  /* ===============================
+     LOAD ON PAGE OPEN
+  =============================== */
   useEffect(() => {
     loadList();
   }, []);
+
+  /* ===============================
+     AUTO SEARCH (LIKE ALL REPORTS)
+  =============================== */
+  useEffect(() => {
+    const delay = setTimeout(() => {
+      loadList();
+    }, 400);
+
+    return () => clearTimeout(delay);
+  }, [from, to, search]);
 
   /* ===============================
      LOAD LIST
@@ -20,7 +34,7 @@ export default function PurchaseList({ onNavigate }) {
     const qs = new URLSearchParams();
     if (from) qs.append("from", from);
     if (to) qs.append("to", to);
-    if (ref) qs.append("ref", ref);
+    if (search) qs.append("ref", search); // 🔥 ref OR customer_name
 
     try {
       const res = await fetch(
@@ -56,7 +70,7 @@ export default function PurchaseList({ onNavigate }) {
   };
 
   /* ===============================
-     TOTALS (AUTO UPDATE)
+     TOTALS
   =============================== */
   const totals = useMemo(() => {
     return rows.reduce(
@@ -108,15 +122,18 @@ export default function PurchaseList({ onNavigate }) {
             </div>
 
             <div className="col-md-4">
-              <label className="form-label small">Ref No</label>
+              <label className="form-label small">
+                Ref No / Customer
+              </label>
               <input
                 className="form-control form-control-sm"
-                placeholder="Search Ref No"
-                value={ref}
-                onChange={(e) => setRef(e.target.value)}
+                placeholder="Search Ref or Customer Name"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
               />
             </div>
 
+            {/* OPTIONAL BUTTON */}
             <div className="col-md-2">
               <button
                 className="btn btn-primary btn-sm w-100"
@@ -167,23 +184,19 @@ export default function PurchaseList({ onNavigate }) {
                   rows.map((r, i) => (
                     <tr key={i}>
                       <td className="fw-bold">{r.ref_no}</td>
-
                       <td className="fw-bold text-primary">
                         {r.customer_name || "-"}
                       </td>
-
                       <td>
                         <span className="badge bg-primary">
                           {Number(r.sale_pkr).toLocaleString()}
                         </span>
                       </td>
-
                       <td>
                         <span className="badge bg-secondary">
                           {Number(r.purchase_pkr).toLocaleString()}
                         </span>
                       </td>
-
                       <td>
                         <span
                           className={`badge ${
@@ -195,13 +208,11 @@ export default function PurchaseList({ onNavigate }) {
                           {Number(r.profit).toLocaleString()}
                         </span>
                       </td>
-
                       <td>
                         {r.created_at
                           ? new Date(r.created_at).toLocaleDateString("en-GB")
                           : ""}
                       </td>
-
                       <td className="text-center">
                         <div className="btn-group btn-group-sm">
                           <button
@@ -212,7 +223,6 @@ export default function PurchaseList({ onNavigate }) {
                           >
                             Detail
                           </button>
-
                           <button
                             className="btn btn-outline-danger"
                             onClick={() => deletePurchase(r.ref_no)}
@@ -224,19 +234,13 @@ export default function PurchaseList({ onNavigate }) {
                     </tr>
                   ))}
 
-                {/* ===== TOTAL ROW ===== */}
+                {/* TOTAL */}
                 {!loading && rows.length > 0 && (
                   <tr className="table-dark fw-bold">
-                    <td colSpan={2} className="text-end">
-                      TOTAL
-                    </td>
+                    <td colSpan={2} className="text-end">TOTAL</td>
                     <td>{totals.sale.toLocaleString()}</td>
                     <td>{totals.purchase.toLocaleString()}</td>
-                    <td
-                      className={
-                        totals.profit >= 0 ? "text-success" : "text-danger"
-                      }
-                    >
+                    <td className={totals.profit >= 0 ? "text-success" : "text-danger"}>
                       {totals.profit.toLocaleString()}
                     </td>
                     <td colSpan={2}></td>
