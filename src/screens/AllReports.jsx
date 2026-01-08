@@ -23,7 +23,7 @@ export default function AllReports({ onNavigate }) {
 
   /* ================= DELETE ================= */
   const handleDelete = async (type, ref_no) => {
-    const pass = prompt("Enter delete password (786)");
+    const pass = prompt("Enter delete password");
     if (pass !== "786") {
       alert("❌ Wrong Password");
       return;
@@ -249,3 +249,4 @@ export default function AllReports({ onNavigate }) {
     </div>
   );
 }
+
