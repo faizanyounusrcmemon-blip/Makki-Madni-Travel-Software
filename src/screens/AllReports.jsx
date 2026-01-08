@@ -114,7 +114,7 @@ export default function AllReports({ onNavigate }) {
     <div className="container py-4">
       {/* HEADER */}
       <div className="d-flex justify-content-between align-items-center mb-3">
-        <h4 className="fw-bold mb-0">📊 All Reports</h4>
+        <h3 className="fw-bold mb-0">📊 All Reports</h3>
         <button
           className="btn btn-outline-secondary btn-sm"
           onClick={() => onNavigate("dashboard")}
@@ -249,4 +249,5 @@ export default function AllReports({ onNavigate }) {
     </div>
   );
 }
+
 
