@@ -261,7 +261,7 @@ export default function BankLedger({ onNavigate }) {
                   </td>
 
                   {/* DESCRIPTION KHUBSORAT */}
-                  <td className="fw-bold text-primary">{r.description || "-"}</td>
+                  <td className="text-primary">{r.description || "-"}</td>
 
                   <td className="text-danger fw-bold">{fmtAmount(r.debit)}</td>
                   <td className="text-success fw-bold">{fmtAmount(r.credit)}</td>
@@ -292,4 +292,5 @@ export default function BankLedger({ onNavigate }) {
     </div>
   );
 }
+
 
