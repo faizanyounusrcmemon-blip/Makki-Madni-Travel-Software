@@ -99,7 +99,17 @@ export default function AllReports({ onNavigate }) {
     );
   }, [filtered]);
 
-  /* ================= UI ================= */
+  /* ================= FORMAT DATE ================= */
+  const formatDate = (dateStr) => {
+    if (!dateStr) return "";
+    const date = new Date(dateStr);
+    return date.toLocaleDateString("en-GB", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    }).toUpperCase(); // 01/DEC/2025
+  };
+
   return (
     <div className="container py-4">
       {/* HEADER */}
@@ -174,10 +184,15 @@ export default function AllReports({ onNavigate }) {
                     </td>
 
                     <td className="fw-bold">{r.ref_no}</td>
-                    <td>{r.customer_name}</td>
 
+                    {/* CUSTOMER NAME KHUBSORAT */}
+                    <td className="fw-bold text-primary">
+                      {r.customer_name || "-"}
+                    </td>
+
+                    {/* DATE FORMATTED */}
                     <td>
-                      {new Date(r.booking_date).toLocaleDateString("en-GB")}
+                      <span className="text-muted">{formatDate(r.booking_date)}</span>
                     </td>
 
                     <td>
