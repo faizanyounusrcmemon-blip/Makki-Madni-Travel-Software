@@ -23,7 +23,7 @@ export default function AllReports({ onNavigate }) {
 
   /* ================= DELETE ================= */
   const handleDelete = async (type, ref_no) => {
-    const pass = prompt("Enter delete password");
+    const pass = prompt("Enter delete password (786)");
     if (pass !== "786") {
       alert("❌ Wrong Password");
       return;
@@ -113,8 +113,11 @@ export default function AllReports({ onNavigate }) {
   return (
     <div className="container py-4">
       {/* HEADER */}
-      <div className="d-flex justify-content-between align-items-center mb-3">
-        <h3 className="fw-bold mb-0">📊 All Reports</h3>
+      <div className="d-flex justify-content-between align-items-center mb-3 flex-wrap">
+        <div className="d-flex align-items-center mb-2 mb-md-0">
+          <span className="fs-3 me-2">📊</span>
+          <h4 className="fw-bold mb-0 text-primary">All Reports</h4>
+        </div>
         <button
           className="btn btn-outline-secondary btn-sm"
           onClick={() => onNavigate("dashboard")}
@@ -249,5 +252,3 @@ export default function AllReports({ onNavigate }) {
     </div>
   );
 }
-
-
