@@ -4,7 +4,7 @@ export default function PurchaseList({ onNavigate }) {
   const [rows, setRows] = useState([]);
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
-  const [search, setSearch] = useState(""); // ⬅ ref + customer
+  const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(false);
 
   /* ===============================
@@ -15,13 +15,12 @@ export default function PurchaseList({ onNavigate }) {
   }, []);
 
   /* ===============================
-     AUTO SEARCH (LIKE ALL REPORTS)
+     AUTO SEARCH
   =============================== */
   useEffect(() => {
     const delay = setTimeout(() => {
       loadList();
     }, 400);
-
     return () => clearTimeout(delay);
   }, [from, to, search]);
 
@@ -34,7 +33,7 @@ export default function PurchaseList({ onNavigate }) {
     const qs = new URLSearchParams();
     if (from) qs.append("from", from);
     if (to) qs.append("to", to);
-    if (search) qs.append("ref", search); // 🔥 ref OR customer_name
+    if (search) qs.append("ref", search);
 
     try {
       const res = await fetch(
@@ -51,19 +50,33 @@ export default function PurchaseList({ onNavigate }) {
   };
 
   /* ===============================
-     DELETE
+     DELETE (PASSWORD = 786)
   =============================== */
   const deletePurchase = async (refNo) => {
-    if (!window.confirm(`Delete purchase ${refNo}?`)) return;
+    const password = window.prompt("Enter delete password");
+
+    if (!password) return;
 
     try {
       const res = await fetch(
         `${import.meta.env.VITE_BACKEND_URL}/api/purchase/delete/${refNo}`,
-        { method: "DELETE" }
+        {
+          method: "DELETE",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ password }),
+        }
       );
+
       const data = await res.json();
-      if (data.success) loadList();
-      else alert(data.error || "Delete failed");
+
+      if (data.success) {
+        alert("Deleted successfully");
+        loadList();
+      } else {
+        alert(data.error || "Delete failed");
+      }
     } catch {
       alert("Server error");
     }
@@ -97,7 +110,7 @@ export default function PurchaseList({ onNavigate }) {
         <h4 className="fw-bold mb-0">📄 Purchase List</h4>
       </div>
 
-      {/* FILTER CARD */}
+      {/* FILTER */}
       <div className="card shadow-sm mb-3">
         <div className="card-body">
           <div className="row g-2 align-items-end">
@@ -127,13 +140,12 @@ export default function PurchaseList({ onNavigate }) {
               </label>
               <input
                 className="form-control form-control-sm"
-                placeholder="Search Ref or Customer Name"
+                placeholder="Type ref or customer name"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
               />
             </div>
 
-            {/* OPTIONAL BUTTON */}
             <div className="col-md-2">
               <button
                 className="btn btn-primary btn-sm w-100"
@@ -234,7 +246,6 @@ export default function PurchaseList({ onNavigate }) {
                     </tr>
                   ))}
 
-                {/* TOTAL */}
                 {!loading && rows.length > 0 && (
                   <tr className="table-dark fw-bold">
                     <td colSpan={2} className="text-end">TOTAL</td>
