@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from "react";
 
 /* ================= HELPERS ================= */
-
 const fmtAmount = (v) =>
   v !== null && v !== undefined
     ? Number(v).toLocaleString("en-US")
@@ -17,6 +16,17 @@ const numberToWords = (num) => {
   })
     .format(num)
     .replace("Pakistani rupees", "Rupees");
+};
+
+// ================= FORMAT DATE 01/DEC/2025 =================
+const formatDate = (dateStr) => {
+  if (!dateStr) return "";
+  const date = new Date(dateStr);
+  return date.toLocaleDateString("en-GB", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  }).toUpperCase();
 };
 
 export default function BankLedger({ onNavigate }) {
@@ -52,14 +62,8 @@ export default function BankLedger({ onNavigate }) {
 
   useEffect(() => {
     let temp = [...rows];
-    if (fromDate)
-      temp = temp.filter(
-        (r) => new Date(r.txn_date) >= new Date(fromDate)
-      );
-    if (toDate)
-      temp = temp.filter(
-        (r) => new Date(r.txn_date) <= new Date(toDate)
-      );
+    if (fromDate) temp = temp.filter((r) => new Date(r.txn_date) >= new Date(fromDate));
+    if (toDate) temp = temp.filter((r) => new Date(r.txn_date) <= new Date(toDate));
     setFiltered(temp);
   }, [fromDate, toDate, rows]);
 
@@ -96,7 +100,7 @@ export default function BankLedger({ onNavigate }) {
   };
 
   const del = async (id) => {
-    const pass = prompt("Delete password");
+    const pass = prompt("Enter delete password");
     if (!pass) return;
 
     const r = await fetch(
@@ -118,17 +122,16 @@ export default function BankLedger({ onNavigate }) {
     }
   };
 
-  const currentBalance =
-    filtered.length > 0 ? filtered[0].balance : 0;
+  const currentBalance = filtered.length > 0 ? filtered[0].balance : 0;
 
   return (
     <div className="container py-4">
-
       {/* HEADER */}
-      <div className="d-flex justify-content-between align-items-center mb-3">
-        <h4 className="fw-bold">
-          🏦 Bank Ledger
-        </h4>
+      <div className="d-flex justify-content-between align-items-center mb-3 flex-wrap">
+        <div className="d-flex align-items-center mb-2 mb-md-0">
+          <span className="fs-3 me-2">🏦</span>
+          <h4 className="fw-bold mb-0 text-primary">Bank Ledger</h4>
+        </div>
         <button
           className="btn btn-outline-secondary btn-sm"
           onClick={() => onNavigate("dashboard")}
@@ -142,20 +145,14 @@ export default function BankLedger({ onNavigate }) {
         <div className="card-body d-flex justify-content-between align-items-center">
           <div>
             <small className="text-muted">Current Balance</small>
-            <h3 className="fw-bold text-success mb-0">
-              PKR {fmtAmount(currentBalance)}
-            </h3>
+            <h3 className="fw-bold text-success mb-0">PKR {fmtAmount(currentBalance)}</h3>
           </div>
           <div className="fs-1">💳</div>
         </div>
       </div>
 
       {/* MESSAGE */}
-      {msg && (
-        <div className={`alert alert-${msg.type} py-2`}>
-          {msg.text}
-        </div>
-      )}
+      {msg && <div className={`alert alert-${msg.type} py-2`}>{msg.text}</div>}
 
       {/* FILTER */}
       <div className="card shadow-sm mb-3 border-0">
@@ -185,7 +182,6 @@ export default function BankLedger({ onNavigate }) {
       <div className="card shadow-sm mb-3 border-0">
         <div className="card-body">
           <h6 className="fw-bold mb-3">➕ New Transaction</h6>
-
           <div className="row g-2 align-items-end">
             <div className="col-md-2">
               <input
@@ -195,7 +191,6 @@ export default function BankLedger({ onNavigate }) {
                 onChange={(e) => setDate(e.target.value)}
               />
             </div>
-
             <div className="col-md-2">
               <input
                 className="form-control form-control-sm"
@@ -210,7 +205,6 @@ export default function BankLedger({ onNavigate }) {
                 }
               />
             </div>
-
             <div className="col-md-2">
               <select
                 className="form-select form-select-sm"
@@ -221,7 +215,6 @@ export default function BankLedger({ onNavigate }) {
                 <option value="withdraw">➖ Withdraw</option>
               </select>
             </div>
-
             <div className="col-md-4">
               <input
                 className="form-control form-control-sm"
@@ -230,12 +223,8 @@ export default function BankLedger({ onNavigate }) {
                 onChange={(e) => setComment(e.target.value)}
               />
             </div>
-
             <div className="col-md-2">
-              <button
-                className="btn btn-success btn-sm w-100"
-                onClick={save}
-              >
+              <button className="btn btn-success btn-sm w-100" onClick={save}>
                 Save
               </button>
             </div>
@@ -266,17 +255,17 @@ export default function BankLedger({ onNavigate }) {
             <tbody>
               {filtered.map((r, i) => (
                 <tr key={i}>
-                  <td>{new Date(r.txn_date).toLocaleDateString()}</td>
-                  <td>{r.description}</td>
-                  <td className="text-danger">
-                    {fmtAmount(r.debit)}
+                  {/* DATE FORMATTED */}
+                  <td>
+                    <span className="text-muted fw-bold">{formatDate(r.txn_date)}</span>
                   </td>
-                  <td className="text-success">
-                    {fmtAmount(r.credit)}
-                  </td>
-                  <td className="fw-bold">
-                    {fmtAmount(r.balance)}
-                  </td>
+
+                  {/* DESCRIPTION KHUBSORAT */}
+                  <td className="fw-bold text-primary">{r.description || "-"}</td>
+
+                  <td className="text-danger fw-bold">{fmtAmount(r.debit)}</td>
+                  <td className="text-success fw-bold">{fmtAmount(r.credit)}</td>
+                  <td className="fw-bold">{fmtAmount(r.balance)}</td>
                   <td>
                     {r.source === "manual" && (
                       <button
@@ -289,7 +278,6 @@ export default function BankLedger({ onNavigate }) {
                   </td>
                 </tr>
               ))}
-
               {filtered.length === 0 && (
                 <tr>
                   <td colSpan="6" className="text-center text-muted py-3">
@@ -301,7 +289,6 @@ export default function BankLedger({ onNavigate }) {
           </table>
         </div>
       </div>
-
     </div>
   );
 }
