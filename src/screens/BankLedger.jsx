@@ -32,6 +32,7 @@ const formatDate = (dateStr) => {
 export default function BankLedger({ onNavigate }) {
   const [rows, setRows] = useState([]);
   const [filtered, setFiltered] = useState([]);
+  const [search, setSearch] = useState("");
   const [msg, setMsg] = useState(null);
 
   const today = new Date().toISOString().slice(0, 10);
@@ -60,12 +61,29 @@ export default function BankLedger({ onNavigate }) {
     }
   };
 
+  // ================= FILTER / SEARCH =================
   useEffect(() => {
     let temp = [...rows];
-    if (fromDate) temp = temp.filter((r) => new Date(r.txn_date) >= new Date(fromDate));
-    if (toDate) temp = temp.filter((r) => new Date(r.txn_date) <= new Date(toDate));
+
+    if (fromDate)
+      temp = temp.filter((r) => new Date(r.txn_date) >= new Date(fromDate));
+    if (toDate)
+      temp = temp.filter((r) => new Date(r.txn_date) <= new Date(toDate));
+
+    if (search) {
+      const s = search.toLowerCase();
+      temp = temp.filter(
+        (r) =>
+          formatDate(r.txn_date).toLowerCase().includes(s) ||
+          (r.description || "").toLowerCase().includes(s) ||
+          (r.debit || "").toString().includes(s) ||
+          (r.credit || "").toString().includes(s) ||
+          (r.balance || "").toString().includes(s)
+      );
+    }
+
     setFiltered(temp);
-  }, [fromDate, toDate, rows]);
+  }, [fromDate, toDate, rows, search]);
 
   const save = async () => {
     if (!date || !amount) {
@@ -126,6 +144,7 @@ export default function BankLedger({ onNavigate }) {
 
   return (
     <div className="container py-4">
+
       {/* HEADER */}
       <div className="d-flex justify-content-between align-items-center mb-3 flex-wrap">
         <div className="d-flex align-items-center mb-2 mb-md-0">
@@ -145,7 +164,9 @@ export default function BankLedger({ onNavigate }) {
         <div className="card-body d-flex justify-content-between align-items-center">
           <div>
             <small className="text-muted">Current Balance</small>
-            <h3 className="fw-bold text-success mb-0">PKR {fmtAmount(currentBalance)}</h3>
+            <h3 className="fw-bold text-success mb-0">
+              PKR {fmtAmount(currentBalance)}
+            </h3>
           </div>
           <div className="fs-1">💳</div>
         </div>
@@ -154,10 +175,10 @@ export default function BankLedger({ onNavigate }) {
       {/* MESSAGE */}
       {msg && <div className={`alert alert-${msg.type} py-2`}>{msg.text}</div>}
 
-      {/* FILTER */}
+      {/* FILTER + SEARCH */}
       <div className="card shadow-sm mb-3 border-0">
         <div className="card-body">
-          <div className="row g-2">
+          <div className="row g-2 align-items-center">
             <div className="col-md-3">
               <input
                 type="date"
@@ -172,6 +193,15 @@ export default function BankLedger({ onNavigate }) {
                 className="form-control form-control-sm"
                 value={toDate}
                 onChange={(e) => setToDate(e.target.value)}
+              />
+            </div>
+            <div className="col-md-6">
+              <input
+                type="text"
+                className="form-control form-control-sm"
+                placeholder="🔍 Search any field..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
               />
             </div>
           </div>
@@ -244,11 +274,11 @@ export default function BankLedger({ onNavigate }) {
           <table className="table table-hover mb-0">
             <thead className="table-light">
               <tr>
-                <th>Date</th>
-                <th>Description</th>
-                <th className="text-danger">Debit</th>
-                <th className="text-success">Credit</th>
-                <th>Balance</th>
+                <th style={{ fontSize: "0.85rem" }}>Date</th>
+                <th style={{ fontSize: "0.85rem" }}>Description</th>
+                <th className="text-danger" style={{ fontSize: "0.85rem" }}>Debit</th>
+                <th className="text-success" style={{ fontSize: "0.85rem" }}>Credit</th>
+                <th style={{ fontSize: "0.85rem" }}>Balance</th>
                 <th></th>
               </tr>
             </thead>
@@ -256,16 +286,30 @@ export default function BankLedger({ onNavigate }) {
               {filtered.map((r, i) => (
                 <tr key={i}>
                   {/* DATE FORMATTED */}
-                  <td>
-                    <span className="text-muted">{formatDate(r.txn_date)}</span>
+                  <td style={{ fontSize: "0.85rem" }}>
+                    <span className="text-muted fw-bold">{formatDate(r.txn_date)}</span>
                   </td>
 
                   {/* DESCRIPTION KHUBSORAT */}
-                  <td className="text-primary">{r.description || "-"}</td>
+                  <td
+                    className="fw-bold"
+                    style={{
+                      fontSize: "0.85rem",
+                      color: r.type === "withdraw" ? "red" : "blue",
+                    }}
+                  >
+                    {r.description || "-"}
+                  </td>
 
-                  <td className="text-danger fw-bold">{fmtAmount(r.debit)}</td>
-                  <td className="text-success fw-bold">{fmtAmount(r.credit)}</td>
-                  <td className="fw-bold">{fmtAmount(r.balance)}</td>
+                  <td className="text-danger fw-bold" style={{ fontSize: "0.85rem" }}>
+                    {fmtAmount(r.debit)}
+                  </td>
+                  <td className="text-success fw-bold" style={{ fontSize: "0.85rem" }}>
+                    {fmtAmount(r.credit)}
+                  </td>
+                  <td className="fw-bold" style={{ fontSize: "0.85rem" }}>
+                    {fmtAmount(r.balance)}
+                  </td>
                   <td>
                     {r.source === "manual" && (
                       <button
@@ -292,5 +336,3 @@ export default function BankLedger({ onNavigate }) {
     </div>
   );
 }
-
-
