@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 
 export default function PurchaseList({ onNavigate }) {
   const [rows, setRows] = useState([]);
@@ -55,9 +55,23 @@ export default function PurchaseList({ onNavigate }) {
     }
   };
 
+  /* ===============================
+     TOTALS (AUTO UPDATE)
+  =============================== */
+  const totals = useMemo(() => {
+    return rows.reduce(
+      (acc, r) => {
+        acc.sale += Number(r.sale_pkr || 0);
+        acc.purchase += Number(r.purchase_pkr || 0);
+        acc.profit += Number(r.profit || 0);
+        return acc;
+      },
+      { sale: 0, purchase: 0, profit: 0 }
+    );
+  }, [rows]);
+
   return (
     <div className="container py-4">
-
       {/* HEADER */}
       <div className="d-flex justify-content-between align-items-center mb-3">
         <button
@@ -209,12 +223,30 @@ export default function PurchaseList({ onNavigate }) {
                       </td>
                     </tr>
                   ))}
+
+                {/* ===== TOTAL ROW ===== */}
+                {!loading && rows.length > 0 && (
+                  <tr className="table-dark fw-bold">
+                    <td colSpan={2} className="text-end">
+                      TOTAL
+                    </td>
+                    <td>{totals.sale.toLocaleString()}</td>
+                    <td>{totals.purchase.toLocaleString()}</td>
+                    <td
+                      className={
+                        totals.profit >= 0 ? "text-success" : "text-danger"
+                      }
+                    >
+                      {totals.profit.toLocaleString()}
+                    </td>
+                    <td colSpan={2}></td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>
         </div>
       </div>
-
     </div>
   );
 }
