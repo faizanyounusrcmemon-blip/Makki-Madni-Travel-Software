@@ -8,7 +8,6 @@ export default function SaleAdjustmentReport({ onNavigate }) {
   const [search, setSearch] = useState("");
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
-  const [loading, setLoading] = useState(false);
 
   const URL = import.meta.env.VITE_BACKEND_URL;
 
@@ -19,7 +18,6 @@ export default function SaleAdjustmentReport({ onNavigate }) {
   useEffect(() => {
     let temp = [...rows];
 
-    // 🔍 SEARCH (Customer / Ref No)
     if (search) {
       const s = search.toLowerCase();
       temp = temp.filter(
@@ -29,7 +27,6 @@ export default function SaleAdjustmentReport({ onNavigate }) {
       );
     }
 
-    // 📅 DATE FILTER
     if (fromDate)
       temp = temp.filter(
         (r) => new Date(r.date) >= new Date(fromDate)
@@ -43,36 +40,11 @@ export default function SaleAdjustmentReport({ onNavigate }) {
   }, [search, fromDate, toDate, rows]);
 
   const load = async () => {
-    setLoading(true);
-
-    const r = await fetch(
-      `${URL}/api/customer-ledger/pending/list`
-    );
+    const r = await fetch(`${URL}/api/reports/sale-adjustments`);
     const d = await r.json();
 
-    let all = [];
-
-    for (const c of d.rows) {
-      const led = await fetch(
-        `${URL}/api/customer-ledger/${c.ref_no}`
-      );
-      const ld = await led.json();
-
-      const adj = ld.rows
-        .filter((r) => r.type === "adjustment")
-        .map((r) => ({
-          date: r.date,
-          customer: c.customer_name || "",
-          ref_no: c.ref_no,
-          amount: r.debit,
-        }));
-
-      all.push(...adj);
-    }
-
-    setRows(all);
-    setView(all);
-    setLoading(false);
+    setRows(d.rows);
+    setView(d.rows);
   };
 
   const total = view.reduce(
@@ -82,24 +54,13 @@ export default function SaleAdjustmentReport({ onNavigate }) {
 
   return (
     <div className="container py-4">
-      <div className="d-flex justify-content-between mb-3">
-        <h4 className="fw-bold text-primary">
-          Sale Adjustment Report
-        </h4>
-        <button
-          className="btn btn-sm btn-outline-secondary"
-          onClick={() => onNavigate("dashboard")}
-        >
-          ⬅ Back
-        </button>
-      </div>
+      <h4 className="fw-bold text-primary">Sale Adjustment Report</h4>
 
-      {/* FILTER BAR */}
-      <div className="row g-2 mb-3">
+      <div className="row g-2 my-3">
         <div className="col-md-4">
           <input
             className="form-control form-control-sm"
-            placeholder="Search customer / ref no"
+            placeholder="Search customer / ref"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
@@ -122,36 +83,34 @@ export default function SaleAdjustmentReport({ onNavigate }) {
         </div>
       </div>
 
-      {loading ? (
-        <div className="text-muted">Loading...</div>
-      ) : (
-        <table className="table table-bordered table-sm">
-          <thead className="table-light">
-            <tr>
-              <th>Date</th>
-              <th>Customer</th>
-              <th>Ref No</th>
-              <th className="text-danger">Amount</th>
+      <table className="table table-bordered table-sm">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Customer</th>
+            <th>Ref No</th>
+            <th>Method</th>
+            <th className="text-danger">Amount</th>
+          </tr>
+        </thead>
+        <tbody>
+          {view.map((r, i) => (
+            <tr key={i}>
+              <td>{r.date}</td>
+              <td>{r.customer}</td>
+              <td>{r.ref_no}</td>
+              <td>{r.payment_method}</td>
+              <td className="text-danger fw-bold">
+                {fmt(r.amount)}
+              </td>
             </tr>
-          </thead>
-          <tbody>
-            {view.map((r, i) => (
-              <tr key={i}>
-                <td>{r.date}</td>
-                <td className="fw-bold">{r.customer}</td>
-                <td>{r.ref_no}</td>
-                <td className="fw-bold text-danger">
-                  {fmt(r.amount)}
-                </td>
-              </tr>
-            ))}
-            <tr className="table-secondary fw-bold">
-              <td colSpan="3">TOTAL</td>
-              <td>{fmt(total)}</td>
-            </tr>
-          </tbody>
-        </table>
-      )}
+          ))}
+          <tr className="fw-bold table-secondary">
+            <td colSpan="4">TOTAL</td>
+            <td>{fmt(total)}</td>
+          </tr>
+        </tbody>
+      </table>
     </div>
   );
 }
