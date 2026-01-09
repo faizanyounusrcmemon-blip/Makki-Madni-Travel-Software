@@ -41,7 +41,7 @@ export default function PurchaseAdjustmentReport() {
 
   const load = async () => {
     const r = await fetch(
-      `${URL}/api/purchase-ledger`
+      `${URL}/api/reports/purchase-adjustments`
     );
     const d = await r.json();
 
