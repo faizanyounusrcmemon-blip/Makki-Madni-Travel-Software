@@ -1,6 +1,16 @@
 import React, { useEffect, useState } from "react";
 
-const fmt = (v) => Number(v || 0).toLocaleString("en-US");
+const fmtAmount = (v) => Number(v || 0).toLocaleString("en-US");
+
+const fmtDate = (d) => {
+  if (!d) return "";
+  const dt = new Date(d);
+  return dt.toLocaleDateString("en-GB", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
+};
 
 export default function PurchaseAdjustmentReport() {
   const [rows, setRows] = useState([]);
@@ -22,8 +32,8 @@ export default function PurchaseAdjustmentReport() {
       const s = search.toLowerCase();
       temp = temp.filter(
         (r) =>
-          r.customer.toLowerCase().includes(s) ||
-          r.ref_no.toLowerCase().includes(s)
+          (r.customer || "").toLowerCase().includes(s) ||
+          (r.ref_no || "").toLowerCase().includes(s)
       );
     }
 
@@ -31,6 +41,7 @@ export default function PurchaseAdjustmentReport() {
       temp = temp.filter(
         (r) => new Date(r.date) >= new Date(fromDate)
       );
+
     if (toDate)
       temp = temp.filter(
         (r) => new Date(r.date) <= new Date(toDate)
@@ -44,9 +55,8 @@ export default function PurchaseAdjustmentReport() {
       `${URL}/api/reports/purchase-adjustments`
     );
     const d = await r.json();
-
-    setRows(d.rows);
-    setView(d.rows);
+    setRows(d.rows || []);
+    setView(d.rows || []);
   };
 
   const total = view.reduce(
@@ -64,11 +74,12 @@ export default function PurchaseAdjustmentReport() {
         <div className="col-md-4">
           <input
             className="form-control form-control-sm"
-            placeholder="Search supplier / ref"
+            placeholder="Search customer / ref no"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
+
         <div className="col-md-3">
           <input
             type="date"
@@ -77,6 +88,7 @@ export default function PurchaseAdjustmentReport() {
             onChange={(e) => setFromDate(e.target.value)}
           />
         </div>
+
         <div className="col-md-3">
           <input
             type="date"
@@ -88,30 +100,32 @@ export default function PurchaseAdjustmentReport() {
       </div>
 
       <table className="table table-bordered table-sm">
-        <thead>
+        <thead className="table-light">
           <tr>
             <th>Date</th>
-            <th>Supplier</th>
+            <th>Customer</th>
             <th>Ref No</th>
             <th>Method</th>
             <th className="text-danger">Amount</th>
           </tr>
         </thead>
+
         <tbody>
           {view.map((r, i) => (
             <tr key={i}>
-              <td>{r.date}</td>
-              <td>{r.customer}</td>
+              <td>{fmtDate(r.date)}</td>
+              <td>{r.customer || "-"}</td>
               <td>{r.ref_no}</td>
               <td>{r.payment_method}</td>
               <td className="text-danger fw-bold">
-                {fmt(r.amount)}
+                {fmtAmount(r.amount)}
               </td>
             </tr>
           ))}
+
           <tr className="fw-bold table-secondary">
             <td colSpan="4">TOTAL</td>
-            <td>{fmt(total)}</td>
+            <td>{fmtAmount(total)}</td>
           </tr>
         </tbody>
       </table>
