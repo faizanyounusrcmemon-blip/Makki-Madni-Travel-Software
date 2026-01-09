@@ -28,6 +28,8 @@ import ExpenseLedger from "./screens/ExpenseLedger";
 // REPORTS / MASTER
 import AllReports from "./screens/AllReports";
 import ProfitReport from "./screens/ProfitReport";
+import SaleAdjustmentReport from "./screens/SaleAdjustmentReport";
+import PurchaseAdjustmentReport from "./screens/PurchaseAdjustmentReport";
 import CreateUser from "./screens/CreateUser";
 import DeletedReports from "./screens/DeletedReports";
 import Restore from "./screens/Restore";
@@ -98,6 +100,8 @@ export default function App() {
       {/* ================= REPORTS / MASTER ================= */}
       {page === "allreports" && <AllReports onNavigate={navigate} />}
       {page === "profitReport" && <ProfitReport onNavigate={navigate} />}
+      {page === "saleAdjustmentReport" && <SaleAdjustmentReport onNavigate={navigate} />}
+      {page === "purchaseAdjustmentReport" && <PurchaseAdjustmentReport onNavigate={navigate} />}
       {page === "createUser" && <CreateUser onNavigate={navigate} />}
       {page === "deletedReports" && (
         <DeletedReports onNavigate={navigate} />
