@@ -21,7 +21,7 @@ import PurchaseDetail from "./screens/PurchaseDetail";
 import CustomerLedger from "./screens/CustomerLedger";
 import PurchaseLedger from "./screens/PurchaseLedger";
 import BankLedger from "./screens/BankLedger";
-import BankLedger from "./screens/CashLedger";
+import CashLedger from "./screens/CashLedger";
 import BalanceSheet from "./screens/BalanceSheet";
 import ExpenseLedger from "./screens/ExpenseLedger";
 
