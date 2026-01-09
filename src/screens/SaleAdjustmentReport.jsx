@@ -19,7 +19,7 @@ export default function SaleAdjustmentReport({ onNavigate }) {
   useEffect(() => {
     let temp = [...rows];
 
-    // 🔍 SEARCH (Customer / Ref)
+    // 🔍 SEARCH (Customer / Ref No)
     if (search) {
       const s = search.toLowerCase();
       temp = temp.filter(
@@ -45,7 +45,9 @@ export default function SaleAdjustmentReport({ onNavigate }) {
   const load = async () => {
     setLoading(true);
 
-    const r = await fetch(`${URL}/api/customer-ledger/pending/list`);
+    const r = await fetch(
+      `${URL}/api/customer-ledger/pending/list`
+    );
     const d = await r.json();
 
     let all = [];
@@ -57,10 +59,10 @@ export default function SaleAdjustmentReport({ onNavigate }) {
       const ld = await led.json();
 
       const adj = ld.rows
-        .filter((r) => r.description === "Adjustment")
+        .filter((r) => r.type === "adjustment")
         .map((r) => ({
           date: r.date,
-          customer: c.customer_name,
+          customer: c.customer_name || "",
           ref_no: c.ref_no,
           amount: r.debit,
         }));
@@ -81,7 +83,9 @@ export default function SaleAdjustmentReport({ onNavigate }) {
   return (
     <div className="container py-4">
       <div className="d-flex justify-content-between mb-3">
-        <h4 className="fw-bold text-primary">Sale Adjustment Report</h4>
+        <h4 className="fw-bold text-primary">
+          Sale Adjustment Report
+        </h4>
         <button
           className="btn btn-sm btn-outline-secondary"
           onClick={() => onNavigate("dashboard")}
