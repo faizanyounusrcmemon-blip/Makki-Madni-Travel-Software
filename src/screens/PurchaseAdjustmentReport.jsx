@@ -4,7 +4,8 @@ const fmt = (v) => Number(v || 0).toLocaleString("en-US");
 
 export default function PurchaseAdjustmentReport({ onNavigate }) {
   const [rows, setRows] = useState([]);
-  const [filtered, setFiltered] = useState([]);
+  const [view, setView] = useState([]);
+  const [search, setSearch] = useState("");
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
   const [loading, setLoading] = useState(false);
@@ -18,6 +19,17 @@ export default function PurchaseAdjustmentReport({ onNavigate }) {
   useEffect(() => {
     let temp = [...rows];
 
+    // 🔍 SEARCH
+    if (search) {
+      const s = search.toLowerCase();
+      temp = temp.filter(
+        (r) =>
+          r.customer.toLowerCase().includes(s) ||
+          r.ref_no.toLowerCase().includes(s)
+      );
+    }
+
+    // 📅 DATE FILTER
     if (fromDate)
       temp = temp.filter(
         (r) => new Date(r.date) >= new Date(fromDate)
@@ -27,11 +39,12 @@ export default function PurchaseAdjustmentReport({ onNavigate }) {
         (r) => new Date(r.date) <= new Date(toDate)
       );
 
-    setFiltered(temp);
-  }, [fromDate, toDate, rows]);
+    setView(temp);
+  }, [search, fromDate, toDate, rows]);
 
   const load = async () => {
     setLoading(true);
+
     const r = await fetch(`${URL}/api/purchase-ledger/pending/list`);
     const d = await r.json();
 
@@ -46,9 +59,9 @@ export default function PurchaseAdjustmentReport({ onNavigate }) {
       const adj = ld.rows
         .filter((r) => r.description === "Adjustment")
         .map((r) => ({
-          ref_no: p.ref_no,
-          customer: p.customer_name,
           date: r.created_at,
+          customer: p.customer_name,
+          ref_no: p.ref_no,
           amount: r.credit,
         }));
 
@@ -56,11 +69,11 @@ export default function PurchaseAdjustmentReport({ onNavigate }) {
     }
 
     setRows(all);
-    setFiltered(all);
+    setView(all);
     setLoading(false);
   };
 
-  const total = filtered.reduce(
+  const total = view.reduce(
     (s, r) => s + Number(r.amount || 0),
     0
   );
@@ -69,7 +82,7 @@ export default function PurchaseAdjustmentReport({ onNavigate }) {
     <div className="container py-4">
       <div className="d-flex justify-content-between mb-3">
         <h4 className="fw-bold text-danger">
-          📉 Purchase Adjustment Report
+          Purchase Adjustment Report
         </h4>
         <button
           className="btn btn-sm btn-outline-secondary"
@@ -79,8 +92,16 @@ export default function PurchaseAdjustmentReport({ onNavigate }) {
         </button>
       </div>
 
-      {/* DATE FILTER */}
+      {/* FILTER BAR */}
       <div className="row g-2 mb-3">
+        <div className="col-md-4">
+          <input
+            className="form-control form-control-sm"
+            placeholder="Search supplier / ref no"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </div>
         <div className="col-md-3">
           <input
             type="date"
@@ -106,13 +127,13 @@ export default function PurchaseAdjustmentReport({ onNavigate }) {
           <thead className="table-light">
             <tr>
               <th>Date</th>
-              <th>Customer</th>
+              <th>Supplier</th>
               <th>Ref No</th>
               <th className="text-danger">Amount</th>
             </tr>
           </thead>
           <tbody>
-            {filtered.map((r, i) => (
+            {view.map((r, i) => (
               <tr key={i}>
                 <td>{r.date}</td>
                 <td className="fw-bold">{r.customer}</td>
