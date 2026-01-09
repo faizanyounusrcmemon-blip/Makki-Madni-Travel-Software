@@ -15,7 +15,7 @@ export default function Navbar({ onNavigate }) {
   };
 
   const logout = () => {
-    if (!window.confirm("Logout karna hai?")) return;
+    if (!window.confirm("Do you want to logout?")) return;
     sessionStorage.removeItem("user");
     window.location.reload();
   };
