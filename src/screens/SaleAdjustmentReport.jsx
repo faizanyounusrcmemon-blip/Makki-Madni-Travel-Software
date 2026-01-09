@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 
 const fmt = (v) => Number(v || 0).toLocaleString("en-US");
 
-export default function SaleAdjustmentReport({ onNavigate }) {
+export default function SaleAdjustmentReport() {
   const [rows, setRows] = useState([]);
   const [view, setView] = useState([]);
   const [search, setSearch] = useState("");
@@ -11,9 +11,7 @@ export default function SaleAdjustmentReport({ onNavigate }) {
 
   const URL = import.meta.env.VITE_BACKEND_URL;
 
-  useEffect(() => {
-    load();
-  }, []);
+  useEffect(() => { load(); }, []);
 
   useEffect(() => {
     let temp = [...rows];
@@ -22,19 +20,15 @@ export default function SaleAdjustmentReport({ onNavigate }) {
       const s = search.toLowerCase();
       temp = temp.filter(
         (r) =>
-          r.customer.toLowerCase().includes(s) ||
+          r.customer_name.toLowerCase().includes(s) ||
           r.ref_no.toLowerCase().includes(s)
       );
     }
 
     if (fromDate)
-      temp = temp.filter(
-        (r) => new Date(r.date) >= new Date(fromDate)
-      );
+      temp = temp.filter((r) => new Date(r.date) >= new Date(fromDate));
     if (toDate)
-      temp = temp.filter(
-        (r) => new Date(r.date) <= new Date(toDate)
-      );
+      temp = temp.filter((r) => new Date(r.date) <= new Date(toDate));
 
     setView(temp);
   }, [search, fromDate, toDate, rows]);
@@ -42,15 +36,11 @@ export default function SaleAdjustmentReport({ onNavigate }) {
   const load = async () => {
     const r = await fetch(`${URL}/api/reports/sale-adjustments`);
     const d = await r.json();
-
     setRows(d.rows);
     setView(d.rows);
   };
 
-  const total = view.reduce(
-    (s, r) => s + Number(r.amount || 0),
-    0
-  );
+  const total = view.reduce((s, r) => s + Number(r.amount || 0), 0);
 
   return (
     <div className="container py-4">
@@ -66,20 +56,10 @@ export default function SaleAdjustmentReport({ onNavigate }) {
           />
         </div>
         <div className="col-md-3">
-          <input
-            type="date"
-            className="form-control form-control-sm"
-            value={fromDate}
-            onChange={(e) => setFromDate(e.target.value)}
-          />
+          <input type="date" className="form-control form-control-sm" value={fromDate} onChange={(e) => setFromDate(e.target.value)} />
         </div>
         <div className="col-md-3">
-          <input
-            type="date"
-            className="form-control form-control-sm"
-            value={toDate}
-            onChange={(e) => setToDate(e.target.value)}
-          />
+          <input type="date" className="form-control form-control-sm" value={toDate} onChange={(e) => setToDate(e.target.value)} />
         </div>
       </div>
 
@@ -97,12 +77,10 @@ export default function SaleAdjustmentReport({ onNavigate }) {
           {view.map((r, i) => (
             <tr key={i}>
               <td>{r.date}</td>
-              <td>{r.customer}</td>
+              <td>{r.customer_name}</td>
               <td>{r.ref_no}</td>
               <td>{r.payment_method}</td>
-              <td className="text-danger fw-bold">
-                {fmt(r.amount)}
-              </td>
+              <td className="text-danger fw-bold">{fmt(r.amount)}</td>
             </tr>
           ))}
           <tr className="fw-bold table-secondary">
