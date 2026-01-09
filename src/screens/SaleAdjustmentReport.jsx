@@ -4,76 +4,129 @@ const fmt = (v) => Number(v || 0).toLocaleString("en-US");
 
 export default function SaleAdjustmentReport({ onNavigate }) {
   const [rows, setRows] = useState([]);
-  const [search, setSearch] = useState("");
+  const [filtered, setFiltered] = useState([]);
+  const [fromDate, setFromDate] = useState("");
+  const [toDate, setToDate] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const URL = import.meta.env.VITE_BACKEND_URL;
 
   useEffect(() => {
     load();
   }, []);
 
+  useEffect(() => {
+    let temp = [...rows];
+
+    if (fromDate)
+      temp = temp.filter(
+        (r) => new Date(r.date) >= new Date(fromDate)
+      );
+    if (toDate)
+      temp = temp.filter(
+        (r) => new Date(r.date) <= new Date(toDate)
+      );
+
+    setFiltered(temp);
+  }, [fromDate, toDate, rows]);
+
   const load = async () => {
-    const r = await fetch(
-      `${import.meta.env.VITE_BACKEND_URL}/api/customer-payments`
-    );
+    setLoading(true);
+    const r = await fetch(`${URL}/api/customer-ledger/pending/list`);
     const d = await r.json();
 
-    if (d.success) {
-      const adj = d.rows.filter((r) => r.type === "adjustment");
-      setRows(adj);
+    let all = [];
+
+    for (const c of d.rows) {
+      const led = await fetch(
+        `${URL}/api/customer-ledger/${c.ref_no}`
+      );
+      const ld = await led.json();
+
+      const adj = ld.rows
+        .filter((r) => r.description === "Adjustment")
+        .map((r) => ({
+          ref_no: c.ref_no,
+          customer: c.customer_name,
+          date: r.date,
+          amount: r.debit,
+        }));
+
+      all.push(...adj);
     }
+
+    setRows(all);
+    setFiltered(all);
+    setLoading(false);
   };
 
-  const filtered = rows.filter(
-    (r) =>
-      (r.customer_name || "").toLowerCase().includes(search.toLowerCase()) ||
-      (r.ref_no || "").toLowerCase().includes(search.toLowerCase())
+  const total = filtered.reduce(
+    (s, r) => s + Number(r.amount || 0),
+    0
   );
-
-  const total = filtered.reduce((s, r) => s + Number(r.amount || 0), 0);
 
   return (
     <div className="container py-4">
       <div className="d-flex justify-content-between mb-3">
         <h4 className="fw-bold text-primary">📉 Sale Adjustment Report</h4>
-        <button className="btn btn-sm btn-outline-secondary"
-          onClick={() => onNavigate("dashboard")}>
+        <button
+          className="btn btn-sm btn-outline-secondary"
+          onClick={() => onNavigate("dashboard")}
+        >
           ⬅ Back
         </button>
       </div>
 
-      <input
-        className="form-control form-control-sm mb-3"
-        placeholder="🔍 Search customer / ref"
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-      />
+      {/* DATE FILTER */}
+      <div className="row g-2 mb-3">
+        <div className="col-md-3">
+          <input
+            type="date"
+            className="form-control form-control-sm"
+            value={fromDate}
+            onChange={(e) => setFromDate(e.target.value)}
+          />
+        </div>
+        <div className="col-md-3">
+          <input
+            type="date"
+            className="form-control form-control-sm"
+            value={toDate}
+            onChange={(e) => setToDate(e.target.value)}
+          />
+        </div>
+      </div>
 
-      <table className="table table-bordered table-sm">
-        <thead className="table-light">
-          <tr>
-            <th>Date</th>
-            <th>Customer</th>
-            <th>Ref No</th>
-            <th>Amount</th>
-            <th>Note</th>
-          </tr>
-        </thead>
-        <tbody>
-          {filtered.map((r, i) => (
-            <tr key={i}>
-              <td>{r.payment_date}</td>
-              <td className="fw-bold">{r.customer_name}</td>
-              <td>{r.ref_no}</td>
-              <td className="text-danger fw-bold">{fmt(r.amount)}</td>
-              <td>{r.note || "-"}</td>
+      {loading ? (
+        <div className="text-muted">Loading...</div>
+      ) : (
+        <table className="table table-bordered table-sm">
+          <thead className="table-light">
+            <tr>
+              <th>Date</th>
+              <th>Customer</th>
+              <th>Ref No</th>
+              <th className="text-danger">Amount</th>
             </tr>
-          ))}
-          <tr className="table-secondary fw-bold">
-            <td colSpan="3">TOTAL</td>
-            <td>{fmt(total)}</td>
-            <td></td>
-          </tr>
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {filtered.map((r, i) => (
+              <tr key={i}>
+                <td>{r.date}</td>
+                <td className="fw-bold">{r.customer}</td>
+                <td>{r.ref_no}</td>
+                <td className="fw-bold text-danger">
+                  {fmt(r.amount)}
+                </td>
+              </tr>
+            ))}
+            <tr className="table-secondary fw-bold">
+              <td colSpan="3">TOTAL</td>
+              <td>{fmt(total)}</td>
+            </tr>
+          </tbody>
+        </table>
+      )}
     </div>
   );
 }
