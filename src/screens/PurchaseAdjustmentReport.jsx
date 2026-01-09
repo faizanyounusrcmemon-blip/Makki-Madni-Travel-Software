@@ -11,7 +11,9 @@ export default function PurchaseAdjustmentReport() {
 
   const URL = import.meta.env.VITE_BACKEND_URL;
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    load();
+  }, []);
 
   useEffect(() => {
     let temp = [...rows];
@@ -20,46 +22,68 @@ export default function PurchaseAdjustmentReport() {
       const s = search.toLowerCase();
       temp = temp.filter(
         (r) =>
-          r.customer_name.toLowerCase().includes(s) ||
+          r.customer.toLowerCase().includes(s) ||
           r.ref_no.toLowerCase().includes(s)
       );
     }
 
     if (fromDate)
-      temp = temp.filter((r) => new Date(r.date) >= new Date(fromDate));
+      temp = temp.filter(
+        (r) => new Date(r.date) >= new Date(fromDate)
+      );
     if (toDate)
-      temp = temp.filter((r) => new Date(r.date) <= new Date(toDate));
+      temp = temp.filter(
+        (r) => new Date(r.date) <= new Date(toDate)
+      );
 
     setView(temp);
   }, [search, fromDate, toDate, rows]);
 
   const load = async () => {
-    const r = await fetch(`${URL}/api/reports/purchase-adjustments`);
+    const r = await fetch(
+      `${URL}/api/reports/purchase-adjustments`
+    );
     const d = await r.json();
+
     setRows(d.rows);
     setView(d.rows);
   };
 
-  const total = view.reduce((s, r) => s + Number(r.amount || 0), 0);
+  const total = view.reduce(
+    (s, r) => s + Number(r.amount || 0),
+    0
+  );
 
   return (
     <div className="container py-4">
-      <h4 className="fw-bold text-danger">Purchase Adjustment Report</h4>
+      <h4 className="fw-bold text-danger">
+        Purchase Adjustment Report
+      </h4>
 
       <div className="row g-2 my-3">
         <div className="col-md-4">
           <input
             className="form-control form-control-sm"
-            placeholder="Search customer / ref"
+            placeholder="Search supplier / ref"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
         <div className="col-md-3">
-          <input type="date" className="form-control form-control-sm" value={fromDate} onChange={(e) => setFromDate(e.target.value)} />
+          <input
+            type="date"
+            className="form-control form-control-sm"
+            value={fromDate}
+            onChange={(e) => setFromDate(e.target.value)}
+          />
         </div>
         <div className="col-md-3">
-          <input type="date" className="form-control form-control-sm" value={toDate} onChange={(e) => setToDate(e.target.value)} />
+          <input
+            type="date"
+            className="form-control form-control-sm"
+            value={toDate}
+            onChange={(e) => setToDate(e.target.value)}
+          />
         </div>
       </div>
 
@@ -67,7 +91,7 @@ export default function PurchaseAdjustmentReport() {
         <thead>
           <tr>
             <th>Date</th>
-            <th>Customer</th>
+            <th>Supplier</th>
             <th>Ref No</th>
             <th>Method</th>
             <th className="text-danger">Amount</th>
@@ -77,10 +101,12 @@ export default function PurchaseAdjustmentReport() {
           {view.map((r, i) => (
             <tr key={i}>
               <td>{r.date}</td>
-              <td>{r.customer_name}</td>
+              <td>{r.customer}</td>
               <td>{r.ref_no}</td>
               <td>{r.payment_method}</td>
-              <td className="text-danger fw-bold">{fmt(r.amount)}</td>
+              <td className="text-danger fw-bold">
+                {fmt(r.amount)}
+              </td>
             </tr>
           ))}
           <tr className="fw-bold table-secondary">
