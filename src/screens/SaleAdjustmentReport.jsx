@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from "react";
 
-const fmtAmount = (v) => Number(v || 0).toLocaleString("en-US");
+const fmtAmount = (v) =>
+  Number(v || 0).toLocaleString("en-US");
 
 const fmtDate = (d) => {
   if (!d) return "";
-  const dt = new Date(d);
-  return dt.toLocaleDateString("en-GB", {
+  const date = new Date(d);
+  return date.toLocaleDateString("en-GB", {
     day: "2-digit",
     month: "short",
     year: "numeric",
@@ -32,7 +33,7 @@ export default function SaleAdjustmentReport() {
       const s = search.toLowerCase();
       temp = temp.filter(
         (r) =>
-          (r.customer || "").toLowerCase().includes(s) ||
+          (r.customer_name || "").toLowerCase().includes(s) ||
           (r.ref_no || "").toLowerCase().includes(s)
       );
     }
@@ -72,12 +73,11 @@ export default function SaleAdjustmentReport() {
         <div className="col-md-4">
           <input
             className="form-control form-control-sm"
-            placeholder="Search customer / ref no"
+            placeholder="Search customer / ref"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
-
         <div className="col-md-3">
           <input
             type="date"
@@ -86,7 +86,6 @@ export default function SaleAdjustmentReport() {
             onChange={(e) => setFromDate(e.target.value)}
           />
         </div>
-
         <div className="col-md-3">
           <input
             type="date"
@@ -107,12 +106,11 @@ export default function SaleAdjustmentReport() {
             <th className="text-danger">Amount</th>
           </tr>
         </thead>
-
         <tbody>
           {view.map((r, i) => (
             <tr key={i}>
               <td>{fmtDate(r.date)}</td>
-              <td>{r.customer || "-"}</td>
+              <td>{r.customer_name}</td>
               <td>{r.ref_no}</td>
               <td>{r.payment_method}</td>
               <td className="text-danger fw-bold">
