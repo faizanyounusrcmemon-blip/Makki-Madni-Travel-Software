@@ -15,13 +15,13 @@ export default function ManageUsers({ onNavigate }) {
     "purchase_entry", "purchase_list",
 
     // LEDGER
-    "customer_ledger", "purchase_ledger", "bank_ledger", "expense_ledger", "balance_sheet",
+    "customer_ledger", "purchase_ledger", "bank_ledger", "expense_ledger", "balance_sheet","cash_ledger",
 
     // VOUCHERS
     "hotel_voucher", "transport_voucher",
 
     // REPORTS
-    "all_reports", "profit_report",
+    "all_reports", "profit_report","sale_adjustment_report","purchase_adjustment_report",
 
     // MASTER
     "create_user", "manage_users", "deleted_reports", "restore", "system_storage"
@@ -137,3 +137,4 @@ export default function ManageUsers({ onNavigate }) {
     </div>
   );
 }
+
