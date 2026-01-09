@@ -18,6 +18,7 @@ export default function Restore({ onNavigate }) {
     "purchase_entries",
     "users",
     "bank_transactions",
+    "cash_transactions",
     "customer_payments",
     "purchase_payments",
   ];
@@ -293,4 +294,5 @@ export default function Restore({ onNavigate }) {
     </div>
   );
 }
+
 
