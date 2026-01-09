@@ -45,7 +45,9 @@ export default function PurchaseAdjustmentReport({ onNavigate }) {
   const load = async () => {
     setLoading(true);
 
-    const r = await fetch(`${URL}/api/purchase-ledger/pending/list`);
+    const r = await fetch(
+      `${URL}/api/purchase-ledger/pending/list`
+    );
     const d = await r.json();
 
     let all = [];
@@ -57,10 +59,10 @@ export default function PurchaseAdjustmentReport({ onNavigate }) {
       const ld = await led.json();
 
       const adj = ld.rows
-        .filter((r) => r.description === "Adjustment")
+        .filter((r) => r.type === "adjustment")
         .map((r) => ({
           date: r.created_at,
-          customer: p.customer_name,
+          customer: p.customer_name || "",
           ref_no: p.ref_no,
           amount: r.credit,
         }));
