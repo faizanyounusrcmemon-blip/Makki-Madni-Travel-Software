@@ -1,17 +1,13 @@
 import React, { useEffect, useState } from "react";
 
-const fmtAmount = (v) =>
-  Number(v || 0).toLocaleString("en-US");
+const fmt = (v) => Number(v || 0).toLocaleString("en-US");
 
-const fmtDate = (d) => {
-  if (!d) return "";
-  const date = new Date(d);
-  return date.toLocaleDateString("en-GB", {
+const fmtDate = (d) =>
+  new Date(d).toLocaleDateString("en-GB", {
     day: "2-digit",
     month: "short",
     year: "numeric",
   });
-};
 
 export default function SaleAdjustmentReport() {
   const [rows, setRows] = useState([]);
@@ -58,16 +54,14 @@ export default function SaleAdjustmentReport() {
     setView(d.rows || []);
   };
 
-  const total = view.reduce(
-    (s, r) => s + Number(r.amount || 0),
+  const totalNet = view.reduce(
+    (s, r) => s + (Number(r.amount) - Number(r.adjustment_amount || 0)),
     0
   );
 
   return (
     <div className="container py-4">
-      <h4 className="fw-bold text-primary">
-        Sale Adjustment Report
-      </h4>
+      <h4 className="fw-bold text-primary">Sale Adjustment Report</h4>
 
       <div className="row g-2 my-3">
         <div className="col-md-4">
@@ -102,26 +96,34 @@ export default function SaleAdjustmentReport() {
             <th>Date</th>
             <th>Customer</th>
             <th>Ref No</th>
-            <th>Method</th>
-            <th className="text-danger">Amount</th>
+            <th>Total Sale</th>
+            <th className="text-danger">Adjustment</th>
+            <th className="text-success">Net Amount</th>
           </tr>
         </thead>
         <tbody>
-          {view.map((r, i) => (
-            <tr key={i}>
-              <td>{fmtDate(r.date)}</td>
-              <td>{r.customer_name}</td>
-              <td>{r.ref_no}</td>
-              <td>{r.payment_method}</td>
-              <td className="text-danger fw-bold">
-                {fmtAmount(r.amount)}
-              </td>
-            </tr>
-          ))}
+          {view.map((r, i) => {
+            const adj = Number(r.adjustment_amount || 0);
+            const net = Number(r.amount) - adj;
 
+            return (
+              <tr key={i}>
+                <td>{fmtDate(r.date)}</td>
+                <td>{r.customer_name}</td>
+                <td>{r.ref_no}</td>
+                <td>{fmt(r.amount)}</td>
+                <td className="text-danger fw-bold">
+                  {fmt(adj)}
+                </td>
+                <td className="fw-bold text-success">
+                  {fmt(net)}
+                </td>
+              </tr>
+            );
+          })}
           <tr className="fw-bold table-secondary">
-            <td colSpan="4">TOTAL</td>
-            <td>{fmtAmount(total)}</td>
+            <td colSpan="5">TOTAL</td>
+            <td>{fmt(totalNet)}</td>
           </tr>
         </tbody>
       </table>
