@@ -1,0 +1,14 @@
+.pending-row {
+  background-color: #f8d7da; /* light red */
+  transition: all 0.2s ease;
+}
+
+.partial-row {
+  background-color: #fff3cd; /* light yellow */
+  transition: all 0.2s ease;
+}
+
+.table-hover tbody tr:hover {
+  background-color: #e2e6ea !important; /* subtle hover */
+  transform: scale(1.01);
+}
