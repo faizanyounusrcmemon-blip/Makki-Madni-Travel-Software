@@ -7,7 +7,6 @@ export default function PurchaseList({ onNavigate }) {
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(false);
 
-  /* ================= LOAD ================= */
   useEffect(() => {
     loadList();
   }, []);
@@ -29,60 +28,36 @@ export default function PurchaseList({ onNavigate }) {
       );
       const data = await res.json();
       if (data.success) setRows(data.rows || []);
-      else alert(data.error || "Failed");
     } catch {
       alert("Server error");
     }
     setLoading(false);
   };
 
-  /* ================= DELETE ================= */
   const deletePurchase = async (refNo) => {
     const password = prompt("Enter delete password (786)");
     if (!password) return;
 
-    try {
-      const res = await fetch(
-        `${import.meta.env.VITE_BACKEND_URL}/api/purchase/delete/${refNo}`,
-        {
-          method: "DELETE",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ password }),
-        }
-      );
-      const data = await res.json();
-
-      if (data.success) {
-        alert("✅ Deleted");
-        loadList();
-      } else {
-        alert(data.error || "Delete failed");
+    const res = await fetch(
+      `${import.meta.env.VITE_BACKEND_URL}/api/purchase/delete/${refNo}`,
+      {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password }),
       }
-    } catch {
-      alert("Server error");
-    }
+    );
+    const data = await res.json();
+    if (data.success) loadList();
+    else alert(data.error || "Delete failed");
   };
 
-  /* ================= GLOBAL SEARCH ================= */
   const filteredRows = useMemo(() => {
     if (!search) return rows;
-    const q = search.toLowerCase();
     return rows.filter((r) =>
-      [
-        r.ref_no,
-        r.customer_name,
-        r.sale_pkr,
-        r.purchase_pkr,
-        r.profit,
-        r.created_at,
-      ]
-        .join(" ")
-        .toLowerCase()
-        .includes(q)
+      Object.values(r).join(" ").toLowerCase().includes(search.toLowerCase())
     );
   }, [rows, search]);
 
-  /* ================= TOTALS ================= */
   const totals = useMemo(() => {
     return filteredRows.reduce(
       (a, r) => {
@@ -104,36 +79,68 @@ export default function PurchaseList({ onNavigate }) {
 
   return (
     <div className="container py-3">
+
       {/* HEADER */}
-      <div className="d-flex justify-content-between mb-2">
-        <button
-          className="btn btn-outline-secondary btn-sm"
-          onClick={() => onNavigate("dashboard")}
-        >
-          ⬅ Back
-        </button>
-        <h5 className="fw-bold mb-0">📄 Purchase List</h5>
+      <div className="p-3 rounded text-white mb-3"
+        style={{ background: "linear-gradient(90deg,#0d6efd,#6610f2)" }}>
+        <div className="d-flex justify-content-between align-items-center">
+          <button
+            className="btn btn-light btn-sm"
+            onClick={() => onNavigate("dashboard")}
+          >
+            ⬅ Back
+          </button>
+          <h4 className="fw-bold mb-0">📄 Purchase List</h4>
+        </div>
+      </div>
+
+      {/* SUMMARY */}
+      <div className="row g-2 mb-3">
+        <div className="col-md-4">
+          <div className="card text-white shadow"
+            style={{ background: "linear-gradient(135deg,#0d6efd,#0dcaf0)" }}>
+            <div className="card-body p-2">
+              <small>Total Sale</small>
+              <h5>{totals.sale.toLocaleString()}</h5>
+            </div>
+          </div>
+        </div>
+        <div className="col-md-4">
+          <div className="card text-white shadow"
+            style={{ background: "linear-gradient(135deg,#6c757d,#adb5bd)" }}>
+            <div className="card-body p-2">
+              <small>Total Purchase</small>
+              <h5>{totals.purchase.toLocaleString()}</h5>
+            </div>
+          </div>
+        </div>
+        <div className="col-md-4">
+          <div className="card text-white shadow"
+            style={{
+              background:
+                totals.profit >= 0
+                  ? "linear-gradient(135deg,#198754,#20c997)"
+                  : "linear-gradient(135deg,#dc3545,#fd7e14)",
+            }}>
+            <div className="card-body p-2">
+              <small>Net Profit</small>
+              <h5>{totals.profit.toLocaleString()}</h5>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* FILTER */}
-      <div className="card mb-2">
+      <div className="card shadow-sm mb-2">
         <div className="card-body py-2">
           <div className="row g-2">
             <div className="col-md-3">
-              <input
-                type="date"
-                className="form-control form-control-sm"
-                value={from}
-                onChange={(e) => setFrom(e.target.value)}
-              />
+              <input type="date" className="form-control form-control-sm"
+                value={from} onChange={(e) => setFrom(e.target.value)} />
             </div>
             <div className="col-md-3">
-              <input
-                type="date"
-                className="form-control form-control-sm"
-                value={to}
-                onChange={(e) => setTo(e.target.value)}
-              />
+              <input type="date" className="form-control form-control-sm"
+                value={to} onChange={(e) => setTo(e.target.value)} />
             </div>
             <div className="col-md-6">
               <input
@@ -148,9 +155,9 @@ export default function PurchaseList({ onNavigate }) {
       </div>
 
       {/* TABLE */}
-      <div className="table-responsive">
-        <table className="table table-sm table-hover align-middle">
-          <thead className="table-dark">
+      <div className="table-responsive shadow rounded">
+        <table className="table table-sm align-middle mb-0">
+          <thead style={{ background: "#212529" }} className="text-white">
             <tr>
               <th>Ref</th>
               <th>Customer</th>
@@ -158,92 +165,57 @@ export default function PurchaseList({ onNavigate }) {
               <th>Purchase</th>
               <th>Profit</th>
               <th>Date</th>
-              <th width="120">Action</th>
+              <th>Action</th>
             </tr>
           </thead>
 
           <tbody>
             {loading && (
-              <tr>
-                <td colSpan="7" className="text-center py-3">
-                  Loading...
-                </td>
-              </tr>
+              <tr><td colSpan="7" className="text-center py-3">Loading...</td></tr>
             )}
 
-            {!loading && filteredRows.length === 0 && (
-              <tr>
-                <td colSpan="7" className="text-center text-muted py-3">
-                  No records found
+            {!loading && filteredRows.map((r, i) => (
+              <tr key={i}>
+                <td className="fw-bold">{r.ref_no}</td>
+                <td className="text-primary fw-semibold small">
+                  {r.customer_name || "-"}
                 </td>
-              </tr>
-            )}
-
-            {!loading &&
-              filteredRows.map((r, i) => (
-                <tr key={i}>
-                  <td className="fw-bold">{r.ref_no}</td>
-
-                  <td
-                    className="text-primary small fw-semibold text-nowrap"
-                    style={{ maxWidth: 180 }}
-                  >
-                    {r.customer_name || "-"}
-                  </td>
-
-                  <td>{(+r.sale_pkr).toLocaleString()}</td>
-                  <td>{(+r.purchase_pkr).toLocaleString()}</td>
-
-                  <td
-                    className={
-                      +r.profit >= 0 ? "text-success" : "text-danger"
-                    }
+                <td>
+                  <span className="badge bg-primary">
+                    {(+r.sale_pkr).toLocaleString()}
+                  </span>
+                </td>
+                <td>
+                  <span className="badge bg-secondary">
+                    {(+r.purchase_pkr).toLocaleString()}
+                  </span>
+                </td>
+                <td>
+                  <span
+                    className={`badge ${
+                      +r.profit >= 0 ? "bg-success" : "bg-danger"
+                    }`}
                   >
                     {(+r.profit).toLocaleString()}
-                  </td>
-
-                  <td className="small text-muted text-nowrap">
-                    {fmtDate(r.created_at)}
-                  </td>
-
-                  <td>
-                    <div className="btn-group btn-group-sm">
-                      <button
-                        className="btn btn-outline-info"
-                        onClick={() =>
-                          onNavigate("purchase_detail", r.ref_no)
-                        }
-                      >
-                        Detail
-                      </button>
-                      <button
-                        className="btn btn-outline-danger"
-                        onClick={() => deletePurchase(r.ref_no)}
-                      >
-                        Delete
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-
-            {!loading && filteredRows.length > 0 && (
-              <tr className="table-dark fw-bold">
-                <td colSpan="2" className="text-end">
-                  TOTAL
+                  </span>
                 </td>
-                <td>{totals.sale.toLocaleString()}</td>
-                <td>{totals.purchase.toLocaleString()}</td>
-                <td
-                  className={
-                    totals.profit >= 0 ? "text-success" : "text-danger"
-                  }
-                >
-                  {totals.profit.toLocaleString()}
+                <td className="small text-muted">{fmtDate(r.created_at)}</td>
+                <td>
+                  <button
+                    className="btn btn-sm btn-info me-1"
+                    onClick={() => onNavigate("purchase_detail", r.ref_no)}
+                  >
+                    👁
+                  </button>
+                  <button
+                    className="btn btn-sm btn-danger"
+                    onClick={() => deletePurchase(r.ref_no)}
+                  >
+                    🗑
+                  </button>
                 </td>
-                <td colSpan="2"></td>
               </tr>
-            )}
+            ))}
           </tbody>
         </table>
       </div>
