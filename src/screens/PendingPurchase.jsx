@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from "react";
-import "./PendingPurchase.css"; // styling same as before
 
+// ================= DATE FORMAT HELPER =================
 const formatDate = (d) => {
   const date = new Date(d);
   const options = { day: "2-digit", month: "short", year: "numeric" };
-  return date.toLocaleDateString("en-US", options);
+  return date.toLocaleDateString("en-US", options); // 01/Dec/2025
 };
 
 export default function PendingPurchase({ onNavigate }) {
@@ -35,6 +35,7 @@ export default function PendingPurchase({ onNavigate }) {
       );
       const reportsData = await reportsRes.json();
 
+      // Map sale amount by ref_no
       const saleMap = {};
       reportsData.forEach((r) => {
         saleMap[r.ref_no] = r.total_pkr || 0;
@@ -42,6 +43,7 @@ export default function PendingPurchase({ onNavigate }) {
 
       // 3️⃣ Merge with purchase amounts from /list
       const promises = pendingRows.map(async (r) => {
+        // Purchase amount
         const listRes = await fetch(
           `${import.meta.env.VITE_BACKEND_URL}/api/purchase/list?ref=${r.ref_no}`
         );
@@ -50,9 +52,13 @@ export default function PendingPurchase({ onNavigate }) {
         if (listData.success && listData.rows.length) {
           purchase_pkr = listData.rows[0].purchase_pkr || 0;
         }
+
+        // Sale amount from reports
+        const sale_pkr = saleMap[r.ref_no] || 0;
+
         return {
           ...r,
-          sale_pkr: saleMap[r.ref_no] || 0,
+          sale_pkr,
           purchase_pkr,
         };
       });
@@ -66,12 +72,12 @@ export default function PendingPurchase({ onNavigate }) {
     }
   };
 
+  // ================= FILTER ROWS =================
   const filteredRows = rows.filter((r) => {
     if (!search) return true;
     const q = search.toLowerCase();
     const ref = typeof r.ref_no === "string" ? r.ref_no.toLowerCase() : "";
-    const name =
-      typeof r.customer_name === "string" ? r.customer_name.toLowerCase() : "";
+    const name = typeof r.customer_name === "string" ? r.customer_name.toLowerCase() : "";
     return ref.includes(q) || name.includes(q);
   });
 
@@ -84,82 +90,83 @@ export default function PendingPurchase({ onNavigate }) {
         ⬅ Back
       </button>
 
-      <h3 className="fw-bold text-warning mb-3">⚠️ Pending / Partial Purchases</h3>
+      <h4 className="fw-bold text-warning mb-3">
+        ⚠️ Pending / Partial Purchases
+      </h4>
 
       <input
         type="text"
         placeholder="Search Ref No or Customer..."
-        className="form-control form-control-sm mb-4"
+        className="form-control form-control-sm mb-3"
         value={search}
         onChange={(e) => setSearch(e.target.value)}
       />
 
       {loading ? (
         <div className="text-center text-muted">Loading...</div>
-      ) : filteredRows.length === 0 ? (
-        <div className="text-center text-success fw-bold">
-          🎉 All purchases completed
-        </div>
       ) : (
-        <div className="cards-container">
-          {filteredRows.map((r, i) => {
-            const progress =
-              r.sale_pkr > 0
-                ? Math.min((r.purchase_pkr / r.sale_pkr) * 100, 100)
-                : 0;
+        <div className="table-responsive shadow-sm rounded">
+          <table className="table table-bordered table-hover table-sm align-middle mb-0">
+            <thead className="table-dark">
+              <tr>
+                <th>Ref No</th>
+                <th>Customer</th>
+                <th>Status</th>
+                <th>Note</th>
+                <th className="text-end">Sale Amount (PKR)</th>
+                <th className="text-end">Purchase Amount (PKR)</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredRows.length === 0 && (
+                <tr>
+                  <td colSpan="7" className="text-center text-success">
+                    🎉 All purchases completed
+                  </td>
+                </tr>
+              )}
 
-            return (
-              <div
-                key={i}
-                className={`purchase-card ${
-                  r.status === "PENDING"
-                    ? "pending-card"
-                    : r.status === "PARTIAL"
-                    ? "partial-card"
-                    : ""
-                }`}
-              >
-                <div className="card-header">
-                  <span className="ref-tag">{r.ref_no}</span>
-                  <span className="date">{formatDate(r.created_at)}</span>
-                </div>
+              {filteredRows.map((r, i) => (
+                <tr key={i} className="align-middle">
+                  <td className="fw-bold text-primary">{r.ref_no}</td>
+                  <td className="text-dark fw-semibold">
+                    {r.customer_name || "-"}
+                  </td>
 
-                <div className="customer-name">{r.customer_name || "-"}</div>
+                  <td>
+                    {r.status === "PENDING" && (
+                      <span className="badge bg-danger">Pending</span>
+                    )}
+                    {r.status === "PARTIAL" && (
+                      <span className="badge bg-warning text-dark">
+                        Partial
+                      </span>
+                    )}
+                  </td>
 
-                <div className="amounts">
-                  <div className="sale">
-                    Sale: <strong>{r.sale_pkr.toLocaleString("en-US")}</strong> PKR
-                  </div>
-                  <div className="purchase">
-                    Purchased: <strong>{r.purchase_pkr.toLocaleString("en-US")}</strong> PKR
-                  </div>
-                </div>
+                  <td>{r.note}</td>
 
-                <div className="progress-bar">
-                  <div
-                    className="progress-fill"
-                    style={{ width: `${progress}%` }}
-                  ></div>
-                </div>
+                  <td className="text-end fw-bold text-success">
+                    {r.sale_pkr ? Number(r.sale_pkr).toLocaleString("en-US") : "0"}
+                  </td>
 
-                <div className="card-footer">
-                  <span
-                    className={`status-badge ${
-                      r.status === "PENDING" ? "status-pending" : "status-partial"
-                    }`}
-                  >
-                    {r.status}
-                  </span>
-                  <button
-                    className="btn btn-sm btn-primary"
-                    onClick={() => onNavigate("purchase", r.ref_no)}
-                  >
-                    Complete
-                  </button>
-                </div>
-              </div>
-            );
-          })}
+                  <td className="text-end fw-bold text-primary">
+                    {r.purchase_pkr ? Number(r.purchase_pkr).toLocaleString("en-US") : "0"}
+                  </td>
+
+                  <td>
+                    <button
+                      className="btn btn-sm btn-primary"
+                      onClick={() => onNavigate("purchase", r.ref_no)}
+                    >
+                      ➕ Complete Purchase
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       )}
     </div>
