@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from "react";
+import "./PendingPurchase.css"; // 👈 custom CSS
 
-// ================= DATE FORMAT HELPER =================
 const formatDate = (d) => {
   const date = new Date(d);
   const options = { day: "2-digit", month: "short", year: "numeric" };
-  return date.toLocaleDateString("en-US", options); // 01/Dec/2025
+  return date.toLocaleDateString("en-US", options);
 };
 
 export default function PendingPurchase({ onNavigate }) {
@@ -20,7 +20,6 @@ export default function PendingPurchase({ onNavigate }) {
     try {
       setLoading(true);
 
-      // 1️⃣ Pending / Partial refs
       const pendingRes = await fetch(
         `${import.meta.env.VITE_BACKEND_URL}/api/purchase/pending`
       );
@@ -29,21 +28,17 @@ export default function PendingPurchase({ onNavigate }) {
 
       const pendingRows = pendingData.rows;
 
-      // 2️⃣ Sale amounts from /reports/all
       const reportsRes = await fetch(
         `${import.meta.env.VITE_BACKEND_URL}/api/reports/all`
       );
       const reportsData = await reportsRes.json();
 
-      // Map sale amount by ref_no
       const saleMap = {};
       reportsData.forEach((r) => {
         saleMap[r.ref_no] = r.total_pkr || 0;
       });
 
-      // 3️⃣ Merge with purchase amounts from /list
       const promises = pendingRows.map(async (r) => {
-        // Purchase amount
         const listRes = await fetch(
           `${import.meta.env.VITE_BACKEND_URL}/api/purchase/list?ref=${r.ref_no}`
         );
@@ -52,13 +47,9 @@ export default function PendingPurchase({ onNavigate }) {
         if (listData.success && listData.rows.length) {
           purchase_pkr = listData.rows[0].purchase_pkr || 0;
         }
-
-        // Sale amount from reports
-        const sale_pkr = saleMap[r.ref_no] || 0;
-
         return {
           ...r,
-          sale_pkr,
+          sale_pkr: saleMap[r.ref_no] || 0,
           purchase_pkr,
         };
       });
@@ -72,7 +63,6 @@ export default function PendingPurchase({ onNavigate }) {
     }
   };
 
-  // ================= FILTER ROWS =================
   const filteredRows = rows.filter((r) => {
     if (!search) return true;
     const q = search.toLowerCase();
@@ -128,7 +118,16 @@ export default function PendingPurchase({ onNavigate }) {
               )}
 
               {filteredRows.map((r, i) => (
-                <tr key={i} className="align-middle">
+                <tr
+                  key={i}
+                  className={`align-middle ${
+                    r.status === "PENDING"
+                      ? "pending-row"
+                      : r.status === "PARTIAL"
+                      ? "partial-row"
+                      : ""
+                  }`}
+                >
                   <td className="fw-bold text-primary">{r.ref_no}</td>
                   <td className="text-dark fw-semibold">
                     {r.customer_name || "-"}
@@ -148,11 +147,15 @@ export default function PendingPurchase({ onNavigate }) {
                   <td>{r.note}</td>
 
                   <td className="text-end fw-bold text-success">
-                    {r.sale_pkr ? Number(r.sale_pkr).toLocaleString("en-US") : "0"}
+                    {r.sale_pkr
+                      ? Number(r.sale_pkr).toLocaleString("en-US")
+                      : "0"}
                   </td>
 
                   <td className="text-end fw-bold text-primary">
-                    {r.purchase_pkr ? Number(r.purchase_pkr).toLocaleString("en-US") : "0"}
+                    {r.purchase_pkr
+                      ? Number(r.purchase_pkr).toLocaleString("en-US")
+                      : "0"}
                   </td>
 
                   <td>
