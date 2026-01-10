@@ -31,7 +31,7 @@ const numberToWords = (num) => {
 const fmtDate = (d) =>
   d ? new Date(d).toLocaleDateString("en-GB") : "-";
 
-// ✅ Get Today for default calendar
+// ✅ Default today
 const today = new Date().toISOString().split("T")[0];
 
 export default function PurchaseLedger({ onNavigate }) {
@@ -41,7 +41,7 @@ export default function PurchaseLedger({ onNavigate }) {
 
   const [amountRaw, setAmountRaw] = useState(0);
   const [amountDisp, setAmountDisp] = useState("");
-  const [date, setDate] = useState(today); // ✅ default today
+  const [date, setDate] = useState(today);
   const [type, setType] = useState("payment");
   const [method, setMethod] = useState("Cash");
 
@@ -91,7 +91,7 @@ export default function PurchaseLedger({ onNavigate }) {
       else {
         setAmountRaw(0);
         setAmountDisp("");
-        setDate(today); // ✅ Reset to today after saving
+        setDate(today); // Reset to today
         await load(ref);
         await loadPending();
       }
@@ -126,15 +126,15 @@ export default function PurchaseLedger({ onNavigate }) {
     const pdf = new jsPDF("p", "mm", "a4");
     const w = pdf.internal.pageSize.getWidth();
 
-    pdf.setFillColor(18, 97, 160);
-    pdf.rect(0, 0, w, 25, "F");
+    pdf.setFillColor(18,97,160);
+    pdf.rect(0,0,w,25,"F");
     pdf.setTextColor(255,255,255);
     pdf.setFontSize(16);
-    pdf.text("MAKKI MADNI TRAVEL", w/2, 15, { align: "center" });
+    pdf.text("MAKKI MADNI TRAVEL", w/2, 15, { align:"center" });
     pdf.setFontSize(10);
-    pdf.text("Purchase Ledger Statement", w/2, 22, { align: "center" });
+    pdf.text("Purchase Ledger Statement", w/2, 22, { align:"center" });
 
-    pdf.addImage(img, "PNG", 10, 30, 190, (canvas.height*190)/canvas.width);
+    pdf.addImage(img,"PNG",10,30,190,(canvas.height*190)/canvas.width);
     pdf.save(`${ref || "purchase-ledger"}.pdf`);
   };
 
@@ -145,7 +145,7 @@ export default function PurchaseLedger({ onNavigate }) {
       <div className="card shadow-sm mb-3">
         <div className="card-body d-flex justify-content-between align-items-center">
           <h4 className="fw-bold mb-0">🧾 PURCHASE LEDGER — {ref}</h4>
-          <button className="btn btn-secondary btn-sm" onClick={() => onNavigate("dashboard")}>⬅ Back</button>
+          <button className="btn btn-secondary btn-sm" onClick={()=>onNavigate("dashboard")}>⬅ Back</button>
         </div>
       </div>
 
@@ -162,7 +162,7 @@ export default function PurchaseLedger({ onNavigate }) {
                   <div>
                     <b>{p.ref_no} — <span className="text-primary">{p.customer_name || "-"}</span></b>
                     <span className={`badge ms-2 ${p.status==="PENDING"?"bg-danger":"bg-warning text-dark"}`}>{p.status}</span>
-                    <div className="small text-muted">{p.note}</div>
+                    {/* ✅ Removed small note to reduce row height */}
                   </div>
                   <button className="btn btn-sm btn-outline-primary" onClick={()=>load(p.ref_no)}>Load</button>
                 </li>
@@ -185,7 +185,6 @@ export default function PurchaseLedger({ onNavigate }) {
       <div className="card shadow-sm mb-3">
         <div className="card-body row g-2">
           <div className="col-md-3">
-            {/* ✅ Calendar shows today by default */}
             <input type="date" className="form-control" value={date} onChange={e=>setDate(e.target.value)} />
           </div>
           <div className="col-md-3">
