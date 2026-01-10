@@ -41,16 +41,36 @@ export default function PackagesView({ id, onNavigate }) {
       });
   }, [id]);
 
-  /* ================= EXPORT PDF ================= */
+  /* ================= EXPORT PDF (PORTRAIT – NO BLUR) ================= */
   const exportPDF = async () => {
-    const canvas = await html2canvas(ref.current, { scale: 2 });
-    const img = canvas.toDataURL("image/jpeg");
+    const canvas = await html2canvas(ref.current, {
+      scale: 2,
+      useCORS: true,
+    });
 
-    const pdf = new jsPDF("l", "mm", "a4");
-    const w = pdf.internal.pageSize.getWidth();
-    const h = pdf.internal.pageSize.getHeight();
+    const imgData = canvas.toDataURL("image/jpeg", 1.0);
 
-    pdf.addImage(img, "JPEG", 0, 0, w, h);
+    // ✅ PORTRAIT A4
+    const pdf = new jsPDF("p", "mm", "a4");
+
+    const pdfWidth = pdf.internal.pageSize.getWidth();
+    const pdfHeight = pdf.internal.pageSize.getHeight();
+
+    const imgWidth = canvas.width;
+    const imgHeight = canvas.height;
+
+    const ratio = Math.min(
+      pdfWidth / imgWidth,
+      pdfHeight / imgHeight
+    );
+
+    const imgW = imgWidth * ratio;
+    const imgH = imgHeight * ratio;
+
+    const x = (pdfWidth - imgW) / 2;
+    const y = 8;
+
+    pdf.addImage(imgData, "JPEG", x, y, imgW, imgH);
 
     const fileName = `${cleanName(data?.customer_name)}_${formatDateForFile(
       data?.booking_date
@@ -78,8 +98,11 @@ export default function PackagesView({ id, onNavigate }) {
       </button>
 
       {/* ================= PDF CONTENT ================= */}
-      <div ref={ref} className="bg-white p-3 border">
-        
+      <div
+        ref={ref}
+        className="bg-white p-3 border"
+        style={{ width: "794px", margin: "auto" }} // A4 preview width
+      >
         {/* ================= HEADER ================= */}
         <div className="text-center mb-3">
           <h2 className="fw-bold mb-1" style={{ letterSpacing: "1px" }}>
