@@ -77,8 +77,28 @@ export default function PackagesView({ id, onNavigate }) {
         📄 Export PDF
       </button>
 
+      {/* ================= PDF CONTENT ================= */}
       <div ref={ref} className="bg-white p-3 border">
-        <h3 className="fw-bold text-center">MAKKI MADNI TRAVEL</h3>
+        
+        {/* ================= HEADER ================= */}
+        <div className="text-center mb-3">
+          <h2 className="fw-bold mb-1" style={{ letterSpacing: "1px" }}>
+            ✈️ MAKKI MADNI TRAVEL
+          </h2>
+
+          <div style={{ fontSize: "13px", lineHeight: "1.4" }}>
+            <div>
+              Shop #4 Daimon City Building, Near Zeenat-ul-Islam Masjid
+            </div>
+            <div>Garden West, Karachi</div>
+            <div>
+              ✉️ makkimadnitravel@gmail.com | ☎️ 0335-7476744
+            </div>
+          </div>
+
+          <hr style={{ margin: "8px 0", borderTop: "2px solid #000" }} />
+        </div>
+
         <h4 className="fw-bold mb-2">PACKAGE — {data.ref_no}</h4>
 
         {/* ================= CUSTOMER ================= */}
