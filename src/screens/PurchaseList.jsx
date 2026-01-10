@@ -81,8 +81,10 @@ export default function PurchaseList({ onNavigate }) {
     <div className="container py-3">
 
       {/* HEADER */}
-      <div className="p-3 rounded text-white mb-3"
-        style={{ background: "linear-gradient(90deg,#0d6efd,#6610f2)" }}>
+      <div
+        className="p-3 rounded text-white mb-3"
+        style={{ background: "linear-gradient(90deg,#0d6efd,#6610f2)" }}
+      >
         <div className="d-flex justify-content-between align-items-center">
           <button
             className="btn btn-light btn-sm"
@@ -94,53 +96,25 @@ export default function PurchaseList({ onNavigate }) {
         </div>
       </div>
 
-      {/* SUMMARY */}
-      <div className="row g-2 mb-3">
-        <div className="col-md-4">
-          <div className="card text-white shadow"
-            style={{ background: "linear-gradient(135deg,#0d6efd,#0dcaf0)" }}>
-            <div className="card-body p-2">
-              <small>Total Sale</small>
-              <h5>{totals.sale.toLocaleString()}</h5>
-            </div>
-          </div>
-        </div>
-        <div className="col-md-4">
-          <div className="card text-white shadow"
-            style={{ background: "linear-gradient(135deg,#6c757d,#adb5bd)" }}>
-            <div className="card-body p-2">
-              <small>Total Purchase</small>
-              <h5>{totals.purchase.toLocaleString()}</h5>
-            </div>
-          </div>
-        </div>
-        <div className="col-md-4">
-          <div className="card text-white shadow"
-            style={{
-              background:
-                totals.profit >= 0
-                  ? "linear-gradient(135deg,#198754,#20c997)"
-                  : "linear-gradient(135deg,#dc3545,#fd7e14)",
-            }}>
-            <div className="card-body p-2">
-              <small>Net Profit</small>
-              <h5>{totals.profit.toLocaleString()}</h5>
-            </div>
-          </div>
-        </div>
-      </div>
-
       {/* FILTER */}
       <div className="card shadow-sm mb-2">
         <div className="card-body py-2">
           <div className="row g-2">
             <div className="col-md-3">
-              <input type="date" className="form-control form-control-sm"
-                value={from} onChange={(e) => setFrom(e.target.value)} />
+              <input
+                type="date"
+                className="form-control form-control-sm"
+                value={from}
+                onChange={(e) => setFrom(e.target.value)}
+              />
             </div>
             <div className="col-md-3">
-              <input type="date" className="form-control form-control-sm"
-                value={to} onChange={(e) => setTo(e.target.value)} />
+              <input
+                type="date"
+                className="form-control form-control-sm"
+                value={to}
+                onChange={(e) => setTo(e.target.value)}
+              />
             </div>
             <div className="col-md-6">
               <input
@@ -157,7 +131,7 @@ export default function PurchaseList({ onNavigate }) {
       {/* TABLE */}
       <div className="table-responsive shadow rounded">
         <table className="table table-sm align-middle mb-0">
-          <thead style={{ background: "#212529" }} className="text-white">
+          <thead className="text-white" style={{ background: "#212529" }}>
             <tr>
               <th>Ref</th>
               <th>Customer</th>
@@ -165,57 +139,98 @@ export default function PurchaseList({ onNavigate }) {
               <th>Purchase</th>
               <th>Profit</th>
               <th>Date</th>
-              <th>Action</th>
+              <th className="text-center">Action</th>
             </tr>
           </thead>
 
           <tbody>
             {loading && (
-              <tr><td colSpan="7" className="text-center py-3">Loading...</td></tr>
-            )}
-
-            {!loading && filteredRows.map((r, i) => (
-              <tr key={i}>
-                <td className="fw-bold">{r.ref_no}</td>
-                <td className="text-primary fw-semibold small">
-                  {r.customer_name || "-"}
-                </td>
-                <td>
-                  <span className="badge bg-primary">
-                    {(+r.sale_pkr).toLocaleString()}
-                  </span>
-                </td>
-                <td>
-                  <span className="badge bg-secondary">
-                    {(+r.purchase_pkr).toLocaleString()}
-                  </span>
-                </td>
-                <td>
-                  <span
-                    className={`badge ${
-                      +r.profit >= 0 ? "bg-success" : "bg-danger"
-                    }`}
-                  >
-                    {(+r.profit).toLocaleString()}
-                  </span>
-                </td>
-                <td className="small text-muted">{fmtDate(r.created_at)}</td>
-                <td>
-                  <button
-                    className="btn btn-sm btn-info me-1"
-                    onClick={() => onNavigate("purchase_detail", r.ref_no)}
-                  >
-                    👁
-                  </button>
-                  <button
-                    className="btn btn-sm btn-danger"
-                    onClick={() => deletePurchase(r.ref_no)}
-                  >
-                    🗑
-                  </button>
+              <tr>
+                <td colSpan="7" className="text-center py-3">
+                  Loading...
                 </td>
               </tr>
-            ))}
+            )}
+
+            {!loading && filteredRows.length === 0 && (
+              <tr>
+                <td colSpan="7" className="text-center text-muted py-3">
+                  No records found
+                </td>
+              </tr>
+            )}
+
+            {!loading &&
+              filteredRows.map((r, i) => (
+                <tr key={i}>
+                  <td className="fw-bold">{r.ref_no}</td>
+
+                  <td className="fw-semibold text-primary small">
+                    {r.customer_name || "-"}
+                  </td>
+
+                  <td>
+                    <span className="badge bg-primary">
+                      {(+r.sale_pkr).toLocaleString()}
+                    </span>
+                  </td>
+
+                  <td>
+                    <span className="badge bg-secondary">
+                      {(+r.purchase_pkr).toLocaleString()}
+                    </span>
+                  </td>
+
+                  <td>
+                    <span
+                      className={`badge ${
+                        +r.profit >= 0 ? "bg-success" : "bg-danger"
+                      }`}
+                    >
+                      {(+r.profit).toLocaleString()}
+                    </span>
+                  </td>
+
+                  <td className="small text-muted">
+                    {fmtDate(r.created_at)}
+                  </td>
+
+                  <td className="text-center">
+                    <button
+                      className="btn btn-sm btn-outline-info me-1"
+                      onClick={() =>
+                        onNavigate("purchase_detail", r.ref_no)
+                      }
+                    >
+                      Detail
+                    </button>
+                    <button
+                      className="btn btn-sm btn-outline-danger"
+                      onClick={() => deletePurchase(r.ref_no)}
+                    >
+                      Delete
+                    </button>
+                  </td>
+                </tr>
+              ))}
+
+            {!loading && filteredRows.length > 0 && (
+              <tr className="table-dark fw-bold">
+                <td colSpan={2} className="text-end">
+                  TOTAL
+                </td>
+                <td>{totals.sale.toLocaleString()}</td>
+                <td>{totals.purchase.toLocaleString()}</td>
+                <td
+                  className={
+                    totals.profit >= 0 ? "text-success" : "text-danger"
+                  }
+                >
+                  {totals.profit.toLocaleString()}
+                </td>
+                <td colSpan={2}></td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>
