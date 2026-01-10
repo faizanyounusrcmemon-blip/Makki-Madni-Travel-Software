@@ -6,20 +6,25 @@ export default function DeletedReports({ onNavigate }) {
 
   const load = async () => {
     setLoading(true);
-    const res = await fetch(
-      `${import.meta.env.VITE_BACKEND_URL}/api/deleted/list`
-    );
-    const data = await res.json();
-    setLoading(false);
-
-    if (data.success) setRows(data.rows);
+    try {
+      const res = await fetch(
+        `${import.meta.env.VITE_BACKEND_URL}/api/deleted/list`
+      );
+      const data = await res.json();
+      if (data.success) setRows(data.rows || []);
+    } catch (err) {
+      console.error("Load deleted reports error", err);
+      alert("Failed to load deleted reports");
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
     load();
   }, []);
 
-  // ♻ RESTORE
+  /* ================= RESTORE ================= */
   const restore = async (type, ref_no) => {
     if (!window.confirm("Restore this record?")) return;
 
@@ -28,25 +33,32 @@ export default function DeletedReports({ onNavigate }) {
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ type, ref_no })
+        body: JSON.stringify({ type, ref_no }),
       }
     );
 
     const data = await res.json();
-    if (data.success) load();
-    else alert("Restore failed");
+    if (data.success) {
+      alert("Record restored");
+      load();
+    } else {
+      alert(data.error || "Restore failed");
+    }
   };
 
-  // 🗑 PERMANENT DELETE
+  /* ================= PERMANENT DELETE ================= */
   const permanentDelete = async (type, ref_no) => {
-    const pass = prompt("Enter delete password");
-
+    const pass = prompt("Enter permanent delete password");
     if (pass !== "7865") {
-      alert("❌ Wrong password");
+      alert("Wrong password");
       return;
     }
 
-    if (!window.confirm("PERMANENT DELETE? This cannot be undone!"))
+    if (
+      !window.confirm(
+        "PERMANENT DELETE?\nThis action cannot be undone!"
+      )
+    )
       return;
 
     const res = await fetch(
@@ -54,75 +66,119 @@ export default function DeletedReports({ onNavigate }) {
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ type, ref_no, password: pass })
+        body: JSON.stringify({ type, ref_no, password: pass }),
       }
     );
 
     const data = await res.json();
-    if (data.success) load();
-    else alert(data.error || "Delete failed");
+    if (data.success) {
+      alert("Record permanently deleted");
+      load();
+    } else {
+      alert(data.error || "Delete failed");
+    }
   };
 
+  /* ================= DATE FORMAT ================= */
+  const formatDate = (d) =>
+    new Date(d).toLocaleDateString("en-GB", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    });
+
   return (
-    <div className="container p-3">
-      <button
-        className="btn btn-secondary btn-sm mb-2"
-        onClick={() => onNavigate("dashboard")}
-      >
-        ⬅ Back
-      </button>
+    <div className="container py-4">
+      {/* HEADER */}
+      <div className="card shadow-sm border-0 mb-3">
+        <div
+          className="card-body d-flex justify-content-between align-items-center"
+          style={{
+            background: "linear-gradient(135deg, #dc3545, #6f0000)",
+            color: "#fff",
+            borderRadius: "12px",
+          }}
+        >
+          <h5 className="fw-bold mb-0">Deleted Reports</h5>
+          <button
+            className="btn btn-light btn-sm"
+            onClick={() => onNavigate("dashboard")}
+          >
+            ← Back
+          </button>
+        </div>
+      </div>
 
-      <h4 className="text-danger fw-bold">🗑 Deleted Reports</h4>
+      {/* TABLE */}
+      <div className="card shadow-sm">
+        <div className="table-responsive">
+          <table className="table table-hover table-sm mb-0 align-middle">
+            <thead className="table-light">
+              <tr>
+                <th>Type</th>
+                <th>Ref No</th>
+                <th>Customer</th>
+                <th>Date</th>
+                <th className="text-center" style={{ width: 200 }}>
+                  Actions
+                </th>
+              </tr>
+            </thead>
 
-      {loading && <p>Loading...</p>}
+            <tbody>
+              {loading && (
+                <tr>
+                  <td colSpan="5" className="text-center py-3">
+                    Loading...
+                  </td>
+                </tr>
+              )}
 
-      <table className="table table-bordered table-sm mt-2">
-        <thead className="table-dark">
-          <tr>
-            <th>Type</th>
-            <th>Ref No</th>
-            <th>Customer</th>
-            <th>Date</th>
-            <th style={{ width: 180 }}>Actions</th>
-          </tr>
-        </thead>
+              {!loading && rows.length === 0 && (
+                <tr>
+                  <td colSpan="5" className="text-center text-muted py-3">
+                    No deleted records
+                  </td>
+                </tr>
+              )}
 
-        <tbody>
-          {rows.length === 0 && (
-            <tr>
-              <td colSpan="5" className="text-center text-muted">
-                No deleted records
-              </td>
-            </tr>
-          )}
+              {rows.map((r, i) => (
+                <tr key={i}>
+                  <td>
+                    <span className="badge bg-danger">
+                      {r.type}
+                    </span>
+                  </td>
+                  <td className="fw-bold">{r.ref_no}</td>
+                  <td className="fw-semibold text-primary">
+                    {r.customer_name || "-"}
+                  </td>
+                  <td className="text-muted">
+                    {formatDate(r.created_at)}
+                  </td>
+                  <td className="text-center">
+                    <button
+                      className="btn btn-outline-success btn-sm me-1"
+                      onClick={() => restore(r.type, r.ref_no)}
+                    >
+                      RESTORE
+                    </button>
 
-          {rows.map((r, i) => (
-            <tr key={i}>
-              <td>{r.type}</td>
-              <td>{r.ref_no}</td>
-              <td>{r.customer_name}</td>
-              <td>{new Date(r.created_at).toLocaleDateString()}</td>
-              <td>
-                <button
-                  className="btn btn-success btn-sm me-1"
-                  onClick={() => restore(r.type, r.ref_no)}
-                >
-                  ♻ Restore
-                </button>
-
-                <button
-                  className="btn btn-danger btn-sm"
-                  onClick={() =>
-                    permanentDelete(r.type, r.ref_no)
-                  }
-                >
-                  🗑 Delete
-                </button>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+                    <button
+                      className="btn btn-outline-danger btn-sm"
+                      onClick={() =>
+                        permanentDelete(r.type, r.ref_no)
+                      }
+                    >
+                      DELETE
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
   );
 }
