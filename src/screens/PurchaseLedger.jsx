@@ -31,6 +31,9 @@ const numberToWords = (num) => {
 const fmtDate = (d) =>
   d ? new Date(d).toLocaleDateString("en-GB") : "-";
 
+// ✅ Get Today for default calendar
+const today = new Date().toISOString().split("T")[0];
+
 export default function PurchaseLedger({ onNavigate }) {
   const [ref, setRef] = useState("");
   const [rows, setRows] = useState([]);
@@ -38,7 +41,7 @@ export default function PurchaseLedger({ onNavigate }) {
 
   const [amountRaw, setAmountRaw] = useState(0);
   const [amountDisp, setAmountDisp] = useState("");
-  const [date, setDate] = useState("");
+  const [date, setDate] = useState(today); // ✅ default today
   const [type, setType] = useState("payment");
   const [method, setMethod] = useState("Cash");
 
@@ -88,23 +91,18 @@ export default function PurchaseLedger({ onNavigate }) {
       else {
         setAmountRaw(0);
         setAmountDisp("");
-        setDate("");
+        setDate(today); // ✅ Reset to today after saving
         await load(ref);
         await loadPending();
       }
-    } finally {
-      setSaving(false);
-    }
+    } finally { setSaving(false); }
   };
 
   /* =========================
      DELETE
   ========================= */
   const del = async (id) => {
-    if (!id || isNaN(id)) {
-      alert("یہ entry delete نہیں ہو سکتی"); return;
-    }
-
+    if (!id || isNaN(id)) { alert("یہ entry delete نہیں ہو سکتی"); return; }
     const pass = prompt("Password?");
     if (!pass) return;
 
@@ -187,6 +185,7 @@ export default function PurchaseLedger({ onNavigate }) {
       <div className="card shadow-sm mb-3">
         <div className="card-body row g-2">
           <div className="col-md-3">
+            {/* ✅ Calendar shows today by default */}
             <input type="date" className="form-control" value={date} onChange={e=>setDate(e.target.value)} />
           </div>
           <div className="col-md-3">
