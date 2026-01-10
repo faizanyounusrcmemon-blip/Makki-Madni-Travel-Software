@@ -15,53 +15,80 @@ export default function SystemStorage({ onNavigate }) {
         `${import.meta.env.VITE_BACKEND_URL}/api/system/capacity-rows`
       );
       const d = await res.json();
-
-      if (!d.success) {
-        setError(d.error || "Failed to load report");
-      } else {
-        setData(d);
-      }
-    } catch (err) {
+      if (!d.success) setError(d.error || "Failed to load report");
+      else setData(d);
+    } catch {
       setError("Server not reachable");
     } finally {
       setLoading(false);
     }
   };
 
-  if (loading) return <div className="p-4">Loading system storage report…</div>;
+  if (loading) return <div className="p-4">Loading system storage…</div>;
   if (error) return <div className="p-4 text-danger">{error}</div>;
   if (!data) return null;
 
   const usedPercent = Math.round((data.usedMB / data.dbLimitMB) * 100);
 
   return (
-    <div className="container p-3">
-      {/* BACK */}
-      <button
-        className="btn btn-secondary btn-sm mb-3"
-        onClick={() => onNavigate("dashboard")}
+    <div className="container py-3">
+
+      {/* HEADER */}
+      <div
+        className="p-3 rounded text-white mb-3 shadow"
+        style={{ background: "linear-gradient(90deg,#0d6efd,#6610f2)" }}
       >
-        ⬅ Back
-      </button>
+        <div className="d-flex justify-content-between align-items-center">
+          <h4 className="fw-bold mb-0">💾 System Storage Report</h4>
+          <button
+            className="btn btn-light btn-sm"
+            onClick={() => onNavigate("dashboard")}
+          >
+            ⬅ Back
+          </button>
+        </div>
+      </div>
 
-      <h3 className="fw-bold mb-3">💾 System Storage Report</h3>
+      {/* SUMMARY CARDS */}
+      <div className="row g-3 mb-3">
+        <div className="col-md-4">
+          <div className="card shadow text-white"
+            style={{ background: "linear-gradient(135deg,#0d6efd,#0dcaf0)" }}>
+            <div className="card-body">
+              <small>Total Limit</small>
+              <h4>{data.dbLimitMB} MB</h4>
+            </div>
+          </div>
+        </div>
 
-      {/* SUMMARY */}
+        <div className="col-md-4">
+          <div className="card shadow text-white"
+            style={{ background: "linear-gradient(135deg,#fd7e14,#ffc107)" }}>
+            <div className="card-body">
+              <small>Used Storage</small>
+              <h4>{data.usedMB} MB</h4>
+            </div>
+          </div>
+        </div>
+
+        <div className="col-md-4">
+          <div className="card shadow text-white"
+            style={{ background: "linear-gradient(135deg,#198754,#20c997)" }}>
+            <div className="card-body">
+              <small>Free Storage</small>
+              <h4>{data.freeMB} MB</h4>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* USAGE BAR */}
       <div className="card shadow mb-3">
         <div className="card-body">
-          <p>
-            <b>Total Storage Limit:</b> {data.dbLimitMB} MB
-          </p>
-          <p>
-            <b>Used Storage:</b> {data.usedMB} MB
-          </p>
-          <p>
-            <b>Free Storage:</b> {data.freeMB} MB
-          </p>
-
-          <div className="progress mb-2" style={{ height: 22 }}>
+          <h6 className="fw-bold mb-2">📊 Storage Usage</h6>
+          <div className="progress" style={{ height: 22 }}>
             <div
-              className={`progress-bar ${
+              className={`progress-bar fw-bold ${
                 usedPercent < 60
                   ? "bg-success"
                   : usedPercent < 80
@@ -76,54 +103,62 @@ export default function SystemStorage({ onNavigate }) {
 
           <hr />
 
-          <p className="mb-1">
-            <b>Total Rows (All Tables):</b>{" "}
-            {data.totalRows.toLocaleString()}
-          </p>
-
-          <p className="mb-1">
-            <b>Average Row Size:</b> {data.avgRowKB} KB
-          </p>
-
-          <p className="fw-bold text-success mb-0">
-            👉 Estimated More Rows Possible:{" "}
-            {data.possibleMoreRows.toLocaleString()}
-          </p>
+          <div className="row text-center">
+            <div className="col">
+              <small>Total Rows</small>
+              <div className="fw-bold">
+                {data.totalRows.toLocaleString()}
+              </div>
+            </div>
+            <div className="col">
+              <small>Avg Row Size</small>
+              <div className="fw-bold">{data.avgRowKB} KB</div>
+            </div>
+            <div className="col">
+              <small>More Rows Possible</small>
+              <div className="fw-bold text-success">
+                {data.possibleMoreRows.toLocaleString()}
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* TABLE ROW COUNTS */}
-      <h5 className="fw-bold mb-2">📊 Table-wise Row Count</h5>
+      {/* TABLE */}
+      <div className="card shadow mb-3">
+        <div className="card-header fw-bold">
+          📋 Table-wise Row Count
+        </div>
+        <div className="table-responsive">
+          <table className="table table-hover table-sm mb-0">
+            <thead className="table-dark">
+              <tr>
+                <th>Table</th>
+                <th>Rows</th>
+              </tr>
+            </thead>
+            <tbody>
+              {data.tables.map((t) => (
+                <tr key={t.table}>
+                  <td className="fw-semibold">{t.table}</td>
+                  <td>{Number(t.rows).toLocaleString()}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
 
-      <table className="table table-bordered table-sm">
-        <thead className="table-dark">
-          <tr>
-            <th>Table</th>
-            <th>Rows</th>
-          </tr>
-        </thead>
-        <tbody>
-          {data.tables.map((t) => (
-            <tr key={t.table}>
-              <td className="fw-bold">{t.table}</td>
-              <td>{Number(t.rows).toLocaleString()}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-
-      <div className="alert alert-info mt-3">
-        ℹ️ Calculation logic:
-        <br />
-        <code>
-          avg row size = used storage ÷ total rows
-        </code>
-        <br />
-        <code>
-          possible rows = free storage ÷ avg row size
-        </code>
-        <br />
-        This is a <b>global estimate</b> based on current data pattern.
+      {/* INFO */}
+      <div className="alert alert-info shadow-sm">
+        <b>ℹ️ Calculation Logic</b>
+        <div className="small mt-1">
+          avg row size = used storage ÷ total rows <br />
+          possible rows = free storage ÷ avg row size <br />
+          <span className="fw-bold">
+            This is an estimated value based on current data.
+          </span>
+        </div>
       </div>
     </div>
   );
