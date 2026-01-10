@@ -160,32 +160,31 @@ export default function CustomerLedger({ onNavigate }) {
         </div>
       </div>
 
-      {/* PENDING LIST */}
-      <div className="card shadow-sm mb-3">
-        <div className="card-header fw-bold text-danger">⏳ Pending / Partial Ledgers</div>
-        <div className="card-body p-2">
-          {pending.length === 0 ? (
-            <p className="text-success mb-0">✅ No pending ledgers</p>
-          ) : (
-            <ul className="list-group list-group-flush">
-              {pending.map((p, i) => (
-                <li key={i} className="list-group-item d-flex justify-content-between align-items-center">
-                  <div className="d-flex flex-column">
-                    <div className="fw-bold">
-                      {p.ref_no} — <span className="text-primary">{p.customer_name || "-"}</span>
-                      <span className={`badge ms-2 ${p.status === "PENDING" ? "bg-danger" : "bg-warning text-dark"}`}>
-                        {p.status}
-                      </span>
-                    </div>
-                    <div className="small text-muted">{p.note}</div>
-                  </div>
-                  <button className="btn btn-sm btn-outline-primary" onClick={() => loadLedger(p.ref_no)}>Load</button>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
+    {/* PENDING LIST */}
+    <div className="card shadow-sm mb-3">
+      <div className="card-header fw-bold text-danger">⏳ Pending / Partial Ledgers</div>
+      <div className="card-body p-2">
+        {pending.length === 0 ? (
+          <p className="text-success mb-0">✅ No pending ledgers</p>
+        ) : (
+          <ul className="list-group list-group-flush">
+            {pending.map((p, i) => (
+              <li key={i} className="list-group-item d-flex justify-content-between align-items-center">
+                <div>
+                  <b>
+                    {p.ref_no} — <span className="text-primary">{p.customer_name || "-"}</span>
+                  </b>
+                  <span className={`badge ms-2 ${p.status === "PENDING" ? "bg-danger" : "bg-warning text-dark"}`}>
+                    {p.status}
+                  </span>
+                </div>
+                <button className="btn btn-sm btn-outline-primary" onClick={() => loadLedger(p.ref_no)}>Load</button>
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
+    </div>
 
       {/* CONTROLS */}
       <div className="card shadow-sm mb-3">
@@ -270,3 +269,4 @@ export default function CustomerLedger({ onNavigate }) {
     </div>
   );
 }
+
