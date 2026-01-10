@@ -9,7 +9,7 @@ const formatDate = (d) => {
 
 export default function PendingPurchase({ onNavigate }) {
   const [rows, setRows] = useState([]);
-  const [search, setSearch] = useState([]);
+  const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -19,6 +19,7 @@ export default function PendingPurchase({ onNavigate }) {
   const loadPending = async () => {
     try {
       setLoading(true);
+
       // 1️⃣ Pending / Partial status
       const res = await fetch(
         `${import.meta.env.VITE_BACKEND_URL}/api/purchase/pending`
@@ -58,10 +59,11 @@ export default function PendingPurchase({ onNavigate }) {
   const filteredRows = rows.filter((r) => {
     if (!search) return true;
     const q = search.toLowerCase();
-    return (
-      r.ref_no.toLowerCase().includes(q) ||
-      (r.customer_name || "").toLowerCase().includes(q)
-    );
+
+    const ref = typeof r.ref_no === "string" ? r.ref_no.toLowerCase() : "";
+    const name = typeof r.customer_name === "string" ? r.customer_name.toLowerCase() : "";
+
+    return ref.includes(q) || name.includes(q);
   });
 
   return (
@@ -112,7 +114,7 @@ export default function PendingPurchase({ onNavigate }) {
               )}
 
               {filteredRows.map((r, i) => (
-                <tr key={i}>
+                <tr key={i} className="align-middle">
                   <td className="fw-bold text-primary">{r.ref_no}</td>
                   <td className="text-dark fw-semibold">
                     {r.customer_name || "-"}
@@ -144,7 +146,9 @@ export default function PendingPurchase({ onNavigate }) {
                   </td>
 
                   <td className="text-end fw-bold text-warning">
-                    {r.profit ? Number(r.profit).toLocaleString("en-US") : "0"}
+                    {r.profit
+                      ? Number(r.profit).toLocaleString("en-US")
+                      : "0"}
                   </td>
 
                   <td>
