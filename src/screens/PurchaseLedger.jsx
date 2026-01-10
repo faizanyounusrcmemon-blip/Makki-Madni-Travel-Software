@@ -5,7 +5,6 @@ import jsPDF from "jspdf";
 /* =========================
    HELPERS
 ========================= */
-
 const fmtAmt = (v) =>
   v === null || v === undefined ? "-" : Number(v).toLocaleString("en-US");
 
@@ -43,22 +42,19 @@ export default function PurchaseLedger({ onNavigate }) {
   const [type, setType] = useState("payment");
   const [method, setMethod] = useState("Cash");
 
+  const [saving, setSaving] = useState(false);
   const pdfRef = useRef(null);
 
   /* =========================
      LOAD PENDING LIST
   ========================= */
   const loadPending = async () => {
-    const r = await fetch(
-      `${import.meta.env.VITE_BACKEND_URL}/api/purchase-ledger/pending/list`
-    );
+    const r = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/purchase-ledger/pending/list`);
     const d = await r.json();
     if (d.success) setPending(d.rows || []);
   };
 
-  useEffect(() => {
-    loadPending();
-  }, []);
+  useEffect(() => { loadPending(); }, []);
 
   /* =========================
      LOAD LEDGER
@@ -67,9 +63,7 @@ export default function PurchaseLedger({ onNavigate }) {
     if (!r) return alert("Ref No required");
     setRef(r);
 
-    const res = await fetch(
-      `${import.meta.env.VITE_BACKEND_URL}/api/purchase-ledger/${r}`
-    );
+    const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/purchase-ledger/${r}`);
     const d = await res.json();
     if (d.success) setRows(d.rows || []);
     else alert(d.error);
@@ -81,26 +75,26 @@ export default function PurchaseLedger({ onNavigate }) {
   const pay = async () => {
     if (!amountRaw || !date) return alert("Amount & Date required");
 
-    await fetch(
-      `${import.meta.env.VITE_BACKEND_URL}/api/purchase-ledger/payment`,
-      {
+    setSaving(true);
+    try {
+      const r = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/purchase-ledger/payment`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ref_no: ref,
-          payment_date: date,
-          amount: amountRaw,
-          payment_method: method,
-          type
-        })
-      }
-    );
+        body: JSON.stringify({ ref_no: ref, payment_date: date, amount: amountRaw, payment_method: method, type }),
+      });
 
-    setAmountRaw(0);
-    setAmountDisp("");
-    setDate("");
-    load(ref);
-    loadPending();
+      const d = await r.json();
+      if (!d.success) alert(d.error || "Save failed");
+      else {
+        setAmountRaw(0);
+        setAmountDisp("");
+        setDate("");
+        await load(ref);
+        await loadPending();
+      }
+    } finally {
+      setSaving(false);
+    }
   };
 
   /* =========================
@@ -108,27 +102,21 @@ export default function PurchaseLedger({ onNavigate }) {
   ========================= */
   const del = async (id) => {
     if (!id || isNaN(id)) {
-      alert("یہ entry delete نہیں ہو سکتی");
-      return;
+      alert("یہ entry delete نہیں ہو سکتی"); return;
     }
 
     const pass = prompt("Password?");
     if (!pass) return;
 
-    const r = await fetch(
-      `${import.meta.env.VITE_BACKEND_URL}/api/purchase-ledger/delete/${id}`,
-      {
-        method: "DELETE",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ password: pass })
-      }
-    );
+    const r = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/purchase-ledger/delete/${id}`, {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ password: pass })
+    });
 
     const d = await r.json();
-    if (d.success) {
-      load(ref);
-      loadPending();
-    } else alert(d.error);
+    if (d.success) { load(ref); loadPending(); }
+    else alert(d.error);
   };
 
   /* =========================
@@ -138,201 +126,133 @@ export default function PurchaseLedger({ onNavigate }) {
     const canvas = await html2canvas(pdfRef.current, { scale: 3 });
     const img = canvas.toDataURL("image/png");
     const pdf = new jsPDF("p", "mm", "a4");
-    pdf.addImage(
-      img,
-      "PNG",
-      10,
-      10,
-      190,
-      (canvas.height * 190) / canvas.width
-    );
+    const w = pdf.internal.pageSize.getWidth();
+
+    pdf.setFillColor(18, 97, 160);
+    pdf.rect(0, 0, w, 25, "F");
+    pdf.setTextColor(255,255,255);
+    pdf.setFontSize(16);
+    pdf.text("MAKKI MADNI TRAVEL", w/2, 15, { align: "center" });
+    pdf.setFontSize(10);
+    pdf.text("Purchase Ledger Statement", w/2, 22, { align: "center" });
+
+    pdf.addImage(img, "PNG", 10, 30, 190, (canvas.height*190)/canvas.width);
     pdf.save(`${ref || "purchase-ledger"}.pdf`);
   };
 
   return (
     <div className="container p-3">
-      <button
-        className="btn btn-secondary btn-sm"
-        onClick={() => onNavigate("dashboard")}
-      >
-        ⬅ Back
-      </button>
 
-      <h4 className="mt-2 text-warning fw-bold">
-        🧾 PURCHASE LEDGER — {ref}
-      </h4>
-
-      {/* =========================
-         PENDING / PARTIAL LIST
-      ========================= */}
-      <div className="mb-3">
-        <h6 className="fw-bold text-danger">⏳ Pending / Partial Purchases</h6>
-
-        {pending.length === 0 ? (
-          <div className="text-success">✅ No pending purchases</div>
-        ) : (
-          <ul className="list-group">
-            {pending.map((p, i) => (
-              <li
-                key={i}
-                className="list-group-item d-flex justify-content-between align-items-center"
-              >
-                <div>
-                  <div className="fw-bold">{p.ref_no}</div>
-
-                  {/* ✅ CUSTOMER NAME */}
-                  <div className="fw-bold text-primary">
-                    {p.customer_name || "-"}
-                  </div>
-
-                  <span
-                    className={`badge mt-1 ${
-                      p.status === "PENDING"
-                        ? "bg-danger"
-                        : "bg-warning text-dark"
-                    }`}
-                  >
-                    {p.status}
-                  </span>
-
-                  <div className="small text-muted">{p.note}</div>
-                </div>
-
-                <button
-                  className="btn btn-sm btn-outline-primary"
-                  onClick={() => load(p.ref_no)}
-                >
-                  Load
-                </button>
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
-
-      {/* =========================
-         TOP CONTROLS
-      ========================= */}
-      <div className="d-flex gap-2 mt-2">
-        <input
-          className="form-control"
-          placeholder="Ref No"
-          value={ref}
-          onChange={(e) => setRef(e.target.value)}
-        />
-        <button className="btn btn-primary" onClick={() => load()}>
-          Load
-        </button>
-        <button className="btn btn-success" onClick={exportPDF}>
-          📄 Export PDF
-        </button>
-      </div>
-
-      {/* =========================
-         ENTRY FORM
-      ========================= */}
-      <div className="row g-2 mt-3">
-        <div className="col-md-3">
-          <input
-            type="date"
-            className="form-control"
-            value={date}
-            onChange={(e) => setDate(e.target.value)}
-          />
+      {/* HEADER */}
+      <div className="card shadow-sm mb-3">
+        <div className="card-body d-flex justify-content-between align-items-center">
+          <h4 className="fw-bold mb-0">🧾 PURCHASE LEDGER — {ref}</h4>
+          <button className="btn btn-secondary btn-sm" onClick={() => onNavigate("dashboard")}>⬅ Back</button>
         </div>
+      </div>
 
-        <div className="col-md-3">
-          <input
-            className="form-control"
-            placeholder="Amount"
-            value={amountDisp}
-            onChange={(e) => {
-              const raw = parseAmt(e.target.value);
-              if (!isNaN(raw)) {
-                setAmountRaw(raw);
-                setAmountDisp(fmtAmt(raw));
-              }
-            }}
-          />
-          {amountRaw > 0 && (
-            <small className="text-success fw-bold">
-              {numberToWords(amountRaw)}
-            </small>
+      {/* PENDING LIST */}
+      <div className="card shadow-sm mb-3">
+        <div className="card-header fw-bold text-danger">⏳ Pending / Partial Purchases</div>
+        <div className="card-body p-2">
+          {pending.length === 0 ? (
+            <p className="text-success mb-0">✅ No pending purchases</p>
+          ) : (
+            <ul className="list-group list-group-flush">
+              {pending.map((p,i)=>(
+                <li key={i} className="list-group-item d-flex justify-content-between align-items-center">
+                  <div>
+                    <b>{p.ref_no} — <span className="text-primary">{p.customer_name || "-"}</span></b>
+                    <span className={`badge ms-2 ${p.status==="PENDING"?"bg-danger":"bg-warning text-dark"}`}>{p.status}</span>
+                    <div className="small text-muted">{p.note}</div>
+                  </div>
+                  <button className="btn btn-sm btn-outline-primary" onClick={()=>load(p.ref_no)}>Load</button>
+                </li>
+              ))}
+            </ul>
           )}
         </div>
+      </div>
 
-        <div className="col-md-3">
-          <select
-            className="form-control"
-            value={type}
-            onChange={(e) => setType(e.target.value)}
-          >
-            <option value="payment">Payment</option>
-            <option value="adjustment">Adjustment</option>
-          </select>
-        </div>
-
-        <div className="col-md-3">
-          <select
-            className="form-control"
-            value={method}
-            onChange={(e) => setMethod(e.target.value)}
-          >
-            <option>Cash</option>
-            <option>Bank</option>
-          </select>
+      {/* CONTROLS */}
+      <div className="card shadow-sm mb-3">
+        <div className="card-body d-flex gap-2">
+          <input className="form-control" placeholder="Ref No" value={ref} onChange={e=>setRef(e.target.value)} />
+          <button className="btn btn-primary" onClick={()=>load()}>Load</button>
+          <button className="btn btn-success" onClick={exportPDF}>📄 Export PDF</button>
         </div>
       </div>
 
-      <button className="btn btn-danger mt-2" onClick={pay}>
-        💾 Save Entry
-      </button>
+      {/* ENTRY FORM */}
+      <div className="card shadow-sm mb-3">
+        <div className="card-body row g-2">
+          <div className="col-md-3">
+            <input type="date" className="form-control" value={date} onChange={e=>setDate(e.target.value)} />
+          </div>
+          <div className="col-md-3">
+            <input className="form-control" placeholder="Amount" value={amountDisp} 
+              onChange={e=>{
+                const raw = parseAmt(e.target.value);
+                if(!isNaN(raw)){ setAmountRaw(raw); setAmountDisp(fmtAmt(raw)); }
+              }} 
+            />
+            {amountRaw>0 && <small className="text-success fw-bold">{numberToWords(amountRaw)}</small>}
+          </div>
+          <div className="col-md-3">
+            <select className="form-control" value={type} onChange={e=>setType(e.target.value)}>
+              <option value="payment">Payment</option>
+              <option value="adjustment">Adjustment</option>
+            </select>
+          </div>
+          <div className="col-md-3">
+            <select className="form-control" value={method} onChange={e=>setMethod(e.target.value)}>
+              <option>Cash</option>
+              <option>Bank</option>
+            </select>
+          </div>
+        </div>
+        <div className="card-body">
+          <button className="btn btn-success" disabled={saving} onClick={pay}>{saving?"Saving...":"💾 Save Entry"}</button>
+        </div>
+      </div>
 
-      {/* =========================
-         LEDGER TABLE
-      ========================= */}
-      <div ref={pdfRef}>
-        <table className="table table-bordered table-sm mt-3">
-          <thead className="table-dark">
-            <tr>
-              <th>Date</th>
-              <th>Description</th>
-              <th>Debit</th>
-              <th>Credit</th>
-              <th>Balance</th>
-              <th width="60">❌</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.length === 0 && (
+      {/* LEDGER TABLE */}
+      <div ref={pdfRef} className="card shadow-sm">
+        <div className="table-responsive">
+          <table className="table table-bordered table-sm mb-0">
+            <thead className="table-dark">
               <tr>
-                <td colSpan="6" className="text-center text-muted">
-                  No ledger entries
-                </td>
+                <th>Date</th>
+                <th>Description</th>
+                <th>Debit</th>
+                <th>Credit</th>
+                <th>Balance</th>
+                <th width="60">❌</th>
               </tr>
-            )}
-            {rows.map((r) => (
-              <tr key={r.id}>
-                <td>{fmtDate(r.created_at)}</td>
-                <td>{r.description}</td>
-                <td>{r.debit ? fmtAmt(r.debit) : "-"}</td>
-                <td>{r.credit ? fmtAmt(r.credit) : "-"}</td>
-                <td className="fw-bold">{fmtAmt(r.balance)}</td>
-                <td>
-                  {r.id !== "PURCHASE" && (
-                    <button
-                      className="btn btn-danger btn-sm"
-                      onClick={() => del(r.id)}
-                    >
-                      Del
-                    </button>
-                  )}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {rows.length===0 && (
+                <tr><td colSpan="6" className="text-center text-muted">No ledger entries</td></tr>
+              )}
+              {rows.map(r=>(
+                <tr key={r.id}>
+                  <td>{fmtDate(r.created_at)}</td>
+                  <td>{r.description}</td>
+                  <td>{r.debit?fmtAmt(r.debit):"-"}</td>
+                  <td>{r.credit?fmtAmt(r.credit):"-"}</td>
+                  <td className="fw-bold">{fmtAmt(r.balance)}</td>
+                  <td>
+                    {r.id!=="PURCHASE" && (
+                      <button className="btn btn-danger btn-sm" onClick={()=>del(r.id)}>Del</button>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
+
     </div>
   );
 }
