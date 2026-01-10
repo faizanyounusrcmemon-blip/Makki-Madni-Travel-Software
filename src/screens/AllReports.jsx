@@ -36,19 +36,26 @@ export default function AllReports({ onNavigate }) {
     if (type === "Transport") endpoint = "transport";
     if (type === "Visa") endpoint = "visa";
 
-    const res = await fetch(
-      `${import.meta.env.VITE_BACKEND_URL}/api/${endpoint}/delete/${ref_no}`,
-      { method: "DELETE" }
-    );
+    try {
+      const res = await fetch(
+        `${import.meta.env.VITE_BACKEND_URL}/api/${endpoint}/delete/${ref_no}`,
+        { method: "DELETE" }
+      );
 
-    const data = await res.json();
-    if (!data.success) {
-      alert(data.error || "Delete failed");
-      return;
+      const data = await res.json();
+
+      if (!data.success) {
+        // ✅ SHOW ERROR MESSAGE IF PURCHASE/PAYMENT EXISTS
+        alert(data.message || data.error || "Delete failed");
+        return;
+      }
+
+      alert("✅ Soft Deleted");
+      loadData();
+    } catch (err) {
+      console.error("Delete Error:", err);
+      alert("❌ Delete failed. Check console for details.");
     }
-
-    alert("✅ Soft Deleted");
-    loadData();
   };
 
   /* ================= VIEW ================= */
