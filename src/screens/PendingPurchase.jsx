@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from "react";
-import "./PendingPurchase.css"; // khubsurat styling
-import { FaArrowRight } from "react-icons/fa";
+import "./PendingPurchase.css"; // styling same as before
 
 const formatDate = (d) => {
   const date = new Date(d);
@@ -155,7 +154,7 @@ export default function PendingPurchase({ onNavigate }) {
                     className="btn btn-sm btn-primary"
                     onClick={() => onNavigate("purchase", r.ref_no)}
                   >
-                    Complete <FaArrowRight />
+                    Complete
                   </button>
                 </div>
               </div>
