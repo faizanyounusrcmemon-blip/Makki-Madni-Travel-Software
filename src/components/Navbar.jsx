@@ -51,6 +51,7 @@ export default function Navbar({ onNavigate }) {
             <div className="menu-box">
               {can("purchase_entry") && <a onClick={() => go("purchase")}>🧾 Purchase Entry</a>}
               {can("purchase_list") && <a onClick={() => go("purchaseList")}>📑 Purchase List</a>}
+              {can("pending_purchase") && <a onClick={() => go("pendingPurchase")}>⚠️ Pending Purchase</a>}
             </div>
           )}
         </div>
