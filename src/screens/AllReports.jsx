@@ -25,7 +25,7 @@ export default function AllReports({ onNavigate }) {
   const handleDelete = async (type, ref_no) => {
     const pass = prompt("Enter delete password (786)");
     if (pass !== "786") {
-      alert("❌ Wrong Password");
+      alert("Wrong Password");
       return;
     }
 
@@ -45,16 +45,15 @@ export default function AllReports({ onNavigate }) {
       const data = await res.json();
 
       if (!data.success) {
-        // ✅ SHOW ERROR MESSAGE IF PURCHASE/PAYMENT EXISTS
         alert(data.message || data.error || "Delete failed");
         return;
       }
 
-      alert("✅ Soft Deleted");
+      alert("Record Soft Deleted");
       loadData();
     } catch (err) {
       console.error("Delete Error:", err);
-      alert("❌ Delete failed. Check console for details.");
+      alert("Delete failed");
     }
   };
 
@@ -98,7 +97,7 @@ export default function AllReports({ onNavigate }) {
     setFiltered(temp);
   }, [search, fromDate, toDate, rows]);
 
-  /* ================= TOTAL (AUTO UPDATE) ================= */
+  /* ================= TOTAL ================= */
   const totalPKR = useMemo(() => {
     return filtered.reduce(
       (sum, r) => sum + Number(r.total_pkr || 0),
@@ -106,34 +105,39 @@ export default function AllReports({ onNavigate }) {
     );
   }, [filtered]);
 
-  /* ================= FORMAT DATE ================= */
+  /* ================= DATE FORMAT ================= */
   const formatDate = (dateStr) => {
     if (!dateStr) return "";
-    const date = new Date(dateStr);
-    return date.toLocaleDateString("en-GB", {
+    return new Date(dateStr).toLocaleDateString("en-GB", {
       day: "2-digit",
       month: "short",
       year: "numeric",
-    }).toUpperCase(); // 01/DEC/2025
+    });
   };
 
   return (
     <div className="container py-4">
       {/* HEADER */}
-      <div className="d-flex justify-content-between align-items-center mb-3 flex-wrap">
-        <div className="d-flex align-items-center mb-2 mb-md-0">
-          <span className="fs-3 me-2">📊</span>
-          <h4 className="fw-bold mb-0 text-primary">All Reports</h4>
-        </div>
-        <button
-          className="btn btn-outline-secondary btn-sm"
-          onClick={() => onNavigate("dashboard")}
+      <div className="card shadow-sm border-0 mb-3">
+        <div
+          className="card-body d-flex justify-content-between align-items-center flex-wrap"
+          style={{
+            background: "linear-gradient(135deg, #0d6efd, #6610f2)",
+            color: "#fff",
+            borderRadius: "12px",
+          }}
         >
-          ⬅ Back
-        </button>
+          <h5 className="fw-bold mb-0">📊 All Reports</h5>
+          <button
+            className="btn btn-light btn-sm"
+            onClick={() => onNavigate("dashboard")}
+          >
+            ← Back
+          </button>
+        </div>
       </div>
 
-      {/* FILTER CARD */}
+      {/* FILTER */}
       <div className="card shadow-sm mb-3">
         <div className="card-body">
           <div className="row g-2">
@@ -167,93 +171,88 @@ export default function AllReports({ onNavigate }) {
         </div>
       </div>
 
-      {/* TABLE CARD */}
+      {/* TABLE */}
       <div className="card shadow-sm">
-        <div className="card-body p-0">
-          <div className="table-responsive">
-            <table className="table table-hover table-sm mb-0">
-              <thead className="table-light">
-                <tr>
-                  <th>Type</th>
-                  <th>Ref</th>
-                  <th>Customer</th>
-                  <th>Date</th>
-                  <th>PKR</th>
-                  <th className="text-center">View</th>
-                  <th className="text-center">Delete</th>
+        <div className="table-responsive">
+          <table className="table table-hover table-sm mb-0 align-middle">
+            <thead className="table-light">
+              <tr>
+                <th>Type</th>
+                <th>Ref</th>
+                <th>Customer</th>
+                <th>Date</th>
+                <th>PKR</th>
+                <th className="text-center">View</th>
+                <th className="text-center">Delete</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              {filtered.map((r, i) => (
+                <tr key={i}>
+                  <td>
+                    <span className="badge bg-info text-dark">
+                      {r.type}
+                    </span>
+                  </td>
+
+                  <td className="fw-bold">{r.ref_no}</td>
+
+                  <td className="fw-semibold text-primary">
+                    {r.customer_name || "-"}
+                  </td>
+
+                  <td className="text-muted">
+                    {formatDate(r.booking_date)}
+                  </td>
+
+                  <td>
+                    <span className="badge bg-success">
+                      {Number(r.total_pkr).toLocaleString()}
+                    </span>
+                  </td>
+
+                  <td className="text-center">
+                    <button
+                      className="btn btn-outline-info btn-sm"
+                      onClick={() => handleView(r.type, r.ref_no)}
+                    >
+                      VIEW
+                    </button>
+                  </td>
+
+                  <td className="text-center">
+                    <button
+                      className="btn btn-outline-danger btn-sm"
+                      onClick={() => handleDelete(r.type, r.ref_no)}
+                    >
+                      DELETE
+                    </button>
+                  </td>
                 </tr>
-              </thead>
+              ))}
 
-              <tbody>
-                {filtered.map((r, i) => (
-                  <tr key={i}>
-                    <td>
-                      <span className="badge bg-info text-dark">
-                        {r.type}
-                      </span>
-                    </td>
+              {filtered.length > 0 && (
+                <tr className="table-dark">
+                  <td colSpan={4} className="text-end fw-bold">
+                    TOTAL
+                  </td>
+                  <td className="fw-bold">
+                    {totalPKR.toLocaleString()}
+                  </td>
+                  <td colSpan={2}></td>
+                </tr>
+              )}
 
-                    <td className="fw-bold">{r.ref_no}</td>
-
-                    {/* CUSTOMER NAME KHUBSORAT */}
-                    <td className="fw-bold text-primary">
-                      {r.customer_name || "-"}
-                    </td>
-
-                    {/* DATE FORMATTED */}
-                    <td>
-                      <span className="text-muted">{formatDate(r.booking_date)}</span>
-                    </td>
-
-                    <td>
-                      <span className="badge bg-success">
-                        {Number(r.total_pkr).toLocaleString()}
-                      </span>
-                    </td>
-
-                    <td className="text-center">
-                      <button
-                        className="btn btn-outline-info btn-sm"
-                        onClick={() => handleView(r.type, r.ref_no)}
-                      >
-                        👁
-                      </button>
-                    </td>
-
-                    <td className="text-center">
-                      <button
-                        className="btn btn-outline-danger btn-sm"
-                        onClick={() => handleDelete(r.type, r.ref_no)}
-                      >
-                        ❌
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-
-                {/* ===== TOTAL ROW ===== */}
-                {filtered.length > 0 && (
-                  <tr className="table-dark">
-                    <td colSpan={4} className="fw-bold text-end">
-                      TOTAL
-                    </td>
-                    <td className="fw-bold">
-                      {totalPKR.toLocaleString()}
-                    </td>
-                    <td colSpan={2}></td>
-                  </tr>
-                )}
-
-                {filtered.length === 0 && (
-                  <tr>
-                    <td colSpan={7} className="text-center text-muted py-3">
-                      No Records Found
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
+              {filtered.length === 0 && (
+                <tr>
+                  <td colSpan={7} className="text-center text-muted py-3">
+                    No Records Found
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
         </div>
       </div>
     </div>
