@@ -50,11 +50,10 @@ export default function PurchaseList({ onNavigate }) {
   };
 
   /* ===============================
-     DELETE (PASSWORD = 786)
+     DELETE WITH PAYMENT CHECK
   =============================== */
   const deletePurchase = async (refNo) => {
-    const password = window.prompt("Enter delete password");
-
+    const password = window.prompt("Enter delete password (786)");
     if (!password) return;
 
     try {
@@ -72,10 +71,15 @@ export default function PurchaseList({ onNavigate }) {
       const data = await res.json();
 
       if (data.success) {
-        alert("Deleted successfully");
+        alert("✅ Purchase soft deleted successfully");
         loadList();
       } else {
-        alert(data.error || "Delete failed");
+        // CUSTOM ALERT IF PAYMENT EXISTS
+        if (data.error?.includes("Payment has been received")) {
+          alert("⚠️ Cannot delete purchase. Payment exists for this ref. Delete payment first.");
+        } else {
+          alert(data.error || "Delete failed");
+        }
       }
     } catch {
       alert("Server error");
@@ -148,9 +152,7 @@ export default function PurchaseList({ onNavigate }) {
             </div>
 
             <div className="col-md-4">
-              <label className="form-label small">
-                Ref No / Customer
-              </label>
+              <label className="form-label small">Ref No / Customer</label>
               <input
                 className="form-control form-control-sm"
                 placeholder="Type ref or customer name"
@@ -225,9 +227,7 @@ export default function PurchaseList({ onNavigate }) {
                       <td>
                         <span
                           className={`badge ${
-                            Number(r.profit) >= 0
-                              ? "bg-success"
-                              : "bg-danger"
+                            Number(r.profit) >= 0 ? "bg-success" : "bg-danger"
                           }`}
                         >
                           {Number(r.profit).toLocaleString()}
