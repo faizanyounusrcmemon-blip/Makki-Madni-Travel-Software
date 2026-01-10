@@ -3,7 +3,6 @@ import React, { useEffect, useState } from "react";
 /* ===============================
    HELPERS (DOT + COMMA SAFE)
 =============================== */
-
 const formatInput = (v) => {
   if (v === "") return "";
   let clean = v.replace(/[^0-9.]/g, "");
@@ -165,7 +164,7 @@ export default function Purchase({ onNavigate }) {
               className="btn btn-success btn-sm"
               onClick={savePurchase}
             >
-              💾 {isEdit ? "Update" : "Save"}
+              💾 {isEdit ? "✏️ Update Purchase" : "💾 Save Purchase"}
             </button>
           </div>
         </div>
@@ -194,20 +193,19 @@ export default function Purchase({ onNavigate }) {
                   key={i}
                   className="list-group-item d-flex justify-content-between align-items-center"
                 >
-                  <div>
-                    <b>{p.ref_no}</b>
-                    <div className="small text-primary fw-bold">
-                      {p.customer_name}
+                  <div className="d-flex flex-column">
+                    <div className="fw-bold">
+                      {p.ref_no} — <span className="text-primary">{p.customer_name}</span>
+                      <span
+                        className={`badge ms-2 ${
+                          p.status === "PENDING"
+                            ? "bg-danger"
+                            : "bg-warning text-dark"
+                        }`}
+                      >
+                        {p.status}
+                      </span>
                     </div>
-                    <span
-                      className={`badge ${
-                        p.status === "PENDING"
-                          ? "bg-danger"
-                          : "bg-warning text-dark"
-                      }`}
-                    >
-                      {p.status}
-                    </span>
                   </div>
                   <button
                     className="btn btn-sm btn-outline-primary"
@@ -260,9 +258,7 @@ export default function Purchase({ onNavigate }) {
             <tbody>
               {rows.map((r, i) => (
                 <tr key={i}>
-                  <td className="fw-bold">
-                    {r.item_label || r.item}
-                  </td>
+                  <td className="fw-bold">{r.item_label || r.item}</td>
                   <td>{r.sale_sar}</td>
                   <td>{r.sale_rate}</td>
                   <td>{r.sale_pkr.toLocaleString()}</td>
@@ -287,9 +283,7 @@ export default function Purchase({ onNavigate }) {
                   <td>{r.purchase_pkr.toLocaleString()}</td>
                   <td
                     className={`fw-bold ${
-                      r.profit >= 0
-                        ? "text-success"
-                        : "text-danger"
+                      r.profit >= 0 ? "text-success" : "text-danger"
                     }`}
                   >
                     {r.profit.toLocaleString()}
@@ -300,7 +294,6 @@ export default function Purchase({ onNavigate }) {
           </table>
         </div>
       </div>
-
     </div>
   );
 }
