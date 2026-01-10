@@ -35,14 +35,20 @@ export default function PendingPurchase({ onNavigate }) {
           `${import.meta.env.VITE_BACKEND_URL}/api/purchase/list?ref=${r.ref_no}`
         );
         const listData = await listRes.json();
-        if (!listData.success || !listData.rows.length) return r;
 
-        const entry = listData.rows[0]; // exact ref match
+        let sale_pkr = 0;
+        let purchase_pkr = 0;
+
+        if (listData.success && listData.rows.length) {
+          const entry = listData.rows[0]; // exact ref match
+          sale_pkr = entry.sale_pkr || 0;          // always show sale
+          purchase_pkr = entry.purchase_pkr || 0;  // only show if exists
+        }
+
         return {
           ...r,
-          sale_pkr: entry.sale_pkr || 0,
-          purchase_pkr: entry.purchase_pkr || 0,
-          profit: entry.profit || 0,
+          sale_pkr,
+          purchase_pkr,
         };
       });
 
@@ -59,10 +65,8 @@ export default function PendingPurchase({ onNavigate }) {
   const filteredRows = rows.filter((r) => {
     if (!search) return true;
     const q = search.toLowerCase();
-
     const ref = typeof r.ref_no === "string" ? r.ref_no.toLowerCase() : "";
     const name = typeof r.customer_name === "string" ? r.customer_name.toLowerCase() : "";
-
     return ref.includes(q) || name.includes(q);
   });
 
@@ -100,14 +104,13 @@ export default function PendingPurchase({ onNavigate }) {
                 <th>Note</th>
                 <th className="text-end">Sale Amount (PKR)</th>
                 <th className="text-end">Purchase Amount (PKR)</th>
-                <th className="text-end">Profit (PKR)</th>
                 <th>Action</th>
               </tr>
             </thead>
             <tbody>
               {filteredRows.length === 0 && (
                 <tr>
-                  <td colSpan="8" className="text-center text-success">
+                  <td colSpan="7" className="text-center text-success">
                     🎉 All purchases completed
                   </td>
                 </tr>
@@ -134,21 +137,11 @@ export default function PendingPurchase({ onNavigate }) {
                   <td>{r.note}</td>
 
                   <td className="text-end fw-bold text-success">
-                    {r.sale_pkr
-                      ? Number(r.sale_pkr).toLocaleString("en-US")
-                      : "0"}
+                    {r.sale_pkr ? Number(r.sale_pkr).toLocaleString("en-US") : "0"}
                   </td>
 
                   <td className="text-end fw-bold text-primary">
-                    {r.purchase_pkr
-                      ? Number(r.purchase_pkr).toLocaleString("en-US")
-                      : "0"}
-                  </td>
-
-                  <td className="text-end fw-bold text-warning">
-                    {r.profit
-                      ? Number(r.profit).toLocaleString("en-US")
-                      : "0"}
+                    {r.purchase_pkr ? Number(r.purchase_pkr).toLocaleString("en-US") : "0"}
                   </td>
 
                   <td>
