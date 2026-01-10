@@ -15,6 +15,18 @@ const fmtDate = (d) => {
   return dt.toLocaleDateString("en-GB"); // DD/MM/YYYY
 };
 
+const cleanName = (name) =>
+  name ? name.replace(/[^a-zA-Z0-9]/g, "_") : "Customer";
+
+const formatDateForFile = (date) => {
+  if (!date) return "NoDate";
+  const d = new Date(date);
+  const day = String(d.getDate()).padStart(2, "0");
+  const mon = d.toLocaleString("en-US", { month: "short" }).toUpperCase();
+  const year = d.getFullYear();
+  return `${day}-${mon}-${year}`;
+};
+
 export default function HotelsView({ id, onNavigate }) {
   const [data, setData] = useState(null);
   const pdfRef = useRef(null);
@@ -25,9 +37,7 @@ export default function HotelsView({ id, onNavigate }) {
   useEffect(() => {
     if (!id) return;
 
-    fetch(
-      `${import.meta.env.VITE_BACKEND_URL}/api/hotels/get/${id}`
-    )
+    fetch(`${import.meta.env.VITE_BACKEND_URL}/api/hotels/get/${id}`)
       .then((r) => r.json())
       .then((res) => {
         if (!res?.success) {
@@ -40,24 +50,44 @@ export default function HotelsView({ id, onNavigate }) {
   }, [id]);
 
   /* ===============================
-     EXPORT PDF
+     EXPORT PDF (PORTRAIT – NO BLUR)
   =============================== */
   const exportPDF = async () => {
     if (!pdfRef.current) return;
 
     const canvas = await html2canvas(pdfRef.current, {
-      scale: 3,
+      scale: 2,
       useCORS: true,
     });
 
-    const img = canvas.toDataURL("image/jpeg", 1.0);
+    const imgData = canvas.toDataURL("image/jpeg", 1.0);
 
     const pdf = new jsPDF("p", "mm", "a4");
-    const w = pdf.internal.pageSize.getWidth();
-    const h = (canvas.height * w) / canvas.width;
 
-    pdf.addImage(img, "JPEG", 0, 0, w, h);
-    pdf.save(`${data?.ref_no || "hotel"}.pdf`);
+    const pdfWidth = pdf.internal.pageSize.getWidth();
+    const pdfHeight = pdf.internal.pageSize.getHeight();
+
+    const imgWidth = canvas.width;
+    const imgHeight = canvas.height;
+
+    const ratio = Math.min(
+      pdfWidth / imgWidth,
+      pdfHeight / imgHeight
+    );
+
+    const imgW = imgWidth * ratio;
+    const imgH = imgHeight * ratio;
+
+    const x = (pdfWidth - imgW) / 2;
+    const y = 8;
+
+    pdf.addImage(imgData, "JPEG", x, y, imgW, imgH);
+
+    const fileName = `${cleanName(
+      data?.customer_name
+    )}_${formatDateForFile(data?.booking_date)}.pdf`;
+
+    pdf.save(fileName);
   };
 
   if (!data) {
@@ -84,10 +114,33 @@ export default function HotelsView({ id, onNavigate }) {
       </div>
 
       {/* PRINT AREA */}
-      <div ref={pdfRef} className="bg-white p-3 border">
-        <h3 className="fw-bold text-center mb-3">
+      <div
+        ref={pdfRef}
+        className="bg-white p-3 border"
+        style={{ width: "794px", margin: "auto" }} // A4 preview
+      >
+        {/* ================= HEADER ================= */}
+        <div className="text-center mb-3">
+          <h2 className="fw-bold mb-1" style={{ letterSpacing: "1px" }}>
+            ✈️ MAKKI MADNI TRAVEL
+          </h2>
+
+          <div style={{ fontSize: "13px", lineHeight: "1.4" }}>
+            <div>
+              Shop #4 Daimon City Building, Near Zeenat-ul-Islam Masjid
+            </div>
+            <div>Garden West, Karachi</div>
+            <div>
+              ✉️ makkimadnitravel@gmail.com | ☎️ 0335-7476744
+            </div>
+          </div>
+
+          <hr style={{ margin: "8px 0", borderTop: "2px solid #000" }} />
+        </div>
+
+        <h4 className="fw-bold text-center mb-3">
           🏨 HOTEL QUOTATION
-        </h3>
+        </h4>
 
         <div className="row mb-2">
           <div className="col-6">
