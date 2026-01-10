@@ -12,7 +12,7 @@ export default function ManageUsers({ onNavigate }) {
     "packages", "ticketing", "transport", "visa", "hotels",
 
     // PURCHASE
-    "purchase_entry", "purchase_list",
+    "purchase_entry", "purchase_list", "pending_purchase",
 
     // LEDGER
     "customer_ledger", "purchase_ledger", "bank_ledger", "expense_ledger", "balance_sheet","cash_ledger",
@@ -137,4 +137,5 @@ export default function ManageUsers({ onNavigate }) {
     </div>
   );
 }
+
 
