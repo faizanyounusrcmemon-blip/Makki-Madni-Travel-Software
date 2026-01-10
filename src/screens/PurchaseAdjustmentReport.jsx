@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from "react";
-import { FaSearch, FaCalendarAlt } from "react-icons/fa";
 
 const fmt = (v) => Number(v || 0).toLocaleString("en-US");
 
@@ -60,68 +59,52 @@ export default function PurchaseAdjustmentReport() {
     <div className="container py-4">
       <div className="card shadow-lg border-0 rounded-4">
         {/* Header */}
-        <div className="card-header bg-gradient text-white rounded-top-4"
+        <div
+          className="card-header text-white rounded-top-4"
           style={{
             background: "linear-gradient(135deg, #dc3545, #fd7e14)",
           }}
         >
-          <h5 className="mb-0 fw-bold">
-            📉 Purchase Adjustment Report
-          </h5>
+          <h5 className="mb-0 fw-bold">Purchase Adjustment Report</h5>
           <small className="opacity-75">
-            Complete purchase adjustment & net summary
+            Purchase adjustments & net summary
           </small>
         </div>
 
         <div className="card-body">
           {/* Filters */}
-          <div className="row g-2 align-items-end mb-3">
+          <div className="row g-2 mb-3">
             <div className="col-md-4">
-              <div className="input-group input-group-sm">
-                <span className="input-group-text bg-light">
-                  <FaSearch />
-                </span>
-                <input
-                  className="form-control"
-                  placeholder="Search customer / ref no"
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                />
-              </div>
+              <input
+                className="form-control form-control-sm"
+                placeholder="🔍 Search customer / ref no"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
             </div>
 
             <div className="col-md-3">
-              <div className="input-group input-group-sm">
-                <span className="input-group-text bg-light">
-                  <FaCalendarAlt />
-                </span>
-                <input
-                  type="date"
-                  className="form-control"
-                  value={fromDate}
-                  onChange={(e) => setFromDate(e.target.value)}
-                />
-              </div>
+              <input
+                type="date"
+                className="form-control form-control-sm"
+                value={fromDate}
+                onChange={(e) => setFromDate(e.target.value)}
+              />
             </div>
 
             <div className="col-md-3">
-              <div className="input-group input-group-sm">
-                <span className="input-group-text bg-light">
-                  <FaCalendarAlt />
-                </span>
-                <input
-                  type="date"
-                  className="form-control"
-                  value={toDate}
-                  onChange={(e) => setToDate(e.target.value)}
-                />
-              </div>
+              <input
+                type="date"
+                className="form-control form-control-sm"
+                value={toDate}
+                onChange={(e) => setToDate(e.target.value)}
+              />
             </div>
           </div>
 
           {/* Table */}
           <div className="table-responsive">
-            <table className="table table-hover table-bordered align-middle table-sm">
+            <table className="table table-bordered table-hover table-sm align-middle">
               <thead className="table-light">
                 <tr>
                   <th>Date</th>
@@ -142,11 +125,9 @@ export default function PurchaseAdjustmentReport() {
                       <td>{fmtDate(r.date)}</td>
                       <td className="fw-semibold">{r.customer_name}</td>
                       <td className="text-muted">{r.ref_no}</td>
-                      <td className="text-end">
-                        {fmt(r.amount)}
-                      </td>
+                      <td className="text-end">{fmt(r.amount)}</td>
                       <td className="text-end text-danger fw-bold">
-                        − {fmt(adj)}
+                        -{fmt(adj)}
                       </td>
                       <td className="text-end text-success fw-bold">
                         {fmt(net)}
@@ -158,7 +139,7 @@ export default function PurchaseAdjustmentReport() {
                 {view.length === 0 && (
                   <tr>
                     <td colSpan="6" className="text-center text-muted py-3">
-                      No records found
+                      No record found
                     </td>
                   </tr>
                 )}
