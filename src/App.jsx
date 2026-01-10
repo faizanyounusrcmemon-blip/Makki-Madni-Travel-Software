@@ -16,6 +16,7 @@ import Visa from "./screens/Visa";
 import Purchase from "./screens/Purchase";
 import PurchaseList from "./screens/PurchaseList";
 import PurchaseDetail from "./screens/PurchaseDetail";
+import PendingPurchase from "./screens/PendingPurchase";
 
 // LEDGERS
 import CustomerLedger from "./screens/CustomerLedger";
@@ -85,6 +86,7 @@ export default function App() {
       {/* ================= PURCHASE ================= */}
       {page === "purchase" && <Purchase onNavigate={navigate} />}
       {page === "purchaseList" && <PurchaseList onNavigate={navigate} />}
+      {page === "pendingPurchase" && <PendingPurchase onNavigate={navigate} />}
       {page === "purchase_detail" && (
         <PurchaseDetail refNo={detail} onNavigate={navigate} />
       )}
