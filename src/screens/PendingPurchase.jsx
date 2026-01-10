@@ -20,30 +20,41 @@ export default function PendingPurchase({ onNavigate }) {
     try {
       setLoading(true);
 
-      // 1️⃣ Pending / Partial status
-      const res = await fetch(
+      // 1️⃣ Pending / Partial refs
+      const pendingRes = await fetch(
         `${import.meta.env.VITE_BACKEND_URL}/api/purchase/pending`
       );
-      const data = await res.json();
-      if (!data.success) return;
+      const pendingData = await pendingRes.json();
+      if (!pendingData.success) return;
 
-      const pendingRows = data.rows;
+      const pendingRows = pendingData.rows;
 
-      // 2️⃣ Get sale/purchase amounts from /list for each ref
+      // 2️⃣ Sale amounts from /reports/all
+      const reportsRes = await fetch(
+        `${import.meta.env.VITE_BACKEND_URL}/api/reports/all`
+      );
+      const reportsData = await reportsRes.json();
+
+      // Map sale amount by ref_no
+      const saleMap = {};
+      reportsData.forEach((r) => {
+        saleMap[r.ref_no] = r.total_pkr || 0;
+      });
+
+      // 3️⃣ Merge with purchase amounts from /list
       const promises = pendingRows.map(async (r) => {
+        // Purchase amount
         const listRes = await fetch(
           `${import.meta.env.VITE_BACKEND_URL}/api/purchase/list?ref=${r.ref_no}`
         );
         const listData = await listRes.json();
-
-        let sale_pkr = 0;
         let purchase_pkr = 0;
-
         if (listData.success && listData.rows.length) {
-          const entry = listData.rows[0]; // exact ref match
-          sale_pkr = entry.sale_pkr || 0;          // always show sale
-          purchase_pkr = entry.purchase_pkr || 0;  // only show if exists
+          purchase_pkr = listData.rows[0].purchase_pkr || 0;
         }
+
+        // Sale amount from reports
+        const sale_pkr = saleMap[r.ref_no] || 0;
 
         return {
           ...r,
