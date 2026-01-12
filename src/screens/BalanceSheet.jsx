@@ -2,9 +2,7 @@ import React, { useEffect, useState } from "react";
 
 /* ================= AMOUNT FORMAT ================= */
 const fmt = (v) =>
-  Number(v || 0).toLocaleString("en-US", {
-    maximumFractionDigits: 0,
-  });
+  Number(v || 0).toLocaleString("en-US", { maximumFractionDigits: 0 });
 
 export default function BalanceSheet({ onNavigate }) {
   const [data, setData] = useState(null);
@@ -29,7 +27,12 @@ export default function BalanceSheet({ onNavigate }) {
     }
   };
 
-  if (loading) return <div className="p-4 text-center text-white">⏳ Loading...</div>;
+  if (loading)
+    return (
+      <div className="p-5 text-center text-muted fw-bold">
+        ⏳ Loading Balance Sheet...
+      </div>
+    );
   if (!data) return null;
 
   /* ================= FILTER ================= */
@@ -60,131 +63,153 @@ export default function BalanceSheet({ onNavigate }) {
   const netPosition = customerTotals.balance - purchaseTotals.balance;
 
   return (
-    <div className="container p-4 text-white" style={{ fontFamily: "Arial, sans-serif" }}>
+    <div className="container py-4">
 
       {/* HEADER */}
       <div className="d-flex justify-content-between align-items-center mb-4">
-        <h3 className="text-gradient" style={{ background: "linear-gradient(90deg, #00f, #0ff)", WebkitBackgroundClip: "text", color: "transparent" }}>
-          📊 Balance Sheet
-        </h3>
+        <div>
+          <h3 className="fw-bold mb-0">📊 Balance Sheet</h3>
+          <small className="text-muted">Receivable, Payable & Net Summary</small>
+        </div>
         <button
-          className="btn btn-outline-light"
+          className="btn btn-sm btn-outline-secondary"
           onClick={() => onNavigate("dashboard")}
         >
-          ⬅ Back
+          ← Back
         </button>
       </div>
 
       {/* ================= CUSTOMER RECEIVABLE ================= */}
-      <h5 className="text-info fw-bold">💰 Customer Receivable</h5>
-      <table className="table table-dark table-hover table-bordered mt-2 rounded">
-        <thead className="table-secondary text-dark">
-          <tr>
-            <th>#</th>
-            <th>Ref No</th>
-            <th>Customer</th>
-            <th>Total Sale</th>
-            <th>Received</th>
-            <th>Balance</th>
-          </tr>
-        </thead>
-        <tbody>
-          {customerRows.map((r, i) => (
-            <tr key={i} className="align-middle">
-              <td>{i + 1}</td>
-              <td>{r.ref_no}</td>
-              <td className="text-info fw-bold">{r.customer_name || "-"}</td>
-              <td>{fmt(r.sale_total)}</td>
-              <td>{fmt(r.received)}</td>
-              <td className="text-danger fw-bold">{fmt(r.balance)}</td>
-            </tr>
-          ))}
+      <div className="card shadow-sm mb-4">
+        <div className="card-header bg-white fw-bold text-success">
+          💰 Customer Receivable
+        </div>
+        <div className="table-responsive">
+          <table className="table table-hover mb-0">
+            <thead className="table-light">
+              <tr>
+                <th>#</th>
+                <th>Ref No</th>
+                <th>Customer</th>
+                <th className="text-end">Total Sale</th>
+                <th className="text-end">Received</th>
+                <th className="text-end">Balance</th>
+              </tr>
+            </thead>
+            <tbody>
+              {customerRows.map((r, i) => (
+                <tr key={i}>
+                  <td>{i + 1}</td>
+                  <td>{r.ref_no}</td>
+                  <td className="fw-semibold">{r.customer_name || "-"}</td>
+                  <td className="text-end">{fmt(r.sale_total)}</td>
+                  <td className="text-end">{fmt(r.received)}</td>
+                  <td className="text-end text-success fw-bold">
+                    {fmt(r.balance)}
+                  </td>
+                </tr>
+              ))}
 
-          {customerRows.length > 0 && (
-            <tr className="table-light text-dark fw-bold">
-              <td colSpan="3" className="text-end">Grand Total</td>
-              <td>{fmt(customerTotals.sale)}</td>
-              <td>{fmt(customerTotals.received)}</td>
-              <td>{fmt(customerTotals.balance)}</td>
-            </tr>
-          )}
-        </tbody>
-      </table>
+              {customerRows.length > 0 && (
+                <tr className="table-secondary fw-bold">
+                  <td colSpan="3" className="text-end">TOTAL</td>
+                  <td className="text-end">{fmt(customerTotals.sale)}</td>
+                  <td className="text-end">{fmt(customerTotals.received)}</td>
+                  <td className="text-end text-success">
+                    {fmt(customerTotals.balance)}
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
 
       {/* ================= SUPPLIER PAYABLE ================= */}
-      <h5 className="text-warning fw-bold mt-5">📦 Supplier Payable</h5>
-      <table className="table table-dark table-hover table-bordered mt-2 rounded">
-        <thead className="table-secondary text-dark">
-          <tr>
-            <th>#</th>
-            <th>Ref No</th>
-            <th>Supplier</th>
-            <th>Total Purchase</th>
-            <th>Paid</th>
-            <th>Balance</th>
-          </tr>
-        </thead>
-        <tbody>
-          {purchaseRows.map((r, i) => (
-            <tr key={i} className="align-middle">
-              <td>{i + 1}</td>
-              <td>{r.ref_no}</td>
-              <td className="text-warning fw-bold">{r.customer_name || "-"}</td>
-              <td>{fmt(r.purchase_total)}</td>
-              <td>{fmt(r.paid)}</td>
-              <td className="text-danger fw-bold">{fmt(r.balance)}</td>
-            </tr>
-          ))}
+      <div className="card shadow-sm mb-4">
+        <div className="card-header bg-white fw-bold text-danger">
+          📦 Supplier Payable
+        </div>
+        <div className="table-responsive">
+          <table className="table table-hover mb-0">
+            <thead className="table-light">
+              <tr>
+                <th>#</th>
+                <th>Ref No</th>
+                <th>Supplier</th>
+                <th className="text-end">Total Purchase</th>
+                <th className="text-end">Paid</th>
+                <th className="text-end">Balance</th>
+              </tr>
+            </thead>
+            <tbody>
+              {purchaseRows.map((r, i) => (
+                <tr key={i}>
+                  <td>{i + 1}</td>
+                  <td>{r.ref_no}</td>
+                  <td className="fw-semibold">{r.customer_name || "-"}</td>
+                  <td className="text-end">{fmt(r.purchase_total)}</td>
+                  <td className="text-end">{fmt(r.paid)}</td>
+                  <td className="text-end text-danger fw-bold">
+                    {fmt(r.balance)}
+                  </td>
+                </tr>
+              ))}
 
-          {purchaseRows.length > 0 && (
-            <tr className="table-light text-dark fw-bold">
-              <td colSpan="3" className="text-end">Grand Total</td>
-              <td>{fmt(purchaseTotals.purchase)}</td>
-              <td>{fmt(purchaseTotals.paid)}</td>
-              <td>{fmt(purchaseTotals.balance)}</td>
-            </tr>
-          )}
-        </tbody>
-      </table>
+              {purchaseRows.length > 0 && (
+                <tr className="table-secondary fw-bold">
+                  <td colSpan="3" className="text-end">TOTAL</td>
+                  <td className="text-end">{fmt(purchaseTotals.purchase)}</td>
+                  <td className="text-end">{fmt(purchaseTotals.paid)}</td>
+                  <td className="text-end text-danger">
+                    {fmt(purchaseTotals.balance)}
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
 
       {/* ================= SUMMARY ================= */}
-      <div className="mt-5 p-4 rounded bg-dark border border-light shadow-lg">
-        <h4 className="mb-4 text-center text-gradient" style={{ background: "linear-gradient(90deg, #ff0, #f0f)", WebkitBackgroundClip: "text", color: "transparent" }}>
+      <div className="card shadow-sm">
+        <div className="card-header bg-white fw-bold text-primary">
           📌 Summary
-        </h4>
-
-        <table className="table table-dark table-bordered mb-0 rounded">
-          <thead className="table-secondary text-dark">
-            <tr>
-              <th>#</th>
-              <th>Details</th>
-              <th>Amount</th>
-            </tr>
-          </thead>
+        </div>
+        <table className="table mb-0">
           <tbody>
             <tr>
-              <td>1</td>
               <td>💰 Lene Hain (Customer)</td>
-              <td className="text-success fw-bold">{fmt(customerTotals.balance)}</td>
+              <td className="text-end fw-bold text-success">
+                {fmt(customerTotals.balance)}
+              </td>
             </tr>
             <tr>
-              <td>2</td>
               <td>📦 Dene Hain (Supplier)</td>
-              <td className="text-danger fw-bold">{fmt(purchaseTotals.balance)}</td>
-            </tr>
-            <tr className="table-light text-dark fw-bold">
-              <td>3</td>
-              <td>
-                🔄 Net Position<br />
-                <small>{netPosition >= 0 ? "Aap lene wale ho" : "Aap dene wale ho"}</small>
+              <td className="text-end fw-bold text-danger">
+                {fmt(purchaseTotals.balance)}
               </td>
-              <td className={netPosition >= 0 ? "text-success" : "text-danger"}>
+            </tr>
+            <tr className="table-light fw-bold">
+              <td>
+                🔄 Net Position
+                <br />
+                <small className="text-muted">
+                  {netPosition >= 0 ? "Aap lene wale ho" : "Aap dene wale ho"}
+                </small>
+              </td>
+              <td
+                className={`text-end ${
+                  netPosition >= 0 ? "text-success" : "text-danger"
+                }`}
+              >
                 {fmt(Math.abs(netPosition))}
               </td>
             </tr>
           </tbody>
         </table>
       </div>
+
     </div>
   );
 }
