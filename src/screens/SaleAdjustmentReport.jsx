@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 const fmt = (v) => Number(v || 0).toLocaleString("en-US");
 
@@ -17,6 +18,7 @@ export default function SaleAdjustmentReport() {
   const [toDate, setToDate] = useState("");
 
   const URL = import.meta.env.VITE_BACKEND_URL;
+  const navigate = useNavigate(); // ✅ dashboard navigation
 
   useEffect(() => {
     load();
@@ -60,15 +62,25 @@ export default function SaleAdjustmentReport() {
       <div className="card shadow-lg border-0 rounded-4">
         {/* Header */}
         <div
-          className="card-header text-white rounded-top-4"
+          className="card-header text-white rounded-top-4 d-flex justify-content-between align-items-center"
           style={{
             background: "linear-gradient(135deg, #0d6efd, #20c997)",
           }}
         >
-          <h5 className="mb-0 fw-bold">Sale Adjustment Report</h5>
-          <small className="opacity-75">
-            Sale adjustments & net summary
-          </small>
+          <div>
+            <h5 className="mb-0 fw-bold">Sale Adjustment Report</h5>
+            <small className="opacity-75">
+              Sale adjustments & net summary
+            </small>
+          </div>
+
+          {/* ✅ Back to Dashboard */}
+          <button
+            className="btn btn-light btn-sm fw-semibold"
+            onClick={() => navigate("/dashboard")}
+          >
+            ← Dashboard
+          </button>
         </div>
 
         <div className="card-body">
