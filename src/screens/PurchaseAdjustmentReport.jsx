@@ -1,5 +1,4 @@
 import React, { useEffect, useState, useMemo } from "react";
-import { useNavigate } from "react-router-dom";
 
 /* ================= HELPERS ================= */
 const fmt = (v) =>
@@ -16,7 +15,7 @@ const fmtDate = (d) => {
   });
 };
 
-export default function PurchaseAdjustmentReport() {
+export default function PurchaseAdjustmentReport({ onNavigate }) {
   const [rows, setRows] = useState([]);
   const [view, setView] = useState([]);
   const [search, setSearch] = useState("");
@@ -24,7 +23,6 @@ export default function PurchaseAdjustmentReport() {
   const [toDate, setToDate] = useState("");
 
   const URL = import.meta.env.VITE_BACKEND_URL;
-  const navigate = useNavigate(); // ✅ working back navigation
 
   /* ================= LOAD ================= */
   const load = async () => {
@@ -104,12 +102,12 @@ export default function PurchaseAdjustmentReport() {
             </small>
           </div>
 
-          {/* ✅ BACK BUTTON */}
+          {/* ✅ WORKING BACK BUTTON */}
           <button
             className="btn btn-light btn-sm fw-semibold"
-            onClick={() => navigate("/dashboard")}
+            onClick={() => onNavigate("dashboard")}
           >
-            ← Dashboard
+            ← Back
           </button>
         </div>
 
