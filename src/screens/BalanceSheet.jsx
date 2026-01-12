@@ -20,7 +20,6 @@ export default function BalanceSheet({ onNavigate }) {
         `${import.meta.env.VITE_BACKEND_URL}/api/balance-sheet`
       );
       const d = await res.json();
-
       if (d.success) setData(d);
       else alert(d.error || "Failed to load balance sheet");
     } catch {
@@ -34,37 +33,33 @@ export default function BalanceSheet({ onNavigate }) {
   if (!data) return null;
 
   /* ================= FILTER ================= */
-  const customerRows = data.customers.filter((r) => r.balance > 0);
-  const purchaseRows = data.purchases.filter((r) => r.balance > 0);
+  const customerRows = data.customers?.filter((r) => r.balance > 0) || [];
+  const purchaseRows = data.purchases?.filter((r) => r.balance > 0) || [];
 
   /* ================= TOTALS ================= */
-  const customerTotals = useMemo(
-    () =>
-      customerRows.reduce(
-        (a, r) => {
-          a.sale += Number(r.sale_total || 0);
-          a.received += Number(r.received || 0);
-          a.balance += Number(r.balance || 0);
-          return a;
-        },
-        { sale: 0, received: 0, balance: 0 }
-      ),
-    [customerRows]
-  );
+  const customerTotals = useMemo(() => {
+    return customerRows.reduce(
+      (a, r) => {
+        a.sale += Number(r.sale_total || 0);
+        a.received += Number(r.received || 0);
+        a.balance += Number(r.balance || 0);
+        return a;
+      },
+      { sale: 0, received: 0, balance: 0 }
+    );
+  }, [customerRows]);
 
-  const purchaseTotals = useMemo(
-    () =>
-      purchaseRows.reduce(
-        (a, r) => {
-          a.purchase += Number(r.purchase_total || 0);
-          a.paid += Number(r.paid || 0);
-          a.balance += Number(r.balance || 0);
-          return a;
-        },
-        { purchase: 0, paid: 0, balance: 0 }
-      ),
-    [purchaseRows]
-  );
+  const purchaseTotals = useMemo(() => {
+    return purchaseRows.reduce(
+      (a, r) => {
+        a.purchase += Number(r.purchase_total || 0);
+        a.paid += Number(r.paid || 0);
+        a.balance += Number(r.balance || 0);
+        return a;
+      },
+      { purchase: 0, paid: 0, balance: 0 }
+    );
+  }, [purchaseRows]);
 
   const netPosition = customerTotals.balance - purchaseTotals.balance;
 
@@ -78,12 +73,9 @@ export default function BalanceSheet({ onNavigate }) {
         >
           <div>
             <h5 className="mb-0 fw-bold">📊 BALANCE SHEET</h5>
-            <small className="opacity-75">
-              Customers & Suppliers summary
-            </small>
+            <small className="opacity-75">Customers & Suppliers summary</small>
           </div>
 
-          {/* ✅ BACK BUTTON */}
           <button
             className="btn btn-light btn-sm fw-semibold"
             onClick={() => onNavigate("dashboard")}
@@ -112,27 +104,19 @@ export default function BalanceSheet({ onNavigate }) {
                   <tr key={i}>
                     <td>{i + 1}</td>
                     <td>{r.ref_no || "-"}</td>
-                    <td className="text-info fw-semibold">
-                      {r.customer_name || "-"}
-                    </td>
+                    <td className="text-info fw-semibold">{r.customer_name || "-"}</td>
                     <td className="text-end">{fmt(r.sale_total)}</td>
                     <td className="text-end">{fmt(r.received)}</td>
-                    <td className="text-end text-danger fw-bold">
-                      {fmt(r.balance)}
-                    </td>
+                    <td className="text-end text-danger fw-bold">{fmt(r.balance)}</td>
                   </tr>
                 ))}
 
                 {customerRows.length > 0 && (
                   <tr className="table-secondary fw-bold text-dark">
-                    <td colSpan="3" className="text-end">
-                      GRAND TOTAL
-                    </td>
+                    <td colSpan="3" className="text-end">GRAND TOTAL</td>
                     <td className="text-end">{fmt(customerTotals.sale)}</td>
                     <td className="text-end">{fmt(customerTotals.received)}</td>
-                    <td className="text-end text-danger fw-bold">
-                      {fmt(customerTotals.balance)}
-                    </td>
+                    <td className="text-end text-danger fw-bold">{fmt(customerTotals.balance)}</td>
                   </tr>
                 )}
               </tbody>
@@ -158,27 +142,19 @@ export default function BalanceSheet({ onNavigate }) {
                   <tr key={i}>
                     <td>{i + 1}</td>
                     <td>{r.ref_no || "-"}</td>
-                    <td className="text-info fw-semibold">
-                      {r.customer_name || "-"}
-                    </td>
+                    <td className="text-info fw-semibold">{r.customer_name || "-"}</td>
                     <td className="text-end">{fmt(r.purchase_total)}</td>
                     <td className="text-end">{fmt(r.paid)}</td>
-                    <td className="text-end text-danger fw-bold">
-                      {fmt(r.balance)}
-                    </td>
+                    <td className="text-end text-danger fw-bold">{fmt(r.balance)}</td>
                   </tr>
                 ))}
 
                 {purchaseRows.length > 0 && (
                   <tr className="table-secondary fw-bold text-dark">
-                    <td colSpan="3" className="text-end">
-                      GRAND TOTAL
-                    </td>
+                    <td colSpan="3" className="text-end">GRAND TOTAL</td>
                     <td className="text-end">{fmt(purchaseTotals.purchase)}</td>
                     <td className="text-end">{fmt(purchaseTotals.paid)}</td>
-                    <td className="text-end text-danger fw-bold">
-                      {fmt(purchaseTotals.balance)}
-                    </td>
+                    <td className="text-end text-danger fw-bold">{fmt(purchaseTotals.balance)}</td>
                   </tr>
                 )}
               </tbody>
@@ -200,31 +176,21 @@ export default function BalanceSheet({ onNavigate }) {
                 <tr>
                   <td>1</td>
                   <td>💰 Lene Hain (Customer)</td>
-                  <td className="text-success fw-bold">
-                    {fmt(customerTotals.balance)}
-                  </td>
+                  <td className="text-success fw-bold">{fmt(customerTotals.balance)}</td>
                 </tr>
                 <tr>
                   <td>2</td>
                   <td>📦 Dene Hain (Supplier)</td>
-                  <td className="text-danger fw-bold">
-                    {fmt(purchaseTotals.balance)}
-                  </td>
+                  <td className="text-danger fw-bold">{fmt(purchaseTotals.balance)}</td>
                 </tr>
                 <tr className="table-secondary text-dark fw-bold">
                   <td>3</td>
                   <td>
                     🔄 Net Position
                     <br />
-                    <small>
-                      {netPosition >= 0
-                        ? "Aap lene wale ho"
-                        : "Aap dene wale ho"}
-                    </small>
+                    <small>{netPosition >= 0 ? "Aap lene wale ho" : "Aap dene wale ho"}</small>
                   </td>
-                  <td
-                    className={netPosition >= 0 ? "text-success" : "text-danger"}
-                  >
+                  <td className={netPosition >= 0 ? "text-success" : "text-danger"}>
                     {fmt(Math.abs(netPosition))}
                   </td>
                 </tr>
