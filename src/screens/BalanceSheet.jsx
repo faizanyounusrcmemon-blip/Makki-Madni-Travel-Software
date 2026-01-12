@@ -223,9 +223,7 @@ export default function BalanceSheet({ onNavigate }) {
                     </small>
                   </td>
                   <td
-                    className={
-                      netPosition >= 0 ? "text-success" : "text-danger"
-                    }
+                    className={netPosition >= 0 ? "text-success" : "text-danger"}
                   >
                     {fmt(Math.abs(netPosition))}
                   </td>
