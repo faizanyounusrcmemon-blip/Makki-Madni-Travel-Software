@@ -2,14 +2,13 @@ import React, { useEffect, useState } from "react";
 
 /* ================= AMOUNT FORMAT ================= */
 const fmt = (v) =>
-  Number(v || 0).toLocaleString("en-US", { maximumFractionDigits: 0 });
+  Number(v || 0).toLocaleString("en-US", {
+    maximumFractionDigits: 0,
+  });
 
 export default function BalanceSheet({ onNavigate }) {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState("");
-  const [fromDate, setFromDate] = useState("");
-  const [toDate, setToDate] = useState("");
 
   useEffect(() => {
     loadData();
@@ -17,7 +16,9 @@ export default function BalanceSheet({ onNavigate }) {
 
   const loadData = async () => {
     try {
-      const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/balance-sheet`);
+      const res = await fetch(
+        `${import.meta.env.VITE_BACKEND_URL}/api/balance-sheet`
+      );
       const d = await res.json();
       if (d.success) setData(d);
       else alert(d.error || "Failed to load balance sheet");
@@ -32,94 +33,154 @@ export default function BalanceSheet({ onNavigate }) {
   if (!data) return null;
 
   /* ================= FILTER ================= */
-  let customerRows = data.customers.filter((r) => r.balance > 0);
-  if (search) {
-    const s = search.toLowerCase();
-    customerRows = customerRows.filter(
-      (r) => r.customer_name.toLowerCase().includes(s) || r.ref_no.toLowerCase().includes(s)
-    );
-  }
-  if (fromDate) customerRows = customerRows.filter((r) => new Date(r.date) >= new Date(fromDate));
-  if (toDate) customerRows = customerRows.filter((r) => new Date(r.date) <= new Date(toDate));
+  const customerRows = data.customers.filter((r) => r.balance > 0);
+  const purchaseRows = data.purchases.filter((r) => r.balance > 0);
 
   /* ================= TOTALS ================= */
   const customerTotals = customerRows.reduce(
     (a, r) => {
       a.sale += Number(r.sale_total || 0);
-      a.adjustment += Number(r.adjustment || 0);
-      a.net += Number(r.net_amount || 0);
+      a.received += Number(r.received || 0);
+      a.balance += Number(r.balance || 0);
       return a;
     },
-    { sale: 0, adjustment: 0, net: 0 }
+    { sale: 0, received: 0, balance: 0 }
   );
 
+  const purchaseTotals = purchaseRows.reduce(
+    (a, r) => {
+      a.purchase += Number(r.purchase_total || 0);
+      a.paid += Number(r.paid || 0);
+      a.balance += Number(r.balance || 0);
+      return a;
+    },
+    { purchase: 0, paid: 0, balance: 0 }
+  );
+
+  const netPosition = customerTotals.balance - purchaseTotals.balance;
+
   return (
-    <div className="container p-4" style={{ fontFamily: "Arial, sans-serif", color: "#fff" }}>
+    <div className="container p-4 text-white" style={{ fontFamily: "Arial, sans-serif" }}>
+
       {/* HEADER */}
-      <div className="mb-3 p-3 rounded" style={{ background: "linear-gradient(90deg, #4facfe, #00f2fe)" }}>
-        <h3 className="mb-1">📊 Sale Adjustment Report</h3>
-        <small>Sale adjustments & net summary</small>
+      <div className="d-flex justify-content-between align-items-center mb-4">
+        <h3 className="text-gradient" style={{ background: "linear-gradient(90deg, #00f, #0ff)", WebkitBackgroundClip: "text", color: "transparent" }}>
+          📊 Balance Sheet
+        </h3>
         <button
-          className="btn btn-light btn-sm float-end"
+          className="btn btn-outline-light"
           onClick={() => onNavigate("dashboard")}
         >
           ⬅ Back
         </button>
       </div>
 
-      {/* FILTERS */}
-      <div className="d-flex gap-2 mb-3 flex-wrap">
-        <input
-          type="text"
-          placeholder="🔍 Search customer / ref no"
-          className="form-control"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-        />
-        <input
-          type="date"
-          className="form-control"
-          value={fromDate}
-          onChange={(e) => setFromDate(e.target.value)}
-        />
-        <input
-          type="date"
-          className="form-control"
-          value={toDate}
-          onChange={(e) => setToDate(e.target.value)}
-        />
-      </div>
+      {/* ================= CUSTOMER RECEIVABLE ================= */}
+      <h5 className="text-info fw-bold">💰 Customer Receivable</h5>
+      <table className="table table-dark table-hover table-bordered mt-2 rounded">
+        <thead className="table-secondary text-dark">
+          <tr>
+            <th>#</th>
+            <th>Ref No</th>
+            <th>Customer</th>
+            <th>Total Sale</th>
+            <th>Received</th>
+            <th>Balance</th>
+          </tr>
+        </thead>
+        <tbody>
+          {customerRows.map((r, i) => (
+            <tr key={i} className="align-middle">
+              <td>{i + 1}</td>
+              <td>{r.ref_no}</td>
+              <td className="text-info fw-bold">{r.customer_name || "-"}</td>
+              <td>{fmt(r.sale_total)}</td>
+              <td>{fmt(r.received)}</td>
+              <td className="text-danger fw-bold">{fmt(r.balance)}</td>
+            </tr>
+          ))}
 
-      {/* TABLE */}
-      <div className="table-responsive">
-        <table className="table table-dark table-hover table-bordered rounded text-center">
+          {customerRows.length > 0 && (
+            <tr className="table-light text-dark fw-bold">
+              <td colSpan="3" className="text-end">Grand Total</td>
+              <td>{fmt(customerTotals.sale)}</td>
+              <td>{fmt(customerTotals.received)}</td>
+              <td>{fmt(customerTotals.balance)}</td>
+            </tr>
+          )}
+        </tbody>
+      </table>
+
+      {/* ================= SUPPLIER PAYABLE ================= */}
+      <h5 className="text-warning fw-bold mt-5">📦 Supplier Payable</h5>
+      <table className="table table-dark table-hover table-bordered mt-2 rounded">
+        <thead className="table-secondary text-dark">
+          <tr>
+            <th>#</th>
+            <th>Ref No</th>
+            <th>Supplier</th>
+            <th>Total Purchase</th>
+            <th>Paid</th>
+            <th>Balance</th>
+          </tr>
+        </thead>
+        <tbody>
+          {purchaseRows.map((r, i) => (
+            <tr key={i} className="align-middle">
+              <td>{i + 1}</td>
+              <td>{r.ref_no}</td>
+              <td className="text-warning fw-bold">{r.customer_name || "-"}</td>
+              <td>{fmt(r.purchase_total)}</td>
+              <td>{fmt(r.paid)}</td>
+              <td className="text-danger fw-bold">{fmt(r.balance)}</td>
+            </tr>
+          ))}
+
+          {purchaseRows.length > 0 && (
+            <tr className="table-light text-dark fw-bold">
+              <td colSpan="3" className="text-end">Grand Total</td>
+              <td>{fmt(purchaseTotals.purchase)}</td>
+              <td>{fmt(purchaseTotals.paid)}</td>
+              <td>{fmt(purchaseTotals.balance)}</td>
+            </tr>
+          )}
+        </tbody>
+      </table>
+
+      {/* ================= SUMMARY ================= */}
+      <div className="mt-5 p-4 rounded bg-dark border border-light shadow-lg">
+        <h4 className="mb-4 text-center text-gradient" style={{ background: "linear-gradient(90deg, #ff0, #f0f)", WebkitBackgroundClip: "text", color: "transparent" }}>
+          📌 Summary
+        </h4>
+
+        <table className="table table-dark table-bordered mb-0 rounded">
           <thead className="table-secondary text-dark">
             <tr>
-              <th>Date</th>
-              <th>Customer</th>
-              <th>Ref No</th>
-              <th>Total Sale</th>
-              <th className="text-danger">Adjustment</th>
-              <th className="text-success">Net Amount</th>
+              <th>#</th>
+              <th>Details</th>
+              <th>Amount</th>
             </tr>
           </thead>
           <tbody>
-            {customerRows.map((r, i) => (
-              <tr key={i}>
-                <td>{new Date(r.date).toLocaleDateString("en-GB")}</td>
-                <td className="fw-bold">{r.customer_name}</td>
-                <td>{r.ref_no}</td>
-                <td>{fmt(r.sale_total)}</td>
-                <td className="text-danger">{fmt(r.adjustment)}</td>
-                <td className="text-success fw-bold">{fmt(r.net_amount)}</td>
-              </tr>
-            ))}
-
-            <tr className="table-light fw-bold">
-              <td colSpan="3" className="text-end">TOTAL</td>
-              <td>{fmt(customerTotals.sale)}</td>
-              <td className="text-danger">{fmt(customerTotals.adjustment)}</td>
-              <td className="text-success">{fmt(customerTotals.net)}</td>
+            <tr>
+              <td>1</td>
+              <td>💰 Lene Hain (Customer)</td>
+              <td className="text-success fw-bold">{fmt(customerTotals.balance)}</td>
+            </tr>
+            <tr>
+              <td>2</td>
+              <td>📦 Dene Hain (Supplier)</td>
+              <td className="text-danger fw-bold">{fmt(purchaseTotals.balance)}</td>
+            </tr>
+            <tr className="table-light text-dark fw-bold">
+              <td>3</td>
+              <td>
+                🔄 Net Position<br />
+                <small>{netPosition >= 0 ? "Aap lene wale ho" : "Aap dene wale ho"}</small>
+              </td>
+              <td className={netPosition >= 0 ? "text-success" : "text-danger"}>
+                {fmt(Math.abs(netPosition))}
+              </td>
             </tr>
           </tbody>
         </table>
