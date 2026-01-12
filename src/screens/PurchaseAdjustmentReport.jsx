@@ -60,15 +60,25 @@ export default function PurchaseAdjustmentReport() {
       <div className="card shadow-lg border-0 rounded-4">
         {/* Header */}
         <div
-          className="card-header text-white rounded-top-4"
+          className="card-header text-white rounded-top-4 d-flex justify-content-between align-items-center"
           style={{
             background: "linear-gradient(135deg, #dc3545, #fd7e14)",
           }}
         >
-          <h5 className="mb-0 fw-bold">Purchase Adjustment Report</h5>
-          <small className="opacity-75">
-            Purchase adjustments & net summary
-          </small>
+          <div>
+            <h5 className="mb-0 fw-bold">Purchase Adjustment Report</h5>
+            <small className="opacity-75">
+              Purchase adjustments & net summary
+            </small>
+          </div>
+
+          {/* ✅ Back Button */}
+          <button
+            className="btn btn-light btn-sm fw-semibold"
+            onClick={() => window.history.back()}
+          >
+            ← Back
+          </button>
         </div>
 
         <div className="card-body">
