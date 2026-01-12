@@ -1,13 +1,19 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 
-const fmt = (v) => Number(v || 0).toLocaleString("en-US");
+/* ================= HELPERS ================= */
+const fmt = (v) =>
+  v !== null && v !== undefined
+    ? Number(v).toLocaleString("en-US")
+    : "0";
 
-const fmtDate = (d) =>
-  new Date(d).toLocaleDateString("en-GB", {
+const fmtDate = (d) => {
+  if (!d) return "-";
+  return new Date(d).toLocaleDateString("en-GB", {
     day: "2-digit",
     month: "short",
     year: "numeric",
   });
+};
 
 export default function SaleAdjustmentReport({ onNavigate }) {
   const [rows, setRows] = useState([]);
@@ -18,10 +24,28 @@ export default function SaleAdjustmentReport({ onNavigate }) {
 
   const URL = import.meta.env.VITE_BACKEND_URL;
 
+  /* ================= LOAD ================= */
+  const load = async () => {
+    try {
+      const res = await fetch(
+        `${URL}/api/reports/sale-adjustments`
+      );
+      const data = await res.json();
+      const rows = data.rows || [];
+      setRows(rows);
+      setView(rows);
+    } catch (err) {
+      console.error("Load Error:", err);
+      setRows([]);
+      setView([]);
+    }
+  };
+
   useEffect(() => {
     load();
   }, []);
 
+  /* ================= FILTER ================= */
   useEffect(() => {
     let temp = [...rows];
 
@@ -34,45 +58,56 @@ export default function SaleAdjustmentReport({ onNavigate }) {
       );
     }
 
-    if (fromDate)
-      temp = temp.filter((r) => new Date(r.date) >= new Date(fromDate));
+    if (fromDate) {
+      temp = temp.filter(
+        (r) => new Date(r.date) >= new Date(fromDate)
+      );
+    }
 
-    if (toDate)
-      temp = temp.filter((r) => new Date(r.date) <= new Date(toDate));
+    if (toDate) {
+      temp = temp.filter(
+        (r) => new Date(r.date) <= new Date(toDate)
+      );
+    }
 
     setView(temp);
   }, [search, fromDate, toDate, rows]);
 
-  const load = async () => {
-    const r = await fetch(`${URL}/api/reports/sale-adjustments`);
-    const d = await r.json();
-    setRows(d.rows || []);
-    setView(d.rows || []);
-  };
-
-  const totalNet = view.reduce(
-    (s, r) => s + (Number(r.amount) - Number(r.adjustment_amount || 0)),
-    0
-  );
+  /* ================= TOTALS ================= */
+  const totals = useMemo(() => {
+    return view.reduce(
+      (acc, r) => {
+        const amount = Number(r.amount || 0);
+        const adj = Number(r.adjustment_amount || 0);
+        acc.amount += amount;
+        acc.adjustment += adj;
+        acc.net += amount - adj;
+        return acc;
+      },
+      { amount: 0, adjustment: 0, net: 0 }
+    );
+  }, [view]);
 
   return (
     <div className="container py-4">
       <div className="card shadow-lg border-0 rounded-4">
-        {/* Header */}
+        {/* ================= HEADER ================= */}
         <div
-          className="card-header text-white rounded-top-4 d-flex justify-content-between align-items-center"
+          className="card-header text-white d-flex justify-content-between align-items-center rounded-top-4"
           style={{
             background: "linear-gradient(135deg, #0d6efd, #20c997)",
           }}
         >
           <div>
-            <h5 className="mb-0 fw-bold">Sale Adjustment Report</h5>
+            <h5 className="mb-0 fw-bold">
+              Sale Adjustment Report
+            </h5>
             <small className="opacity-75">
               Sale adjustments & net summary
             </small>
           </div>
 
-          {/* ✅ Back (Demo Style – Correct) */}
+          {/* ✅ WORKING BACK BUTTON */}
           <button
             className="btn btn-light btn-sm fw-semibold"
             onClick={() => onNavigate("dashboard")}
@@ -82,7 +117,7 @@ export default function SaleAdjustmentReport({ onNavigate }) {
         </div>
 
         <div className="card-body">
-          {/* Filters */}
+          {/* ================= FILTERS ================= */}
           <div className="row g-2 mb-3">
             <div className="col-md-4">
               <input
@@ -112,7 +147,7 @@ export default function SaleAdjustmentReport({ onNavigate }) {
             </div>
           </div>
 
-          {/* Table */}
+          {/* ================= TABLE ================= */}
           <div className="table-responsive">
             <table className="table table-bordered table-hover table-sm align-middle">
               <thead className="table-light">
@@ -120,23 +155,38 @@ export default function SaleAdjustmentReport({ onNavigate }) {
                   <th>Date</th>
                   <th>Customer</th>
                   <th>Ref No</th>
-                  <th className="text-end">Total Sale</th>
-                  <th className="text-end text-danger">Adjustment</th>
-                  <th className="text-end text-success">Net Amount</th>
+                  <th className="text-end">
+                    Total Sale
+                  </th>
+                  <th className="text-end text-danger">
+                    Adjustment
+                  </th>
+                  <th className="text-end text-success">
+                    Net Amount
+                  </th>
                 </tr>
               </thead>
 
               <tbody>
                 {view.map((r, i) => {
-                  const adj = Number(r.adjustment_amount || 0);
-                  const net = Number(r.amount) - adj;
+                  const adj = Number(
+                    r.adjustment_amount || 0
+                  );
+                  const net =
+                    Number(r.amount || 0) - adj;
 
                   return (
                     <tr key={i}>
                       <td>{fmtDate(r.date)}</td>
-                      <td className="fw-semibold">{r.customer_name}</td>
-                      <td className="text-muted">{r.ref_no}</td>
-                      <td className="text-end">{fmt(r.amount)}</td>
+                      <td className="fw-semibold">
+                        {r.customer_name || "-"}
+                      </td>
+                      <td className="text-muted">
+                        {r.ref_no || "-"}
+                      </td>
+                      <td className="text-end">
+                        {fmt(r.amount)}
+                      </td>
                       <td className="text-end text-danger fw-bold">
                         -{fmt(adj)}
                       </td>
@@ -149,20 +199,33 @@ export default function SaleAdjustmentReport({ onNavigate }) {
 
                 {view.length === 0 && (
                   <tr>
-                    <td colSpan="6" className="text-center text-muted py-3">
+                    <td
+                      colSpan="6"
+                      className="text-center text-muted py-3"
+                    >
                       No record found
                     </td>
                   </tr>
                 )}
               </tbody>
 
+              {/* ================= FOOTER TOTALS ================= */}
               <tfoot>
                 <tr className="table-secondary fw-bold">
-                  <td colSpan="5" className="text-end">
-                    TOTAL NET
+                  <td colSpan="3" className="text-end">
+                    TOTAL
                   </td>
+
+                  <td className="text-end text-primary fs-6">
+                    {fmt(totals.amount)}
+                  </td>
+
+                  <td className="text-end text-danger fs-6">
+                    -{fmt(totals.adjustment)}
+                  </td>
+
                   <td className="text-end text-success fs-6">
-                    {fmt(totalNet)}
+                    {fmt(totals.net)}
                   </td>
                 </tr>
               </tfoot>
