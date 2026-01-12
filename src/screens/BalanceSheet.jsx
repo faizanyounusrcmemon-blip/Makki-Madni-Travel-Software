@@ -1,13 +1,11 @@
 import React, { useEffect, useState, useMemo } from "react";
 
-/* ================= HELPERS ================= */
 const fmt = (v) => (v || 0).toLocaleString("en-US", { maximumFractionDigits: 0 });
 
 export default function BalanceSheet({ onNavigate }) {
   const [data, setData] = useState({ customers: [], purchases: [] });
   const [loading, setLoading] = useState(true);
 
-  /* ================= LOAD DATA ================= */
   useEffect(() => {
     const loadData = async () => {
       try {
@@ -18,7 +16,7 @@ export default function BalanceSheet({ onNavigate }) {
           purchases: Array.isArray(d?.purchases) ? d.purchases : [],
         });
       } catch (err) {
-        console.error("Load Error:", err);
+        console.error(err);
         setData({ customers: [], purchases: [] });
       } finally {
         setLoading(false);
@@ -29,49 +27,44 @@ export default function BalanceSheet({ onNavigate }) {
 
   if (loading) return <div className="p-4 text-white">Loading...</div>;
 
-  /* ================= FILTER ROWS ================= */
+  // ================= SAFE ROWS =================
   const customerRows = useMemo(
-    () => (data.customers || []).filter((r) => Number(r?.balance || 0) > 0),
+    () => (Array.isArray(data.customers) ? data.customers : []).filter((r) => Number(r?.balance || 0) > 0),
     [data.customers]
   );
 
   const purchaseRows = useMemo(
-    () => (data.purchases || []).filter((r) => Number(r?.balance || 0) > 0),
+    () => (Array.isArray(data.purchases) ? data.purchases : []).filter((r) => Number(r?.balance || 0) > 0),
     [data.purchases]
   );
 
-  /* ================= TOTALS ================= */
-  const customerTotals = useMemo(
-    () =>
-      customerRows.reduce(
-        (acc, r) => {
-          acc.sale += Number(r?.sale_total || 0);
-          acc.received += Number(r?.received || 0);
-          acc.balance += Number(r?.balance || 0);
-          return acc;
-        },
-        { sale: 0, received: 0, balance: 0 }
-      ),
-    [customerRows]
-  );
+  // ================= SAFE TOTALS =================
+  const customerTotals = useMemo(() => {
+    return customerRows.reduce(
+      (acc, r) => {
+        acc.sale += Number(r?.sale_total || 0);
+        acc.received += Number(r?.received || 0);
+        acc.balance += Number(r?.balance || 0);
+        return acc;
+      },
+      { sale: 0, received: 0, balance: 0 }
+    );
+  }, [customerRows]);
 
-  const purchaseTotals = useMemo(
-    () =>
-      purchaseRows.reduce(
-        (acc, r) => {
-          acc.purchase += Number(r?.purchase_total || 0);
-          acc.paid += Number(r?.paid || 0);
-          acc.balance += Number(r?.balance || 0);
-          return acc;
-        },
-        { purchase: 0, paid: 0, balance: 0 }
-      ),
-    [purchaseRows]
-  );
+  const purchaseTotals = useMemo(() => {
+    return purchaseRows.reduce(
+      (acc, r) => {
+        acc.purchase += Number(r?.purchase_total || 0);
+        acc.paid += Number(r?.paid || 0);
+        acc.balance += Number(r?.balance || 0);
+        return acc;
+      },
+      { purchase: 0, paid: 0, balance: 0 }
+    );
+  }, [purchaseRows]);
 
   const netPosition = (customerTotals.balance || 0) - (purchaseTotals.balance || 0);
 
-  /* ================= RENDER ================= */
   return (
     <div className="container py-4">
       {/* HEADER */}
