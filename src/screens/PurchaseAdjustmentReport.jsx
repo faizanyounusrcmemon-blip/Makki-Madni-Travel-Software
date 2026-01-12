@@ -27,14 +27,13 @@ export default function PurchaseAdjustmentReport({ onNavigate }) {
   /* ================= LOAD ================= */
   const load = async () => {
     try {
-      const r = await fetch(
+      const res = await fetch(
         `${URL}/api/reports/purchase-adjustments`
       );
-      const d = await r.json();
-
-      const data = d.rows || [];
-      setRows(data);
-      setView(data);
+      const data = await res.json();
+      const rows = data.rows || [];
+      setRows(rows);
+      setView(rows);
     } catch (err) {
       console.error("Load Error:", err);
       setRows([]);
@@ -59,34 +58,40 @@ export default function PurchaseAdjustmentReport({ onNavigate }) {
       );
     }
 
-    if (fromDate)
+    if (fromDate) {
       temp = temp.filter(
         (r) => new Date(r.date) >= new Date(fromDate)
       );
+    }
 
-    if (toDate)
+    if (toDate) {
       temp = temp.filter(
         (r) => new Date(r.date) <= new Date(toDate)
       );
+    }
 
     setView(temp);
   }, [search, fromDate, toDate, rows]);
 
-  /* ================= TOTAL ================= */
-  const totalNet = useMemo(() => {
+  /* ================= TOTALS ================= */
+  const totals = useMemo(() => {
     return view.reduce(
-      (s, r) =>
-        s +
-        (Number(r.amount || 0) -
-          Number(r.adjustment_amount || 0)),
-      0
+      (acc, r) => {
+        const amount = Number(r.amount || 0);
+        const adj = Number(r.adjustment_amount || 0);
+        acc.amount += amount;
+        acc.adjustment += adj;
+        acc.net += amount - adj;
+        return acc;
+      },
+      { amount: 0, adjustment: 0, net: 0 }
     );
   }, [view]);
 
   return (
     <div className="container py-4">
       <div className="card shadow-lg border-0 rounded-4">
-        {/* HEADER */}
+        {/* ================= HEADER ================= */}
         <div
           className="card-header text-white d-flex justify-content-between align-items-center rounded-top-4"
           style={{
@@ -112,7 +117,7 @@ export default function PurchaseAdjustmentReport({ onNavigate }) {
         </div>
 
         <div className="card-body">
-          {/* FILTERS */}
+          {/* ================= FILTERS ================= */}
           <div className="row g-2 mb-3">
             <div className="col-md-4">
               <input
@@ -142,7 +147,7 @@ export default function PurchaseAdjustmentReport({ onNavigate }) {
             </div>
           </div>
 
-          {/* TABLE */}
+          {/* ================= TABLE ================= */}
           <div className="table-responsive">
             <table className="table table-bordered table-hover table-sm align-middle">
               <thead className="table-light">
@@ -150,7 +155,9 @@ export default function PurchaseAdjustmentReport({ onNavigate }) {
                   <th>Date</th>
                   <th>Customer</th>
                   <th>Ref No</th>
-                  <th className="text-end">Total Purchase</th>
+                  <th className="text-end">
+                    Total Purchase
+                  </th>
                   <th className="text-end text-danger">
                     Adjustment
                   </th>
@@ -202,13 +209,23 @@ export default function PurchaseAdjustmentReport({ onNavigate }) {
                 )}
               </tbody>
 
+              {/* ================= FOOTER TOTALS ================= */}
               <tfoot>
                 <tr className="table-secondary fw-bold">
-                  <td colSpan="5" className="text-end">
-                    TOTAL NET
+                  <td colSpan="3" className="text-end">
+                    TOTAL
                   </td>
+
+                  <td className="text-end text-primary fs-6">
+                    {fmt(totals.amount)}
+                  </td>
+
+                  <td className="text-end text-danger fs-6">
+                    -{fmt(totals.adjustment)}
+                  </td>
+
                   <td className="text-end text-success fs-6">
-                    {fmt(totalNet)}
+                    {fmt(totals.net)}
                   </td>
                 </tr>
               </tfoot>
