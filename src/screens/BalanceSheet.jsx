@@ -1,10 +1,7 @@
 import React, { useEffect, useState, useMemo } from "react";
 
-/* ================= AMOUNT FORMAT ================= */
 const fmt = (v) =>
-  v !== null && v !== undefined
-    ? Number(v).toLocaleString("en-US", { maximumFractionDigits: 0 })
-    : "0";
+  v != null ? Number(v).toLocaleString("en-US", { maximumFractionDigits: 0 }) : "0";
 
 export default function BalanceSheet({ onNavigate }) {
   const [data, setData] = useState({ customers: [], purchases: [] });
@@ -16,49 +13,47 @@ export default function BalanceSheet({ onNavigate }) {
 
   const loadData = async () => {
     try {
-      const res = await fetch(
-        `${import.meta.env.VITE_BACKEND_URL}/api/balance-sheet`
-      );
+      const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/balance-sheet`);
       const d = await res.json();
-      if (d.success) setData(d);
-      else alert(d.error || "Failed to load balance sheet");
-    } catch {
+      if (d && d.success) {
+        setData({
+          customers: Array.isArray(d.customers) ? d.customers : [],
+          purchases: Array.isArray(d.purchases) ? d.purchases : [],
+        });
+      } else {
+        alert(d?.error || "Failed to load balance sheet");
+      }
+    } catch (err) {
       alert("Server error");
+      console.error(err);
     } finally {
       setLoading(false);
     }
   };
 
   if (loading) return <div className="p-4 text-white">Loading...</div>;
-  if (!data) return null;
 
-  /* ================= FILTER ================= */
-  const customerRows = (data.customers || []).filter((r) => Number(r.balance) > 0);
-  const purchaseRows = (data.purchases || []).filter((r) => Number(r.balance) > 0);
+  const customerRows = data.customers.filter((r) => Number(r.balance) > 0);
+  const purchaseRows = data.purchases.filter((r) => Number(r.balance) > 0);
 
-  /* ================= TOTALS ================= */
   const customerTotals = useMemo(() => {
-    return customerRows.reduce(
-      (a, r) => {
-        a.sale += Number(r.sale_total || 0);
-        a.received += Number(r.received || 0);
-        a.balance += Number(r.balance || 0);
-        return a;
-      },
-      { sale: 0, received: 0, balance: 0 }
-    );
+    let totals = { sale: 0, received: 0, balance: 0 };
+    for (let r of customerRows) {
+      totals.sale += Number(r.sale_total || 0);
+      totals.received += Number(r.received || 0);
+      totals.balance += Number(r.balance || 0);
+    }
+    return totals;
   }, [customerRows]);
 
   const purchaseTotals = useMemo(() => {
-    return purchaseRows.reduce(
-      (a, r) => {
-        a.purchase += Number(r.purchase_total || 0);
-        a.paid += Number(r.paid || 0);
-        a.balance += Number(r.balance || 0);
-        return a;
-      },
-      { purchase: 0, paid: 0, balance: 0 }
-    );
+    let totals = { purchase: 0, paid: 0, balance: 0 };
+    for (let r of purchaseRows) {
+      totals.purchase += Number(r.purchase_total || 0);
+      totals.paid += Number(r.paid || 0);
+      totals.balance += Number(r.balance || 0);
+    }
+    return totals;
   }, [purchaseRows]);
 
   const netPosition = customerTotals.balance - purchaseTotals.balance;
@@ -66,7 +61,6 @@ export default function BalanceSheet({ onNavigate }) {
   return (
     <div className="container py-4">
       <div className="card shadow-lg border-0 rounded-4">
-        {/* ================= HEADER ================= */}
         <div
           className="card-header text-white d-flex justify-content-between align-items-center rounded-top-4"
           style={{ background: "linear-gradient(135deg, #6610f2, #6f42c1)" }}
@@ -75,17 +69,12 @@ export default function BalanceSheet({ onNavigate }) {
             <h5 className="mb-0 fw-bold">📊 BALANCE SHEET</h5>
             <small className="opacity-75">Customers & Suppliers summary</small>
           </div>
-
-          <button
-            className="btn btn-light btn-sm fw-semibold"
-            onClick={() => onNavigate("dashboard")}
-          >
+          <button className="btn btn-light btn-sm fw-semibold" onClick={() => onNavigate("dashboard")}>
             ← Back
           </button>
         </div>
 
         <div className="card-body">
-          {/* ================= CUSTOMER RECEIVABLE ================= */}
           <h5 className="text-info">💰 Customer Receivable</h5>
           <div className="table-responsive">
             <table className="table table-bordered table-hover table-sm align-middle">
@@ -110,7 +99,6 @@ export default function BalanceSheet({ onNavigate }) {
                     <td className="text-end text-danger fw-bold">{fmt(r.balance)}</td>
                   </tr>
                 ))}
-
                 {customerRows.length > 0 && (
                   <tr className="table-secondary fw-bold text-dark">
                     <td colSpan="3" className="text-end">GRAND TOTAL</td>
@@ -123,7 +111,6 @@ export default function BalanceSheet({ onNavigate }) {
             </table>
           </div>
 
-          {/* ================= SUPPLIER PAYABLE ================= */}
           <h5 className="text-warning mt-4">📦 Supplier Payable</h5>
           <div className="table-responsive">
             <table className="table table-bordered table-hover table-sm align-middle">
@@ -148,7 +135,6 @@ export default function BalanceSheet({ onNavigate }) {
                     <td className="text-end text-danger fw-bold">{fmt(r.balance)}</td>
                   </tr>
                 ))}
-
                 {purchaseRows.length > 0 && (
                   <tr className="table-secondary fw-bold text-dark">
                     <td colSpan="3" className="text-end">GRAND TOTAL</td>
@@ -161,7 +147,6 @@ export default function BalanceSheet({ onNavigate }) {
             </table>
           </div>
 
-          {/* ================= SUMMARY ================= */}
           <div className="mt-5 p-4 rounded bg-dark border border-light">
             <h4 className="mb-3">📌 SUMMARY</h4>
             <table className="table table-dark table-bordered mb-0">
