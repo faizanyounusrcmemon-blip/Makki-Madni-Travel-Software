@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
 
 const fmt = (v) => Number(v || 0).toLocaleString("en-US");
 
@@ -10,7 +9,7 @@ const fmtDate = (d) =>
     year: "numeric",
   });
 
-export default function SaleAdjustmentReport() {
+export default function SaleAdjustmentReport({ onNavigate }) {
   const [rows, setRows] = useState([]);
   const [view, setView] = useState([]);
   const [search, setSearch] = useState("");
@@ -18,7 +17,6 @@ export default function SaleAdjustmentReport() {
   const [toDate, setToDate] = useState("");
 
   const URL = import.meta.env.VITE_BACKEND_URL;
-  const navigate = useNavigate(); // ✅ dashboard navigation
 
   useEffect(() => {
     load();
@@ -74,12 +72,12 @@ export default function SaleAdjustmentReport() {
             </small>
           </div>
 
-          {/* ✅ Back to Dashboard */}
+          {/* ✅ Back (Demo Style – Correct) */}
           <button
             className="btn btn-light btn-sm fw-semibold"
-            onClick={() => navigate("/dashboard")}
+            onClick={() => onNavigate("dashboard")}
           >
-            ← Dashboard
+            ← Back
           </button>
         </div>
 
