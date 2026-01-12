@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 const fmt = (v) => Number(v || 0).toLocaleString("en-US");
 
@@ -17,6 +18,7 @@ export default function PurchaseAdjustmentReport() {
   const [toDate, setToDate] = useState("");
 
   const URL = import.meta.env.VITE_BACKEND_URL;
+  const navigate = useNavigate(); // ✅ React Router navigate
 
   useEffect(() => {
     load();
@@ -72,12 +74,12 @@ export default function PurchaseAdjustmentReport() {
             </small>
           </div>
 
-          {/* ✅ Back Button */}
+          {/* ✅ Back to Dashboard */}
           <button
             className="btn btn-light btn-sm fw-semibold"
-            onClick={() => window.history.back()}
+            onClick={() => navigate("/dashboard")}
           >
-            ← Back
+            ← Dashboard
           </button>
         </div>
 
@@ -125,6 +127,7 @@ export default function PurchaseAdjustmentReport() {
                   <th className="text-end text-success">Net Amount</th>
                 </tr>
               </thead>
+
               <tbody>
                 {view.map((r, i) => {
                   const adj = Number(r.adjustment_amount || 0);
