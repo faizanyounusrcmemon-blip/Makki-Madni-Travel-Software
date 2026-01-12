@@ -7,7 +7,7 @@ const fmt = (v) =>
     : "0";
 
 export default function BalanceSheet({ onNavigate }) {
-  const [data, setData] = useState(null);
+  const [data, setData] = useState({ customers: [], purchases: [] });
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -33,8 +33,8 @@ export default function BalanceSheet({ onNavigate }) {
   if (!data) return null;
 
   /* ================= FILTER ================= */
-  const customerRows = data.customers?.filter((r) => r.balance > 0) || [];
-  const purchaseRows = data.purchases?.filter((r) => r.balance > 0) || [];
+  const customerRows = (data.customers || []).filter((r) => Number(r.balance) > 0);
+  const purchaseRows = (data.purchases || []).filter((r) => Number(r.balance) > 0);
 
   /* ================= TOTALS ================= */
   const customerTotals = useMemo(() => {
