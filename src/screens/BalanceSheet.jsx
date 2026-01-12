@@ -65,18 +65,41 @@ export default function BalanceSheet({ onNavigate }) {
   return (
     <div className="container py-4">
 
-      {/* HEADER */}
-      <div className="d-flex justify-content-between align-items-center mb-4">
-        <div>
-          <h3 className="fw-bold mb-0">📊 Balance Sheet</h3>
-          <small className="text-muted">Receivable, Payable & Net Summary</small>
+      {/* ================= BEAUTIFUL HEADER ================= */}
+      <div
+        className="mb-4 p-4 rounded-3 shadow-sm text-white"
+        style={{
+          background: "linear-gradient(90deg, #2563eb, #06b6d4)",
+        }}
+      >
+        <div className="d-flex justify-content-between align-items-center">
+          <div className="d-flex align-items-center gap-3">
+            <div
+              className="d-flex align-items-center justify-content-center rounded-circle"
+              style={{
+                width: 48,
+                height: 48,
+                background: "rgba(255,255,255,0.2)",
+                fontSize: 22,
+              }}
+            >
+              📊
+            </div>
+            <div>
+              <h4 className="mb-1 fw-bold">Balance Sheet</h4>
+              <small className="opacity-75">
+                Receivable, Payable & Net Summary
+              </small>
+            </div>
+          </div>
+
+          <button
+            className="btn btn-light btn-sm fw-semibold"
+            onClick={() => onNavigate("dashboard")}
+          >
+            ← Back
+          </button>
         </div>
-        <button
-          className="btn btn-sm btn-outline-secondary"
-          onClick={() => onNavigate("dashboard")}
-        >
-          ← Back
-        </button>
       </div>
 
       {/* ================= CUSTOMER RECEIVABLE ================= */}
