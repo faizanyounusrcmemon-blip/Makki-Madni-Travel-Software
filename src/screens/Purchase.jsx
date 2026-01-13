@@ -15,17 +15,23 @@ const formatInput = (v) => {
   return dec !== undefined ? `${intFmt}.${dec}` : intFmt;
 };
 
-const parseNumber = (v) => {
-  if (!v) return 0;
-  return parseFloat(String(v).replace(/,/g, "")) || 0;
-};
+const parseNumber = (v) =>
+  parseFloat(String(v || 0).replace(/,/g, "")) || 0;
 
 export default function Purchase({ onNavigate }) {
   const [refNo, setRefNo] = useState("");
   const [rows, setRows] = useState([]);
-  const [loading, setLoading] = useState(false);
   const [pending, setPending] = useState([]);
+  const [suppliers, setSuppliers] = useState([]);
+  const [loading, setLoading] = useState(false);
   const [isEdit, setIsEdit] = useState(false);
+
+  /* ================= LOAD SUPPLIERS ================= */
+  useEffect(() => {
+    fetch(`${import.meta.env.VITE_BACKEND_URL}/api/supplier/list`)
+      .then((r) => r.json())
+      .then((d) => d.success && setSuppliers(d.rows || []));
+  }, []);
 
   /* ================= LOAD PENDING ================= */
   const loadPending = async () => {
@@ -53,7 +59,7 @@ export default function Purchase({ onNavigate }) {
     setLoading(false);
 
     if (!data.success) {
-      alert(data.error || "Package not found");
+      alert(data.error || "Not found");
       setRows([]);
       return;
     }
@@ -75,6 +81,8 @@ export default function Purchase({ onNavigate }) {
           : "",
         purchase_pkr: Number(x.purchase_pkr) || 0,
         profit: Number(x.profit) || 0,
+        supplier_code: x.supplier_code || "",
+        supplier_name: x.supplier_name || "",
       }))
     );
   };
@@ -83,17 +91,26 @@ export default function Purchase({ onNavigate }) {
   const updateRow = (i, field, value) => {
     const copy = [...rows];
     const r = copy[i];
-    r[field] = formatInput(value);
+
+    if (field === "supplier_code") {
+      r.supplier_code = value;
+      const s = suppliers.find((x) => x.supplier_code === value);
+      r.supplier_name = s ? s.supplier_name : "";
+    } else {
+      r[field] = formatInput(value);
+    }
+
     const sar = parseNumber(r.purchase_sar);
     const rate = parseNumber(r.purchase_rate);
     r.purchase_pkr = sar * rate;
     r.profit = r.sale_pkr - r.purchase_pkr;
+
     setRows(copy);
   };
 
   /* ================= SAVE ================= */
   const savePurchase = async () => {
-    if (!rows.length) return alert("No data to save");
+    if (!rows.length) return alert("No data");
 
     const cleanRows = rows.map((r) => ({
       ...r,
@@ -136,12 +153,12 @@ export default function Purchase({ onNavigate }) {
   return (
     <div className="container p-3">
 
-      {/* HEADER CARD */}
+      {/* HEADER */}
       <div className="card shadow-sm mb-3">
-        <div className="card-body d-flex justify-content-between align-items-center">
+        <div className="card-body d-flex justify-content-between">
           <div>
             <h4 className="fw-bold mb-0">
-              🧾 Purchase Entry{" "}
+              🧾 Purchase Entry
               {isEdit && (
                 <span className="badge bg-warning text-dark ms-2">
                   EDIT MODE
@@ -149,10 +166,9 @@ export default function Purchase({ onNavigate }) {
               )}
             </h4>
             <small className="text-muted">
-              Enter purchase values & profit will auto calculate
+              Purchase values enter karein – profit auto calculate
             </small>
           </div>
-
           <div className="d-flex gap-2">
             <button
               className="btn btn-outline-secondary btn-sm"
@@ -164,7 +180,7 @@ export default function Purchase({ onNavigate }) {
               className="btn btn-success btn-sm"
               onClick={savePurchase}
             >
-              💾 {isEdit ? "✏️ Update Purchase" : "💾 Save Purchase"}
+              💾 {isEdit ? "Update Purchase" : "Save Purchase"}
             </button>
           </div>
         </div>
@@ -172,20 +188,18 @@ export default function Purchase({ onNavigate }) {
 
       {isPartial && (
         <div className="alert alert-warning fw-bold">
-          ⚠️ This purchase is PARTIALLY completed
+          ⚠️ Purchase PARTIAL hai
         </div>
       )}
 
-      {/* PENDING */}
+      {/* PENDING LIST */}
       <div className="card shadow-sm mb-3">
         <div className="card-header fw-bold text-danger">
           ⏳ Pending / Partial Purchases
         </div>
         <div className="card-body p-2">
           {pending.length === 0 ? (
-            <p className="text-success mb-0">
-              ✅ No pending purchases
-            </p>
+            <p className="text-success mb-0">✅ No pending</p>
           ) : (
             <ul className="list-group list-group-flush">
               {pending.map((p, i) => (
@@ -193,19 +207,20 @@ export default function Purchase({ onNavigate }) {
                   key={i}
                   className="list-group-item d-flex justify-content-between align-items-center"
                 >
-                  <div className="d-flex flex-column">
-                    <div className="fw-bold">
-                      {p.ref_no} — <span className="text-primary">{p.customer_name}</span>
-                      <span
-                        className={`badge ms-2 ${
-                          p.status === "PENDING"
-                            ? "bg-danger"
-                            : "bg-warning text-dark"
-                        }`}
-                      >
-                        {p.status}
-                      </span>
-                    </div>
+                  <div className="fw-bold">
+                    {p.ref_no} —
+                    <span className="text-primary ms-1">
+                      {p.customer_name}
+                    </span>
+                    <span
+                      className={`badge ms-2 ${
+                        p.status === "PENDING"
+                          ? "bg-danger"
+                          : "bg-warning text-dark"
+                      }`}
+                    >
+                      {p.status}
+                    </span>
                   </div>
                   <button
                     className="btn btn-sm btn-outline-primary"
@@ -225,14 +240,14 @@ export default function Purchase({ onNavigate }) {
         <div className="card-body d-flex gap-2">
           <input
             className="form-control form-control-sm"
-            placeholder="Enter Package Ref No"
+            placeholder="Enter Ref No"
             value={refNo}
             onChange={(e) => setRefNo(e.target.value)}
           />
           <button
             className="btn btn-primary btn-sm"
-            onClick={() => loadPackage()}
             disabled={loading}
+            onClick={() => loadPackage()}
           >
             {loading ? "Loading..." : "Load"}
           </button>
@@ -242,7 +257,7 @@ export default function Purchase({ onNavigate }) {
       {/* TABLE */}
       <div className="card shadow">
         <div className="table-responsive">
-          <table className="table table-hover table-sm mb-0">
+          <table className="table table-sm table-hover mb-0">
             <thead className="table-dark sticky-top">
               <tr>
                 <th>Item</th>
@@ -253,18 +268,21 @@ export default function Purchase({ onNavigate }) {
                 <th>Purchase Rate</th>
                 <th>Purchase PKR</th>
                 <th>Profit</th>
+                <th>Supplier</th>
               </tr>
             </thead>
             <tbody>
               {rows.map((r, i) => (
                 <tr key={i}>
-                  <td className="fw-bold">{r.item_label || r.item}</td>
+                  <td className="fw-bold">
+                    {r.item_label || r.item}
+                  </td>
                   <td>{r.sale_sar}</td>
                   <td>{r.sale_rate}</td>
                   <td>{r.sale_pkr.toLocaleString()}</td>
                   <td>
                     <input
-                      className="form-control form-control-sm rounded"
+                      className="form-control form-control-sm"
                       value={r.purchase_sar}
                       onChange={(e) =>
                         updateRow(i, "purchase_sar", e.target.value)
@@ -273,7 +291,7 @@ export default function Purchase({ onNavigate }) {
                   </td>
                   <td>
                     <input
-                      className="form-control form-control-sm rounded"
+                      className="form-control form-control-sm"
                       value={r.purchase_rate}
                       onChange={(e) =>
                         updateRow(i, "purchase_rate", e.target.value)
@@ -283,10 +301,35 @@ export default function Purchase({ onNavigate }) {
                   <td>{r.purchase_pkr.toLocaleString()}</td>
                   <td
                     className={`fw-bold ${
-                      r.profit >= 0 ? "text-success" : "text-danger"
+                      r.profit >= 0
+                        ? "text-success"
+                        : "text-danger"
                     }`}
                   >
                     {r.profit.toLocaleString()}
+                  </td>
+                  <td>
+                    <select
+                      className="form-select form-select-sm"
+                      value={r.supplier_code}
+                      onChange={(e) =>
+                        updateRow(
+                          i,
+                          "supplier_code",
+                          e.target.value
+                        )
+                      }
+                    >
+                      <option value="">Select Supplier</option>
+                      {suppliers.map((s) => (
+                        <option
+                          key={s.supplier_code}
+                          value={s.supplier_code}
+                        >
+                          {s.supplier_name}
+                        </option>
+                      ))}
+                    </select>
                   </td>
                 </tr>
               ))}
@@ -294,6 +337,7 @@ export default function Purchase({ onNavigate }) {
           </table>
         </div>
       </div>
+
     </div>
   );
 }

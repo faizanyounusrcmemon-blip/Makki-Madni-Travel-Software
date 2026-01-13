@@ -119,6 +119,7 @@ export default function PurchaseDetail({ refNo, onNavigate }) {
           <thead className="table-dark text-center">
             <tr>
               <th rowSpan="2">Item</th>
+              <th rowSpan="2">Supplier</th>
               <th colSpan="3">Sale</th>
               <th colSpan="3">Purchase</th>
               <th rowSpan="2">Profit (PKR)</th>
@@ -137,6 +138,10 @@ export default function PurchaseDetail({ refNo, onNavigate }) {
             {rows.map((r, i) => (
               <tr key={i} className="text-end">
                 <td className="text-start">{r.item}</td>
+
+                <td className="text-start">
+                  {r.supplier_name || "-"}
+                </td>
 
                 <td>{fmt(r.sale_sar)}</td>
                 <td>{fmt(r.sale_rate)}</td>
@@ -162,6 +167,7 @@ export default function PurchaseDetail({ refNo, onNavigate }) {
           <tfoot className="table-light fw-bold text-end">
             <tr>
               <td className="text-start">TOTAL</td>
+              <td>-</td>
               <td>{fmt(totals.sale_sar)}</td>
               <td>-</td>
               <td>{fmt(totals.sale_pkr)}</td>
