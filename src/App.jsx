@@ -17,6 +17,7 @@ import Purchase from "./screens/Purchase";
 import PurchaseList from "./screens/PurchaseList";
 import PurchaseDetail from "./screens/PurchaseDetail";
 import PendingPurchase from "./screens/PendingPurchase";
+import Supplier from "./screens/Supplier";
 
 // LEDGERS
 import CustomerLedger from "./screens/CustomerLedger";
@@ -31,6 +32,7 @@ import AllReports from "./screens/AllReports";
 import ProfitReport from "./screens/ProfitReport";
 import SaleAdjustmentReport from "./screens/SaleAdjustmentReport";
 import PurchaseAdjustmentReport from "./screens/PurchaseAdjustmentReport";
+import SupplierPurchaseReport from "./screens/SupplierPurchaseReport";
 import CreateUser from "./screens/CreateUser";
 import DeletedReports from "./screens/DeletedReports";
 import Restore from "./screens/Restore";
@@ -85,6 +87,7 @@ export default function App() {
 
       {/* ================= PURCHASE ================= */}
       {page === "purchase" && <Purchase onNavigate={navigate} />}
+      {page === "supplier" && <Supplier onNavigate={navigate} />}
       {page === "purchaseList" && <PurchaseList onNavigate={navigate} />}
       {page === "pendingPurchase" && <PendingPurchase onNavigate={navigate} />}
       {page === "purchase_detail" && (
@@ -104,6 +107,7 @@ export default function App() {
       {page === "profitReport" && <ProfitReport onNavigate={navigate} />}
       {page === "saleAdjustmentReport" && <SaleAdjustmentReport onNavigate={navigate} />}
       {page === "purchaseAdjustmentReport" && <PurchaseAdjustmentReport onNavigate={navigate} />}
+      {page === "supplierPurchaseReport" && <SupplierPurchaseReport onNavigate={navigate} />}
       {page === "createUser" && <CreateUser onNavigate={navigate} />}
       {page === "deletedReports" && (
         <DeletedReports onNavigate={navigate} />
