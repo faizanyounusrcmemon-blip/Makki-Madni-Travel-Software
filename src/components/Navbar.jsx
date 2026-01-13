@@ -93,7 +93,8 @@ export default function Navbar({ onNavigate }) {
               {can("all_reports") && <a onClick={() => go("allreports")}>📈 All Reports</a>}
               {can("profit_report") && <a onClick={() => go("profitReport")}>💰 Profit Report</a>}
               {can("sale_adjustment_report") && <a onClick={() => go("saleAdjustmentReport")}>📉 Sale Adjustment Report</a>}
-              {can("Purchase_adjustment_report") && <a onClick={() => go("purchaseAdjustmentReport")}>📉 Purchase Adjustment Report</a>}
+              {can("purchase_adjustment_report") && <a onClick={() => go("purchaseAdjustmentReport")}>📉 Purchase Adjustment Report</a>}
+              {can("pupplier_purchase_report") && <a onClick={() => go("supplierPurchaseReport")}>📦 Supplier Purchase Report</a>}
               {can("system_storage") && <a onClick={() => go("systemStorage")}>💾 System Storage</a>}
             </div>
           )}
@@ -107,6 +108,7 @@ export default function Navbar({ onNavigate }) {
             <div className="menu-box">
               {can("create_user") && <a onClick={() => go("createUser")}>👤 Create User</a>}
               {can("manage_users") && <a onClick={() => go("manageUsers")}>🛠 Manage Users</a>}
+              {can("supplier") && <a onClick={() => go("supplier")}>🏷 Supplier</a>}
               {can("deleted_reports") && <a onClick={() => go("deletedReports")}>🗑 Deleted Reports</a>}
               {can("restore") && <a onClick={() => go("restore")}>♻ Restore</a>}
             </div>
