@@ -28,7 +28,7 @@ export default function SupplierPurchaseReport({ onNavigate }) {
       if (data.success) {
         setRows(data.rows || []);
         setSuppliers(data.suppliers || ["ALL"]);
-        setSupplier("ALL"); // default dropdown
+        setSupplier("ALL");
       } else {
         console.error("Error fetching report:", data.error);
       }
@@ -45,7 +45,7 @@ export default function SupplierPurchaseReport({ onNavigate }) {
   /* ================= FILTER ================= */
   const filtered = rows.filter((r) => {
     if (supplier !== "ALL" && r.supplier_name !== supplier) return false;
-    if (itemType !== "ALL" && r.item.toLowerCase() !== itemType.toLowerCase()) return false;
+    if (itemType !== "ALL" && !r.item.toLowerCase().includes(itemType.toLowerCase())) return false;
     if (from && new Date(r.booking_date) < new Date(from)) return false;
     if (to && new Date(r.booking_date) > new Date(to)) return false;
     if (search) {
@@ -100,7 +100,6 @@ export default function SupplierPurchaseReport({ onNavigate }) {
       {/* FILTERS */}
       <div className="card shadow-sm mb-3 p-2">
         <div className="row g-2 align-items-end">
-          {/* Supplier */}
           <div className="col-md-3">
             <label className="fw-bold">Supplier</label>
             <select
@@ -116,7 +115,6 @@ export default function SupplierPurchaseReport({ onNavigate }) {
             </select>
           </div>
 
-          {/* Item Type */}
           <div className="col-md-3">
             <label className="fw-bold">Item Type</label>
             <select
@@ -132,7 +130,6 @@ export default function SupplierPurchaseReport({ onNavigate }) {
             </select>
           </div>
 
-          {/* Date From */}
           <div className="col-md-2">
             <label className="fw-bold">From</label>
             <input
@@ -143,7 +140,6 @@ export default function SupplierPurchaseReport({ onNavigate }) {
             />
           </div>
 
-          {/* Date To */}
           <div className="col-md-2">
             <label className="fw-bold">To</label>
             <input
@@ -154,7 +150,6 @@ export default function SupplierPurchaseReport({ onNavigate }) {
             />
           </div>
 
-          {/* Search */}
           <div className="col-md-2">
             <label className="fw-bold">Search</label>
             <input
@@ -165,7 +160,6 @@ export default function SupplierPurchaseReport({ onNavigate }) {
             />
           </div>
 
-          {/* Reload */}
           <div className="col-md-2 mt-2">
             <button
               className="btn btn-primary btn-sm w-100"
