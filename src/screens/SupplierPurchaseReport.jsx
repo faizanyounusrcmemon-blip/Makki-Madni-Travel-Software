@@ -17,39 +17,26 @@ export default function SupplierPurchaseReport({ onNavigate }) {
 
   const boxRef = useRef(null);
 
-  /* ================= LOAD SUPPLIERS (AUTO) ================= */
+  /* ================= LOAD SUPPLIERS ================= */
   const loadSuppliers = async () => {
-    try {
-      const res = await fetch(
-        `${import.meta.env.VITE_BACKEND_URL}/api/reports/supplier-purchase`
-      );
-      const data = await res.json();
-      if (data.success) {
-        setSuppliers(data.suppliers || ["ALL"]);
-      }
-    } catch (err) {
-      console.error("Supplier load error:", err);
-    }
+    const res = await fetch(
+      `${import.meta.env.VITE_BACKEND_URL}/api/reports/supplier-purchase`
+    );
+    const data = await res.json();
+    if (data.success) setSuppliers(data.suppliers || ["ALL"]);
   };
 
-  /* ================= LOAD REPORT (BUTTON) ================= */
+  /* ================= LOAD REPORT ================= */
   const loadReport = async () => {
     setLoading(true);
-    try {
-      const res = await fetch(
-        `${import.meta.env.VITE_BACKEND_URL}/api/reports/supplier-purchase`
-      );
-      const data = await res.json();
-      if (data.success) {
-        setRows(data.rows || []);
-      }
-    } catch (err) {
-      console.error("Report load error:", err);
-    }
+    const res = await fetch(
+      `${import.meta.env.VITE_BACKEND_URL}/api/reports/supplier-purchase`
+    );
+    const data = await res.json();
+    if (data.success) setRows(data.rows || []);
     setLoading(false);
   };
 
-  /* ✅ ONLY SUPPLIERS LOAD ON OPEN */
   useEffect(() => {
     loadSuppliers();
   }, []);
@@ -98,86 +85,101 @@ export default function SupplierPurchaseReport({ onNavigate }) {
   };
 
   return (
-    <div className="container p-3">
+    <div className="container-fluid p-3 bg-light min-vh-100">
       {/* HEADER */}
-      <div className="d-flex justify-content-between mb-3">
-        <h4 className="fw-bold">📦 Supplier Wise Purchase Report</h4>
-        <div className="d-flex gap-2">
-          <button className="btn btn-secondary btn-sm" onClick={() => onNavigate("dashboard")}>
-            ⬅ Back
-          </button>
-          <button className="btn btn-success btn-sm" onClick={exportPDF}>
-            📄 PDF
-          </button>
-        </div>
-      </div>
-
-      {/* FILTERS */}
-      <div className="card p-2 mb-3">
-        <div className="row g-2 align-items-end">
-          <div className="col-md-3">
-            <label className="fw-bold">Supplier</label>
-            <select
-              className="form-select form-select-sm"
-              value={supplier}
-              onChange={(e) => setSupplier(e.target.value)}
-            >
-              {suppliers.map((s, i) => (
-                <option key={i} value={s}>
-                  {s === "ALL" ? "All Suppliers" : s}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className="col-md-3">
-            <label className="fw-bold">Item Type</label>
-            <select
-              className="form-select form-select-sm"
-              value={itemType}
-              onChange={(e) => setItemType(e.target.value)}
-            >
-              <option value="ALL">All Items</option>
-              <option value="Ticket">Ticket</option>
-              <option value="Hotel">Hotel</option>
-              <option value="Visa">Visa</option>
-              <option value="Transport">Transport</option>
-            </select>
-          </div>
-
-          <div className="col-md-2">
-            <label className="fw-bold">From</label>
-            <input type="date" className="form-control form-control-sm" value={from} onChange={(e) => setFrom(e.target.value)} />
-          </div>
-
-          <div className="col-md-2">
-            <label className="fw-bold">To</label>
-            <input type="date" className="form-control form-control-sm" value={to} onChange={(e) => setTo(e.target.value)} />
-          </div>
-
-          <div className="col-md-2">
-            <button
-              className="btn btn-primary btn-sm w-100"
-              onClick={loadReport}
-              disabled={loading}
-            >
-              {loading ? "Loading..." : "Reload"}
+      <div className="card shadow-sm mb-3 border-0">
+        <div className="card-body d-flex justify-content-between align-items-center bg-primary text-white rounded">
+          <h4 className="mb-0">📦 Supplier Wise Purchase Report</h4>
+          <div className="d-flex gap-2">
+            <button className="btn btn-light btn-sm" onClick={() => onNavigate("dashboard")}>
+              ⬅ Back
+            </button>
+            <button className="btn btn-success btn-sm" onClick={exportPDF}>
+              📄 Export PDF
             </button>
           </div>
         </div>
       </div>
 
+      {/* FILTERS */}
+      <div className="card shadow-sm mb-3 border-0">
+        <div className="card-body">
+          <div className="row g-2 align-items-end">
+            <div className="col-md-3">
+              <label className="fw-semibold">Supplier</label>
+              <select className="form-select form-select-sm" value={supplier} onChange={(e) => setSupplier(e.target.value)}>
+                {suppliers.map((s, i) => (
+                  <option key={i} value={s}>
+                    {s === "ALL" ? "All Suppliers" : s}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="col-md-2">
+              <label className="fw-semibold">Item</label>
+              <select className="form-select form-select-sm" value={itemType} onChange={(e) => setItemType(e.target.value)}>
+                <option value="ALL">All</option>
+                <option value="Ticket">Ticket</option>
+                <option value="Hotel">Hotel</option>
+                <option value="Visa">Visa</option>
+                <option value="Transport">Transport</option>
+              </select>
+            </div>
+
+            <div className="col-md-2">
+              <label className="fw-semibold">From</label>
+              <input type="date" className="form-control form-control-sm" value={from} onChange={(e) => setFrom(e.target.value)} />
+            </div>
+
+            <div className="col-md-2">
+              <label className="fw-semibold">To</label>
+              <input type="date" className="form-control form-control-sm" value={to} onChange={(e) => setTo(e.target.value)} />
+            </div>
+
+            <div className="col-md-2">
+              <label className="fw-semibold">Search</label>
+              <input className="form-control form-control-sm" placeholder="Ref / Item / Supplier" value={search} onChange={(e) => setSearch(e.target.value)} />
+            </div>
+
+            <div className="col-md-1">
+              <button className="btn btn-primary btn-sm w-100" onClick={loadReport} disabled={loading}>
+                {loading ? "..." : "Load"}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* SUMMARY */}
+      <div className="row g-3 mb-3">
+        {[
+          { title: "Sale", value: totals.sale, cls: "success" },
+          { title: "Purchase", value: totals.purchase, cls: "warning" },
+          { title: "Profit", value: totals.profit, cls: totals.profit >= 0 ? "primary" : "danger" },
+        ].map((c, i) => (
+          <div className="col-md-4" key={i}>
+            <div className={`card shadow-sm border-0 text-${c.cls}`}>
+              <div className="card-body text-center">
+                <div className="fw-semibold">{c.title}</div>
+                <h4 className="fw-bold mb-0">{fmt(c.value)}</h4>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+
       {/* TABLE */}
-      <div ref={boxRef} className="card p-2">
-        <table className="table table-bordered table-sm">
-          <thead className="table-dark text-center">
+      <div ref={boxRef} className="card shadow-sm border-0">
+        <table className="table table-hover table-sm mb-0">
+          <thead className="table-dark sticky-top text-center">
             <tr>
               <th>Supplier</th>
               <th>Ref No</th>
               <th>Item</th>
-              <th>Sale</th>
-              <th>Purchase</th>
-              <th>Profit</th>
+              <th className="text-end">Sale</th>
+              <th className="text-end">Purchase</th>
+              <th className="text-end">Profit</th>
             </tr>
           </thead>
           <tbody>
@@ -196,23 +198,14 @@ export default function SupplierPurchaseReport({ onNavigate }) {
               ))
             ) : (
               <tr>
-                <td colSpan="6" className="text-center text-muted">
-                  PLZ Click Reload button
+                <td colSpan="6" className="text-center text-muted py-4">
+                  📌 Report load karne ke liye <b>Load</b> button dabayein
                 </td>
               </tr>
             )}
           </tbody>
-          <tfoot className="fw-bold text-end">
-            <tr>
-              <td colSpan="3">TOTAL</td>
-              <td>{fmt(totals.sale)}</td>
-              <td>{fmt(totals.purchase)}</td>
-              <td>{fmt(totals.profit)}</td>
-            </tr>
-          </tfoot>
         </table>
       </div>
     </div>
   );
 }
-
