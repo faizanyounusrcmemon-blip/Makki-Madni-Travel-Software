@@ -197,7 +197,7 @@ export default function SupplierPurchaseReport({ onNavigate }) {
             ) : (
               <tr>
                 <td colSpan="6" className="text-center text-muted">
-                  Reload button دبائیں
+                  PLZ Click Reload button
                 </td>
               </tr>
             )}
@@ -215,3 +215,4 @@ export default function SupplierPurchaseReport({ onNavigate }) {
     </div>
   );
 }
+
