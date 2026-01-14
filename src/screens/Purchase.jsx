@@ -20,7 +20,6 @@ const parseNumber = (v) =>
 
 /* ===============================
    ITEM CATEGORY COLOR
-   same category = same color
 =============================== */
 const itemCategoryColor = (text = "") => {
   const t = text.toLowerCase();
@@ -31,7 +30,7 @@ const itemCategoryColor = (text = "") => {
   if (t.includes("ticket")) return "#fd7e14"; // orange
   if (t.includes("food")) return "#dc3545"; // red
 
-  return "#212529"; // default dark
+  return "#212529"; // default
 };
 
 export default function Purchase({ onNavigate }) {
@@ -168,6 +167,90 @@ export default function Purchase({ onNavigate }) {
   /* ================= UI ================= */
   return (
     <div className="container p-3">
+
+      {/* HEADER */}
+      <div className="card shadow-sm mb-3">
+        <div className="card-body d-flex justify-content-between">
+          <div>
+            <h4 className="fw-bold mb-0">
+              🧾 Purchase Entry
+              {isEdit && (
+                <span className="badge bg-warning text-dark ms-2">
+                  EDIT MODE
+                </span>
+              )}
+            </h4>
+            <small className="text-muted">
+              Purchase values enter karein – profit auto calculate
+            </small>
+          </div>
+          <div className="d-flex gap-2">
+            <button
+              className="btn btn-outline-secondary btn-sm"
+              onClick={() => onNavigate("dashboard")}
+            >
+              ⬅ Back
+            </button>
+            <button
+              className="btn btn-success btn-sm"
+              onClick={savePurchase}
+            >
+              💾 {isEdit ? "Update Purchase" : "Save Purchase"}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {isPartial && (
+        <div className="alert alert-warning fw-bold">
+          ⚠️ Purchase PARTIAL hai
+        </div>
+      )}
+
+      {/* PENDING LIST */}
+      <div className="card shadow-sm mb-3">
+        <div className="card-header fw-bold text-danger">
+          ⏳ Pending / Partial Purchases
+        </div>
+        <div className="card-body p-2">
+          {pending.length === 0 ? (
+            <p className="text-success mb-0">✅ No pending</p>
+          ) : (
+            <ul className="list-group list-group-flush">
+              {pending.map((p, i) => (
+                <li
+                  key={i}
+                  className="list-group-item d-flex justify-content-between align-items-center"
+                >
+                  <div className="fw-bold">
+                    {p.ref_no} —
+                    <span className="text-primary ms-1">
+                      {p.customer_name}
+                    </span>
+                    <span
+                      className={`badge ms-2 ${
+                        p.status === "PENDING"
+                          ? "bg-danger"
+                          : "bg-warning text-dark"
+                      }`}
+                    >
+                      {p.status}
+                    </span>
+                  </div>
+                  <button
+                    className="btn btn-sm btn-outline-primary"
+                    onClick={() => loadPackage(p.ref_no)}
+                  >
+                    Load
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      </div>
+
+      {/* TABLE */}
       <div className="card shadow">
         <div className="table-responsive">
           <table className="table table-sm table-hover mb-0">
@@ -203,17 +286,65 @@ export default function Purchase({ onNavigate }) {
                   <td>{r.sale_sar}</td>
                   <td>{r.sale_rate}</td>
                   <td>{r.sale_pkr.toLocaleString()}</td>
-                  <td>{r.purchase_sar}</td>
-                  <td>{r.purchase_rate}</td>
+
+                  <td>
+                    <input
+                      className="form-control form-control-sm"
+                      value={r.purchase_sar}
+                      onChange={(e) =>
+                        updateRow(i, "purchase_sar", e.target.value)
+                      }
+                    />
+                  </td>
+
+                  <td>
+                    <input
+                      className="form-control form-control-sm"
+                      value={r.purchase_rate}
+                      onChange={(e) =>
+                        updateRow(i, "purchase_rate", e.target.value)
+                      }
+                    />
+                  </td>
+
                   <td>{r.purchase_pkr.toLocaleString()}</td>
-                  <td>{r.profit.toLocaleString()}</td>
-                  <td>{r.supplier_name}</td>
+
+                  <td
+                    className={`fw-bold ${
+                      r.profit >= 0
+                        ? "text-success"
+                        : "text-danger"
+                    }`}
+                  >
+                    {r.profit.toLocaleString()}
+                  </td>
+
+                  <td>
+                    <select
+                      className="form-select form-select-sm"
+                      value={r.supplier_code}
+                      onChange={(e) =>
+                        updateRow(i, "supplier_code", e.target.value)
+                      }
+                    >
+                      <option value="">Select Supplier</option>
+                      {suppliers.map((s) => (
+                        <option
+                          key={s.supplier_code}
+                          value={s.supplier_code}
+                        >
+                          {s.supplier_name}
+                        </option>
+                      ))}
+                    </select>
+                  </td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
       </div>
+
     </div>
   );
 }
