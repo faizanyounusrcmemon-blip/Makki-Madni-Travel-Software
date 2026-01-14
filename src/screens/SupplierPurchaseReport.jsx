@@ -7,7 +7,7 @@ const fmt = (n) => Number(n || 0).toLocaleString("en-US");
 
 export default function SupplierPurchaseReport({ onNavigate }) {
   const [rows, setRows] = useState([]);
-  const [suppliers, setSuppliers] = useState([]);
+  const [suppliers, setSuppliers] = useState(["ALL"]);
   const [supplier, setSupplier] = useState("ALL");
   const [itemType, setItemType] = useState("ALL");
   const [from, setFrom] = useState("");
@@ -17,8 +17,23 @@ export default function SupplierPurchaseReport({ onNavigate }) {
 
   const boxRef = useRef(null);
 
-  /* ================= LOAD DATA ================= */
-  const load = async () => {
+  /* ================= LOAD SUPPLIERS (AUTO) ================= */
+  const loadSuppliers = async () => {
+    try {
+      const res = await fetch(
+        `${import.meta.env.VITE_BACKEND_URL}/api/reports/supplier-purchase`
+      );
+      const data = await res.json();
+      if (data.success) {
+        setSuppliers(data.suppliers || ["ALL"]);
+      }
+    } catch (err) {
+      console.error("Supplier load error:", err);
+    }
+  };
+
+  /* ================= LOAD REPORT (BUTTON) ================= */
+  const loadReport = async () => {
     setLoading(true);
     try {
       const res = await fetch(
@@ -27,25 +42,26 @@ export default function SupplierPurchaseReport({ onNavigate }) {
       const data = await res.json();
       if (data.success) {
         setRows(data.rows || []);
-        setSuppliers(data.suppliers || ["ALL"]);
-        setSupplier("ALL");
-      } else {
-        console.error("Error fetching report:", data.error);
       }
     } catch (err) {
-      console.error("Error loading supplier purchase report:", err);
+      console.error("Report load error:", err);
     }
     setLoading(false);
   };
 
+  /* ✅ ONLY SUPPLIERS LOAD ON OPEN */
   useEffect(() => {
- 
+    loadSuppliers();
   }, []);
 
   /* ================= FILTER ================= */
   const filtered = rows.filter((r) => {
     if (supplier !== "ALL" && r.supplier_name !== supplier) return false;
-    if (itemType !== "ALL" && !r.item.toLowerCase().includes(itemType.toLowerCase())) return false;
+    if (
+      itemType !== "ALL" &&
+      !r.item?.toLowerCase().includes(itemType.toLowerCase())
+    )
+      return false;
     if (from && new Date(r.booking_date) < new Date(from)) return false;
     if (to && new Date(r.booking_date) > new Date(to)) return false;
     if (search) {
@@ -70,7 +86,7 @@ export default function SupplierPurchaseReport({ onNavigate }) {
     { purchase: 0, sale: 0, profit: 0 }
   );
 
-  /* ================= PDF EXPORT ================= */
+  /* ================= PDF ================= */
   const exportPDF = async () => {
     const canvas = await html2canvas(boxRef.current, { scale: 2 });
     const img = canvas.toDataURL("image/png");
@@ -81,12 +97,11 @@ export default function SupplierPurchaseReport({ onNavigate }) {
     pdf.save("supplier-purchase-report.pdf");
   };
 
-  /* ================= UI ================= */
   return (
     <div className="container p-3">
       {/* HEADER */}
-      <div className="d-flex justify-content-between align-items-center mb-3">
-        <h4 className="fw-bold mb-0">📦 Supplier Wise Purchase Report</h4>
+      <div className="d-flex justify-content-between mb-3">
+        <h4 className="fw-bold">📦 Supplier Wise Purchase Report</h4>
         <div className="d-flex gap-2">
           <button className="btn btn-secondary btn-sm" onClick={() => onNavigate("dashboard")}>
             ⬅ Back
@@ -98,7 +113,7 @@ export default function SupplierPurchaseReport({ onNavigate }) {
       </div>
 
       {/* FILTERS */}
-      <div className="card shadow-sm mb-3 p-2">
+      <div className="card p-2 mb-3">
         <div className="row g-2 align-items-end">
           <div className="col-md-3">
             <label className="fw-bold">Supplier</label>
@@ -132,38 +147,18 @@ export default function SupplierPurchaseReport({ onNavigate }) {
 
           <div className="col-md-2">
             <label className="fw-bold">From</label>
-            <input
-              type="date"
-              className="form-control form-control-sm"
-              value={from}
-              onChange={(e) => setFrom(e.target.value)}
-            />
+            <input type="date" className="form-control form-control-sm" value={from} onChange={(e) => setFrom(e.target.value)} />
           </div>
 
           <div className="col-md-2">
             <label className="fw-bold">To</label>
-            <input
-              type="date"
-              className="form-control form-control-sm"
-              value={to}
-              onChange={(e) => setTo(e.target.value)}
-            />
+            <input type="date" className="form-control form-control-sm" value={to} onChange={(e) => setTo(e.target.value)} />
           </div>
 
           <div className="col-md-2">
-            <label className="fw-bold">Search</label>
-            <input
-              className="form-control form-control-sm"
-              placeholder="Ref / Item / Supplier"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
-          </div>
-
-          <div className="col-md-2 mt-2">
             <button
               className="btn btn-primary btn-sm w-100"
-              onClick={load}
+              onClick={loadReport}
               disabled={loading}
             >
               {loading ? "Loading..." : "Reload"}
@@ -172,56 +167,50 @@ export default function SupplierPurchaseReport({ onNavigate }) {
         </div>
       </div>
 
-      {/* REPORT */}
-      <div ref={boxRef} className="card shadow-sm p-2">
-        <div className="table-responsive">
-          <table className="table table-bordered table-hover table-sm mb-0">
-            <thead className="table-dark text-center">
-              <tr>
-                <th>Supplier</th>
-                <th>Ref No</th>
-                <th>Item</th>
-                <th>Sale (PKR)</th>
-                <th>Purchase (PKR)</th>
-                <th>Profit</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.length > 0 ? (
-                filtered.map((r, i) => (
-                  <tr key={i}>
-                    <td>{r.supplier_name}</td>
-                    <td>{r.ref_no}</td>
-                    <td>{r.item}</td>
-                    <td className="text-end">{fmt(r.sale_pkr)}</td>
-                    <td className="text-end">{fmt(r.purchase_pkr)}</td>
-                    <td
-                      className={`text-end fw-bold ${
-                        r.profit >= 0 ? "text-success" : "text-danger"
-                      }`}
-                    >
-                      {fmt(r.profit)}
-                    </td>
-                  </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan="6" className="text-center">
-                    No records found
+      {/* TABLE */}
+      <div ref={boxRef} className="card p-2">
+        <table className="table table-bordered table-sm">
+          <thead className="table-dark text-center">
+            <tr>
+              <th>Supplier</th>
+              <th>Ref No</th>
+              <th>Item</th>
+              <th>Sale</th>
+              <th>Purchase</th>
+              <th>Profit</th>
+            </tr>
+          </thead>
+          <tbody>
+            {filtered.length ? (
+              filtered.map((r, i) => (
+                <tr key={i}>
+                  <td>{r.supplier_name}</td>
+                  <td>{r.ref_no}</td>
+                  <td>{r.item}</td>
+                  <td className="text-end">{fmt(r.sale_pkr)}</td>
+                  <td className="text-end">{fmt(r.purchase_pkr)}</td>
+                  <td className={`text-end fw-bold ${r.profit >= 0 ? "text-success" : "text-danger"}`}>
+                    {fmt(r.profit)}
                   </td>
                 </tr>
-              )}
-            </tbody>
-            <tfoot className="table-light fw-bold text-end">
+              ))
+            ) : (
               <tr>
-                <td colSpan="3">TOTAL</td>
-                <td>{fmt(totals.sale)}</td>
-                <td>{fmt(totals.purchase)}</td>
-                <td>{fmt(totals.profit)}</td>
+                <td colSpan="6" className="text-center text-muted">
+                  Reload button دبائیں
+                </td>
               </tr>
-            </tfoot>
-          </table>
-        </div>
+            )}
+          </tbody>
+          <tfoot className="fw-bold text-end">
+            <tr>
+              <td colSpan="3">TOTAL</td>
+              <td>{fmt(totals.sale)}</td>
+              <td>{fmt(totals.purchase)}</td>
+              <td>{fmt(totals.profit)}</td>
+            </tr>
+          </tfoot>
+        </table>
       </div>
     </div>
   );
