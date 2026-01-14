@@ -275,7 +275,7 @@ export default function Purchase({ onNavigate }) {
             <tbody>
               {rows.map((r, i) => (
                 <tr key={i}>
-                  <td className="fw-bold fs-7">
+                  <td className="fw-bold" style={{ fontSize: "13px" }}>
                     {r.item_label || r.item}
                   </td>
                   <td>{r.sale_sar}</td>
@@ -343,5 +343,6 @@ export default function Purchase({ onNavigate }) {
     </div>
   );
 }
+
 
 
