@@ -22,7 +22,7 @@ export default function ExpenseLedger({ onNavigate }) {
   ========================= */
   const load = async () => {
     const r = await fetch(
-      `${import.meta.env.VITE_BACKEND_URL}/api/expenseLedger`
+      `${import.meta.env.VITE_BACKEND_URL}/api/expense-ledger`
     );
     const d = await r.json();
     if (d.success) setRows(d.rows || []);
@@ -39,7 +39,7 @@ export default function ExpenseLedger({ onNavigate }) {
     if (!date || !title || !amount) return alert("Missing fields");
 
     const r = await fetch(
-      `${import.meta.env.VITE_BACKEND_URL}/api/expenseLedger/add`,
+      `${import.meta.env.VITE_BACKEND_URL}/api/expense-ledger/add`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -70,7 +70,7 @@ export default function ExpenseLedger({ onNavigate }) {
     if (!pass) return;
 
     const r = await fetch(
-      `${import.meta.env.VITE_BACKEND_URL}/api/expenseLedger/delete/${id}`,
+      `${import.meta.env.VITE_BACKEND_URL}/api/expense-ledger/delete/${id}`,
       {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
@@ -288,4 +288,5 @@ export default function ExpenseLedger({ onNavigate }) {
     </div>
   );
 }
+
 
