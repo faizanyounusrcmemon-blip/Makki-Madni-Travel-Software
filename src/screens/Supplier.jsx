@@ -1,156 +1,212 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
+import html2canvas from "html2canvas";
+import jsPDF from "jspdf";
 
-export default function Supplier({ onNavigate }) {
+/* ================= HELPERS ================= */
+const fmt = (n) => Number(n || 0).toLocaleString("en-US");
+
+export default function SupplierPurchaseReport({ onNavigate }) {
   const [rows, setRows] = useState([]);
-  const [form, setForm] = useState({
-    supplier_name: "",
-    category: "",
-    contact_no: "",
-  });
-  const [editId, setEditId] = useState(null);
+  const [suppliers, setSuppliers] = useState([]);
+  const [supplier, setSupplier] = useState("ALL");
+  const [itemType, setItemType] = useState("ALL");
+  const [from, setFrom] = useState("");
+  const [to, setTo] = useState("");
+  const [search, setSearch] = useState("");
+  const [loading, setLoading] = useState(false);
 
+  const boxRef = useRef(null);
+
+  /* ================= LOAD DATA ================= */
   const load = async () => {
-    const r = await fetch(
-      `${import.meta.env.VITE_BACKEND_URL}/api/supplier/list`
-    );
-    const d = await r.json();
-    if (d.success) setRows(d.rows);
+    setLoading(true);
+    try {
+      const res = await fetch(
+        `${import.meta.env.VITE_BACKEND_URL}/api/reports/supplier-purchase`
+      );
+      const data = await res.json();
+      if (data.success) {
+        setRows(data.rows || []);
+        setSuppliers(data.suppliers || []);
+      }
+    } catch (err) {
+      console.error("Error loading supplier purchase report:", err);
+    }
+    setLoading(false);
   };
 
   useEffect(() => {
     load();
   }, []);
 
-  const save = async () => {
-    const url = editId
-      ? `/update/${editId}`
-      : "/create";
+  /* ================= FILTER ================= */
+  const filtered = rows.filter((r) => {
+    if (supplier !== "ALL" && r.supplier_name !== supplier) return false;
+    if (itemType !== "ALL" && r.item.toLowerCase() !== itemType.toLowerCase()) return false;
+    if (from && new Date(r.booking_date) < new Date(from)) return false;
+    if (to && new Date(r.booking_date) > new Date(to)) return false;
+    if (search) {
+      const s = search.toLowerCase();
+      return (
+        r.ref_no?.toLowerCase().includes(s) ||
+        r.item?.toLowerCase().includes(s) ||
+        r.supplier_name?.toLowerCase().includes(s)
+      );
+    }
+    return true;
+  });
 
-    const method = editId ? "PUT" : "POST";
+  /* ================= TOTALS ================= */
+  const totals = filtered.reduce(
+    (a, b) => {
+      a.purchase += Number(b.purchase_pkr || 0);
+      a.sale += Number(b.sale_pkr || 0);
+      a.profit += Number(b.profit || 0);
+      return a;
+    },
+    { purchase: 0, sale: 0, profit: 0 }
+  );
 
-    const r = await fetch(
-      `${import.meta.env.VITE_BACKEND_URL}/api/supplier${url}`,
-      {
-        method,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
-      }
-    );
-
-    const d = await r.json();
-    if (d.success) {
-      setForm({ supplier_name: "", category: "", contact_no: "" });
-      setEditId(null);
-      load();
-    } else alert(d.error);
+  /* ================= PDF EXPORT ================= */
+  const exportPDF = async () => {
+    const canvas = await html2canvas(boxRef.current, { scale: 2 });
+    const img = canvas.toDataURL("image/png");
+    const pdf = new jsPDF("l", "mm", "a4");
+    const w = pdf.internal.pageSize.getWidth();
+    const h = (canvas.height * w) / canvas.width;
+    pdf.addImage(img, "PNG", 0, 0, w, h);
+    pdf.save("supplier-purchase-report.pdf");
   };
 
-  const del = async (id) => {
-    const pass = prompt("Enter password");
-    if (!pass) return;
-
-    const r = await fetch(
-      `${import.meta.env.VITE_BACKEND_URL}/api/supplier/delete/${id}`,
-      {
-        method: "DELETE",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ password: pass }),
-      }
-    );
-
-    const d = await r.json();
-    if (d.success) load();
-    else alert(d.error);
-  };
-
+  /* ================= UI ================= */
   return (
     <div className="container p-3">
-      <h4 className="fw-bold">🏷 Supplier Profile</h4>
-
-      <div className="card p-3 mb-3">
-        <input
-          className="form-control mb-2"
-          placeholder="Supplier Name"
-          value={form.supplier_name}
-          onChange={(e) =>
-            setForm({ ...form, supplier_name: e.target.value })
-          }
-        />
-
-        <select
-          className="form-select mb-2"
-          value={form.category}
-          onChange={(e) =>
-            setForm({ ...form, category: e.target.value })
-          }
-        >
-          <option value="">Category</option>
-          <option>Ticket</option>
-          <option>Hotel</option>
-          <option>Visa</option>
-          <option>Transport</option>
-          <option>Other</option>
-        </select>
-
-        <input
-          className="form-control mb-2"
-          placeholder="Contact No"
-          value={form.contact_no}
-          onChange={(e) =>
-            setForm({ ...form, contact_no: e.target.value })
-          }
-        />
-
-        <button className="btn btn-success" onClick={save}>
-          {editId ? "Update" : "Save"}
-        </button>
+      {/* HEADER */}
+      <div className="d-flex justify-content-between align-items-center mb-3">
+        <h4 className="fw-bold mb-0">📦 Supplier Wise Purchase Report</h4>
+        <div className="d-flex gap-2">
+          <button className="btn btn-secondary btn-sm" onClick={() => onNavigate("dashboard")}>
+            ⬅ Back
+          </button>
+          <button className="btn btn-success btn-sm" onClick={exportPDF}>
+            📄 PDF
+          </button>
+        </div>
       </div>
 
-      <table className="table table-sm table-bordered">
-        <thead className="table-dark">
-          <tr>
-            <th>Code</th>
-            <th>Name</th>
-            <th>Category</th>
-            <th>Contact</th>
-            <th>Action</th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((r) => (
-            <tr key={r.id}>
-              <td>{r.supplier_code}</td>
-              <td>{r.supplier_name}</td>
-              <td>{r.category}</td>
-              <td>{r.contact_no}</td>
-              <td>
-                <button
-                  className="btn btn-sm btn-warning me-1"
-                  onClick={() => {
-                    setForm(r);
-                    setEditId(r.id);
-                  }}
-                >
-                  Edit
-                </button>
-                <button
-                  className="btn btn-sm btn-danger"
-                  onClick={() => del(r.id)}
-                >
-                  Delete
-                </button>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+      {/* FILTERS */}
+      <div className="card shadow-sm mb-3 p-2">
+        <div className="row g-2 align-items-end">
+          <div className="col-md-3">
+            <label className="fw-bold">Supplier</label>
+            <select
+              className="form-select form-select-sm"
+              value={supplier}
+              onChange={(e) => setSupplier(e.target.value)}
+            >
+              <option value="ALL">All Suppliers</option>
+              {suppliers.map((s, i) => (
+                <option key={i} value={s}>{s}</option>
+              ))}
+            </select>
+          </div>
 
-      <button
-        className="btn btn-secondary btn-sm"
-        onClick={() => onNavigate("dashboard")}
-      >
-        ⬅ Back
-      </button>
+          <div className="col-md-3">
+            <label className="fw-bold">Item Type</label>
+            <select
+              className="form-select form-select-sm"
+              value={itemType}
+              onChange={(e) => setItemType(e.target.value)}
+            >
+              <option value="ALL">All Items</option>
+              <option value="Ticket">Ticket</option>
+              <option value="Hotel">Hotel</option>
+              <option value="Visa">Visa</option>
+              <option value="Transport">Transport</option>
+            </select>
+          </div>
+
+          <div className="col-md-2">
+            <label className="fw-bold">From</label>
+            <input
+              type="date"
+              className="form-control form-control-sm"
+              value={from}
+              onChange={(e) => setFrom(e.target.value)}
+            />
+          </div>
+
+          <div className="col-md-2">
+            <label className="fw-bold">To</label>
+            <input
+              type="date"
+              className="form-control form-control-sm"
+              value={to}
+              onChange={(e) => setTo(e.target.value)}
+            />
+          </div>
+
+          <div className="col-md-2">
+            <label className="fw-bold">Search</label>
+            <input
+              className="form-control form-control-sm"
+              placeholder="Ref / Item / Supplier"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+          </div>
+
+          <div className="col-md-2 mt-2">
+            <button
+              className="btn btn-primary btn-sm w-100"
+              onClick={load}
+              disabled={loading}
+            >
+              {loading ? "Loading..." : "Reload"}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* REPORT */}
+      <div ref={boxRef} className="card shadow-sm p-2">
+        <div className="table-responsive">
+          <table className="table table-bordered table-hover table-sm mb-0">
+            <thead className="table-dark text-center">
+              <tr>
+                <th>Supplier</th>
+                <th>Ref No</th>
+                <th>Item</th>
+                <th>Sale (PKR)</th>
+                <th>Purchase (PKR)</th>
+                <th>Profit</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.map((r, i) => (
+                <tr key={i}>
+                  <td>{r.supplier_name}</td>
+                  <td>{r.ref_no}</td>
+                  <td>{r.item}</td>
+                  <td className="text-end">{fmt(r.sale_pkr)}</td>
+                  <td className="text-end">{fmt(r.purchase_pkr)}</td>
+                  <td className={`text-end fw-bold ${r.profit >= 0 ? "text-success" : "text-danger"}`}>
+                    {fmt(r.profit)}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+            <tfoot className="table-light fw-bold text-end">
+              <tr>
+                <td colSpan="3">TOTAL</td>
+                <td>{fmt(totals.sale)}</td>
+                <td>{fmt(totals.purchase)}</td>
+                <td>{fmt(totals.profit)}</td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      </div>
     </div>
   );
 }
