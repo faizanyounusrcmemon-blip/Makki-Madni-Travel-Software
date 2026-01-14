@@ -261,10 +261,10 @@ export default function Purchase({ onNavigate }) {
                 <th>Rate</th>
                 <th>Sale PKR</th>
                 <th>Purchase SAR</th>
-                <th>Purchase Rate</th>
+                <th style={{ width: "110px" }}>Purchase Rate</th>
                 <th>Purchase PKR</th>
                 <th>Profit</th>
-                <th>Supplier</th>
+                <th style={{ width: "260px" }}>Supplier</th>
               </tr>
             </thead>
 
@@ -297,7 +297,7 @@ export default function Purchase({ onNavigate }) {
                     />
                   </td>
 
-                  <td>
+                  <td style={{ width: "110px" }}>
                     <input
                       className="form-control form-control-sm"
                       value={r.purchase_rate}
@@ -319,7 +319,7 @@ export default function Purchase({ onNavigate }) {
                     {r.profit.toLocaleString()}
                   </td>
 
-                  <td>
+                  <td style={{ width: "260px" }}>
                     <select
                       className="form-select form-select-sm"
                       value={r.supplier_code}
@@ -348,4 +348,5 @@ export default function Purchase({ onNavigate }) {
     </div>
   );
 }
+
 
