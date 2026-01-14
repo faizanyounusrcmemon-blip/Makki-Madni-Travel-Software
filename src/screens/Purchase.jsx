@@ -19,17 +19,17 @@ const parseNumber = (v) =>
   parseFloat(String(v || 0).replace(/,/g, "")) || 0;
 
 /* ===============================
-   CATEGORY WISE ITEM COLOR
+   ITEM CATEGORY COLOR
+   same category = same color
 =============================== */
-const itemColor = (text = "") => {
+const itemCategoryColor = (text = "") => {
   const t = text.toLowerCase();
 
   if (t.includes("transport")) return "#0d6efd"; // blue
   if (t.includes("hotel")) return "#198754"; // green
-  if (t.includes("ticket")) return "#dc3545"; // red
   if (t.includes("visa")) return "#6f42c1"; // purple
-  if (t.includes("ziyarat")) return "#fd7e14"; // orange
-  if (t.includes("food")) return "#20c997"; // teal
+  if (t.includes("ticket")) return "#fd7e14"; // orange
+  if (t.includes("food")) return "#dc3545"; // red
 
   return "#212529"; // default dark
 };
@@ -146,7 +146,7 @@ export default function Purchase({ onNavigate }) {
     const data = await res.json();
 
     if (data.success) {
-      alert(isEdit ? "✅ Purchase Updated" : "✅ Purchase Saved");
+      alert(isEdit ? "Purchase Updated" : "Purchase Saved");
       setRows([]);
       setRefNo("");
       setIsEdit(false);
@@ -168,47 +168,6 @@ export default function Purchase({ onNavigate }) {
   /* ================= UI ================= */
   return (
     <div className="container p-3">
-
-      {/* HEADER */}
-      <div className="card shadow-sm mb-3">
-        <div className="card-body d-flex justify-content-between">
-          <div>
-            <h4 className="fw-bold mb-0">
-              🧾 Purchase Entry
-              {isEdit && (
-                <span className="badge bg-warning text-dark ms-2">
-                  EDIT MODE
-                </span>
-              )}
-            </h4>
-            <small className="text-muted">
-              Purchase values enter karein – profit auto calculate
-            </small>
-          </div>
-          <div className="d-flex gap-2">
-            <button
-              className="btn btn-outline-secondary btn-sm"
-              onClick={() => onNavigate("dashboard")}
-            >
-              ⬅ Back
-            </button>
-            <button
-              className="btn btn-success btn-sm"
-              onClick={savePurchase}
-            >
-              💾 {isEdit ? "Update Purchase" : "Save Purchase"}
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {isPartial && (
-        <div className="alert alert-warning fw-bold">
-          ⚠️ Purchase PARTIAL hai
-        </div>
-      )}
-
-      {/* TABLE */}
       <div className="card shadow">
         <div className="table-responsive">
           <table className="table table-sm table-hover mb-0">
@@ -233,7 +192,9 @@ export default function Purchase({ onNavigate }) {
                     className="fw-bold"
                     style={{
                       fontSize: "13px",
-                      color: itemColor(r.item_label || r.item),
+                      color: itemCategoryColor(
+                        r.item_label || r.item
+                      ),
                     }}
                   >
                     {r.item_label || r.item}
@@ -242,60 +203,17 @@ export default function Purchase({ onNavigate }) {
                   <td>{r.sale_sar}</td>
                   <td>{r.sale_rate}</td>
                   <td>{r.sale_pkr.toLocaleString()}</td>
-                  <td>
-                    <input
-                      className="form-control form-control-sm"
-                      value={r.purchase_sar}
-                      onChange={(e) =>
-                        updateRow(i, "purchase_sar", e.target.value)
-                      }
-                    />
-                  </td>
-                  <td>
-                    <input
-                      className="form-control form-control-sm"
-                      value={r.purchase_rate}
-                      onChange={(e) =>
-                        updateRow(i, "purchase_rate", e.target.value)
-                      }
-                    />
-                  </td>
+                  <td>{r.purchase_sar}</td>
+                  <td>{r.purchase_rate}</td>
                   <td>{r.purchase_pkr.toLocaleString()}</td>
-                  <td
-                    className={`fw-bold ${
-                      r.profit >= 0
-                        ? "text-success"
-                        : "text-danger"
-                    }`}
-                  >
-                    {r.profit.toLocaleString()}
-                  </td>
-                  <td>
-                    <select
-                      className="form-select form-select-sm"
-                      value={r.supplier_code}
-                      onChange={(e) =>
-                        updateRow(i, "supplier_code", e.target.value)
-                      }
-                    >
-                      <option value="">Select Supplier</option>
-                      {suppliers.map((s) => (
-                        <option
-                          key={s.supplier_code}
-                          value={s.supplier_code}
-                        >
-                          {s.supplier_name}
-                        </option>
-                      ))}
-                    </select>
-                  </td>
+                  <td>{r.profit.toLocaleString()}</td>
+                  <td>{r.supplier_name}</td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
       </div>
-
     </div>
   );
 }
