@@ -2,23 +2,17 @@ import React, { useEffect, useState } from "react";
 
 /* ================= HELPERS ================= */
 const fmtAmount = (v) =>
-  v !== null && v !== undefined
-    ? Number(v).toLocaleString("en-US")
-    : "-";
+  v !== null && v !== undefined ? Number(v).toLocaleString("en-US") : "-";
 
 const formatDate = (dateStr) => {
   if (!dateStr) return "";
   const d = new Date(dateStr);
   return d
-    .toLocaleDateString("en-GB", {
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-    })
+    .toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })
     .toUpperCase();
 };
 
-export default function CashLedger({ onNavigate }) {
+export default function SupplierLedger({ onNavigate }) {
   const [rows, setRows] = useState([]);
   const [filtered, setFiltered] = useState([]);
   const [search, setSearch] = useState("");
@@ -38,9 +32,7 @@ export default function CashLedger({ onNavigate }) {
   }, []);
 
   const load = async () => {
-    const r = await fetch(
-      `${import.meta.env.VITE_BACKEND_URL}/api/cash-ledger`
-    );
+    const r = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/supplier-ledger`);
     const d = await r.json();
     if (d.success) {
       const list = d.rows.slice().reverse();
@@ -52,12 +44,8 @@ export default function CashLedger({ onNavigate }) {
   /* ================= FILTER / SEARCH ================= */
   useEffect(() => {
     let temp = [...rows];
-
-    if (fromDate)
-      temp = temp.filter((r) => new Date(r.txn_date) >= new Date(fromDate));
-    if (toDate)
-      temp = temp.filter((r) => new Date(r.txn_date) <= new Date(toDate));
-
+    if (fromDate) temp = temp.filter((r) => new Date(r.txn_date) >= new Date(fromDate));
+    if (toDate) temp = temp.filter((r) => new Date(r.txn_date) <= new Date(toDate));
     if (search) {
       const s = search.toLowerCase();
       temp = temp.filter(
@@ -69,7 +57,6 @@ export default function CashLedger({ onNavigate }) {
           (r.balance || "").toString().includes(s)
       );
     }
-
     setFiltered(temp);
   }, [fromDate, toDate, search, rows]);
 
@@ -78,27 +65,15 @@ export default function CashLedger({ onNavigate }) {
       setMsg({ type: "danger", text: "Date & Amount required" });
       return;
     }
-
-    const r = await fetch(
-      `${import.meta.env.VITE_BACKEND_URL}/api/cash-ledger/transaction`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          txn_date: date,
-          type,
-          amount: amount.replace(/,/g, ""),
-          comment,
-        }),
-      }
-    );
-
+    const r = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/supplier-ledger/transaction`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ txn_date: date, type, amount: amount.replace(/,/g, ""), comment }),
+    });
     const d = await r.json();
     if (d.success) {
       setMsg({ type: "success", text: d.message });
-      setAmount("");
-      setComment("");
-      load();
+      setAmount(""); setComment(""); load();
     } else {
       setMsg({ type: "danger", text: d.error });
     }
@@ -107,16 +82,11 @@ export default function CashLedger({ onNavigate }) {
   const del = async (id) => {
     const pass = prompt("Enter delete password");
     if (!pass) return;
-
-    const r = await fetch(
-      `${import.meta.env.VITE_BACKEND_URL}/api/cash-ledger/transaction/${id}`,
-      {
-        method: "DELETE",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ password: pass }),
-      }
-    );
-
+    const r = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/supplier-ledger/transaction/${id}`, {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ password: pass }),
+    });
     const d = await r.json();
     if (d.success) load();
     else alert(d.error);
@@ -127,20 +97,15 @@ export default function CashLedger({ onNavigate }) {
   return (
     <div className="container py-4">
       <div className="d-flex justify-content-between mb-3">
-        <h4 className="fw-bold text-success">💵 Cash Ledger</h4>
-        <button className="btn btn-outline-secondary btn-sm"
-          onClick={() => onNavigate("dashboard")}>
-          ⬅ Back
-        </button>
+        <h4 className="fw-bold text-primary">📘 Supplier Ledger</h4>
+        <button className="btn btn-outline-secondary btn-sm" onClick={() => onNavigate("dashboard")}>⬅ Back</button>
       </div>
 
       <div className="card mb-3 shadow-sm border-0">
         <div className="card-body d-flex justify-content-between">
           <div>
             <small>Current Balance</small>
-            <h3 className="fw-bold text-success">
-              PKR {fmtAmount(currentBalance)}
-            </h3>
+            <h3 className="fw-bold text-success">PKR {fmtAmount(currentBalance)}</h3>
           </div>
         </div>
       </div>
@@ -148,59 +113,22 @@ export default function CashLedger({ onNavigate }) {
       {msg && <div className={`alert alert-${msg.type}`}>{msg.text}</div>}
 
       <div className="row g-2 mb-3">
-        <div className="col-md-3">
-          <input type="date" className="form-control form-control-sm"
-            value={fromDate} onChange={(e) => setFromDate(e.target.value)} />
-        </div>
-        <div className="col-md-3">
-          <input type="date" className="form-control form-control-sm"
-            value={toDate} onChange={(e) => setToDate(e.target.value)} />
-        </div>
-        <div className="col-md-6">
-          <input className="form-control form-control-sm"
-            placeholder="🔍 Search..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)} />
-        </div>
+        <div className="col-md-3"><input type="date" className="form-control form-control-sm" value={fromDate} onChange={e => setFromDate(e.target.value)} /></div>
+        <div className="col-md-3"><input type="date" className="form-control form-control-sm" value={toDate} onChange={e => setToDate(e.target.value)} /></div>
+        <div className="col-md-6"><input className="form-control form-control-sm" placeholder="🔍 Search..." value={search} onChange={e => setSearch(e.target.value)} /></div>
       </div>
 
       <div className="row g-2 mb-3">
+        <div className="col-md-2"><input type="date" className="form-control form-control-sm" value={date} onChange={e => setDate(e.target.value)} /></div>
+        <div className="col-md-2"><input className="form-control form-control-sm" placeholder="Amount" value={amount} onChange={e => setAmount(e.target.value.replace(/,/g, "").replace(/\B(?=(\d{3})+(?!\d))/g, ","))} /></div>
         <div className="col-md-2">
-          <input type="date" className="form-control form-control-sm"
-            value={date} onChange={(e) => setDate(e.target.value)} />
-        </div>
-        <div className="col-md-2">
-          <input className="form-control form-control-sm"
-            placeholder="Amount"
-            value={amount}
-            onChange={(e) =>
-              setAmount(
-                e.target.value
-                  .replace(/,/g, "")
-                  .replace(/\B(?=(\d{3})+(?!\d))/g, ",")
-              )
-            }
-          />
-        </div>
-        <div className="col-md-2">
-          <select className="form-select form-select-sm"
-            value={type}
-            onChange={(e) => setType(e.target.value)}>
+          <select className="form-select form-select-sm" value={type} onChange={e => setType(e.target.value)}>
             <option value="deposit">➕ Deposit</option>
             <option value="withdraw">➖ Withdraw</option>
           </select>
         </div>
-        <div className="col-md-4">
-          <input className="form-control form-control-sm"
-            placeholder="Comment"
-            value={comment}
-            onChange={(e) => setComment(e.target.value)} />
-        </div>
-        <div className="col-md-2">
-          <button className="btn btn-success btn-sm w-100" onClick={save}>
-            Save
-          </button>
-        </div>
+        <div className="col-md-4"><input className="form-control form-control-sm" placeholder="Comment" value={comment} onChange={e => setComment(e.target.value)} /></div>
+        <div className="col-md-2"><button className="btn btn-success btn-sm w-100" onClick={save}>Save</button></div>
       </div>
 
       <table className="table table-hover">
@@ -215,23 +143,17 @@ export default function CashLedger({ onNavigate }) {
           </tr>
         </thead>
         <tbody>
-          {filtered.map((r) => (
+          {filtered.map(r => (
             <tr key={r.id}>
               <td>{formatDate(r.txn_date)}</td>
               <td className="fw-bold">{r.description}</td>
               <td className="text-danger">{fmtAmount(r.debit)}</td>
               <td className="text-success">{fmtAmount(r.credit)}</td>
               <td className="fw-bold">{fmtAmount(r.balance)}</td>
-              <td>
-                {r.source === "manual" && (
-                  <button className="btn btn-outline-danger btn-sm"
-                    onClick={() => del(r.id)}>
-                    ❌
-                  </button>
-                )}
-              </td>
+              <td>{r.source === "manual" && <button className="btn btn-outline-danger btn-sm" onClick={() => del(r.id)}>❌</button>}</td>
             </tr>
           ))}
+          {filtered.length === 0 && <tr><td colSpan="6" className="text-center py-3 text-muted">No entries</td></tr>}
         </tbody>
       </table>
     </div>
