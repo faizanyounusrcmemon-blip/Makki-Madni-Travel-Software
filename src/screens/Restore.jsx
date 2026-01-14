@@ -21,6 +21,8 @@ export default function Restore({ onNavigate }) {
     "cash_transactions",
     "customer_payments",
     "purchase_payments",
+    "supplier_payments",
+    "suppliers",
   ];
 
   /* ================= HELPERS ================= */
@@ -294,5 +296,6 @@ export default function Restore({ onNavigate }) {
     </div>
   );
 }
+
 
 
