@@ -145,7 +145,7 @@ export default function Purchase({ onNavigate }) {
     const data = await res.json();
 
     if (data.success) {
-      alert(isEdit ? "Purchase Updated" : "Purchase Saved");
+      alert(isEdit ? "✅ Purchase Updated" : "✅ Purchase Saved");
       setRows([]);
       setRefNo("");
       setIsEdit(false);
@@ -348,3 +348,4 @@ export default function Purchase({ onNavigate }) {
     </div>
   );
 }
+
