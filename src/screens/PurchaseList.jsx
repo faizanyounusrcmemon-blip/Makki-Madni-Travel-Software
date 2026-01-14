@@ -7,6 +7,9 @@ export default function PurchaseList({ onNavigate }) {
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(false);
 
+  /* 🔥 NEW */
+  const [showProfit, setShowProfit] = useState(false);
+
   useEffect(() => {
     loadList();
   }, []);
@@ -99,7 +102,7 @@ export default function PurchaseList({ onNavigate }) {
       {/* FILTER */}
       <div className="card shadow-sm mb-2">
         <div className="card-body py-2">
-          <div className="row g-2">
+          <div className="row g-2 align-items-end">
             <div className="col-md-3">
               <input
                 type="date"
@@ -116,13 +119,29 @@ export default function PurchaseList({ onNavigate }) {
                 onChange={(e) => setTo(e.target.value)}
               />
             </div>
-            <div className="col-md-6">
+            <div className="col-md-4">
               <input
                 className="form-control form-control-sm"
                 placeholder="🔍 Search anything..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
               />
+            </div>
+
+            {/* ✅ PROFIT CHECKBOX */}
+            <div className="col-md-2">
+              <div className="form-check mt-1">
+                <input
+                  className="form-check-input"
+                  type="checkbox"
+                  id="showProfit"
+                  checked={showProfit}
+                  onChange={(e) => setShowProfit(e.target.checked)}
+                />
+                <label className="form-check-label fw-semibold" htmlFor="showProfit">
+                  Show Profit
+                </label>
+              </div>
             </div>
           </div>
         </div>
@@ -137,7 +156,7 @@ export default function PurchaseList({ onNavigate }) {
               <th>Customer</th>
               <th>Sale</th>
               <th>Purchase</th>
-              <th>Profit</th>
+              {showProfit && <th>Profit</th>}
               <th>Date</th>
               <th className="text-center">Action</th>
             </tr>
@@ -146,7 +165,7 @@ export default function PurchaseList({ onNavigate }) {
           <tbody>
             {loading && (
               <tr>
-                <td colSpan="7" className="text-center py-3">
+                <td colSpan={showProfit ? 7 : 6} className="text-center py-3">
                   Loading...
                 </td>
               </tr>
@@ -154,7 +173,7 @@ export default function PurchaseList({ onNavigate }) {
 
             {!loading && filteredRows.length === 0 && (
               <tr>
-                <td colSpan="7" className="text-center text-muted py-3">
+                <td colSpan={showProfit ? 7 : 6} className="text-center text-muted py-3">
                   No records found
                 </td>
               </tr>
@@ -181,15 +200,17 @@ export default function PurchaseList({ onNavigate }) {
                     </span>
                   </td>
 
-                  <td>
-                    <span
-                      className={`badge ${
-                        +r.profit >= 0 ? "bg-success" : "bg-danger"
-                      }`}
-                    >
-                      {(+r.profit).toLocaleString()}
-                    </span>
-                  </td>
+                  {showProfit && (
+                    <td>
+                      <span
+                        className={`badge ${
+                          +r.profit >= 0 ? "bg-success" : "bg-danger"
+                        }`}
+                      >
+                        {(+r.profit).toLocaleString()}
+                      </span>
+                    </td>
+                  )}
 
                   <td className="small text-muted">
                     {fmtDate(r.created_at)}
@@ -221,14 +242,16 @@ export default function PurchaseList({ onNavigate }) {
                 </td>
                 <td>{totals.sale.toLocaleString()}</td>
                 <td>{totals.purchase.toLocaleString()}</td>
-                <td
-                  className={
-                    totals.profit >= 0 ? "text-success" : "text-danger"
-                  }
-                >
-                  {totals.profit.toLocaleString()}
-                </td>
-                <td colSpan={2}></td>
+                {showProfit && (
+                  <td
+                    className={
+                      totals.profit >= 0 ? "text-success" : "text-danger"
+                    }
+                  >
+                    {totals.profit.toLocaleString()}
+                  </td>
+                )}
+                <td colSpan={showProfit ? 2 : 3}></td>
               </tr>
             )}
           </tbody>
