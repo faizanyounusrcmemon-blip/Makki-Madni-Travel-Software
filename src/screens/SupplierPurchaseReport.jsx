@@ -9,6 +9,7 @@ export default function SupplierPurchaseReport({ onNavigate }) {
   const [rows, setRows] = useState([]);
   const [suppliers, setSuppliers] = useState([]);
   const [supplier, setSupplier] = useState("ALL");
+  const [itemType, setItemType] = useState("ALL");
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
   const [search, setSearch] = useState("");
@@ -16,17 +17,20 @@ export default function SupplierPurchaseReport({ onNavigate }) {
 
   const boxRef = useRef(null);
 
-  /* ================= LOAD ================= */
+  /* ================= LOAD DATA ================= */
   const load = async () => {
     setLoading(true);
-    const res = await fetch(
-      `${import.meta.env.VITE_BACKEND_URL}/api/reports/supplier-purchase`
-    );
-    const data = await res.json();
-
-    if (data.success) {
-      setRows(data.rows || []);
-      setSuppliers(data.suppliers || []);
+    try {
+      const res = await fetch(
+        `${import.meta.env.VITE_BACKEND_URL}/api/reports/supplier-purchase`
+      );
+      const data = await res.json();
+      if (data.success) {
+        setRows(data.rows || []);
+        setSuppliers(data.suppliers || []);
+      }
+    } catch (err) {
+      console.error("Error loading supplier purchase report:", err);
     }
     setLoading(false);
   };
@@ -38,10 +42,9 @@ export default function SupplierPurchaseReport({ onNavigate }) {
   /* ================= FILTER ================= */
   const filtered = rows.filter((r) => {
     if (supplier !== "ALL" && r.supplier_name !== supplier) return false;
-
+    if (itemType !== "ALL" && r.item.toLowerCase() !== itemType.toLowerCase()) return false;
     if (from && new Date(r.booking_date) < new Date(from)) return false;
     if (to && new Date(r.booking_date) > new Date(to)) return false;
-
     if (search) {
       const s = search.toLowerCase();
       return (
@@ -64,15 +67,13 @@ export default function SupplierPurchaseReport({ onNavigate }) {
     { purchase: 0, sale: 0, profit: 0 }
   );
 
-  /* ================= PDF ================= */
+  /* ================= PDF EXPORT ================= */
   const exportPDF = async () => {
     const canvas = await html2canvas(boxRef.current, { scale: 2 });
     const img = canvas.toDataURL("image/png");
-
     const pdf = new jsPDF("l", "mm", "a4");
     const w = pdf.internal.pageSize.getWidth();
     const h = (canvas.height * w) / canvas.width;
-
     pdf.addImage(img, "PNG", 0, 0, w, h);
     pdf.save("supplier-purchase-report.pdf");
   };
@@ -81,14 +82,10 @@ export default function SupplierPurchaseReport({ onNavigate }) {
   return (
     <div className="container p-3">
       {/* HEADER */}
-      <div className="d-flex justify-content-between align-items-center mb-2">
+      <div className="d-flex justify-content-between align-items-center mb-3">
         <h4 className="fw-bold mb-0">📦 Supplier Wise Purchase Report</h4>
-
         <div className="d-flex gap-2">
-          <button
-            className="btn btn-secondary btn-sm"
-            onClick={() => onNavigate("dashboard")}
-          >
+          <button className="btn btn-secondary btn-sm" onClick={() => onNavigate("dashboard")}>
             ⬅ Back
           </button>
           <button className="btn btn-success btn-sm" onClick={exportPDF}>
@@ -98,8 +95,8 @@ export default function SupplierPurchaseReport({ onNavigate }) {
       </div>
 
       {/* FILTERS */}
-      <div className="card shadow-sm mb-3">
-        <div className="card-body row g-2">
+      <div className="card shadow-sm mb-3 p-2">
+        <div className="row g-2 align-items-end">
           <div className="col-md-3">
             <label className="fw-bold">Supplier</label>
             <select
@@ -109,10 +106,23 @@ export default function SupplierPurchaseReport({ onNavigate }) {
             >
               <option value="ALL">All Suppliers</option>
               {suppliers.map((s, i) => (
-                <option key={i} value={s}>
-                  {s}
-                </option>
+                <option key={i} value={s}>{s}</option>
               ))}
+            </select>
+          </div>
+
+          <div className="col-md-3">
+            <label className="fw-bold">Item Type</label>
+            <select
+              className="form-select form-select-sm"
+              value={itemType}
+              onChange={(e) => setItemType(e.target.value)}
+            >
+              <option value="ALL">All Items</option>
+              <option value="Ticket">Ticket</option>
+              <option value="Hotel">Hotel</option>
+              <option value="Visa">Visa</option>
+              <option value="Transport">Transport</option>
             </select>
           </div>
 
@@ -136,7 +146,7 @@ export default function SupplierPurchaseReport({ onNavigate }) {
             />
           </div>
 
-          <div className="col-md-3">
+          <div className="col-md-2">
             <label className="fw-bold">Search</label>
             <input
               className="form-control form-control-sm"
@@ -146,7 +156,7 @@ export default function SupplierPurchaseReport({ onNavigate }) {
             />
           </div>
 
-          <div className="col-md-2 d-flex align-items-end">
+          <div className="col-md-2 mt-2">
             <button
               className="btn btn-primary btn-sm w-100"
               onClick={load}
@@ -159,9 +169,9 @@ export default function SupplierPurchaseReport({ onNavigate }) {
       </div>
 
       {/* REPORT */}
-      <div ref={boxRef} className="card shadow">
+      <div ref={boxRef} className="card shadow-sm p-2">
         <div className="table-responsive">
-          <table className="table table-bordered table-sm mb-0">
+          <table className="table table-bordered table-hover table-sm mb-0">
             <thead className="table-dark text-center">
               <tr>
                 <th>Supplier</th>
@@ -172,7 +182,6 @@ export default function SupplierPurchaseReport({ onNavigate }) {
                 <th>Profit</th>
               </tr>
             </thead>
-
             <tbody>
               {filtered.map((r, i) => (
                 <tr key={i}>
@@ -181,17 +190,12 @@ export default function SupplierPurchaseReport({ onNavigate }) {
                   <td>{r.item}</td>
                   <td className="text-end">{fmt(r.sale_pkr)}</td>
                   <td className="text-end">{fmt(r.purchase_pkr)}</td>
-                  <td
-                    className={`text-end fw-bold ${
-                      r.profit >= 0 ? "text-success" : "text-danger"
-                    }`}
-                  >
+                  <td className={`text-end fw-bold ${r.profit >= 0 ? "text-success" : "text-danger"}`}>
                     {fmt(r.profit)}
                   </td>
                 </tr>
               ))}
             </tbody>
-
             <tfoot className="table-light fw-bold text-end">
               <tr>
                 <td colSpan="3">TOTAL</td>
