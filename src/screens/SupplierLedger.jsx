@@ -10,11 +10,15 @@ const fmtAmt = (v) =>
 
 const parseAmt = (v) => Number(String(v).replace(/,/g, "") || 0);
 
-const getRowDate = (r) => {
-  if (!r?.date) return "-";
-  const d = new Date(r.date);
-  if (isNaN(d.getTime())) return "-";
-  return d.toLocaleDateString("en-GB");
+// Date format 01/Dec/2025
+const formatDate = (d) => {
+  if (!d) return "-";
+  const dt = new Date(d);
+  if (isNaN(dt.getTime())) return "-";
+  const day = String(dt.getDate()).padStart(2, "0");
+  const month = dt.toLocaleString("en-US", { month: "short" });
+  const year = dt.getFullYear();
+  return `${day}/${month}/${year}`;
 };
 
 const numberToWords = (num) => {
@@ -68,15 +72,15 @@ export default function SupplierLedger({ onNavigate }) {
       const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/supplier-ledger/${code}`);
       const d = await res.json();
       if (d.success) {
-        // Map ledger entries correctly
         const mappedLedger = (d.ledger || []).map(row => {
           const typeLower = (row.type || "").toLowerCase();
           const isPayment = typeLower === "payment" || typeLower === "adjustment";
           return {
             ...row,
             entry_type: isPayment ? "payment" : "purchase",
-            id: isPayment ? (row.id || row.payment_id) : null, // only payments get id for delete
-            type: isPayment ? typeLower.charAt(0).toUpperCase() + typeLower.slice(1) : "Purchase"
+            id: isPayment ? (row.id || row.payment_id) : null,
+            type: isPayment ? typeLower.charAt(0).toUpperCase() + typeLower.slice(1) : row.type || "Purchase",
+            detail: row.detail || "Purchase Entry"
           };
         });
         setLedger(mappedLedger);
@@ -131,7 +135,7 @@ export default function SupplierLedger({ onNavigate }) {
      DELETE LEDGER ENTRY
   ========================== */
   const deleteEntry = async (entry) => {
-    if(entry.entry_type !== "payment" || !entry.id) return; // only delete payment/adjustment
+    if(entry.entry_type !== "payment" || !entry.id) return;
 
     const pass = prompt("Enter password to delete this entry");
     if(pass !== "786") return alert("❌ Invalid password");
@@ -206,9 +210,10 @@ export default function SupplierLedger({ onNavigate }) {
 
       {/* PAYMENT / ADJUSTMENT ENTRY */}
       <div className="card shadow-sm mb-3">
-        <div className="card-body row g-2">
-          <div className="col-md-3">
+        <div className="card-body row g-2 align-items-end">
+          <div className="col-md-2">
             <input type="date" className="form-control" value={payDate} onChange={e=>setPayDate(e.target.value)} />
+            <small className="text-muted">{formatDate(payDate)}</small>
           </div>
           <div className="col-md-3">
             <input className="form-control" placeholder="Amount" value={amountDisp} onChange={e=>{
@@ -216,21 +221,23 @@ export default function SupplierLedger({ onNavigate }) {
             }} />
             {amountRaw>0 && <small className="text-success fw-bold">{numberToWords(amountRaw)}</small>}
           </div>
-          <div className="col-md-3">
+          <div className="col-md-2">
             <select className="form-control" value={type} onChange={e=>setType(e.target.value)}>
               <option>Payment</option>
               <option>Adjustment</option>
             </select>
           </div>
-          <div className="col-md-3">
+          <div className="col-md-2">
             <select className="form-control" value={method} onChange={e=>setMethod(e.target.value)}>
               <option>Cash</option>
               <option>Bank</option>
             </select>
           </div>
-        </div>
-        <div className="card-body">
-          <button className="btn btn-success w-100" disabled={saving} onClick={saveEntry}>{saving?"Saving...":"💾 Save Entry"}</button>
+          <div className="col-md-3">
+            <button className="btn btn-success btn-sm w-100" disabled={saving} onClick={saveEntry}>
+              {saving?"Saving...":"💾 Save Entry"}
+            </button>
+          </div>
         </div>
       </div>
 
@@ -242,6 +249,7 @@ export default function SupplierLedger({ onNavigate }) {
               <tr>
                 <th>Date</th>
                 <th>Type</th>
+                <th>Detail</th>
                 <th>Payment Method</th>
                 <th>Debit</th>
                 <th>Credit</th>
@@ -250,11 +258,12 @@ export default function SupplierLedger({ onNavigate }) {
               </tr>
             </thead>
             <tbody>
-              {ledger.length===0 && <tr><td colSpan="7" className="text-center text-muted">No ledger entries</td></tr>}
+              {ledger.length===0 && <tr><td colSpan="8" className="text-center text-muted">No ledger entries</td></tr>}
               {ledger.map((r,i)=>(
                 <tr key={i}>
-                  <td className="text-center">{getRowDate(r)}</td>
+                  <td className="text-center">{formatDate(r.date)}</td>
                   <td className="text-center fw-bold">{r.type}</td>
+                  <td className="text-start">{r.detail || "Purchase Entry"}</td>
                   <td className="text-center">{r.payment_method||"-"}</td>
                   <td>{fmtAmt(r.debit)}</td>
                   <td>{fmtAmt(r.credit)}</td>
@@ -262,9 +271,7 @@ export default function SupplierLedger({ onNavigate }) {
                   <td className="text-center">
                     {r.entry_type === "payment" && r.id ? (
                       <button className="btn btn-sm btn-danger" onClick={()=>deleteEntry(r)}>Delete</button>
-                    ) : (
-                      "-"
-                    )}
+                    ) : "-"}
                   </td>
                 </tr>
               ))}
