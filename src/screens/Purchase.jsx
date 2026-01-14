@@ -23,14 +23,12 @@ const parseNumber = (v) =>
 =============================== */
 const itemCategoryColor = (text = "") => {
   const t = text.toLowerCase();
-
-  if (t.includes("transport")) return "#0d6efd"; // blue
-  if (t.includes("hotel")) return "#198754"; // green
-  if (t.includes("visa")) return "#6f42c1"; // purple
-  if (t.includes("ticket")) return "#fd7e14"; // orange
-  if (t.includes("food")) return "#dc3545"; // red
-
-  return "#212529"; // default
+  if (t.includes("transport")) return "#0d6efd";
+  if (t.includes("hotel")) return "#198754";
+  if (t.includes("visa")) return "#6f42c1";
+  if (t.includes("ticket")) return "#fd7e14";
+  if (t.includes("food")) return "#dc3545";
+  return "#212529";
 };
 
 export default function Purchase({ onNavigate }) {
@@ -61,7 +59,7 @@ export default function Purchase({ onNavigate }) {
     loadPending();
   }, []);
 
-  /* ================= LOAD PACKAGE ================= */
+  /* ================= LOAD PACKAGE (MANUAL) ================= */
   const loadPackage = async (r = refNo) => {
     if (!r) return alert("Ref No required");
     setRefNo(r);
@@ -170,8 +168,8 @@ export default function Purchase({ onNavigate }) {
 
       {/* HEADER */}
       <div className="card shadow-sm mb-3">
-        <div className="card-body d-flex justify-content-between">
-          <div>
+        <div className="card-body">
+          <div className="d-flex justify-content-between mb-2">
             <h4 className="fw-bold mb-0">
               🧾 Purchase Entry
               {isEdit && (
@@ -180,22 +178,37 @@ export default function Purchase({ onNavigate }) {
                 </span>
               )}
             </h4>
-            <small className="text-muted">
-              Purchase values enter karein – profit auto calculate
-            </small>
+
+            <div className="d-flex gap-2">
+              <button
+                className="btn btn-outline-secondary btn-sm"
+                onClick={() => onNavigate("dashboard")}
+              >
+                ⬅ Back
+              </button>
+              <button
+                className="btn btn-success btn-sm"
+                onClick={savePurchase}
+              >
+                💾 {isEdit ? "Update Purchase" : "Save Purchase"}
+              </button>
+            </div>
           </div>
+
+          {/* MANUAL REF NO LOAD */}
           <div className="d-flex gap-2">
+            <input
+              className="form-control form-control-sm"
+              placeholder="Enter Ref No"
+              value={refNo}
+              onChange={(e) => setRefNo(e.target.value)}
+            />
             <button
-              className="btn btn-outline-secondary btn-sm"
-              onClick={() => onNavigate("dashboard")}
+              className="btn btn-primary btn-sm"
+              onClick={() => loadPackage()}
+              disabled={loading}
             >
-              ⬅ Back
-            </button>
-            <button
-              className="btn btn-success btn-sm"
-              onClick={savePurchase}
-            >
-              💾 {isEdit ? "Update Purchase" : "Save Purchase"}
+              {loading ? "Loading..." : "Load"}
             </button>
           </div>
         </div>
@@ -261,10 +274,10 @@ export default function Purchase({ onNavigate }) {
                 <th>Rate</th>
                 <th>Sale PKR</th>
                 <th>Purchase SAR</th>
-                <th style={{ width: "110px" }}>Purchase Rate</th>
+                <th>Purchase Rate</th>
                 <th>Purchase PKR</th>
                 <th>Profit</th>
-                <th style={{ width: "260px" }}>Supplier</th>
+                <th>Supplier</th>
               </tr>
             </thead>
 
@@ -297,7 +310,7 @@ export default function Purchase({ onNavigate }) {
                     />
                   </td>
 
-                  <td style={{ width: "110px" }}>
+                  <td>
                     <input
                       className="form-control form-control-sm"
                       value={r.purchase_rate}
@@ -319,7 +332,7 @@ export default function Purchase({ onNavigate }) {
                     {r.profit.toLocaleString()}
                   </td>
 
-                  <td style={{ width: "260px" }}>
+                  <td>
                     <select
                       className="form-select form-select-sm"
                       value={r.supplier_code}
@@ -341,12 +354,11 @@ export default function Purchase({ onNavigate }) {
                 </tr>
               ))}
             </tbody>
+
           </table>
         </div>
       </div>
 
     </div>
   );
-}
-
-
+         }
