@@ -27,7 +27,9 @@ export default function SupplierPurchaseReport({ onNavigate }) {
       const data = await res.json();
       if (data.success) {
         setRows(data.rows || []);
-        setSuppliers(data.suppliers || []);
+        setSuppliers(data.suppliers || ["ALL"]);
+      } else {
+        console.error("Error fetching report:", data.error);
       }
     } catch (err) {
       console.error("Error loading supplier purchase report:", err);
@@ -104,7 +106,6 @@ export default function SupplierPurchaseReport({ onNavigate }) {
               value={supplier}
               onChange={(e) => setSupplier(e.target.value)}
             >
-              <option value="ALL">All Suppliers</option>
               {suppliers.map((s, i) => (
                 <option key={i} value={s}>{s}</option>
               ))}
