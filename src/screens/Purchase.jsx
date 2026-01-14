@@ -19,22 +19,19 @@ const parseNumber = (v) =>
   parseFloat(String(v || 0).replace(/,/g, "")) || 0;
 
 /* ===============================
-   ITEM WISE COLOR (same item = same color)
+   CATEGORY WISE ITEM COLOR
 =============================== */
 const itemColor = (text = "") => {
-  const colors = [
-    "#0d6efd",
-    "#198754",
-    "#dc3545",
-    "#fd7e14",
-    "#6f42c1",
-    "#20c997",
-  ];
-  let hash = 0;
-  for (let i = 0; i < text.length; i++) {
-    hash = text.charCodeAt(i) + ((hash << 5) - hash);
-  }
-  return colors[Math.abs(hash) % colors.length];
+  const t = text.toLowerCase();
+
+  if (t.includes("transport")) return "#0d6efd"; // blue
+  if (t.includes("hotel")) return "#198754"; // green
+  if (t.includes("ticket")) return "#dc3545"; // red
+  if (t.includes("visa")) return "#6f42c1"; // purple
+  if (t.includes("ziyarat")) return "#fd7e14"; // orange
+  if (t.includes("food")) return "#20c997"; // teal
+
+  return "#212529"; // default dark
 };
 
 export default function Purchase({ onNavigate }) {
@@ -211,68 +208,6 @@ export default function Purchase({ onNavigate }) {
         </div>
       )}
 
-      {/* PENDING LIST */}
-      <div className="card shadow-sm mb-3">
-        <div className="card-header fw-bold text-danger">
-          ⏳ Pending / Partial Purchases
-        </div>
-        <div className="card-body p-2">
-          {pending.length === 0 ? (
-            <p className="text-success mb-0">✅ No pending</p>
-          ) : (
-            <ul className="list-group list-group-flush">
-              {pending.map((p, i) => (
-                <li
-                  key={i}
-                  className="list-group-item d-flex justify-content-between align-items-center"
-                >
-                  <div className="fw-bold">
-                    {p.ref_no} —
-                    <span className="text-primary ms-1">
-                      {p.customer_name}
-                    </span>
-                    <span
-                      className={`badge ms-2 ${
-                        p.status === "PENDING"
-                          ? "bg-danger"
-                          : "bg-warning text-dark"
-                      }`}
-                    >
-                      {p.status}
-                    </span>
-                  </div>
-                  <button
-                    className="btn btn-sm btn-outline-primary"
-                    onClick={() => loadPackage(p.ref_no)}
-                  >
-                    Load
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-      </div>
-
-      {/* LOAD BY REF */}
-      <div className="card shadow-sm mb-3">
-        <div className="card-body d-flex gap-2">
-          <input
-            className="form-control form-control-sm"
-            placeholder="Enter Ref No"
-            value={refNo}
-            onChange={(e) => setRefNo(e.target.value)}
-          />
-          <button
-            className="btn btn-primary btn-sm"
-            disabled={loading}
-            onClick={() => loadPackage()}
-          >
-            {loading ? "Loading..." : "Load"}
-          </button>
-        </div>
-      </div>
-
       {/* TABLE */}
       <div className="card shadow">
         <div className="table-responsive">
@@ -284,10 +219,10 @@ export default function Purchase({ onNavigate }) {
                 <th>Rate</th>
                 <th>Sale PKR</th>
                 <th>Purchase SAR</th>
-                <th style={{ width: "110px" }}>Purchase Rate</th>
+                <th>Purchase Rate</th>
                 <th>Purchase PKR</th>
                 <th>Profit</th>
-                <th style={{ width: "260px" }}>Supplier</th>
+                <th>Supplier</th>
               </tr>
             </thead>
 
@@ -307,7 +242,6 @@ export default function Purchase({ onNavigate }) {
                   <td>{r.sale_sar}</td>
                   <td>{r.sale_rate}</td>
                   <td>{r.sale_pkr.toLocaleString()}</td>
-
                   <td>
                     <input
                       className="form-control form-control-sm"
@@ -317,8 +251,7 @@ export default function Purchase({ onNavigate }) {
                       }
                     />
                   </td>
-
-                  <td style={{ width: "110px" }}>
+                  <td>
                     <input
                       className="form-control form-control-sm"
                       value={r.purchase_rate}
@@ -327,9 +260,7 @@ export default function Purchase({ onNavigate }) {
                       }
                     />
                   </td>
-
                   <td>{r.purchase_pkr.toLocaleString()}</td>
-
                   <td
                     className={`fw-bold ${
                       r.profit >= 0
@@ -339,8 +270,7 @@ export default function Purchase({ onNavigate }) {
                   >
                     {r.profit.toLocaleString()}
                   </td>
-
-                  <td style={{ width: "260px" }}>
+                  <td>
                     <select
                       className="form-select form-select-sm"
                       value={r.supplier_code}
