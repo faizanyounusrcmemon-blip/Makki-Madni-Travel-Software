@@ -38,10 +38,6 @@ export default function SupplierPurchaseReport({ onNavigate }) {
     setLoading(false);
   };
 
-  useEffect(() => {
-    load();
-  }, []);
-
   /* ================= FILTER ================= */
   const filtered = rows.filter((r) => {
     if (supplier !== "ALL" && r.supplier_name !== supplier) return false;
@@ -226,3 +222,4 @@ export default function SupplierPurchaseReport({ onNavigate }) {
     </div>
   );
 }
+
