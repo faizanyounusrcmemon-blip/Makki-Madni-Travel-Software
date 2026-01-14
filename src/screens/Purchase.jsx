@@ -19,16 +19,16 @@ const parseNumber = (v) =>
   parseFloat(String(v || 0).replace(/,/g, "")) || 0;
 
 /* ===============================
-   ITEM COLOR (same item = same color)
+   ITEM WISE COLOR (same item = same color)
 =============================== */
 const itemColor = (text = "") => {
   const colors = [
-    "#0d6efd", // blue
-    "#198754", // green
-    "#dc3545", // red
-    "#fd7e14", // orange
-    "#6f42c1", // purple
-    "#20c997", // teal
+    "#0d6efd",
+    "#198754",
+    "#dc3545",
+    "#fd7e14",
+    "#6f42c1",
+    "#20c997",
   ];
   let hash = 0;
   for (let i = 0; i < text.length; i++) {
@@ -211,6 +211,68 @@ export default function Purchase({ onNavigate }) {
         </div>
       )}
 
+      {/* PENDING LIST */}
+      <div className="card shadow-sm mb-3">
+        <div className="card-header fw-bold text-danger">
+          ⏳ Pending / Partial Purchases
+        </div>
+        <div className="card-body p-2">
+          {pending.length === 0 ? (
+            <p className="text-success mb-0">✅ No pending</p>
+          ) : (
+            <ul className="list-group list-group-flush">
+              {pending.map((p, i) => (
+                <li
+                  key={i}
+                  className="list-group-item d-flex justify-content-between align-items-center"
+                >
+                  <div className="fw-bold">
+                    {p.ref_no} —
+                    <span className="text-primary ms-1">
+                      {p.customer_name}
+                    </span>
+                    <span
+                      className={`badge ms-2 ${
+                        p.status === "PENDING"
+                          ? "bg-danger"
+                          : "bg-warning text-dark"
+                      }`}
+                    >
+                      {p.status}
+                    </span>
+                  </div>
+                  <button
+                    className="btn btn-sm btn-outline-primary"
+                    onClick={() => loadPackage(p.ref_no)}
+                  >
+                    Load
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      </div>
+
+      {/* LOAD BY REF */}
+      <div className="card shadow-sm mb-3">
+        <div className="card-body d-flex gap-2">
+          <input
+            className="form-control form-control-sm"
+            placeholder="Enter Ref No"
+            value={refNo}
+            onChange={(e) => setRefNo(e.target.value)}
+          />
+          <button
+            className="btn btn-primary btn-sm"
+            disabled={loading}
+            onClick={() => loadPackage()}
+          >
+            {loading ? "Loading..." : "Load"}
+          </button>
+        </div>
+      </div>
+
       {/* TABLE */}
       <div className="card shadow">
         <div className="table-responsive">
@@ -232,7 +294,6 @@ export default function Purchase({ onNavigate }) {
             <tbody>
               {rows.map((r, i) => (
                 <tr key={i}>
-                  {/* ✅ ITEM NAME: chota font + item-wise color */}
                   <td
                     className="fw-bold"
                     style={{
@@ -308,4 +369,3 @@ export default function Purchase({ onNavigate }) {
     </div>
   );
 }
-
