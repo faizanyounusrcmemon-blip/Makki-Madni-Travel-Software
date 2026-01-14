@@ -80,7 +80,7 @@ export default function SupplierLedger({ onNavigate }) {
             entry_type: isPayment ? "payment" : "purchase",
             id: isPayment ? (row.id || row.payment_id) : null,
             type: isPayment ? typeLower.charAt(0).toUpperCase() + typeLower.slice(1) : "Purchase",
-            detail: row.item_label || row.item || "Purchase Entry"
+            detail: row.item || row.item || "Purchase Entry"
           };
         });
         setLedger(mappedLedger);
@@ -282,3 +282,4 @@ export default function SupplierLedger({ onNavigate }) {
     </div>
   );
 }
+
