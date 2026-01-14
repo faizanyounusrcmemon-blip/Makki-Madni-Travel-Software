@@ -79,8 +79,8 @@ export default function SupplierLedger({ onNavigate }) {
             ...row,
             entry_type: isPayment ? "payment" : "purchase",
             id: isPayment ? (row.id || row.payment_id) : null,
-            type: isPayment ? typeLower.charAt(0).toUpperCase() + typeLower.slice(1) : row.type || "Purchase",
-            detail: row.detail || "Purchase Entry"
+            type: isPayment ? typeLower.charAt(0).toUpperCase() + typeLower.slice(1) : "Purchase",
+            detail: row.item_label || row.item || "Purchase Entry"
           };
         });
         setLedger(mappedLedger);
@@ -249,7 +249,7 @@ export default function SupplierLedger({ onNavigate }) {
               <tr>
                 <th>Date</th>
                 <th>Type</th>
-                <th>Detail</th>
+                <th>Item</th>
                 <th>Payment Method</th>
                 <th>Debit</th>
                 <th>Credit</th>
@@ -263,7 +263,7 @@ export default function SupplierLedger({ onNavigate }) {
                 <tr key={i}>
                   <td className="text-center">{formatDate(r.date)}</td>
                   <td className="text-center fw-bold">{r.type}</td>
-                  <td className="text-start">{r.detail || "Purchase Entry"}</td>
+                  <td className="text-start">{r.detail}</td>
                   <td className="text-center">{r.payment_method||"-"}</td>
                   <td>{fmtAmt(r.debit)}</td>
                   <td>{fmtAmt(r.credit)}</td>
