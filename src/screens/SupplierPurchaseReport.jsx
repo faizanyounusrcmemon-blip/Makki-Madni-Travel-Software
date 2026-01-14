@@ -28,6 +28,7 @@ export default function SupplierPurchaseReport({ onNavigate }) {
       if (data.success) {
         setRows(data.rows || []);
         setSuppliers(data.suppliers || ["ALL"]);
+        setSupplier("ALL"); // default dropdown
       } else {
         console.error("Error fetching report:", data.error);
       }
@@ -99,6 +100,7 @@ export default function SupplierPurchaseReport({ onNavigate }) {
       {/* FILTERS */}
       <div className="card shadow-sm mb-3 p-2">
         <div className="row g-2 align-items-end">
+          {/* Supplier */}
           <div className="col-md-3">
             <label className="fw-bold">Supplier</label>
             <select
@@ -107,11 +109,14 @@ export default function SupplierPurchaseReport({ onNavigate }) {
               onChange={(e) => setSupplier(e.target.value)}
             >
               {suppliers.map((s, i) => (
-                <option key={i} value={s}>{s}</option>
+                <option key={i} value={s}>
+                  {s === "ALL" ? "All Suppliers" : s}
+                </option>
               ))}
             </select>
           </div>
 
+          {/* Item Type */}
           <div className="col-md-3">
             <label className="fw-bold">Item Type</label>
             <select
@@ -127,6 +132,7 @@ export default function SupplierPurchaseReport({ onNavigate }) {
             </select>
           </div>
 
+          {/* Date From */}
           <div className="col-md-2">
             <label className="fw-bold">From</label>
             <input
@@ -137,6 +143,7 @@ export default function SupplierPurchaseReport({ onNavigate }) {
             />
           </div>
 
+          {/* Date To */}
           <div className="col-md-2">
             <label className="fw-bold">To</label>
             <input
@@ -147,6 +154,7 @@ export default function SupplierPurchaseReport({ onNavigate }) {
             />
           </div>
 
+          {/* Search */}
           <div className="col-md-2">
             <label className="fw-bold">Search</label>
             <input
@@ -157,6 +165,7 @@ export default function SupplierPurchaseReport({ onNavigate }) {
             />
           </div>
 
+          {/* Reload */}
           <div className="col-md-2 mt-2">
             <button
               className="btn btn-primary btn-sm w-100"
@@ -184,18 +193,30 @@ export default function SupplierPurchaseReport({ onNavigate }) {
               </tr>
             </thead>
             <tbody>
-              {filtered.map((r, i) => (
-                <tr key={i}>
-                  <td>{r.supplier_name}</td>
-                  <td>{r.ref_no}</td>
-                  <td>{r.item}</td>
-                  <td className="text-end">{fmt(r.sale_pkr)}</td>
-                  <td className="text-end">{fmt(r.purchase_pkr)}</td>
-                  <td className={`text-end fw-bold ${r.profit >= 0 ? "text-success" : "text-danger"}`}>
-                    {fmt(r.profit)}
+              {filtered.length > 0 ? (
+                filtered.map((r, i) => (
+                  <tr key={i}>
+                    <td>{r.supplier_name}</td>
+                    <td>{r.ref_no}</td>
+                    <td>{r.item}</td>
+                    <td className="text-end">{fmt(r.sale_pkr)}</td>
+                    <td className="text-end">{fmt(r.purchase_pkr)}</td>
+                    <td
+                      className={`text-end fw-bold ${
+                        r.profit >= 0 ? "text-success" : "text-danger"
+                      }`}
+                    >
+                      {fmt(r.profit)}
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan="6" className="text-center">
+                    No records found
                   </td>
                 </tr>
-              ))}
+              )}
             </tbody>
             <tfoot className="table-light fw-bold text-end">
               <tr>
