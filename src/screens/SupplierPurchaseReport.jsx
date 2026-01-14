@@ -39,6 +39,7 @@ export default function SupplierPurchaseReport({ onNavigate }) {
   };
 
   useEffect(() => {
+ 
   }, []);
 
   /* ================= FILTER ================= */
