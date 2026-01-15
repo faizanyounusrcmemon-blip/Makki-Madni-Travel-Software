@@ -1,16 +1,21 @@
 import React, { useEffect, useState } from "react";
 
 /* ===============================
-   HELPERS (DECIMALS REMOVED)
+   HELPERS (DECIMAL SAFE)
 =============================== */
 const formatInput = (v) => {
   if (v === "" || v === null || v === undefined) return "";
-  let clean = v.replace(/[^0-9]/g, ""); // decimals removed
-  return clean ? Number(clean).toLocaleString("en-US") : "";
+  // allow digits and one dot
+  let clean = v.replace(/[^0-9.]/g, "");
+  const parts = clean.split(".");
+  if (parts.length > 2) clean = parts[0] + "." + parts[1];
+  return clean;
 };
 
-const parseNumber = (v) =>
-  parseInt(String(v || 0).replace(/,/g, ""), 10) || 0;
+const parseNumber = (v) => {
+  if (v === "" || v === null || v === undefined) return 0;
+  return parseFloat(String(v).replace(/,/g, "")) || 0;
+};
 
 /* ===============================
    ITEM CATEGORY COLOR
@@ -100,7 +105,7 @@ export default function Purchase({ onNavigate }) {
       const s = suppliers.find((x) => x.supplier_code === value);
       r.supplier_name = s ? s.supplier_name : "";
     } else {
-      r[field] = formatInput(value);
+      r[field] = formatInput(value); // decimal-safe input
     }
 
     const sar = parseNumber(r.purchase_sar);
@@ -234,7 +239,7 @@ export default function Purchase({ onNavigate }) {
         </div>
       </div>
 
-      {/* ================= MANUAL REF NO ENTRY AFTER PENDING ================= */}
+      {/* MANUAL REF NO ENTRY */}
       <div className="card shadow-sm mb-3">
         <div className="card-header fw-bold text-info">
           🔢 Enter Ref No Manually
