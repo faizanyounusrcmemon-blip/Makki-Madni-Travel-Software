@@ -10,6 +10,7 @@ import Packages from "./screens/Packages";
 import Hotels from "./screens/Hotels";
 import Ticketing from "./screens/Ticketing";
 import Transport from "./screens/Transport";
+import Ziyarat from "./screens/Ziyarat";
 import Visa from "./screens/Visa";
 
 // PURCHASE
@@ -51,6 +52,7 @@ import HotelsView from "./screens/HotelsView";
 import TicketingView from "./screens/TicketingView";
 import VisaView from "./screens/VisaView";
 import TransportView from "./screens/TransportView";
+import ZiyaratView from "./screens/ZiyaratView";
 
 export default function App() {
   const [page, setPage] = useState("dashboard");
@@ -82,6 +84,7 @@ export default function App() {
       {page === "hotels" && <Hotels onNavigate={navigate} />}
       {page === "ticketing" && <Ticketing onNavigate={navigate} />}
       {page === "transport" && <Transport onNavigate={navigate} />}
+      {page === "ziyarat" && <Ziyarat onNavigate={navigate} />}
       {page === "manageUsers" && <ManageUsers onNavigate={navigate} />}
       {page === "visa" && <Visa onNavigate={navigate} />}
       {page === "systemStorage" && <SystemStorage onNavigate={navigate} />}
@@ -139,6 +142,9 @@ export default function App() {
       )}
       {page === "transport_view" && (
         <TransportView id={detail} onNavigate={navigate} />
+      )}
+      {page === "ziyarat_view" && (
+        <ZiyaratView id={detail} onNavigate={navigate} />
       )}
     </div>
   );
