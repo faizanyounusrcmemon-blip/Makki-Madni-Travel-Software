@@ -39,7 +39,7 @@ export default function DeletedReports({ onNavigate }) {
 
     const data = await res.json();
     if (data.success) {
-      alert("Record restored");
+      alert("✅ Record restored");
       load();
     } else {
       alert(data.error || "Restore failed");
@@ -72,7 +72,7 @@ export default function DeletedReports({ onNavigate }) {
 
     const data = await res.json();
     if (data.success) {
-      alert("Record permanently deleted");
+      alert("✅ Record permanently deleted");
       load();
     } else {
       alert(data.error || "Delete failed");

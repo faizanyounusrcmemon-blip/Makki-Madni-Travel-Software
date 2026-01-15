@@ -23,6 +23,7 @@ export default function Restore({ onNavigate }) {
     "purchase_payments",
     "supplier_payments",
     "suppliers",
+    "ziyarat",
   ];
 
   /* ================= HELPERS ================= */

@@ -50,7 +50,7 @@ export default function AllReports({ onNavigate }) {
         return;
       }
 
-      alert("Record Soft Deleted");
+      alert("✅ Record Soft Deleted");
       loadData();
     } catch (err) {
       console.error("Delete Error:", err);
