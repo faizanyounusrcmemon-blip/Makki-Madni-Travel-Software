@@ -1,22 +1,16 @@
 import React, { useEffect, useState } from "react";
 
 /* ===============================
-   HELPERS (DOT + COMMA SAFE)
+   HELPERS (DECIMALS REMOVED)
 =============================== */
 const formatInput = (v) => {
-  if (v === "") return "";
-  let clean = v.replace(/[^0-9.]/g, "");
-  const parts = clean.split(".");
-  if (parts.length > 2) {
-    clean = parts[0] + "." + parts.slice(1).join("");
-  }
-  const [int, dec] = clean.split(".");
-  const intFmt = int ? Number(int).toLocaleString("en-US") : "";
-  return dec !== undefined ? `${intFmt}.${dec}` : intFmt;
+  if (v === "" || v === null || v === undefined) return "";
+  let clean = v.replace(/[^0-9]/g, ""); // decimals removed
+  return clean ? Number(clean).toLocaleString("en-US") : "";
 };
 
 const parseNumber = (v) =>
-  parseFloat(String(v || 0).replace(/,/g, "")) || 0;
+  parseInt(String(v || 0).replace(/,/g, ""), 10) || 0;
 
 /* ===============================
    ITEM CATEGORY COLOR
@@ -83,17 +77,13 @@ export default function Purchase({ onNavigate }) {
       data.rows.map((x) => ({
         item: x.item,
         item_label: x.item_label,
-        sale_sar: Number(x.sale_sar) || 0,
-        sale_rate: Number(x.sale_rate) || 0,
-        sale_pkr: Number(x.sale_pkr) || 0,
-        purchase_sar: x.purchase_sar
-          ? formatInput(String(x.purchase_sar))
-          : "",
-        purchase_rate: x.purchase_rate
-          ? formatInput(String(x.purchase_rate))
-          : "",
-        purchase_pkr: Number(x.purchase_pkr) || 0,
-        profit: Number(x.profit) || 0,
+        sale_sar: parseNumber(x.sale_sar),
+        sale_rate: parseNumber(x.sale_rate),
+        sale_pkr: parseNumber(x.sale_pkr),
+        purchase_sar: x.purchase_sar ? formatInput(String(x.purchase_sar)) : "",
+        purchase_rate: x.purchase_rate ? formatInput(String(x.purchase_rate)) : "",
+        purchase_pkr: parseNumber(x.purchase_pkr),
+        profit: parseNumber(x.profit),
         supplier_code: x.supplier_code || "",
         supplier_name: x.supplier_name || "",
       }))
@@ -168,47 +158,28 @@ export default function Purchase({ onNavigate }) {
 
       {/* HEADER */}
       <div className="card shadow-sm mb-3">
-        <div className="card-body">
-          <div className="d-flex justify-content-between mb-2">
-            <h4 className="fw-bold mb-0">
-              🧾 Purchase Entry
-              {isEdit && (
-                <span className="badge bg-warning text-dark ms-2">
-                  EDIT MODE
-                </span>
-              )}
-            </h4>
+        <div className="card-body d-flex justify-content-between mb-2">
+          <h4 className="fw-bold mb-0">
+            🧾 Purchase Entry
+            {isEdit && (
+              <span className="badge bg-warning text-dark ms-2">
+                EDIT MODE
+              </span>
+            )}
+          </h4>
 
-            <div className="d-flex gap-2">
-              <button
-                className="btn btn-outline-secondary btn-sm"
-                onClick={() => onNavigate("dashboard")}
-              >
-                ⬅ Back
-              </button>
-              <button
-                className="btn btn-success btn-sm"
-                onClick={savePurchase}
-              >
-                💾 {isEdit ? "Update Purchase" : "Save Purchase"}
-              </button>
-            </div>
-          </div>
-
-          {/* MANUAL REF NO LOAD */}
           <div className="d-flex gap-2">
-            <input
-              className="form-control form-control-sm"
-              placeholder="Enter Ref No"
-              value={refNo}
-              onChange={(e) => setRefNo(e.target.value)}
-            />
             <button
-              className="btn btn-primary btn-sm"
-              onClick={() => loadPackage()}
-              disabled={loading}
+              className="btn btn-outline-secondary btn-sm"
+              onClick={() => onNavigate("dashboard")}
             >
-              {loading ? "Loading..." : "Load"}
+              ⬅ Back
+            </button>
+            <button
+              className="btn btn-success btn-sm"
+              onClick={savePurchase}
+            >
+              💾 {isEdit ? "Update Purchase" : "Save Purchase"}
             </button>
           </div>
         </div>
@@ -236,10 +207,10 @@ export default function Purchase({ onNavigate }) {
                   className="list-group-item d-flex justify-content-between align-items-center"
                 >
                   <div className="fw-bold">
-                    {p.ref_no} —
-                    <span className="text-primary ms-1">
-                      {p.customer_name}
+                    <span className={`badge bg-secondary me-2`}>
+                      {p.ref_no}
                     </span>
+                    <span className="text-primary ms-1">{p.customer_name}</span>
                     <span
                       className={`badge ms-2 ${
                         p.status === "PENDING"
@@ -260,6 +231,28 @@ export default function Purchase({ onNavigate }) {
               ))}
             </ul>
           )}
+        </div>
+      </div>
+
+      {/* ================= MANUAL REF NO ENTRY AFTER PENDING ================= */}
+      <div className="card shadow-sm mb-3">
+        <div className="card-header fw-bold text-info">
+          🔢 Enter Ref No Manually
+        </div>
+        <div className="card-body d-flex gap-2">
+          <input
+            className="form-control form-control-sm"
+            placeholder="Ref No"
+            value={refNo}
+            onChange={(e) => setRefNo(e.target.value)}
+          />
+          <button
+            className="btn btn-primary btn-sm"
+            onClick={() => loadPackage()}
+            disabled={loading}
+          >
+            {loading ? "Loading..." : "Load"}
+          </button>
         </div>
       </div>
 
@@ -288,14 +281,11 @@ export default function Purchase({ onNavigate }) {
                     className="fw-bold"
                     style={{
                       fontSize: "13px",
-                      color: itemCategoryColor(
-                        r.item_label || r.item
-                      ),
+                      color: itemCategoryColor(r.item_label || r.item),
                     }}
                   >
                     {r.item_label || r.item}
                   </td>
-
                   <td>{r.sale_sar}</td>
                   <td>{r.sale_rate}</td>
                   <td>{r.sale_pkr.toLocaleString()}</td>
@@ -324,9 +314,7 @@ export default function Purchase({ onNavigate }) {
 
                   <td
                     className={`fw-bold ${
-                      r.profit >= 0
-                        ? "text-success"
-                        : "text-danger"
+                      r.profit >= 0 ? "text-success" : "text-danger"
                     }`}
                   >
                     {r.profit.toLocaleString()}
@@ -361,4 +349,4 @@ export default function Purchase({ onNavigate }) {
 
     </div>
   );
-         }
+}

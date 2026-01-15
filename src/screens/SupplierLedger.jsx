@@ -6,9 +6,12 @@ import jsPDF from "jspdf";
    HELPERS
 ========================= */
 const fmtAmt = (v) =>
-  v === null || v === undefined || v === "" ? "-" : Number(v).toLocaleString("en-US");
+  v === null || v === undefined || v === ""
+    ? "-"
+    : Math.round(Number(v)).toLocaleString("en-US");
 
-const parseAmt = (v) => Number(String(v).replace(/,/g, "") || 0);
+const parseAmt = (v) =>
+  Math.round(Number(String(v).replace(/,/g, "")) || 0);
 
 const formatDate = (d) => {
   if (!d) return "-";
@@ -57,7 +60,6 @@ export default function SupplierLedger({ onNavigate }) {
       const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/supplier-ledger/pending`);
       const d = await res.json();
       if (d.success) {
-        // Sort pending so highest pending first
         const sorted = (d.pending || []).sort((a,b) => b.pending_amount - a.pending_amount);
         setPending(sorted);
       }
@@ -66,7 +68,6 @@ export default function SupplierLedger({ onNavigate }) {
 
   /* =========================
      LOAD LEDGER BY SUPPLIER CODE
-     Current date on top
   ========================== */
   const loadLedger = async (code = supplierCode) => {
     if (!code) return;
@@ -85,7 +86,6 @@ export default function SupplierLedger({ onNavigate }) {
             detail: row.item || row.item || "Purchase Entry"
           };
         });
-        // Sort descending by date so current date on top
         mappedLedger.sort((a,b)=> new Date(b.date) - new Date(a.date));
         setLedger(mappedLedger);
       } else {
