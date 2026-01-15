@@ -34,6 +34,7 @@ export default function AllReports({ onNavigate }) {
     if (type === "Hotels") endpoint = "hotels";
     if (type === "Ticketing") endpoint = "ticketing";
     if (type === "Transport") endpoint = "transport";
+    if (type === "Ziyarat") endpoint = "ziyarat";
     if (type === "Visa") endpoint = "visa";
 
     try {
@@ -68,6 +69,8 @@ export default function AllReports({ onNavigate }) {
         ? "ticket_view"
         : type === "Transport"
         ? "transport_view"
+        : type === "Ziyarat"
+        ? "ziyarat_view"
         : "visa_view";
 
     onNavigate(page, ref_no);

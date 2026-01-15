@@ -120,18 +120,40 @@ export default function Packages({ onNavigate }) {
   );
 
   // ============================
+  // ZIYARAT
+  // ============================
+  const [ziyaratRows, setZiyaratRows] = useState([]);
+
+  const addZiyaratRow = () =>
+    setZiyaratRows([...ziyaratRows, { text: "", amount: 0 }]);
+
+  const removeZiyaratRow = (i) =>
+    setZiyaratRows(ziyaratRows.filter((_, x) => x !== i));
+
+  const ziyaratTotal = ziyaratRows.reduce(
+    (sum, row) => sum + (Number(row.amount) || 0),
+    0
+  );
+
+
+  // ============================
   // SUMMARY (PKR)
   // ============================
   const [flightRate, setFlightRate] = useState(0);
   const [hotelsRate, setHotelsRate] = useState(0);
   const [visaRatePKR, setVisaRatePKR] = useState(0);
   const [transportRate, setTransportRate] = useState(0);
+  const [ziyaratRate, setZiyaratRate] = useState(0);
+
 
   const flightPKR = flightTotal * flightRate;
   const hotelsPKR = hotelsTotal * hotelsRate;
   const visaPKR = visaTotal * visaRatePKR;
   const transportPKR = transportTotal * transportRate;
-  const grandPKR = flightPKR + hotelsPKR + visaPKR + transportPKR;
+  const ziyaratPKR = ziyaratTotal * ziyaratRate;
+  const grandPKR = flightPKR + hotelsPKR + visaPKR + transportPKR + ziyaratPKR;
+
+
 
   const [personQty, setPersonQty] = useState(1);
   const perPerson = personQty > 0 ? Math.round(grandPKR / personQty) : 0;
@@ -248,11 +270,20 @@ export default function Packages({ onNavigate }) {
   // TRANSPORT
      setTransportRows(d.transport || []);
 
+  // ZIYARAT
+     setZiyaratRows(d.ziyarat || []);
+     setZiyaratRate(d.ziyarat_sar_rate || 0);
+
+
   // SUMMARY RATES
      setFlightRate(d.flight_sar_rate);
      setHotelsRate(d.hotel_sar_rate);
      setVisaRatePKR(d.visa_sar_rate);
      setTransportRate(d.transport_sar_rate);
+     setZiyaratRate(d.ziyarat_sar_rate || 0);
+
+
+
 
      setPersonQty(d.per_person_qty || 1);
 
@@ -295,29 +326,39 @@ export default function Packages({ onNavigate }) {
       transport: transportRows,
       transport_total: transportTotal,
 
+      // ✅ ZIYARAT
+      ziyarat: ziyaratRows,
+      ziyarat_total: ziyaratTotal,
+
+
       // ✅ SAR TOTALS
       flight_sar_total: flightTotal,
       hotel_sar_total: hotelsTotal,
       visa_sar_total: visaTotal,
       transport_sar_total: transportTotal,
+      ziyarat_sar_total: ziyaratTotal,
 
       // ✅ SAR RATES
       flight_sar_rate: flightRate,
       hotel_sar_rate: hotelsRate,
       visa_sar_rate: visaRatePKR,
       transport_sar_rate: transportRate,
+      ziyarat_sar_rate: ziyaratRate,
+
 
       // ✅ PKR TOTALS
       flight_pkr_total: flightPKR,
       hotel_pkr_total: hotelsPKR,
       visa_pkr_total: visaPKR,
       transport_pkr_total: transportPKR,
+      ziyarat_pkr_total: ziyaratPKR,
+
 
       // ✅ NET
       net_pkr_total: grandPKR,
 
       // ✅ OLD FIELDS (BACKWARD SAFE)
-      total_sar: flightTotal + hotelsTotal + visaTotal + transportTotal,
+      total_sar: flightTotal + hotelsTotal + visaTotal + transportTotal + ziyaratTotal,
       total_pkr: grandPKR,
       per_person_qty: personQty,
       per_person_final: perPerson
@@ -804,6 +845,69 @@ export default function Packages({ onNavigate }) {
         )}
 
         {/* =============================
+            ZIYARAT SECTION
+        ============================= */}
+        <h6 className="section-title">🕌 Ziyarat</h6>
+
+        <button
+          className="btn btn-outline-primary btn-sm mb-2"
+          onClick={addZiyaratRow}
+        >
+          ➕ Add Ziyarat Row
+        </button>
+
+        <table className="table table-sm">
+          <tbody>
+            {ziyaratRows.map((z, i) => (
+              <tr key={i}>
+                <td>
+                  <input
+                    type="text"
+                    className="form-control form-control-sm"
+                    placeholder="Ziyarat Detail"
+                    value={z.text}
+                    onChange={(e) => {
+                      const updated = [...ziyaratRows];
+                      updated[i].text = e.target.value;
+                      setZiyaratRows(updated);
+                    }}
+                  />
+                </td>
+
+                <td width="150">
+                  <input
+                    type="number"
+                    className="form-control form-control-sm"
+                    value={z.amount}
+                    onChange={(e) => {
+                      const updated = [...ziyaratRows];
+                      updated[i].amount = +e.target.value;
+                      setZiyaratRows(updated);
+                    }}
+                  />
+                </td>
+
+                <td>
+                  <button
+                    className="btn btn-link text-danger"
+                    onClick={() => removeZiyaratRow(i)}
+                  >
+                    ✖
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+
+        {ziyaratRows.length > 0 && (
+          <div className="fw-bold text-end mb-3">
+            Ziyarat Total: {ziyaratTotal.toLocaleString()}
+          </div>
+        )}
+
+
+        {/* =============================
             SUMMARY SECTION
         ============================= */}
         <h6 className="section-title">📊 Summary</h6>
@@ -878,6 +982,22 @@ export default function Packages({ onNavigate }) {
               </td>
               <td className="fw-bold">{transportPKR.toLocaleString()}</td>
             </tr>
+
+            {/* ZIYARAT */}
+            <tr>
+              <td>Ziyarat</td>
+              <td>{ziyaratTotal.toLocaleString()}</td>
+              <td>
+                <input
+                  type="number"
+                  className="form-control form-control-sm"
+                  value={ziyaratRate}
+                  onChange={(e) => setZiyaratRate(+e.target.value)}
+                />
+              </td>
+              <td className="fw-bold">{ziyaratPKR.toLocaleString()}</td>
+            </tr>
+
 
             {/* GRAND TOTAL */}
             <tr className="table-info">

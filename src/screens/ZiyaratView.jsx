@@ -5,26 +5,26 @@ import jsPDF from "jspdf";
 /* =========================
    HELPERS
 ========================= */
-const fmtDate = (d) =>
-  d ? new Date(d).toLocaleDateString("en-GB") : "-";
+const fmtDate = (d) => (d ? new Date(d).toLocaleDateString("en-GB") : "-");
 
-export default function TransportView({ id, onNavigate }) {
+export default function ZiyaratView({ id, onNavigate }) {
   const [data, setData] = useState(null);
   const ref = useRef(null);
 
   /* =========================
-     LOAD TRANSPORT
+     LOAD ZIYARAT DATA
   ========================= */
   useEffect(() => {
     if (!id) return;
 
-    fetch(`${import.meta.env.VITE_BACKEND_URL}/api/transport/get/${id}`)
+    fetch(`${import.meta.env.VITE_BACKEND_URL}/api/ziyarat/get/${id}`)
       .then((r) => r.json())
       .then((res) => {
         if (!res.success) return;
 
         const row = res.row;
 
+        // ensure rows is array
         let rows = [];
         if (row.rows) {
           if (Array.isArray(row.rows)) rows = row.rows;
@@ -36,8 +36,8 @@ export default function TransportView({ id, onNavigate }) {
             }
           }
         }
-
         row.rows = rows;
+
         setData(row);
       });
   }, [id]);
@@ -55,12 +55,12 @@ export default function TransportView({ id, onNavigate }) {
 
     const img = canvas.toDataURL("image/jpeg", 1.0);
 
-    const pdf = new jsPDF("p", "mm", "a4"); // ✅ PORTRAIT
+    const pdf = new jsPDF("p", "mm", "a4");
     const pageWidth = pdf.internal.pageSize.getWidth();
     const pageHeight = (canvas.height * pageWidth) / canvas.width;
 
     pdf.addImage(img, "JPEG", 0, 0, pageWidth, pageHeight);
-    pdf.save(`${data?.ref_no || "transport"}.pdf`);
+    pdf.save(`${data?.ref_no || "ziyarat"}.pdf`);
   };
 
   if (!data) return <div className="p-3">Loading...</div>;
@@ -90,9 +90,7 @@ export default function TransportView({ id, onNavigate }) {
         <div className="text-center mb-3">
           <h2 className="fw-bold mb-1">✈️ MAKKI MADNI TRAVEL</h2>
           <div style={{ fontSize: "13px", lineHeight: "1.4" }}>
-            <div>
-              Shop #4 Daimon City Building, Near Zeenat-ul-Islam Masjid
-            </div>
+            <div>Shop #4 Daimon City Building, Near Zeenat-ul-Islam Masjid</div>
             <div>Garden West, Karachi</div>
             <div>
               ✉️ makkimadnitravel@gmail.com | ☎️ 0335-7476744
@@ -102,9 +100,7 @@ export default function TransportView({ id, onNavigate }) {
         </div>
 
         {/* ===== TITLE ===== */}
-        <h4 className="fw-bold text-center mb-3">
-          🚐 TRANSPORT DETAILS
-        </h4>
+        <h4 className="fw-bold text-center mb-3">🕌 ZIYARAT DETAILS</h4>
 
         {/* ===== BASIC INFO ===== */}
         <div className="row mb-2">
@@ -122,8 +118,8 @@ export default function TransportView({ id, onNavigate }) {
 
         <hr />
 
-        {/* ================= TRANSPORT TABLE ================= */}
-        <h5 className="fw-bold mb-2">Transport Details</h5>
+        {/* ================= ZIYARAT TABLE ================= */}
+        <h5 className="fw-bold mb-2">Ziyarat Details</h5>
 
         <table className="table table-bordered table-sm">
           <thead>
@@ -136,17 +132,15 @@ export default function TransportView({ id, onNavigate }) {
             {data.rows.length === 0 && (
               <tr>
                 <td colSpan="2" className="text-center text-muted">
-                  No transport rows
+                  No ziyarat rows
                 </td>
               </tr>
             )}
 
             {data.rows.map((r, i) => (
               <tr key={i}>
-                <td>{r.description}</td>
-                <td className="text-end">
-                  {Number(r.sar || 0).toLocaleString()}
-                </td>
+                <td>{r.description || r.text || r.route}</td>
+                <td className="text-end">{Number(r.sar || 0).toLocaleString()}</td>
               </tr>
             ))}
           </tbody>
@@ -157,16 +151,14 @@ export default function TransportView({ id, onNavigate }) {
         {/* ================= TOTALS ================= */}
         <h5 className="fw-bold">Totals</h5>
         <p>
-          <b>Total SAR:</b>{" "}
-          {Number(data.total_sar || 0).toLocaleString()}
+          <b>Total SAR:</b> {Number(data.total_sar || 0).toLocaleString()}
         </p>
         <p>
-          <b>PKR Rate:</b> {data.pkr_rate}
+          <b>PKR Rate:</b> {Number(data.pkr_rate || 0).toLocaleString()}
         </p>
 
         <h4 className="fw-bold text-success">
-          Total PKR:{" "}
-          {Number(data.total_pkr || 0).toLocaleString()}
+          Total PKR: {Number(data.total_pkr || 0).toLocaleString()}
         </h4>
       </div>
     </div>

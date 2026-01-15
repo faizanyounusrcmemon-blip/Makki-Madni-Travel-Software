@@ -88,7 +88,7 @@ export default function VisaView({ id, onNavigate }) {
       <div ref={ref} className="bg-white p-3 border">
         {/* ===== HEADER ===== */}
         <div className="text-center mb-3">
-          <h2 className="fw-bold mb-1">🛂 MAKKI MADNI TRAVEL</h2>
+          <h2 className="fw-bold mb-1">✈️ MAKKI MADNI TRAVEL</h2>
           <div style={{ fontSize: "13px", lineHeight: "1.4" }}>
             <div>
               Shop #4 Daimon City Building, Near Zeenat-ul-Islam Masjid
