@@ -14,13 +14,12 @@ export default function BalanceSheet({ onNavigate }) {
 
   const loadData = async () => {
     try {
-      const res = await fetch(
-        `${import.meta.env.VITE_BACKEND_URL}/api/balance-sheet`
-      );
+      const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/balance-sheet`);
       const d = await res.json();
       if (d.success) setData(d);
       else alert(d.error || "Failed to load balance sheet");
-    } catch {
+    } catch (e) {
+      console.error(e);
       alert("Server error");
     } finally {
       setLoading(false);
@@ -36,8 +35,13 @@ export default function BalanceSheet({ onNavigate }) {
   if (!data) return null;
 
   /* ================= FILTER ================= */
-  const customerRows = data.customers.filter((r) => r.balance > 0);
-  const purchaseRows = data.purchases.filter((r) => r.balance > 0);
+  const customerRows = data.customers
+    .filter((r) => r.balance > 0)
+    .sort((a, b) => b.balance - a.balance);
+
+  const supplierRows = data.suppliers
+    .filter((r) => r.balance > 0)          // صرف non-zero balance
+    .sort((a, b) => b.balance - a.balance); // highest balance اوپر
 
   /* ================= TOTALS ================= */
   const customerTotals = customerRows.reduce(
@@ -50,7 +54,7 @@ export default function BalanceSheet({ onNavigate }) {
     { sale: 0, received: 0, balance: 0 }
   );
 
-  const purchaseTotals = purchaseRows.reduce(
+  const supplierTotals = supplierRows.reduce(
     (a, r) => {
       a.purchase += Number(r.purchase_total || 0);
       a.paid += Number(r.paid || 0);
@@ -60,39 +64,31 @@ export default function BalanceSheet({ onNavigate }) {
     { purchase: 0, paid: 0, balance: 0 }
   );
 
-  const netPosition = customerTotals.balance - purchaseTotals.balance;
+  const netPosition = customerTotals.balance - supplierTotals.balance;
 
   return (
     <div className="container py-4">
 
-      {/* ================= BEAUTIFUL HEADER ================= */}
+      {/* ================= HEADER ================= */}
       <div
         className="mb-4 p-4 rounded-3 shadow-sm text-white"
-        style={{
-          background: "linear-gradient(90deg, #2563eb, #06b6d4)",
-        }}
+        style={{ background: "linear-gradient(90deg, #2563eb, #06b6d4)" }}
       >
         <div className="d-flex justify-content-between align-items-center">
           <div className="d-flex align-items-center gap-3">
             <div
               className="d-flex align-items-center justify-content-center rounded-circle"
-              style={{
-                width: 48,
-                height: 48,
-                background: "rgba(255,255,255,0.2)",
-                fontSize: 22,
-              }}
+              style={{ width: 48, height: 48, background: "rgba(255,255,255,0.2)", fontSize: 22 }}
             >
               📊
             </div>
             <div>
               <h4 className="mb-1 fw-bold">Balance Sheet</h4>
               <small className="opacity-75">
-                Receivable, Payable & Net Summary
+                Receivable, Payable & Supplier Ledger Summary
               </small>
             </div>
           </div>
-
           <button
             className="btn btn-light btn-sm fw-semibold"
             onClick={() => onNavigate("dashboard")}
@@ -127,20 +123,15 @@ export default function BalanceSheet({ onNavigate }) {
                   <td className="fw-semibold">{r.customer_name || "-"}</td>
                   <td className="text-end">{fmt(r.sale_total)}</td>
                   <td className="text-end">{fmt(r.received)}</td>
-                  <td className="text-end text-success fw-bold">
-                    {fmt(r.balance)}
-                  </td>
+                  <td className="text-end text-success fw-bold">{fmt(r.balance)}</td>
                 </tr>
               ))}
-
               {customerRows.length > 0 && (
                 <tr className="table-secondary fw-bold">
                   <td colSpan="3" className="text-end">TOTAL</td>
                   <td className="text-end">{fmt(customerTotals.sale)}</td>
                   <td className="text-end">{fmt(customerTotals.received)}</td>
-                  <td className="text-end text-success">
-                    {fmt(customerTotals.balance)}
-                  </td>
+                  <td className="text-end text-success">{fmt(customerTotals.balance)}</td>
                 </tr>
               )}
             </tbody>
@@ -151,42 +142,48 @@ export default function BalanceSheet({ onNavigate }) {
       {/* ================= SUPPLIER PAYABLE ================= */}
       <div className="card shadow-sm mb-4">
         <div className="card-header bg-white fw-bold text-danger">
-          📦 Supplier Payable
+          📦 Supplier Payable / Ledger
         </div>
         <div className="table-responsive">
           <table className="table table-hover mb-0">
             <thead className="table-light">
               <tr>
                 <th>#</th>
-                <th>Ref No</th>
+                <th>Supplier Code</th>
                 <th>Supplier</th>
                 <th className="text-end">Total Purchase</th>
                 <th className="text-end">Paid</th>
                 <th className="text-end">Balance</th>
+                <th className="text-center">Status</th>
               </tr>
             </thead>
             <tbody>
-              {purchaseRows.map((r, i) => (
+              {supplierRows.map((r, i) => (
                 <tr key={i}>
                   <td>{i + 1}</td>
-                  <td>{r.ref_no}</td>
-                  <td className="fw-semibold">{r.customer_name || "-"}</td>
+                  <td>{r.supplier_code}</td>
+                  <td className="fw-semibold">{r.supplier_name || "-"}</td>
                   <td className="text-end">{fmt(r.purchase_total)}</td>
                   <td className="text-end">{fmt(r.paid)}</td>
-                  <td className="text-end text-danger fw-bold">
-                    {fmt(r.balance)}
+                  <td className="text-end text-danger fw-bold">{fmt(r.balance)}</td>
+                  <td className="text-center">
+                    <span className={`badge ${
+                      r.status === "PENDING" ? "bg-danger" :
+                      r.status === "PARTIAL" ? "bg-warning text-dark" :
+                      "bg-success"
+                    }`}>
+                      {r.status}
+                    </span>
                   </td>
                 </tr>
               ))}
-
-              {purchaseRows.length > 0 && (
+              {supplierRows.length > 0 && (
                 <tr className="table-secondary fw-bold">
                   <td colSpan="3" className="text-end">TOTAL</td>
-                  <td className="text-end">{fmt(purchaseTotals.purchase)}</td>
-                  <td className="text-end">{fmt(purchaseTotals.paid)}</td>
-                  <td className="text-end text-danger">
-                    {fmt(purchaseTotals.balance)}
-                  </td>
+                  <td className="text-end">{fmt(supplierTotals.purchase)}</td>
+                  <td className="text-end">{fmt(supplierTotals.paid)}</td>
+                  <td className="text-end text-danger">{fmt(supplierTotals.balance)}</td>
+                  <td></td>
                 </tr>
               )}
             </tbody>
@@ -202,16 +199,12 @@ export default function BalanceSheet({ onNavigate }) {
         <table className="table mb-0">
           <tbody>
             <tr>
-              <td>💰 Lene Hain (Customer)</td>
-              <td className="text-end fw-bold text-success">
-                {fmt(customerTotals.balance)}
-              </td>
+              <td>💰 Customer Receivable</td>
+              <td className="text-end fw-bold text-success">{fmt(customerTotals.balance)}</td>
             </tr>
             <tr>
-              <td>📦 Dene Hain (Supplier)</td>
-              <td className="text-end fw-bold text-danger">
-                {fmt(purchaseTotals.balance)}
-              </td>
+              <td>📦 Supplier Payable</td>
+              <td className="text-end fw-bold text-danger">{fmt(supplierTotals.balance)}</td>
             </tr>
             <tr className="table-light fw-bold">
               <td>
@@ -221,11 +214,7 @@ export default function BalanceSheet({ onNavigate }) {
                   {netPosition >= 0 ? "Aap lene wale ho" : "Aap dene wale ho"}
                 </small>
               </td>
-              <td
-                className={`text-end ${
-                  netPosition >= 0 ? "text-success" : "text-danger"
-                }`}
-              >
+              <td className={`text-end ${netPosition >= 0 ? "text-success" : "text-danger"}`}>
                 {fmt(Math.abs(netPosition))}
               </td>
             </tr>
