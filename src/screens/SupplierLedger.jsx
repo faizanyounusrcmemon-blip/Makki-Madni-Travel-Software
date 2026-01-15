@@ -10,7 +10,6 @@ const fmtAmt = (v) =>
 
 const parseAmt = (v) => Number(String(v).replace(/,/g, "") || 0);
 
-// Date format 01/Dec/2025
 const formatDate = (d) => {
   if (!d) return "-";
   const dt = new Date(d);
@@ -51,20 +50,23 @@ export default function SupplierLedger({ onNavigate }) {
   const pdfRef = useRef(null);
 
   /* =========================
-     LOAD PENDING ALWAYS
+     LOAD PENDING / PARTIAL ALWAYS
   ========================== */
   const loadPendingAlways = async () => {
     try {
       const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/supplier-ledger/pending`);
       const d = await res.json();
-      if (d.success) setPending(d.pending || []);
-    } catch(e) {
-      console.error("Pending load error:", e);
-    }
+      if (d.success) {
+        // Sort pending so highest pending first
+        const sorted = (d.pending || []).sort((a,b) => b.pending_amount - a.pending_amount);
+        setPending(sorted);
+      }
+    } catch(e) { console.error("Pending load error:", e); }
   };
 
   /* =========================
      LOAD LEDGER BY SUPPLIER CODE
+     Current date on top
   ========================== */
   const loadLedger = async (code = supplierCode) => {
     if (!code) return;
@@ -83,19 +85,17 @@ export default function SupplierLedger({ onNavigate }) {
             detail: row.item || row.item || "Purchase Entry"
           };
         });
+        // Sort descending by date so current date on top
+        mappedLedger.sort((a,b)=> new Date(b.date) - new Date(a.date));
         setLedger(mappedLedger);
       } else {
-        alert(d.error);
+        alert(d.error || "Failed to load ledger");
         setLedger([]);
       }
-    } catch(e) {
-      console.error("Ledger load error:", e);
-    }
+    } catch(e) { console.error("Ledger load error:", e); }
   };
 
-  useEffect(() => {
-    loadPendingAlways();
-  }, []);
+  useEffect(() => { loadPendingAlways(); }, []);
 
   /* =========================
      SAVE PAYMENT / ADJUSTMENT
@@ -159,6 +159,7 @@ export default function SupplierLedger({ onNavigate }) {
      EXPORT PDF
   ========================== */
   const exportPDF = async () => {
+    if(!pdfRef.current) return;
     const canvas = await html2canvas(pdfRef.current, { scale: 3 });
     const img = canvas.toDataURL("image/png");
     const pdf = new jsPDF("p", "mm", "a4");
@@ -174,6 +175,7 @@ export default function SupplierLedger({ onNavigate }) {
 
   return (
     <div className="container p-3">
+
       {/* HEADER */}
       <div className="card shadow-sm mb-3">
         <div className="card-body d-flex justify-content-between align-items-center">
@@ -191,7 +193,10 @@ export default function SupplierLedger({ onNavigate }) {
             <li key={i} className="list-group-item d-flex justify-content-between align-items-center">
               <div>
                 <b>{p.supplier_code} — <span className="text-primary">{p.supplier_name}</span></b>
-                <span className={`badge ms-2 ${p.status==="PENDING"?"bg-danger":"bg-warning text-dark"}`}>{p.status}</span>
+                <span className={`badge ms-2 ${
+                  p.status === "PENDING" ? "bg-danger" :
+                  p.status === "PARTIAL" ? "bg-warning text-dark" : "bg-success text-white"
+                }`}>{p.status}</span>
               </div>
               <button className="btn btn-sm btn-outline-primary" onClick={() => { setSupplierCode(p.supplier_code); loadLedger(p.supplier_code); }}>Load Ledger</button>
             </li>
@@ -282,4 +287,3 @@ export default function SupplierLedger({ onNavigate }) {
     </div>
   );
 }
-
