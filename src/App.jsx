@@ -33,7 +33,7 @@ import ExpenseLedger from "./screens/ExpenseLedger";
 import AllReports from "./screens/AllReports";
 import ProfitReport from "./screens/ProfitReport";
 import SaleAdjustmentReport from "./screens/SaleAdjustmentReport";
-import PurchaseAdjustmentReport from "./screens/PurchaseAdjustmentReport";
+import SupplierAdjustmentOnly from "./screens/SupplierAdjustmentOnly";
 import SupplierPurchaseReport from "./screens/SupplierPurchaseReport";
 import CreateUser from "./screens/CreateUser";
 import DeletedReports from "./screens/DeletedReports";
@@ -111,7 +111,7 @@ export default function App() {
       {page === "allreports" && <AllReports onNavigate={navigate} />}
       {page === "profitReport" && <ProfitReport onNavigate={navigate} />}
       {page === "saleAdjustmentReport" && <SaleAdjustmentReport onNavigate={navigate} />}
-      {page === "purchaseAdjustmentReport" && <PurchaseAdjustmentReport onNavigate={navigate} />}
+      {page === "supplierAdjustmentOnly" && <SupplierAdjustmentOnly onNavigate={navigate} />}
       {page === "supplierPurchaseReport" && <SupplierPurchaseReport onNavigate={navigate} />}
       {page === "createUser" && <CreateUser onNavigate={navigate} />}
       {page === "deletedReports" && (
