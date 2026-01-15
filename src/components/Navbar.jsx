@@ -64,7 +64,6 @@ export default function Navbar({ onNavigate }) {
           {open === "ledger" && (
             <div className="menu-box">
               {can("customer_ledger") && <a onClick={() => go("customerLedger")}>📒 Customer Ledger</a>}
-              {can("purchase_ledger") && <a onClick={() => go("purchaseLedger")}>📦 Purchase Ledger</a>}
               {can("supplier_ledger") && <a onClick={() => go("supplierLedger")}>📦 Supplier Ledger</a>}
               {can("bank_ledger") && <a onClick={() => go("bankLedger")}>🏦 Bank Ledger</a>}
               {can("cash_ledger") && <a onClick={() => go("cashLedger")}>💵 Cash Ledger</a>}
