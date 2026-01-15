@@ -37,6 +37,7 @@ export default function Navbar({ onNavigate }) {
               {can("packages") && <a onClick={() => go("packages")}>📦 Packages</a>}
               {can("ticketing") && <a onClick={() => go("ticketing")}>🎫 Ticketing</a>}
               {can("transport") && <a onClick={() => go("transport")}>🚐 Transport</a>}
+              {can("ziyarat") && <a onClick={() => go("ziyarat")}>🕌 Ziyarat</a>}
               {can("visa") && <a onClick={() => go("visa")}>🛂 Visa</a>}
               {can("hotels") && <a onClick={() => go("hotels")}>🏨 Hotels</a>}
             </div>
