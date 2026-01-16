@@ -3,15 +3,19 @@ import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 
 /* =========================
-   HELPERS
+   HELPERS (NO -0 EVER)
 ========================= */
-const fmtAmt = (v) =>
-  v === null || v === undefined || v === ""
-    ? "-"
-    : Math.round(Number(v)).toLocaleString("en-US");
+const normalizeZero = (n) => Math.abs(Number(n || 0)) < 0.005 ? 0 : Number(n);
 
-const parseAmt = (v) =>
-  Math.round(Number(String(v).replace(/,/g, "")) || 0);
+const fmtAmt = (v) => {
+  let n = normalizeZero(v);
+  return n.toLocaleString("en-US");
+};
+
+const parseAmt = (v) => {
+  const n = Number(String(v).replace(/,/g, ""));
+  return normalizeZero(Math.round(n || 0));
+};
 
 const formatDate = (d) => {
   if (!d) return "-";
@@ -48,26 +52,37 @@ export default function SupplierLedger({ onNavigate }) {
   const [amountDisp, setAmountDisp] = useState("");
   const [payDate, setPayDate] = useState(today);
   const [method, setMethod] = useState("Cash");
-  const [type, setType] = useState("Payment"); // Payment or Adjustment
+  const [type, setType] = useState("Payment");
   const [saving, setSaving] = useState(false);
   const pdfRef = useRef(null);
 
   /* =========================
-     LOAD PENDING / PARTIAL ALWAYS
+     LOAD PENDING / PARTIAL
   ========================== */
   const loadPendingAlways = async () => {
     try {
       const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/supplier-ledger/pending`);
       const d = await res.json();
       if (d.success) {
-        const sorted = (d.pending || []).sort((a,b) => b.pending_amount - a.pending_amount);
-        setPending(sorted);
+        const clean = (d.pending || [])
+          .map(p => ({
+            ...p,
+            pending_amount: normalizeZero(p.pending_amount),
+            total_purchase: normalizeZero(p.total_purchase),
+            total_paid: normalizeZero(p.total_paid)
+          }))
+          // ✅ Show Partial & Pending, hide fully Paid
+          .filter(p => p.status !== "PAID")
+          .sort((a, b) => b.pending_amount - a.pending_amount);
+        setPending(clean);
       }
-    } catch(e) { console.error("Pending load error:", e); }
+    } catch (e) {
+      console.error("Pending load error:", e);
+    }
   };
 
   /* =========================
-     LOAD LEDGER BY SUPPLIER CODE
+     LOAD LEDGER
   ========================== */
   const loadLedger = async (code = supplierCode) => {
     if (!code) return;
@@ -75,35 +90,45 @@ export default function SupplierLedger({ onNavigate }) {
       const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/supplier-ledger/${code}`);
       const d = await res.json();
       if (d.success) {
-        const mappedLedger = (d.ledger || []).map(row => {
-          const typeLower = (row.type || "").toLowerCase();
-          const isPayment = typeLower === "payment" || typeLower === "adjustment";
+        const mapped = (d.ledger || []).map(row => {
+          const t = (row.type || "").toLowerCase();
+          const isPay = t === "payment" || t === "adjustment";
+
+          // ✅ Normalize debit, credit, balance to avoid -0
+          const debit = Math.round(normalizeZero(row.debit));
+          const credit = normalizeZero(row.credit);
+          const balance = Math.round(normalizeZero(row.balance));
+
           return {
             ...row,
-            entry_type: isPayment ? "payment" : "purchase",
-            id: isPayment ? (row.id || row.payment_id) : null,
-            type: isPayment ? typeLower.charAt(0).toUpperCase() + typeLower.slice(1) : "Purchase",
-            detail: row.item || row.item || "Purchase Entry"
+            entry_type: isPay ? "payment" : "purchase",
+            id: isPay ? (row.id || row.payment_id) : null,
+            type: isPay ? t.charAt(0).toUpperCase() + t.slice(1) : "Purchase",
+            detail: row.item || "Purchase Entry",
+            debit,
+            credit,
+            balance
           };
         });
-        mappedLedger.sort((a,b)=> new Date(b.date) - new Date(a.date));
-        setLedger(mappedLedger);
+        mapped.sort((a, b) => new Date(b.date) - new Date(a.date));
+        setLedger(mapped);
       } else {
         alert(d.error || "Failed to load ledger");
         setLedger([]);
       }
-    } catch(e) { console.error("Ledger load error:", e); }
+    } catch (e) {
+      console.error("Ledger load error:", e);
+    }
   };
 
   useEffect(() => { loadPendingAlways(); }, []);
 
   /* =========================
-     SAVE PAYMENT / ADJUSTMENT
+     SAVE ENTRY
   ========================== */
   const saveEntry = async () => {
     if (!supplierCode) return alert("Supplier Code required");
     if (!amountRaw || amountRaw <= 0) return alert("Amount required");
-    if (!payDate) return alert("Date required");
 
     setSaving(true);
     try {
@@ -123,56 +148,41 @@ export default function SupplierLedger({ onNavigate }) {
       else {
         setAmountRaw(0);
         setAmountDisp("");
-        setPayDate(today);
         await loadLedger();
         await loadPendingAlways();
         alert("✅ Entry saved");
       }
-    } finally { setSaving(false); }
+    } finally {
+      setSaving(false);
+    }
   };
 
   /* =========================
-     DELETE LEDGER ENTRY
+     DELETE ENTRY
   ========================== */
   const deleteEntry = async (entry) => {
-    if(entry.entry_type !== "payment" || !entry.id) return;
+    if (entry.entry_type !== "payment" || !entry.id) return;
+    if (prompt("Enter password") !== "786") return;
 
-    const pass = prompt("Enter password to delete this entry");
-    if(pass !== "786") return alert("❌ Invalid password");
-
-    try {
-      const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/supplier-ledger/delete/${entry.id}`, {
-        method:"DELETE",
-        headers:{"Content-Type":"application/json"},
-        body: JSON.stringify({password: pass, type: "payment"})
-      });
-      const d = await res.json();
-      if(d.success) {
-        alert("✅ Entry deleted permanently");
-        await loadLedger();
-        await loadPendingAlways();
-      } else alert(d.error || "Delete failed");
-    } catch(e){ console.error(e); alert("Delete failed"); }
+    await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/supplier-ledger/delete/${entry.id}`, { method: "DELETE" });
+    await loadLedger();
+    await loadPendingAlways();
   };
 
   /* =========================
      EXPORT PDF
   ========================== */
   const exportPDF = async () => {
-    if(!pdfRef.current) return;
+    if (!pdfRef.current) return;
     const canvas = await html2canvas(pdfRef.current, { scale: 3 });
-    const img = canvas.toDataURL("image/png");
     const pdf = new jsPDF("p", "mm", "a4");
-    const w = pdf.internal.pageSize.getWidth();
-    pdf.setFillColor(18, 97, 160);
-    pdf.rect(0, 0, w, 25, "F");
-    pdf.setTextColor(255, 255, 255);
-    pdf.setFontSize(16);
-    pdf.text("Supplier Ledger Statement", w / 2, 15, { align: "center" });
-    pdf.addImage(img, "PNG", 10, 30, 190, (canvas.height * 190) / canvas.width);
+    pdf.addImage(canvas.toDataURL("image/png"), "PNG", 10, 10, 190, (canvas.height * 190) / canvas.width);
     pdf.save(`${supplierCode}-ledger.pdf`);
   };
 
+  /* =========================
+     UI
+  ========================== */
   return (
     <div className="container p-3">
 
@@ -184,21 +194,29 @@ export default function SupplierLedger({ onNavigate }) {
         </div>
       </div>
 
-      {/* PENDING / PARTIAL */}
+      {/* PENDING LIST */}
       <div className="card shadow-sm mb-3">
-        <div className="card-header fw-bold text-danger">⏳ Pending / Partial Payments</div>
+        <div className="card-header fw-bold text-danger">⏳ Pending / Partial</div>
         <ul className="list-group list-group-flush">
           {pending.length === 0 && <li className="list-group-item text-success">✅ No pending</li>}
-          {pending.map((p, i) => (
+          {pending.map((p,i)=>(
             <li key={i} className="list-group-item d-flex justify-content-between align-items-center">
               <div>
                 <b>{p.supplier_code} — <span className="text-primary">{p.supplier_name}</span></b>
                 <span className={`badge ms-2 ${
-                  p.status === "PENDING" ? "bg-danger" :
-                  p.status === "PARTIAL" ? "bg-warning text-dark" : "bg-success text-white"
-                }`}>{p.status}</span>
+                  normalizeZero(p.pending_amount) === 0
+                    ? "bg-success"
+                    : p.status === "PARTIAL"
+                    ? "bg-warning text-dark"
+                    : "bg-danger"
+                }`}>
+                  {normalizeZero(p.pending_amount) === 0 ? "PAID" : p.status}
+                </span>
               </div>
-              <button className="btn btn-sm btn-outline-primary" onClick={() => { setSupplierCode(p.supplier_code); loadLedger(p.supplier_code); }}>Load Ledger</button>
+              <button className="btn btn-sm btn-outline-primary"
+                onClick={()=>{setSupplierCode(p.supplier_code); loadLedger(p.supplier_code);}}>
+                Load Ledger
+              </button>
             </li>
           ))}
         </ul>
@@ -207,13 +225,14 @@ export default function SupplierLedger({ onNavigate }) {
       {/* CONTROLS */}
       <div className="card shadow-sm mb-3">
         <div className="card-body d-flex gap-2">
-          <input className="form-control" placeholder="Supplier Code" value={supplierCode} onChange={(e)=>setSupplierCode(e.target.value)} />
+          <input className="form-control" placeholder="Supplier Code"
+            value={supplierCode} onChange={e=>setSupplierCode(e.target.value)} />
           <button className="btn btn-primary" onClick={()=>loadLedger()}>Load</button>
           <button className="btn btn-success" onClick={exportPDF}>📄 Export PDF</button>
         </div>
       </div>
 
-      {/* PAYMENT / ADJUSTMENT ENTRY */}
+      {/* PAYMENT ENTRY */}
       <div className="card shadow-sm mb-3">
         <div className="card-body row g-2 align-items-end">
           <div className="col-md-2">
@@ -221,10 +240,13 @@ export default function SupplierLedger({ onNavigate }) {
             <small className="text-muted">{formatDate(payDate)}</small>
           </div>
           <div className="col-md-3">
-            <input className="form-control" placeholder="Amount" value={amountDisp} onChange={e=>{
-              const raw=parseAmt(e.target.value); if(!isNaN(raw)){setAmountRaw(raw); setAmountDisp(fmtAmt(raw));}
-            }} />
-            {amountRaw>0 && <small className="text-success fw-bold">{numberToWords(amountRaw)}</small>}
+            <input className="form-control" placeholder="Amount" value={amountDisp}
+              onChange={e=>{
+                const raw = parseAmt(e.target.value);
+                setAmountRaw(raw);
+                setAmountDisp(fmtAmt(raw));
+              }} />
+            {amountRaw > 0 && <small className="text-success fw-bold">{numberToWords(amountRaw)}</small>}
           </div>
           <div className="col-md-2">
             <select className="form-control" value={type} onChange={e=>setType(e.target.value)}>
@@ -240,7 +262,7 @@ export default function SupplierLedger({ onNavigate }) {
           </div>
           <div className="col-md-3">
             <button className="btn btn-success btn-sm w-100" disabled={saving} onClick={saveEntry}>
-              {saving?"Saving...":"💾 Save Entry"}
+              {saving ? "Saving..." : "💾 Save Entry"}
             </button>
           </div>
         </div>
@@ -263,20 +285,21 @@ export default function SupplierLedger({ onNavigate }) {
               </tr>
             </thead>
             <tbody>
-              {ledger.length===0 && <tr><td colSpan="8" className="text-center text-muted">No ledger entries</td></tr>}
+              {ledger.length === 0 &&
+                <tr><td colSpan="8" className="text-center text-muted">No ledger entries</td></tr>}
               {ledger.map((r,i)=>(
                 <tr key={i}>
                   <td className="text-center">{formatDate(r.date)}</td>
                   <td className="text-center fw-bold">{r.type}</td>
                   <td className="text-start">{r.detail}</td>
-                  <td className="text-center">{r.payment_method||"-"}</td>
+                  <td className="text-center">{r.payment_method || "-"}</td>
                   <td>{fmtAmt(r.debit)}</td>
                   <td>{fmtAmt(r.credit)}</td>
                   <td className="fw-bold">{fmtAmt(r.balance)}</td>
                   <td className="text-center">
-                    {r.entry_type === "payment" && r.id ? (
-                      <button className="btn btn-sm btn-danger" onClick={()=>deleteEntry(r)}>Delete</button>
-                    ) : "-"}
+                    {r.entry_type === "payment" && r.id
+                      ? <button className="btn btn-sm btn-danger" onClick={()=>deleteEntry(r)}>Delete</button>
+                      : "-"}
                   </td>
                 </tr>
               ))}
@@ -284,6 +307,7 @@ export default function SupplierLedger({ onNavigate }) {
           </table>
         </div>
       </div>
+
     </div>
   );
 }
