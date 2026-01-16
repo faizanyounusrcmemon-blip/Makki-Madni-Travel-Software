@@ -22,10 +22,7 @@ export default function Supplier({ onNavigate }) {
   }, []);
 
   const save = async () => {
-    const url = editId
-      ? `/update/${editId}`
-      : "/create";
-
+    const url = editId ? `/update/${editId}` : "/create";
     const method = editId ? "PUT" : "POST";
 
     const r = await fetch(
@@ -46,7 +43,7 @@ export default function Supplier({ onNavigate }) {
   };
 
   const del = async (id) => {
-    const pass = prompt("Enter password");
+    const pass = prompt("Delete password?");
     if (!pass) return;
 
     const r = await fetch(
@@ -64,93 +61,158 @@ export default function Supplier({ onNavigate }) {
   };
 
   return (
-    <div className="container p-3">
-      <h4 className="fw-bold">🏷 Supplier Profile</h4>
+    <div className="container py-3">
 
-      <div className="card p-3 mb-3">
-        <input
-          className="form-control mb-2"
-          placeholder="Supplier Name"
-          value={form.supplier_name}
-          onChange={(e) =>
-            setForm({ ...form, supplier_name: e.target.value })
-          }
-        />
-
-        <select
-          className="form-select mb-2"
-          value={form.category}
-          onChange={(e) =>
-            setForm({ ...form, category: e.target.value })
-          }
+      {/* ===== TOP BAR ===== */}
+      <div className="d-flex justify-content-between align-items-center mb-3">
+        <h4 className="fw-bold text-primary">
+          🏷 Supplier Management
+        </h4>
+        <button
+          className="btn btn-outline-dark btn-sm"
+          onClick={() => onNavigate("dashboard")}
         >
-          <option value="">Category</option>
-          <option>Ticket</option>
-          <option>Hotel</option>
-          <option>Visa</option>
-          <option>Transport</option>
-          <option>Other</option>
-        </select>
-
-        <input
-          className="form-control mb-2"
-          placeholder="Contact No"
-          value={form.contact_no}
-          onChange={(e) =>
-            setForm({ ...form, contact_no: e.target.value })
-          }
-        />
-
-        <button className="btn btn-success" onClick={save}>
-          {editId ? "Update" : "Save"}
+          ⬅ Back
         </button>
       </div>
 
-      <table className="table table-sm table-bordered">
-        <thead className="table-dark">
-          <tr>
-            <th>Code</th>
-            <th>Name</th>
-            <th>Category</th>
-            <th>Contact</th>
-            <th>Action</th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((r) => (
-            <tr key={r.id}>
-              <td>{r.supplier_code}</td>
-              <td>{r.supplier_name}</td>
-              <td>{r.category}</td>
-              <td>{r.contact_no}</td>
-              <td>
-                <button
-                  className="btn btn-sm btn-warning me-1"
-                  onClick={() => {
-                    setForm(r);
-                    setEditId(r.id);
-                  }}
-                >
-                  Edit
-                </button>
-                <button
-                  className="btn btn-sm btn-danger"
-                  onClick={() => del(r.id)}
-                >
-                  Delete
-                </button>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+      {/* ===== FORM CARD ===== */}
+      <div className="card shadow-lg border-0 mb-4">
+        <div
+          className="card-header text-white fw-bold"
+          style={{
+            background: "linear-gradient(135deg, #0d6efd, #20c997)",
+          }}
+        >
+          {editId ? "✏ Update Supplier" : "➕ Add New Supplier"}
+        </div>
 
-      <button
-        className="btn btn-secondary btn-sm"
-        onClick={() => onNavigate("dashboard")}
-      >
-        ⬅ Back
-      </button>
+        <div className="card-body">
+          <div className="row g-2">
+            <div className="col-md-4">
+              <input
+                className="form-control"
+                placeholder="Supplier Name"
+                value={form.supplier_name}
+                onChange={(e) =>
+                  setForm({ ...form, supplier_name: e.target.value })
+                }
+              />
+            </div>
+
+            <div className="col-md-4">
+              <select
+                className="form-select"
+                value={form.category}
+                onChange={(e) =>
+                  setForm({ ...form, category: e.target.value })
+                }
+              >
+                <option value="">Select Category</option>
+                <option>Ticket</option>
+                <option>Hotel</option>
+                <option>Visa</option>
+                <option>Transport</option>
+                <option>Ziyarat</option>
+                <option>Other</option>
+              </select>
+            </div>
+
+            <div className="col-md-4">
+              <input
+                className="form-control"
+                placeholder="Contact No"
+                value={form.contact_no}
+                onChange={(e) =>
+                  setForm({ ...form, contact_no: e.target.value })
+                }
+              />
+            </div>
+          </div>
+
+          <div className="mt-3 text-end">
+            {editId && (
+              <button
+                className="btn btn-secondary me-2"
+                onClick={() => {
+                  setForm({ supplier_name: "", category: "", contact_no: "" });
+                  setEditId(null);
+                }}
+              >
+                Cancel
+              </button>
+            )}
+
+            <button
+              className={`btn ${editId ? "btn-warning" : "btn-success"}`}
+              onClick={save}
+            >
+              {editId ? "Update Supplier" : "Save Supplier"}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* ===== LIST TABLE ===== */}
+      <div className="card shadow-sm border-0">
+        <div className="card-header bg-dark text-white fw-bold">
+          📋 Supplier List
+        </div>
+
+        <div className="table-responsive">
+          <table className="table table-hover table-bordered align-middle mb-0">
+            <thead className="table-light">
+              <tr>
+                <th>Code</th>
+                <th>Name</th>
+                <th>Category</th>
+                <th>Contact</th>
+                <th width="140">Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.length === 0 && (
+                <tr>
+                  <td colSpan="5" className="text-center text-muted py-4">
+                    No suppliers found
+                  </td>
+                </tr>
+              )}
+
+              {rows.map((r) => (
+                <tr key={r.id}>
+                  <td className="fw-bold">{r.supplier_code}</td>
+                  <td>{r.supplier_name}</td>
+                  <td>
+                    <span className="badge bg-info text-dark">
+                      {r.category}
+                    </span>
+                  </td>
+                  <td>{r.contact_no}</td>
+                  <td>
+                    <button
+                      className="btn btn-sm btn-outline-warning me-1"
+                      onClick={() => {
+                        setForm(r);
+                        setEditId(r.id);
+                      }}
+                    >
+                      Edit
+                    </button>
+                    <button
+                      className="btn btn-sm btn-outline-danger"
+                      onClick={() => del(r.id)}
+                    >
+                      Delete
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
     </div>
   );
 }
