@@ -54,6 +54,8 @@ export default function SupplierLedger({ onNavigate }) {
   const [method, setMethod] = useState("Cash");
   const [type, setType] = useState("Payment");
   const [saving, setSaving] = useState(false);
+  const [fromDate, setFromDate] = useState("");
+  const [toDate, setToDate] = useState("");
   const pdfRef = useRef(null);
 
   /* =========================
@@ -71,7 +73,6 @@ export default function SupplierLedger({ onNavigate }) {
             total_purchase: normalizeZero(p.total_purchase),
             total_paid: normalizeZero(p.total_paid)
           }))
-          // ✅ Show Partial & Pending, hide fully Paid
           .filter(p => p.status !== "PAID")
           .sort((a, b) => b.pending_amount - a.pending_amount);
         setPending(clean);
@@ -94,9 +95,8 @@ export default function SupplierLedger({ onNavigate }) {
           const t = (row.type || "").toLowerCase();
           const isPay = t === "payment" || t === "adjustment";
 
-          // ✅ Normalize debit, credit, balance to avoid -0
           const debit = Math.round(normalizeZero(row.debit));
-          const credit = normalizeZero(row.credit);
+          const credit = Math.round(normalizeZero(row.credit));
           const balance = Math.round(normalizeZero(row.balance));
 
           return {
@@ -107,7 +107,8 @@ export default function SupplierLedger({ onNavigate }) {
             detail: row.item || "Purchase Entry",
             debit,
             credit,
-            balance
+            balance,
+            supplier_name: row.supplier_name || ""  // ✅ add supplier_name
           };
         });
         mapped.sort((a, b) => new Date(b.date) - new Date(a.date));
@@ -122,6 +123,20 @@ export default function SupplierLedger({ onNavigate }) {
   };
 
   useEffect(() => { loadPendingAlways(); }, []);
+
+  /* =========================
+     AUTO DATE FILTER
+  ========================== */
+  useEffect(() => {
+    let rows = [...ledger];
+
+    if (fromDate)
+      rows = rows.filter((r) => new Date(r.date) >= new Date(fromDate));
+    if (toDate)
+      rows = rows.filter((r) => new Date(r.date) <= new Date(toDate));
+
+    setLedger(rows);
+  }, [fromDate, toDate]);
 
   /* =========================
      SAVE ENTRY
@@ -186,6 +201,7 @@ export default function SupplierLedger({ onNavigate }) {
   return (
     <div className="container p-3">
 
+
       {/* HEADER */}
       <div className="card shadow-sm mb-3">
         <div className="card-body d-flex justify-content-between align-items-center">
@@ -222,15 +238,17 @@ export default function SupplierLedger({ onNavigate }) {
         </ul>
       </div>
 
-      {/* CONTROLS */}
-      <div className="card shadow-sm mb-3">
+      {/* FILTER */}
+      <div className="card mb-3">
         <div className="card-body d-flex gap-2">
-          <input className="form-control" placeholder="Supplier Code"
-            value={supplierCode} onChange={e=>setSupplierCode(e.target.value)} />
-          <button className="btn btn-primary" onClick={()=>loadLedger()}>Load</button>
-          <button className="btn btn-success" onClick={exportPDF}>📄 Export PDF</button>
+          <input type="date" className="form-control" value={fromDate} onChange={e => setFromDate(e.target.value)} />
+          <input type="date" className="form-control" value={toDate} onChange={e => setToDate(e.target.value)} />
+          <input className="form-control" placeholder="Supplier Code" value={supplierCode} onChange={e => setSupplierCode(e.target.value)} />
+          <button className="btn btn-primary" onClick={() => loadLedger()}>Load</button>
+          <button className="btn btn-success" onClick={exportPDF}>PDF</button>
         </div>
       </div>
+
 
       {/* PAYMENT ENTRY */}
       <div className="card shadow-sm mb-3">
@@ -246,7 +264,11 @@ export default function SupplierLedger({ onNavigate }) {
                 setAmountRaw(raw);
                 setAmountDisp(fmtAmt(raw));
               }} />
-            {amountRaw > 0 && <small className="text-success fw-bold">{numberToWords(amountRaw)}</small>}
+            {amountRaw > 0 && (
+              <span style={{ fontSize: "0.8rem", fontWeight: "bold", color: "green" }}>
+                {numberToWords(amountRaw)}
+              </span>
+            )}
           </div>
           <div className="col-md-2">
             <select className="form-control" value={type} onChange={e=>setType(e.target.value)}>
@@ -288,20 +310,32 @@ export default function SupplierLedger({ onNavigate }) {
               {ledger.length === 0 &&
                 <tr><td colSpan="8" className="text-center text-muted">No ledger entries</td></tr>}
               {ledger.map((r,i)=>(
-                <tr key={i}>
-                  <td className="text-center">{formatDate(r.date)}</td>
-                  <td className="text-center fw-bold">{r.type}</td>
-                  <td className="text-start">{r.detail}</td>
-                  <td className="text-center">{r.payment_method || "-"}</td>
-                  <td>{fmtAmt(r.debit)}</td>
-                  <td>{fmtAmt(r.credit)}</td>
-                  <td className="fw-bold">{fmtAmt(r.balance)}</td>
-                  <td className="text-center">
-                    {r.entry_type === "payment" && r.id
-                      ? <button className="btn btn-sm btn-danger" onClick={()=>deleteEntry(r)}>Delete</button>
-                      : "-"}
-                  </td>
-                </tr>
+               <tr key={i}>
+                 <td className="text-center">{formatDate(r.date)}</td>
+                 <td className="text-center fw-bold">{r.type}</td>
+                 <td className="text-start">
+                   {r.entry_type === "purchase" ? (
+                     <>
+                       <span style={{ fontWeight: "bold", fontSize: "0.85rem", color: "#0d6efd" }}>
+                             {r.supplier_name}
+                           </span>{" "}
+                           — <span style={{ fontSize: "0.85rem" }}>{r.detail}</span>
+                         </>
+                       ) : (
+                         <span style={{ fontSize: "0.85rem" }}>{r.detail}</span>
+                       )}
+                     </td>
+                 <td className="text-center">{r.payment_method || "-"}</td>
+                 <td>{fmtAmt(r.debit)}</td>
+                 <td>{fmtAmt(r.credit)}</td>
+                 <td className="fw-bold">{fmtAmt(r.balance)}</td>
+                 <td className="text-center">
+                   {r.entry_type === "payment" && r.id
+                     ? <button className="btn btn-sm btn-danger" onClick={()=>deleteEntry(r)}>Delete</button>
+                     : "-"}
+                 </td>
+               </tr>
+
               ))}
             </tbody>
           </table>
