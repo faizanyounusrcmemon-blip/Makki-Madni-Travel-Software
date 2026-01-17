@@ -312,7 +312,7 @@ export default function SupplierLedger({ onNavigate }) {
               {ledger.map((r,i)=>(
                <tr key={i}>
                  <td className="text-center">{formatDate(r.date)}</td>
-                 <td   className={`text-center fw-bold ${     r.type?.toLowerCase() === "purchase"       ? "text-danger"       : r.type?.toLowerCase() === "payment"       ? "text-success"       : r.type?.toLowerCase() === "adjustment"       ? "text-primary"       : ""   }`} >   {r.type} </td>
+                 <td className="text-center">   <span     className={`badge ${       r.type?.toLowerCase() === "purchase"         ? "bg-danger"         : r.type?.toLowerCase() === "payment"         ? "bg-success"         : "bg-primary"     }`}   >     {r.type}   </span> </td>
                  <td className="text-start">
                    {r.entry_type === "purchase" ? (
                      <>
@@ -345,5 +345,6 @@ export default function SupplierLedger({ onNavigate }) {
     </div>
   );
 }
+
 
 
