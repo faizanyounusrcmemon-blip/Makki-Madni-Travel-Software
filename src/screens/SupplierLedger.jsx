@@ -329,7 +329,7 @@ export default function SupplierLedger({ onNavigate }) {
                          </span>
                        )}
                      </td>
-                 <td className="text-center">{r.payment_method || "-"}</td>
+                 <td className="text-center">   {r.payment_method ? (     <span       className={`badge ${         r.payment_method.toLowerCase() === "cash"           ? "bg-success"           : "bg-primary"       }`}     >       {r.payment_method}     </span>   ) : (     "-"   )} </td>
                  <td className={normalizeZero(r.debit) > 0 ? "text-danger fw-bold" : ""}>   {fmtAmt(r.debit)} </td>
                  <td className={normalizeZero(r.credit) > 0 ? "text-success fw-bold" : ""}>   {fmtAmt(r.credit)} </td>
                  <td className="fw-bold">{fmtAmt(r.balance)}</td>
@@ -349,6 +349,7 @@ export default function SupplierLedger({ onNavigate }) {
     </div>
   );
 }
+
 
 
 
