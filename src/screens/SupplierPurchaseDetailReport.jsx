@@ -5,7 +5,7 @@ import jsPDF from "jspdf";
 /* ================= HELPERS ================= */
 const fmt = (n) => Number(n || 0).toLocaleString("en-US");
 
-export default function SupplierPurchaseReport({ onNavigate }) {
+export default function SupplierPurchasedetailreport({ onNavigate }) {
   const [rows, setRows] = useState([]);
   const [suppliers, setSuppliers] = useState(["ALL"]);
   const [supplier, setSupplier] = useState("ALL");
@@ -289,3 +289,4 @@ export default function SupplierPurchaseReport({ onNavigate }) {
     </div>
   );
 }
+
