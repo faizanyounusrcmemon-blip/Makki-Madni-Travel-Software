@@ -311,7 +311,7 @@ export default function SupplierLedger({ onNavigate }) {
                 <tr><td colSpan="8" className="text-center text-muted">No ledger entries</td></tr>}
               {ledger.map((r,i)=>(
                <tr key={i}>
-                 <td className="text-center">{formatDate(r.date)}</td>
+                 <td className="text-center fw-bold small">   {formatDate(r.date)} </td>
                  <td className="text-center">   <span     className={`badge ${       r.type?.toLowerCase() === "purchase"         ? "bg-danger"         : r.type?.toLowerCase() === "payment"         ? "bg-success"         : "bg-primary"     }`}   >     {r.type}   </span> </td>
                  <td className="text-start">
                    {r.entry_type === "purchase" ? (
@@ -349,6 +349,7 @@ export default function SupplierLedger({ onNavigate }) {
     </div>
   );
 }
+
 
 
 
