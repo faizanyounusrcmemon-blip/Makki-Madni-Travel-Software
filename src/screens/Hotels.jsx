@@ -2,26 +2,85 @@ import React, { useState, useRef } from "react";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 
-/* =========================
-   HELPERS
-========================= */
-
-// Date display helper → 01/DEC/2025
-const showDate = (val) => {
-  if (!val) return "";
-  const d = new Date(val);
-  const day = String(d.getDate()).padStart(2, "0");
-  const mon = d.toLocaleString("en-US", { month: "short" }).toUpperCase();
-  const year = d.getFullYear();
-  return `${day}/${mon}/${year}`;
-};
-
-// Nights auto calculation
-const calcNights = (inD, outD) => {
-  if (!inD || !outD) return "";
-  const diff =
-    (new Date(outD) - new Date(inD)) / (1000 * 60 * 60 * 24);
-  return diff > 0 ? diff : "";
+// =========================
+// VIP Hotels Styles
+// =========================
+const styles = {
+  container: {
+    minHeight: "100vh",
+    padding: "20px",
+    background: "linear-gradient(to right, #e0f7fa, #f0f9ff)",
+    fontFamily: "'Cairo', sans-serif",
+  },
+  card: {
+    maxWidth: 1100,
+    margin: "0 auto",
+    background: "linear-gradient(to bottom, #ffffff, #f9fefd)",
+    borderRadius: 20,
+    padding: 25,
+    boxShadow: "0 8px 20px rgba(0,0,0,0.15)",
+    border: "2px solid #20c997", // teal border
+  },
+  header: {
+    textAlign: "center",
+    color: "#0d6efd", // primary blue
+    fontWeight: "bold",
+    fontSize: "2rem",
+    marginBottom: 5,
+    letterSpacing: 2,
+  },
+  contactInfo: {
+    textAlign: "center",
+    fontSize: "0.9rem",
+    color: "#555",
+    marginBottom: 20,
+  },
+  subHeader: {
+    textAlign: "center",
+    color: "#20c997", // teal accent
+    marginBottom: 15,
+    fontSize: "1.2rem",
+    fontWeight: "500",
+  },
+  sectionHeader: {
+    background: "linear-gradient(to right, #0d6efd, #20c997)",
+    color: "#fff",
+    padding: "5px 10px",
+    borderRadius: "5px",
+    marginTop: 20,
+    marginBottom: 10,
+    fontWeight: "600",
+    letterSpacing: 1,
+  },
+  table: {
+    width: "100%",
+    borderCollapse: "separate",
+    borderSpacing: 0,
+    borderRadius: "10px",
+    overflow: "hidden",
+  },
+  th: {
+    background: "#20c997", // teal
+    color: "#fff",
+    padding: "8px",
+    textAlign: "left",
+  },
+  td: {
+    padding: "6px",
+    borderBottom: "1px solid #ddd",
+  },
+  button: {
+    borderRadius: "50px",
+    padding: "5px 15px",
+    fontWeight: "bold",
+    boxShadow: "0 4px 10px rgba(0,0,0,0.1)",
+  },
+  summaryInput: {
+    fontWeight: "bold",
+    fontSize: "1rem",
+    background: "#fff8dc",
+    border: "1px solid #20c997",
+  },
 };
 
 export default function Hotels({ onNavigate }) {
@@ -29,41 +88,30 @@ export default function Hotels({ onNavigate }) {
   const [customerName, setCustomerName] = useState("");
   const [refNo, setRefNo] = useState("");
   const [bookingDate, setBookingDate] = useState("");
-
-  // =========================
-  // HOTEL ROWS (ALWAYS ARRAY)
-  // =========================
   const [rows, setRows] = useState([]);
-
-  // =========================
-  // SAR RATE (SUMMARY)
-  // =========================
   const [sarRate, setSarRate] = useState(0);
+  const pdfRef = useRef(null);
 
-  // =========================
-  // CALCULATIONS
-  // =========================
+  const showDate = (val) => {
+    if (!val) return "";
+    const d = new Date(val);
+    const day = String(d.getDate()).padStart(2, "0");
+    const mon = d.toLocaleString("en-US", { month: "short" }).toUpperCase();
+    const year = d.getFullYear();
+    return `${day}/${mon}/${year}`;
+  };
+
+  const calcNights = (inD, outD) => {
+    if (!inD || !outD) return "";
+    const diff = (new Date(outD) - new Date(inD)) / (1000 * 60 * 60 * 24);
+    return diff > 0 ? diff : "";
+  };
+
   const hotelsTotal = rows.reduce((s, r) => s + (Number(r.total) || 0), 0);
   const hotelPKR = hotelsTotal * sarRate;
 
-  // =========================
-  // ROW HANDLERS
-  // =========================
   const addRow = () =>
-    setRows([
-      ...rows,
-      {
-        checkIn: "",
-        checkOut: "",
-        nights: "",
-        location: "",
-        hotel: "",
-        rooms: "",
-        type: "",
-        rate: "",
-        total: 0,
-      },
-    ]);
+    setRows([...rows, { checkIn: "", checkOut: "", nights: "", location: "", hotel: "", rooms: "", type: "", rate: "", total: 0 }]);
 
   const removeRow = (i) => setRows(rows.filter((_, x) => x !== i));
 
@@ -83,293 +131,106 @@ export default function Hotels({ onNavigate }) {
     setRows(u);
   };
 
-  // =========================
-  // PDF
-  // =========================
-  const pdfRef = useRef(null);
-
-  const exportPDF = async () => {
-    const canvas = await html2canvas(pdfRef.current, { scale: 3 });
-    const imgData = canvas.toDataURL("image/png");
-
-    const pdf = new jsPDF("l", "mm", "a4");
-    pdf.addImage(
-      imgData,
-      "PNG",
-      0,
-      0,
-      pdf.internal.pageSize.getWidth(),
-      pdf.internal.pageSize.getHeight()
-    );
-    pdf.save("hotels.pdf");
-  };
-
-  // ===============================
-  // LOAD HOTEL (EDIT MODE)
-  // ===============================
   const loadHotel = async () => {
     if (!searchRef) return alert("Search Ref No likho");
-
-    const res = await fetch(
-      `${import.meta.env.VITE_BACKEND_URL}/api/hotels/get/${searchRef}`
-    );
+    const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/hotels/get/${searchRef}`);
     const data = await res.json();
-
     if (!data.success) return alert("Record not found");
-
     const d = data.row;
-
     setRefNo(d.ref_no);
     setCustomerName(d.customer_name);
     setBookingDate(d.booking_date);
     setRows(d.hotels || []);
     setSarRate(d.sar_rate || 0);
-
     alert("Hotel load ho gaya — ab edit karo");
   };
 
-  // ===============================
-  // SAVE
-  // ===============================
   const saveData = async () => {
-    const payload = {
-      ref_no: refNo || null,
-      customer_name: customerName,
-      booking_date: bookingDate,
-      hotels: rows,
-      hotels_total: hotelsTotal,
-      sar_rate: sarRate,
-      total_pkr: hotelPKR,
-    };
-
-    const res = await fetch(
-      `${import.meta.env.VITE_BACKEND_URL}/api/hotels/save`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      }
-    );
-
+    const payload = { ref_no: refNo || null, customer_name: customerName, booking_date: bookingDate, hotels: rows, hotels_total: hotelsTotal, sar_rate: sarRate, total_pkr: hotelPKR };
+    const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/hotels/save`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
     const data = await res.json();
-    if (data.success) {
-      setRefNo(data.ref_no);
-      alert("Hotels Saved Successfully!");
-      onNavigate("dashboard");
-    } else {
-      alert("ERROR: " + data.error);
-    }
+    if (data.success) { setRefNo(data.ref_no); alert("Hotels Saved Successfully!"); onNavigate("dashboard"); }
+    else alert("ERROR: " + data.error);
   };
 
-  // ===============================
-  // UI
-  // ===============================
+  const exportPDF = async () => {
+    const canvas = await html2canvas(pdfRef.current, { scale: 3 });
+    const imgData = canvas.toDataURL("image/png");
+    const pdf = new jsPDF("l", "mm", "a4");
+    pdf.addImage(imgData, "PNG", 0, 0, pdf.internal.pageSize.getWidth(), pdf.internal.pageSize.getHeight());
+    pdf.save("hotels.pdf");
+  };
+
   return (
-    <div className="container-fluid py-3" style={{ background: "#eef4f7" }}>
-      {/* TOP BAR */}
+    <div style={styles.container}>
+      {/* Top Buttons */}
       <div className="d-flex justify-content-between mb-3">
-        <button
-          className="btn btn-dark btn-sm"
-          onClick={() => onNavigate("dashboard")}
-        >
-          ← Back
-        </button>
-
+        <button className="btn btn-dark btn-sm" onClick={() => onNavigate("dashboard")}>← Back</button>
         <div className="d-flex gap-2">
-          <button className="btn btn-primary btn-sm" onClick={saveData}>
-            💾 Save
-          </button>
-
-          <input
-            className="form-control form-control-sm"
-            style={{ width: "140px" }}
-            placeholder="Search Ref"
-            value={searchRef}
-            onChange={(e) => setSearchRef(e.target.value)}
-          />
-
-          <button className="btn btn-warning btn-sm" onClick={loadHotel}>
-            🔄 Load / Edit
-          </button>
-
-          <button className="btn btn-success btn-sm" onClick={exportPDF}>
-            📄 Export PDF
-          </button>
+          <button className="btn btn-primary btn-sm" onClick={saveData}>💾 Save</button>
+          <input className="form-control form-control-sm" style={{ width: "140px" }} placeholder="Search Ref" value={searchRef} onChange={(e) => setSearchRef(e.target.value)} />
+          <button className="btn btn-warning btn-sm" onClick={loadHotel}>🔄 Load / Edit</button>
+          <button className="btn btn-success btn-sm" onClick={exportPDF}>📄 Export PDF</button>
         </div>
       </div>
 
-      {/* MAIN */}
-      <div
-        ref={pdfRef}
-        className="bg-white p-3"
-        style={{ border: "1px solid #ccc", maxWidth: "1100px", margin: "0 auto" }}
-      >
-        <h3 className="text-center fw-bold">MAKKI MADNI TRAVEL</h3>
-        <h4 className="fw-bold mb-3">HOTEL QUOTATION</h4>
+      {/* Main Card */}
+      <div ref={pdfRef} style={styles.card}>
+        {/* Header */}
+        <h3 style={styles.header}>✈️ MAKKI MADNI TRAVEL</h3>
+        <div style={styles.contactInfo}>
+          Shop #4 Daimon City Building, Near Zeenat-ul-Islam Masjid<br />
+          Garden West, Karachi<br />
+          ✉️ makkimadnitravel@gmail.com | ☎️ 0335-7476744
+        </div>
+        <h4 style={styles.subHeader}>HOTEL QUOTATION</h4>
 
-        {/* CUSTOMER INFO */}
+        {/* Customer Info */}
         <div className="d-flex gap-3 mb-3">
-          <div>
-            <label>Ref No</label>
-            <input className="form-control form-control-sm" value={refNo} readOnly />
-          </div>
-
-          <div>
-            <label>Customer Name</label>
-            <input
-              className="form-control form-control-sm"
-              value={customerName}
-              onChange={(e) => setCustomerName(e.target.value)}
-            />
-          </div>
-
-          <div>
-            <label>Booking Date</label>
-            <input
-              type="date"
-              className="form-control form-control-sm"
-              value={bookingDate}
-              onChange={(e) => setBookingDate(e.target.value)}
-            />
-            <small className="text-muted">{showDate(bookingDate)}</small>
-          </div>
+          <div><label>Ref No</label><input className="form-control form-control-sm" value={refNo} readOnly /></div>
+          <div><label>Customer Name</label><input className="form-control form-control-sm" value={customerName} onChange={(e) => setCustomerName(e.target.value)} /></div>
+          <div><label>Booking Date</label><input type="date" className="form-control form-control-sm" value={bookingDate} onChange={(e) => setBookingDate(e.target.value)} /><small className="text-muted">{showDate(bookingDate)}</small></div>
         </div>
 
-        {/* HOTELS */}
-        <h6 className="bg-info text-white p-1">Hotels</h6>
-
-        <button className="btn btn-outline-primary btn-sm mb-2" onClick={addRow}>
-          ➕ Add Row
-        </button>
+        {/* Hotels Table */}
+        <h6 style={styles.sectionHeader}>Hotels</h6>
+        <button className="btn btn-outline-primary btn-sm mb-2" onClick={addRow} style={styles.button}>➕ Add Row</button>
 
         <table className="table table-sm">
           <thead>
             <tr>
-              <th>Check-in</th>
-              <th>Check-out</th>
-              <th>Nights</th>
-              <th>Location</th>
-              <th>Rooms</th>
-              <th>Type</th>
-              <th>Rate</th>
-              <th>Total</th>
-              <th></th>
+              <th>Check-in</th><th>Check-out</th><th>Nights</th><th>Location</th><th>Rooms</th><th>Type</th><th>Rate</th><th>Total</th><th></th>
             </tr>
           </thead>
-
           <tbody>
             {rows.map((r, i) => (
               <React.Fragment key={i}>
+                <tr><td colSpan={9}><input className="form-control form-control-sm fw-bold" placeholder="HOTEL NAME (Full Row)" value={r.hotel} onChange={(e) => updateRow(i, "hotel", e.target.value)} /></td></tr>
                 <tr>
-                  <td colSpan={9}>
-                    <input
-                      className="form-control form-control-sm fw-bold"
-                      placeholder="HOTEL NAME (Full Row)"
-                      value={r.hotel}
-                      onChange={(e) => updateRow(i, "hotel", e.target.value)}
-                    />
-                  </td>
-                </tr>
-
-                <tr>
-                  <td>
-                    <input
-                      type="date"
-                      className="form-control form-control-sm"
-                      value={r.checkIn}
-                      onChange={(e) => updateRow(i, "checkIn", e.target.value)}
-                    />
-                    <small className="text-muted">{showDate(r.checkIn)}</small>
-                  </td>
-
-                  <td>
-                    <input
-                      type="date"
-                      className="form-control form-control-sm"
-                      value={r.checkOut}
-                      onChange={(e) => updateRow(i, "checkOut", e.target.value)}
-                    />
-                    <small className="text-muted">{showDate(r.checkOut)}</small>
-                  </td>
-
-                  <td>
-                    <input
-                      type="number"
-                      className="form-control form-control-sm"
-                      value={r.nights}
-                      readOnly
-                    />
-                  </td>
-
-                  <td>
-                    <input
-                      className="form-control form-control-sm"
-                      value={r.location}
-                      onChange={(e) => updateRow(i, "location", e.target.value)}
-                    />
-                  </td>
-
-                  <td>
-                    <input
-                      type="number"
-                      className="form-control form-control-sm"
-                      value={r.rooms}
-                      onChange={(e) => updateRow(i, "rooms", e.target.value)}
-                    />
-                  </td>
-
-                  <td>
-                    <input
-                      className="form-control form-control-sm"
-                      value={r.type}
-                      onChange={(e) => updateRow(i, "type", e.target.value)}
-                    />
-                  </td>
-
-                  <td>
-                    <input
-                      type="number"
-                      className="form-control form-control-sm"
-                      value={r.rate}
-                      onChange={(e) => updateRow(i, "rate", e.target.value)}
-                    />
-                  </td>
-
+                  <td><input type="date" className="form-control form-control-sm" value={r.checkIn} onChange={(e) => updateRow(i, "checkIn", e.target.value)} /><small className="text-muted">{showDate(r.checkIn)}</small></td>
+                  <td><input type="date" className="form-control form-control-sm" value={r.checkOut} onChange={(e) => updateRow(i, "checkOut", e.target.value)} /><small className="text-muted">{showDate(r.checkOut)}</small></td>
+                  <td><input type="number" className="form-control form-control-sm" value={r.nights} readOnly /></td>
+                  <td><input className="form-control form-control-sm" value={r.location} onChange={(e) => updateRow(i, "location", e.target.value)} /></td>
+                  <td><input type="number" className="form-control form-control-sm" value={r.rooms} onChange={(e) => updateRow(i, "rooms", e.target.value)} /></td>
+                  <td><input className="form-control form-control-sm" value={r.type} onChange={(e) => updateRow(i, "type", e.target.value)} /></td>
+                  <td><input type="number" className="form-control form-control-sm" value={r.rate} onChange={(e) => updateRow(i, "rate", e.target.value)} /></td>
                   <td className="fw-bold">{r.total}</td>
-
-                  <td>
-                    <button
-                      className="btn btn-link text-danger"
-                      onClick={() => removeRow(i)}
-                    >
-                      ✖
-                    </button>
-                  </td>
+                  <td><button className="btn btn-link text-danger" onClick={() => removeRow(i)}>✖</button></td>
                 </tr>
               </React.Fragment>
             ))}
           </tbody>
         </table>
 
-        {/* SUMMARY */}
-        <h6 className="bg-info text-white p-1">Summary</h6>
-
+        {/* Summary */}
+        <h6 style={styles.sectionHeader}>Summary</h6>
         <table className="table table-sm">
           <tbody>
             <tr>
               <td>Hotels SAR</td>
               <td className="fw-bold">{hotelsTotal}</td>
-
               <td>SAR Rate</td>
-              <td>
-                <input
-                  type="number"
-                  className="form-control form-control-sm"
-                  value={sarRate}
-                  onChange={(e) => setSarRate(+e.target.value)}
-                />
-              </td>
-
+              <td><input type="number" className="form-control form-control-sm" value={sarRate} onChange={(e) => setSarRate(+e.target.value)} /></td>
               <td className="fw-bold">{hotelPKR.toLocaleString()}</td>
             </tr>
           </tbody>

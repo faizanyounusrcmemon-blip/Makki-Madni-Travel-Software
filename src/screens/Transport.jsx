@@ -2,296 +2,212 @@ import React, { useState, useRef } from "react";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 
+// VIP Transport Styles (Royal Blue + Gold)
+const styles = {
+  container: {
+    minHeight: "100vh",
+    padding: "20px",
+    background: "linear-gradient(to right, #e0f0ff, #f9f9ff)",
+    fontFamily: "'Cairo', sans-serif",
+  },
+  card: {
+    maxWidth: 1000,
+    margin: "0 auto",
+    background: "linear-gradient(to bottom, #ffffff, #f7faff)",
+    borderRadius: 20,
+    padding: 30,
+    boxShadow: "0 8px 20px rgba(0,0,0,0.15)",
+    border: "2px solid #ffd700",
+  },
+  header: {
+    textAlign: "center",
+    color: "#1a237e", // royal blue
+    fontWeight: "bold",
+    fontSize: "2rem",
+    marginBottom: 5,
+    letterSpacing: 2,
+  },
+  subHeader: {
+    textAlign: "center",
+    color: "#4b0082", // deep purple accent
+    marginBottom: 20,
+    fontSize: "1.2rem",
+    fontWeight: "500",
+  },
+  sectionHeader: {
+    background: "linear-gradient(to right, #1a237e, #3f51b5)", // royal blue gradient
+    color: "#fff",
+    padding: "5px 10px",
+    borderRadius: "5px",
+    marginTop: 20,
+    marginBottom: 10,
+    fontWeight: "600",
+    letterSpacing: 1,
+  },
+  table: {
+    width: "100%",
+    borderCollapse: "separate",
+    borderSpacing: "0",
+    borderRadius: "10px",
+    overflow: "hidden",
+  },
+  th: {
+    background: "#3f51b5", // royal blue
+    color: "#fff",
+    padding: "8px",
+    textAlign: "left",
+  },
+  td: {
+    padding: "8px",
+    borderBottom: "1px solid #ddd",
+  },
+  button: {
+    borderRadius: "50px",
+    padding: "5px 15px",
+    fontWeight: "bold",
+    boxShadow: "0 4px 10px rgba(0,0,0,0.1)",
+  },
+  summaryInput: {
+    fontWeight: "bold",
+    fontSize: "1.1rem",
+    background: "#fff8dc",
+    border: "1px solid #ffd700",
+  },
+};
 export default function Transport({ onNavigate }) {
-  // =========================
-  // BASIC STATES
-  // =========================
   const [searchRef, setSearchRef] = useState("");
   const [refNo, setRefNo] = useState("");
   const [customerName, setCustomerName] = useState("");
   const [bookingDate, setBookingDate] = useState("");
-
-  // =========================
-  // TRANSPORT ROWS
-  // =========================
   const [rows, setRows] = useState([]);
-
-  // =========================
-  // SUMMARY
-  // =========================
   const [pkrRate, setPkrRate] = useState(0);
 
   const quoteRef = useRef(null);
 
-  // =========================
-  // ROW HANDLERS
-  // =========================
-  const addRow = () => {
-    setRows([
-      ...rows,
-      {
-        description: "",
-        sar: 0,
-      },
-    ]);
-  };
-
+  const addRow = () => setRows([...rows, { description: "", sar: 0 }]);
   const updateRow = (i, field, value) => {
     const copy = [...rows];
     copy[i][field] = field === "description" ? value : Number(value) || 0;
     setRows(copy);
   };
+  const removeRow = (i) => setRows(rows.filter((_, x) => x !== i));
 
-  const removeRow = (i) => {
-    setRows(rows.filter((_, x) => x !== i));
-  };
-
-  // =========================
-  // TOTALS
-  // =========================
-  const totalSar = rows.reduce(
-    (sum, r) => sum + (Number(r.sar) || 0),
-    0
-  );
-
+  const totalSar = rows.reduce((sum, r) => sum + (Number(r.sar) || 0), 0);
   const totalPkr = totalSar * pkrRate;
 
-  // =========================
-  // LOAD / EDIT (HOTELS JESA)
-  // =========================
   const loadTransport = async () => {
     if (!searchRef) return alert("Ref No likho");
-
-    const res = await fetch(
-      `${import.meta.env.VITE_BACKEND_URL}/api/transport/get/${searchRef}`
-    );
+    const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/transport/get/${searchRef}`);
     const data = await res.json();
-
     if (!data.success) return alert("Record not found");
-
     const d = data.row;
-
-    // 🔴 MOST IMPORTANT
     setRefNo(d.ref_no);
-
     setCustomerName(d.customer_name);
     setBookingDate(d.booking_date);
     setRows(d.rows || []);
     setPkrRate(d.pkr_rate || 0);
-
     alert("Transport load ho gaya — ab edit karo");
   };
 
-  // =========================
-  // SAVE (NEW + EDIT SAFE)
-  // =========================
   const saveData = async () => {
     if (!customerName || !bookingDate) {
       alert("Customer name & booking date required");
       return;
     }
-
-    const payload = {
-      ref_no: refNo || null,          // ✅ EDIT FIX
-      customer_name: customerName,
-      booking_date: bookingDate,
-      rows,
-      total_sar: totalSar,
-      pkr_rate: pkrRate,
-      total_pkr: totalPkr,
-    };
-
-    const res = await fetch(
-      `${import.meta.env.VITE_BACKEND_URL}/api/transport/save`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      }
-    );
-
+    const payload = { ref_no: refNo || null, customer_name: customerName, booking_date: bookingDate, rows, total_sar: totalSar, pkr_rate: pkrRate, total_pkr: totalPkr };
+    const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/transport/save`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
     const data = await res.json();
-
     if (data.success) {
       setRefNo(data.ref_no);
       alert("Transport saved successfully");
       onNavigate("dashboard");
-    } else {
-      alert(data.error || "Save failed");
-    }
+    } else alert(data.error || "Save failed");
   };
 
-  // =========================
-  // PDF
-  // =========================
   const exportPDF = async () => {
     const canvas = await html2canvas(quoteRef.current, { scale: 3 });
     const img = canvas.toDataURL("image/jpeg");
-
     const pdf = new jsPDF("p", "mm", "a4");
     const w = pdf.internal.pageSize.getWidth();
     const h = pdf.internal.pageSize.getHeight();
-
     pdf.addImage(img, "JPEG", 0, 0, w, h);
     pdf.save(`${refNo || "transport"}.pdf`);
   };
 
-  // =========================
-  // UI
-  // =========================
   return (
-    <div className="container-fluid py-3" style={{ background: "#eef4f7" }}>
-      {/* TOP BAR */}
-      <div className="d-flex justify-content-between mb-3">
-        <button
-          className="btn btn-secondary btn-sm"
-          onClick={() => onNavigate("dashboard")}
-        >
-          ⬅ Back
-        </button>
-
+    <div style={styles.container}>
+      <div className="d-flex justify-content-between mb-4">
+        <button className="btn btn-outline-success fw-bold" style={styles.button} onClick={() => onNavigate("dashboard")}>🚌 Back</button>
         <div className="d-flex gap-2">
-          <button className="btn btn-primary btn-sm" onClick={saveData}>
-            💾 Save
-          </button>
-
-          <input
-            className="form-control form-control-sm"
-            style={{ width: 140 }}
-            placeholder="Search Ref"
-            value={searchRef}
-            onChange={(e) => setSearchRef(e.target.value)}
-          />
-
-          <button className="btn btn-warning btn-sm" onClick={loadTransport}>
-            🔄 Load / Edit
-          </button>
-
-          <button className="btn btn-success btn-sm" onClick={exportPDF}>
-            📄 Export PDF
-          </button>
+          <button className="btn btn-warning fw-bold" style={styles.button} onClick={saveData}>💾 Save</button>
+          <input className="form-control" style={{ width: 150, borderRadius: 50 }} placeholder="Search Ref" value={searchRef} onChange={(e) => setSearchRef(e.target.value)} />
+          <button className="btn btn-info fw-bold" style={styles.button} onClick={loadTransport}>🔄 Load / Edit</button>
+          <button className="btn btn-success fw-bold" style={styles.button} onClick={exportPDF}>📄 Export PDF</button>
         </div>
       </div>
 
-      <div
-        ref={quoteRef}
-        className="mx-auto bg-white p-3"
-        style={{ maxWidth: "1000px", border: "1px solid #ccc" }}
-      >
-        <h3 className="text-center fw-bold">MAKKI MADNI TRAVEL</h3>
-        <h5 className="fw-bold mb-3">TRANSPORT QUOTATION</h5>
+      <div ref={quoteRef} style={styles.card}>
+        <h1 style={styles.header}>✈️ MAKKI MADNI TRAVEL </h1>
+        <p style={styles.subHeader}>
+          Shop #4 Daimon City Building, Near Zeenat-ul-Islam Masjid<br/>
+          Garden West, Karachi<br/>
+          ✉️ makkimadnitravel@gmail.com | ☎️ 0335-7476744
+        </p>
+        <h4 style={{...styles.header, fontSize: "1.5rem"}}>TRANSPORT QUOTATION</h4>
 
-        {/* HEADER */}
-        <div className="row g-2 mb-3">
-          <div className="col">
-            <label>Ref No</label>
-            <input className="form-control form-control-sm" value={refNo} readOnly />
+        <div className="row g-3 mb-4">
+          <div className="col-md-4">
+            <label className="form-label fw-semibold">Ref No</label>
+            <input className="form-control" value={refNo} readOnly />
           </div>
-
-          <div className="col">
-            <label>Customer Name</label>
-            <input
-              className="form-control form-control-sm"
-              value={customerName}
-              onChange={(e) => setCustomerName(e.target.value)}
-            />
+          <div className="col-md-4">
+            <label className="form-label fw-semibold">Customer Name</label>
+            <input className="form-control" value={customerName} onChange={(e) => setCustomerName(e.target.value)} />
           </div>
-
-          <div className="col">
-            <label>Booking Date</label>
-            <input
-              type="date"
-              className="form-control form-control-sm"
-              value={bookingDate}
-              onChange={(e) => setBookingDate(e.target.value)}
-            />
+          <div className="col-md-4">
+            <label className="form-label fw-semibold">Booking Date</label>
+            <input type="date" className="form-control" value={bookingDate} onChange={(e) => setBookingDate(e.target.value)} />
           </div>
         </div>
 
-        {/* TRANSPORT */}
-        <h6 className="bg-info text-white p-1">Transport</h6>
-
-        <button
-          className="btn btn-outline-primary btn-sm mb-2"
-          onClick={addRow}
-        >
-          ➕ Add Transport Row
-        </button>
-
-        <table className="table table-sm">
-          <thead>
-            <tr>
-              <th>Description</th>
-              <th style={{ width: 150 }}>SAR</th>
-              <th style={{ width: 80 }}></th>
-            </tr>
-          </thead>
-
-          <tbody>
-            {rows.map((r, i) => (
-              <tr key={i}>
-                <td>
-                  <input
-                    className="form-control form-control-sm"
-                    value={r.description}
-                    onChange={(e) =>
-                      updateRow(i, "description", e.target.value)
-                    }
-                  />
-                </td>
-
-                <td>
-                  <input
-                    type="number"
-                    className="form-control form-control-sm"
-                    value={r.sar}
-                    onChange={(e) => updateRow(i, "sar", e.target.value)}
-                  />
-                </td>
-
-                <td>
-                  <button
-                    className="btn btn-link text-danger"
-                    onClick={() => removeRow(i)}
-                  >
-                    ✖
-                  </button>
-                </td>
+        <div className="mb-3">
+          <h5 style={styles.sectionHeader}>🚌 Transport</h5>
+          <button className="btn btn-outline-success btn-sm mb-2" style={styles.button} onClick={addRow}>➕ Add Row</button>
+          <table style={styles.table}>
+            <thead>
+              <tr>
+                <th style={styles.th}>Description</th>
+                <th style={styles.th}>SAR</th>
+                <th style={styles.th}>Action</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {rows.map((r, i) => (
+                <tr key={i} style={{ background: i % 2 === 0 ? "#f0fff0" : "#fff" }}>
+                  <td style={styles.td}><input className="form-control" value={r.description} onChange={(e) => updateRow(i, "description", e.target.value)} /></td>
+                  <td style={styles.td}><input type="number" className="form-control" value={r.sar} onChange={(e) => updateRow(i, "sar", e.target.value)} /></td>
+                  <td style={{...styles.td, textAlign: "center"}}><button className="btn btn-sm btn-danger" onClick={() => removeRow(i)}>✖</button></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
 
-        {/* SUMMARY */}
-        <h6 className="bg-info text-white p-1 mt-3">Summary</h6>
-
-        <div className="row g-2">
-          <div className="col-md-4">
-            <label>Total SAR</label>
-            <input
-              className="form-control form-control-sm"
-              value={totalSar}
-              readOnly
-            />
-          </div>
-
-          <div className="col-md-4">
-            <label>PKR Rate</label>
-            <input
-              type="number"
-              className="form-control form-control-sm"
-              value={pkrRate}
-              onChange={(e) => setPkrRate(Number(e.target.value) || 0)}
-            />
-          </div>
-
-          <div className="col-md-4">
-            <label>Total PKR</label>
-            <input
-              className="form-control form-control-sm fw-bold"
-              value={totalPkr.toLocaleString()}
-              readOnly
-            />
+        <div className="mb-3">
+          <h5 style={styles.sectionHeader}>✨ Summary</h5>
+          <div className="row g-3">
+            <div className="col-md-4">
+              <label className="form-label fw-semibold">Total SAR</label>
+              <input className="form-control" value={totalSar} readOnly style={styles.summaryInput} />
+            </div>
+            <div className="col-md-4">
+              <label className="form-label fw-semibold">PKR Rate</label>
+              <input type="number" className="form-control" value={pkrRate} onChange={(e) => setPkrRate(Number(e.target.value) || 0)} style={styles.summaryInput} />
+            </div>
+            <div className="col-md-4">
+              <label className="form-label fw-semibold">Total PKR</label>
+              <input className="form-control text-success" value={totalPkr.toLocaleString()} readOnly style={{...styles.summaryInput, fontWeight: "bold", fontSize: "1.2rem"}} />
+            </div>
           </div>
         </div>
       </div>
