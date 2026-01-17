@@ -57,7 +57,7 @@ export default function SupplierLedger({ onNavigate }) {
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
   const pdfRef = useRef(null);
-
+   
   /* =========================
      LOAD PENDING / PARTIAL
   ========================== */
@@ -347,7 +347,10 @@ return (
     </div>
 
   </div>
-);
+ );
+}
+   
+
 
 
 
