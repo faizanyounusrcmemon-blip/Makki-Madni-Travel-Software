@@ -108,7 +108,7 @@ export default function SupplierLedger({ onNavigate }) {
             debit,
             credit,
             balance,
-            supplier_name: row.supplier_name || ""  // ✅ add supplier_name
+            ref_no: row.ref_no || row.purchase_ref || row.invoice_no || "-"   // ✅ NEW
           };
         });
         mapped.sort((a, b) => new Date(b.date) - new Date(a.date));
@@ -298,6 +298,7 @@ export default function SupplierLedger({ onNavigate }) {
               <tr>
                 <th>Date</th>
                 <th>Type</th>
+                <th>Ref No</th>
                 <th>Item</th>
                 <th>Payment Method</th>
                 <th>Debit</th>
@@ -313,6 +314,8 @@ export default function SupplierLedger({ onNavigate }) {
                <tr key={i}>
                  <td className="text-center fw-bold small">   {formatDate(r.date)} </td>
                  <td className="text-center">   <span     className={`badge ${       r.type?.toLowerCase() === "purchase"         ? "bg-danger"         : r.type?.toLowerCase() === "payment"         ? "bg-success"         : "bg-primary"     }`}   >     {r.type}   </span> </td>
+                  <td className="text-center">
+              {r.entry_type === "purchase" ? (<span className="fw-bold text-secondary" style={{ fontSize: "0.8rem" }}>{r.ref_no}</span>) : ("-")}</td>
                  <td className="text-start">
                    {r.entry_type === "purchase" ? (
                      <>
@@ -349,6 +352,7 @@ export default function SupplierLedger({ onNavigate }) {
     </div>
   );
 }
+
 
 
 
