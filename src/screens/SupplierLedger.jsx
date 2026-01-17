@@ -316,13 +316,17 @@ export default function SupplierLedger({ onNavigate }) {
                  <td className="text-start">
                    {r.entry_type === "purchase" ? (
                      <>
-                       <span style={{ fontWeight: "bold", fontSize: "0.85rem", color: "#0d6efd" }}>
+                       <span className="fw-bold text-primary" style={{ fontSize: "0.85rem" }}>
                              {r.supplier_name}
-                           </span>{" "}
-                           — <span style={{ fontSize: "0.85rem" }}>{r.detail}</span>
+                           </span>
+                           <span className="text-muted ms-1" style={{ fontSize: "0.8rem" }}>
+                             — {r.detail}
+                           </span>
                          </>
                        ) : (
-                         <span style={{ fontSize: "0.85rem" }}>{r.detail}</span>
+                         <span className="fw-bold text-success" style={{ fontSize: "0.85rem" }}>
+                           {r.detail}
+                         </span>
                        )}
                      </td>
                  <td className="text-center">{r.payment_method || "-"}</td>
@@ -345,6 +349,7 @@ export default function SupplierLedger({ onNavigate }) {
     </div>
   );
 }
+
 
 
 
