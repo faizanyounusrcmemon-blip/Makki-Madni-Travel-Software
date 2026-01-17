@@ -9,22 +9,22 @@ export default function ManageUsers({ onNavigate }) {
 
   const permissions = [
     // SALES
-    "packages", "ticketing", "transport", "visa", "hotels",
+    "packages", "ticketing", "transport", "ziyarat", "visa", "hotels",
 
     // PURCHASE
     "purchase_entry", "purchase_list", "pending_purchase",
 
     // LEDGER
-    "customer_ledger", "purchase_ledger", "bank_ledger", "expense_ledger", "balance_sheet","cash_ledger",
+    "customer_ledger", "purchase_ledger", "bank_ledger", "expense_ledger", "balance_sheet", "cash_ledger",
 
     // VOUCHERS
     "hotel_voucher", "transport_voucher",
 
     // REPORTS
-    "all_reports", "profit_report","sale_adjustment_report","purchase_adjustment_report",
+    "all_reports", "profit_report", "sale_adjustment_report", "supplier_adjustment_only", "supplier_purchase_detail_report",
 
     // MASTER
-    "create_user", "manage_users", "deleted_reports", "restore", "system_storage"
+    "create_user", "manage_users", "supplier", "deleted_reports", "restore", "system_storage"
   ];
 
   /* LOAD USERS */
@@ -137,5 +137,6 @@ export default function ManageUsers({ onNavigate }) {
     </div>
   );
 }
+
 
 
