@@ -326,8 +326,8 @@ export default function SupplierLedger({ onNavigate }) {
                        )}
                      </td>
                  <td className="text-center">{r.payment_method || "-"}</td>
-                 <td>{fmtAmt(r.debit)}</td>
-                 <td>{fmtAmt(r.credit)}</td>
+                 <td className={normalizeZero(r.debit) > 0 ? "text-danger fw-bold" : ""}>   {fmtAmt(r.debit)} </td>
+                 <td className={normalizeZero(r.credit) > 0 ? "text-success fw-bold" : ""}>   {fmtAmt(r.credit)} </td>
                  <td className="fw-bold">{fmtAmt(r.balance)}</td>
                  <td className="text-center">
                    {r.entry_type === "payment" && r.id
@@ -345,3 +345,4 @@ export default function SupplierLedger({ onNavigate }) {
     </div>
   );
 }
+
