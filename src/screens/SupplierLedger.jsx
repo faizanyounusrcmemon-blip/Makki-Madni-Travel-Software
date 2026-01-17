@@ -195,163 +195,160 @@ export default function SupplierLedger({ onNavigate }) {
     pdf.save(`${supplierCode}-ledger.pdf`);
   };
 
-  /* =========================
-     UI
-  ========================== */
-  return (
-    <div className="container p-3">
+/* =========================
+   UI
+========================= */
+return (
+  <div className="container p-3">
 
-
-      {/* HEADER */}
-      <div className="card shadow-sm mb-3">
-        <div className="card-body d-flex justify-content-between align-items-center">
-          <h4 className="fw-bold mb-0">📘 SUPPLIER LEDGER — {supplierCode}</h4>
-          <button className="btn btn-secondary btn-sm" onClick={() => onNavigate("dashboard")}>⬅ Back</button>
-        </div>
+    {/* HEADER */}
+    <div className="card shadow-sm mb-3">
+      <div className="card-body d-flex justify-content-between align-items-center">
+        <h4 className="fw-bold mb-0">📘 SUPPLIER LEDGER — {supplierCode}</h4>
+        <button className="btn btn-secondary btn-sm" onClick={() => onNavigate("dashboard")}>⬅ Back</button>
       </div>
-
-      {/* PENDING LIST */}
-      <div className="card shadow-sm mb-3">
-        <div className="card-header fw-bold text-danger">⏳ Pending / Partial</div>
-        <ul className="list-group list-group-flush">
-          {pending.length === 0 && <li className="list-group-item text-success">✅ No pending</li>}
-          {pending.map((p,i)=>(
-            <li key={i} className="list-group-item d-flex justify-content-between align-items-center">
-              <div>
-                <b>{p.supplier_code} — <span className="text-primary">{p.supplier_name}</span></b>
-                <span className={`badge ms-2 ${
-                  normalizeZero(p.pending_amount) === 0
-                    ? "bg-success"
-                    : p.status === "PARTIAL"
-                    ? "bg-warning text-dark"
-                    : "bg-danger"
-                }`}>
-                  {normalizeZero(p.pending_amount) === 0 ? "PAID" : p.status}
-                </span>
-              </div>
-              <button className="btn btn-sm btn-outline-primary"
-                onClick={()=>{setSupplierCode(p.supplier_code); loadLedger(p.supplier_code);}}>
-                Load Ledger
-              </button>
-            </li>
-          ))}
-        </ul>
-      </div>
-
-      {/* FILTER */}
-      <div className="card mb-3">
-        <div className="card-body d-flex gap-2">
-          <input type="date" className="form-control" value={fromDate} onChange={e => setFromDate(e.target.value)} />
-          <input type="date" className="form-control" value={toDate} onChange={e => setToDate(e.target.value)} />
-          <input className="form-control" placeholder="Supplier Code" value={supplierCode} onChange={e => setSupplierCode(e.target.value)} />
-          <button className="btn btn-primary" onClick={() => loadLedger()}>Load</button>
-          <button className="btn btn-success" onClick={exportPDF}>PDF</button>
-        </div>
-      </div>
-
-
-      {/* PAYMENT ENTRY */}
-      <div className="card shadow-sm mb-3">
-        <div className="card-body row g-2 align-items-end">
-          <div className="col-md-2">
-            <input type="date" className="form-control" value={payDate} onChange={e=>setPayDate(e.target.value)} />
-            <small className="text-muted">{formatDate(payDate)}</small>
-          </div>
-          <div className="col-md-3">
-            <input className="form-control" placeholder="Amount" value={amountDisp}
-              onChange={e=>{
-                const raw = parseAmt(e.target.value);
-                setAmountRaw(raw);
-                setAmountDisp(fmtAmt(raw));
-              }} />
-            {amountRaw > 0 && (
-              <span style={{ fontSize: "0.8rem", fontWeight: "bold", color: "green" }}>
-                {numberToWords(amountRaw)}
-              </span>
-            )}
-          </div>
-          <div className="col-md-2">
-            <select className="form-control" value={type} onChange={e=>setType(e.target.value)}>
-              <option>Payment</option>
-              <option>Adjustment</option>
-            </select>
-          </div>
-          <div className="col-md-2">
-            <select className="form-control" value={method} onChange={e=>setMethod(e.target.value)}>
-              <option>Cash</option>
-              <option>Bank</option>
-            </select>
-          </div>
-          <div className="col-md-3">
-            <button className="btn btn-success btn-sm w-100" disabled={saving} onClick={saveEntry}>
-              {saving ? "Saving..." : "💾 Save Entry"}
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* LEDGER TABLE */}
-      <div ref={pdfRef} className="card shadow-sm">
-        <div className="table-responsive">
-          <table className="table table-bordered table-sm mb-0 text-end">
-            <thead className="table-dark text-center">
-              <tr>
-                <th>Date</th>
-                <th>Type</th>
-                <th>Ref No</th>
-                <th>Item</th>
-                <th>Payment Method</th>
-                <th>Debit</th>
-                <th>Credit</th>
-                <th>Balance</th>
-                <th>Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              {ledger.length === 0 &&
-                <tr><td colSpan="8" className="text-center text-muted">No ledger entries</td></tr>}
-              {ledger.map((r,i)=>(
-               <tr key={i}>
-                 <td className="text-center fw-bold small">   {formatDate(r.date)} </td>
-                 <td className="text-center">   <span     className={`badge ${       r.type?.toLowerCase() === "purchase"         ? "bg-danger"         : r.type?.toLowerCase() === "payment"         ? "bg-success"         : "bg-primary"     }`}   >     {r.type}   </span> </td>
-                  <td className="text-center">
-              {r.entry_type === "purchase" ? (<span className="fw-bold text-secondary" style={{ fontSize: "0.8rem" }}>{r.ref_no}</span>) : ("-")}</td>
-                 <td className="text-start">
-                   {r.entry_type === "purchase" ? (
-                     <>
-                       <span className="fw-bold text-primary" style={{ fontSize: "0.85rem" }}>
-                             {r.supplier_name}
-                           </span>
-                           <span className="text-muted ms-1" style={{ fontSize: "0.8rem" }}>
-                             — {r.detail}
-                           </span>
-                         </>
-                       ) : (
-                         <span className="fw-bold text-success" style={{ fontSize: "0.85rem" }}>
-                           {r.detail}
-                         </span>
-                       )}
-                     </td>
-                 <td className="text-center">   {r.payment_method ? (     <span       className={`badge ${         r.payment_method.toLowerCase() === "cash"           ? "bg-success"           : "bg-primary"       }`}     >       {r.payment_method}     </span>   ) : (     "-"   )} </td>
-                 <td className={normalizeZero(r.debit) > 0 ? "text-danger fw-bold" : ""}>   {fmtAmt(r.debit)} </td>
-                 <td className={normalizeZero(r.credit) > 0 ? "text-success fw-bold" : ""}>   {fmtAmt(r.credit)} </td>
-                 <td className="fw-bold">{fmtAmt(r.balance)}</td>
-                 <td className="text-center">
-                   {r.entry_type === "payment" && r.id
-                     ? <button className="btn btn-sm btn-danger" onClick={()=>deleteEntry(r)}>Delete</button>
-                     : "-"}
-                 </td>
-               </tr>
-
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
     </div>
-  );
-}
+
+    {/* PENDING LIST */}
+    <div className="card shadow-sm mb-3">
+      <div className="card-header fw-bold text-danger">⏳ Pending / Partial</div>
+      <ul className="list-group list-group-flush">
+        {pending.length === 0 && <li className="list-group-item text-success">✅ No pending</li>}
+        {pending.map((p,i)=>(
+          <li key={i} className="list-group-item d-flex justify-content-between align-items-center">
+            <div>
+              <b>{p.supplier_code} — <span className="text-primary">{p.supplier_name}</span></b>
+              <span className={`badge ms-2 ${
+                normalizeZero(p.pending_amount) === 0
+                  ? "bg-success"
+                  : p.status === "PARTIAL"
+                  ? "bg-warning text-dark"
+                  : "bg-danger"
+              }`}>
+                {normalizeZero(p.pending_amount) === 0 ? "PAID" : p.status}
+              </span>
+            </div>
+            <button className="btn btn-sm btn-outline-primary"
+              onClick={()=>{setSupplierCode(p.supplier_code); loadLedger(p.supplier_code);}}>
+              Load Ledger
+            </button>
+          </li>
+        ))}
+      </ul>
+    </div>
+
+    {/* FILTER */}
+    <div className="card mb-3">
+      <div className="card-body d-flex gap-2">
+        <input type="date" className="form-control" value={fromDate} onChange={e => setFromDate(e.target.value)} />
+        <input type="date" className="form-control" value={toDate} onChange={e => setToDate(e.target.value)} />
+        <input className="form-control" placeholder="Supplier Code" value={supplierCode} onChange={e => setSupplierCode(e.target.value)} />
+        <button className="btn btn-primary" onClick={() => loadLedger()}>Load</button>
+        <button className="btn btn-success" onClick={exportPDF}>PDF</button>
+      </div>
+    </div>
+
+    {/* PAYMENT ENTRY */}
+    <div className="card shadow-sm mb-3">
+      <div className="card-body row g-2 align-items-end">
+        <div className="col-md-2">
+          <input type="date" className="form-control" value={payDate} onChange={e=>setPayDate(e.target.value)} />
+          <small className="text-muted">{formatDate(payDate)}</small>
+        </div>
+        <div className="col-md-3">
+          <input className="form-control" placeholder="Amount" value={amountDisp}
+            onChange={e=>{
+              const raw = parseAmt(e.target.value);
+              setAmountRaw(raw);
+              setAmountDisp(fmtAmt(raw));
+            }} />
+          {amountRaw > 0 && (
+            <span style={{ fontSize: "0.8rem", fontWeight: "bold", color: "green" }}>
+              {numberToWords(amountRaw)}
+            </span>
+          )}
+        </div>
+        <div className="col-md-2">
+          <select className="form-control" value={type} onChange={e=>setType(e.target.value)}>
+            <option>Payment</option>
+            <option>Adjustment</option>
+          </select>
+        </div>
+        <div className="col-md-2">
+          <select className="form-control" value={method} onChange={e=>setMethod(e.target.value)}>
+            <option>Cash</option>
+            <option>Bank</option>
+          </select>
+        </div>
+        <div className="col-md-3">
+          <button className="btn btn-success btn-sm w-100" disabled={saving} onClick={saveEntry}>
+            {saving ? "Saving..." : "💾 Save Entry"}
+          </button>
+        </div>
+      </div>
+    </div>
+
+    {/* LEDGER TABLE */}
+    <div ref={pdfRef} className="card shadow-sm">
+      <div className="table-responsive">
+        <table className="table table-bordered table-sm mb-0 text-end">
+          <thead className="table-dark text-center">
+            <tr>
+              <th>Date</th>
+              <th>Type</th>
+              <th>Ref No</th>
+              <th>Supplier</th>
+              <th>Item Detail</th>
+              <th>Payment Method</th>
+              <th>Debit</th>
+              <th>Credit</th>
+              <th>Balance</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {ledger.length === 0 &&
+              <tr><td colSpan="10" className="text-center text-muted">No ledger entries</td></tr>}
+            {ledger.map((r,i)=>(
+              <tr key={i}>
+                <td className="text-center fw-bold small">{formatDate(r.date)}</td>
+                <td className="text-center">
+                  <span className={`badge ${
+                    r.type?.toLowerCase() === "purchase" ? "bg-danger"
+                    : r.type?.toLowerCase() === "payment" ? "bg-success"
+                    : "bg-primary"
+                  }`}>
+                    {r.type}
+                  </span>
+                </td>
+                <td className="text-center fw-bold text-secondary small">{r.ref_no || "-"}</td>
+                <td className="text-start fw-bold text-primary small">{r.entry_type === "purchase" ? r.supplier_name : "-"}</td>
+                <td className="text-start text-success small">{r.entry_type === "purchase" ? r.detail : "-"}</td>
+                <td className="text-center small">
+                  {r.payment_method ? (
+                    <span className={`badge ${
+                      r.payment_method.toLowerCase() === "cash" ? "bg-success" : "bg-primary"
+                    }`}>{r.payment_method}</span>
+                  ) : "-"}
+                </td>
+                <td className={normalizeZero(r.debit) > 0 ? "text-danger fw-bold" : ""}>{fmtAmt(r.debit)}</td>
+                <td className={normalizeZero(r.credit) > 0 ? "text-success fw-bold" : ""}>{fmtAmt(r.credit)}</td>
+                <td className="fw-bold">{fmtAmt(r.balance)}</td>
+                <td className="text-center">
+                  {r.entry_type === "payment" && r.id ? (
+                    <button className="btn btn-sm btn-danger" onClick={()=>deleteEntry(r)}>Delete</button>
+                  ) : "-"}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+);
+
 
 
 
