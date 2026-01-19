@@ -2,10 +2,10 @@ import React, { useEffect, useState, useRef } from "react";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 
-/* ================= DATE FORMAT (PAK STYLE) ================= */
+/* ================= DATE FORMAT ================= */
 const fmtDate = (d) =>
   d
-    ? new Date(d).toLocaleDateString("en-PK", {
+    ? new Date(d).toLocaleDateString("en-GB", {
         day: "2-digit",
         month: "short",
         year: "numeric",
@@ -25,25 +25,6 @@ const formatDateForFile = (date) => {
   return `${day}-${mon}-${year}`;
 };
 
-/* ================= AUTO COLUMN HOOK ================= */
-const useAutoColumns = (ref, dep) => {
-  useEffect(() => {
-    if (!ref.current) return;
-
-    const el = ref.current;
-    const A4_HEIGHT = 1120; // px approx
-
-    // reset
-    el.style.columnCount = "1";
-
-    setTimeout(() => {
-      if (el.scrollHeight > A4_HEIGHT) {
-        el.style.columnCount = "2";
-      }
-    }, 50);
-  }, [ref, dep]);
-};
-
 export default function PackagesView({ id, onNavigate }) {
   const [data, setData] = useState(null);
   const ref = useRef(null);
@@ -60,10 +41,7 @@ export default function PackagesView({ id, onNavigate }) {
       });
   }, [id]);
 
-  /* ================= AUTO COLUMN APPLY ================= */
-  useAutoColumns(ref, data);
-
-  /* ================= EXPORT PDF ================= */
+  /* ================= EXPORT PDF (PORTRAIT – NO BLUR) ================= */
   const exportPDF = async () => {
     const canvas = await html2canvas(ref.current, {
       scale: 2,
@@ -71,6 +49,7 @@ export default function PackagesView({ id, onNavigate }) {
     });
 
     const imgData = canvas.toDataURL("image/jpeg", 1.0);
+
     const pdf = new jsPDF("p", "mm", "a4");
 
     const pdfWidth = pdf.internal.pageSize.getWidth();
@@ -80,11 +59,13 @@ export default function PackagesView({ id, onNavigate }) {
     const imgHeight = (canvas.height * imgWidth) / canvas.width;
 
     let heightLeft = imgHeight;
-    let position = 10;
+    let position = 10; // top margin
 
+    // 🔹 First page
     pdf.addImage(imgData, "JPEG", 0, position, imgWidth, imgHeight);
     heightLeft -= pdfHeight;
 
+    // 🔹 Extra pages
     while (heightLeft > 0) {
       position = heightLeft - imgHeight + 10;
       pdf.addPage();
@@ -92,9 +73,9 @@ export default function PackagesView({ id, onNavigate }) {
       heightLeft -= pdfHeight;
     }
 
-    const fileName = `${cleanName(
-      data?.customer_name
-    )}_${formatDateForFile(data?.booking_date)}.pdf`;
+    const fileName = `${cleanName(data?.customer_name)}_${formatDateForFile(
+      data?.booking_date
+    )}.pdf`;
 
     pdf.save(fileName);
   };
@@ -120,23 +101,23 @@ export default function PackagesView({ id, onNavigate }) {
       {/* ================= PDF CONTENT ================= */}
       <div
         ref={ref}
-        className="bg-white p-3 border pdf-content"
-        style={{
-          width: "794px",
-          margin: "auto",
-          columnGap: "28px",
-          columnRule: "1px solid #ddd",
-          fontSize: "14px",
-        }}
+        className="bg-white p-3 border"
+        style={{ width: "794px", margin: "auto" }}
       >
         {/* ================= HEADER ================= */}
         <div className="text-center mb-3">
-          <h2 className="fw-bold mb-1">✈️ MAKKI MADNI TRAVEL</h2>
+          <h2 className="fw-bold mb-1" style={{ letterSpacing: "1px" }}>
+            ✈️ MAKKI MADNI TRAVEL
+          </h2>
 
           <div style={{ fontSize: "13px", lineHeight: "1.4" }}>
-            <div>Shop #4 Daimon City Building, Near Zeenat-ul-Islam Masjid</div>
+            <div>
+              Shop #4 Daimon City Building, Near Zeenat-ul-Islam Masjid
+            </div>
             <div>Garden West, Karachi</div>
-            <div>✉️ makkimadnitravel@gmail.com | ☎️ 0335-7476744</div>
+            <div>
+              ✉️ makkimadnitravel@gmail.com | ☎️ 0335-7476744
+            </div>
           </div>
 
           <hr style={{ margin: "8px 0", borderTop: "2px solid #000" }} />
@@ -144,6 +125,7 @@ export default function PackagesView({ id, onNavigate }) {
 
         <h4 className="fw-bold mb-2">PACKAGE — {data.ref_no}</h4>
 
+        {/* ================= CUSTOMER ================= */}
         <p><b>Customer:</b> {data.customer_name}</p>
         <p><b>Contact No:</b> {data.contact_no || "-"}</p>
         <p><b>Booking Date:</b> {fmtDate(data.booking_date)}</p>
@@ -152,7 +134,7 @@ export default function PackagesView({ id, onNavigate }) {
 
         {/* ================= FLIGHT ================= */}
         <h5 className="fw-bold">✈️ Flight</h5>
-        {data.flights?.length ? (
+        {Array.isArray(data.flights) && data.flights.length > 0 ? (
           data.flights.map((f, i) => (
             <div key={i}>
               {fmtDate(f.date)} — {f.from} → {f.to}{" "}
@@ -162,31 +144,36 @@ export default function PackagesView({ id, onNavigate }) {
         ) : (
           <p>No flights</p>
         )}
-
         <p>
-          <b>Flight PKR:</b>{" "}
-          {Number(data.flight_pkr_total || 0).toLocaleString()}
+          Adults: {data.adult_count} × {data.adult_rate}<br />
+          Child: {data.child_count} × {data.child_rate}<br />
+          Infant: {data.infant_count} × {data.infant_rate}
+        </p>
+        <p>
+          <b>Flight SAR:</b> {Number(data.flight_sar_total || 0).toLocaleString()}<br />
+          <b>Flight PKR:</b> {Number(data.flight_pkr_total || 0).toLocaleString()}
         </p>
 
         <hr />
 
         {/* ================= HOTELS ================= */}
         <h5 className="fw-bold">🏨 Hotels</h5>
-        {data.hotels?.length ? (
+        {Array.isArray(data.hotels) && data.hotels.length > 0 ? (
           data.hotels.map((h, i) => (
             <div key={i} className="mb-2">
               <b>{h.hotel}</b><br />
+              {h.location}<br />
               {fmtDate(h.checkIn)} → {fmtDate(h.checkOut)}<br />
-              Nights: {h.nights}, Rooms: {h.rooms}
+              Nights: {h.nights}, Rooms: {h.rooms}, Type: {h.type}<br />
+              Rate: {h.rate} — Total: {h.total}
             </div>
           ))
         ) : (
           <p>No hotels</p>
         )}
-
         <p>
-          <b>Hotel PKR:</b>{" "}
-          {Number(data.hotel_pkr_total || 0).toLocaleString()}
+          <b>Hotel SAR:</b> {Number(data.hotel_sar_total || 0).toLocaleString()}<br />
+          <b>Hotel PKR:</b> {Number(data.hotel_pkr_total || 0).toLocaleString()}
         </p>
 
         <hr />
@@ -194,11 +181,13 @@ export default function PackagesView({ id, onNavigate }) {
         {/* ================= VISA ================= */}
         <h5 className="fw-bold">🛂 Visa</h5>
         {data.visa_persons > 0 ? (
-          <p>
-            Persons: {data.visa_persons} × {data.visa_rate}<br />
-            <b>Visa PKR:</b>{" "}
-            {Number(data.visa_pkr_total || 0).toLocaleString()}
-          </p>
+          <>
+            <p>Persons: {data.visa_persons} × {data.visa_rate}</p>
+            <p>
+              <b>Visa SAR:</b> {Number(data.visa_sar_total || 0).toLocaleString()}<br />
+              <b>Visa PKR:</b> {Number(data.visa_pkr_total || 0).toLocaleString()}
+            </p>
+          </>
         ) : (
           <p>No visa</p>
         )}
@@ -207,7 +196,7 @@ export default function PackagesView({ id, onNavigate }) {
 
         {/* ================= TRANSPORT ================= */}
         <h5 className="fw-bold">🚐 Transport</h5>
-        {data.transport?.length ? (
+        {Array.isArray(data.transport) && data.transport.length > 0 ? (
           data.transport.map((t, i) => (
             <p key={i}>
               {t.text} — {Number(t.amount || 0).toLocaleString()}
@@ -216,30 +205,37 @@ export default function PackagesView({ id, onNavigate }) {
         ) : (
           <p>No transport</p>
         )}
+        <p>
+          <b>Transport SAR:</b> {Number(data.transport_sar_total || 0).toLocaleString()}<br />
+          <b>Transport PKR:</b> {Number(data.transport_pkr_total || 0).toLocaleString()}
+        </p>
 
         <hr />
 
         {/* ================= ZIYARAT ================= */}
         <h5 className="fw-bold">🕌 Ziyarat</h5>
-        {data.ziyarat?.length ? (
+        {Array.isArray(data.ziyarat) && data.ziyarat.length > 0 ? (
           data.ziyarat.map((z, i) => (
             <p key={i}>
-              {z.text || z.route} —{" "}
-              {Number(z.amount || 0).toLocaleString()}
+              {z.text || z.route || z.description} — {Number(z.amount || 0).toLocaleString()}
             </p>
           ))
         ) : (
           <p>No ziyarat</p>
         )}
+        <p>
+          <b>Ziyarat SAR:</b> {Number(data.ziyarat_sar_total || 0).toLocaleString()}<br />
+          <b>Ziyarat PKR:</b> {Number(data.ziyarat_pkr_total || 0).toLocaleString()}
+        </p>
 
         <hr />
 
-        {/* ================= TOTAL ================= */}
+        {/* ================= SUMMARY ================= */}
         <h4 className="fw-bold text-end">
-          NET PKR TOTAL:{" "}
-          {Number(data.net_pkr_total || 0).toLocaleString()}
+          NET PKR TOTAL: {Number(data.net_pkr_total || 0).toLocaleString()}
         </h4>
       </div>
     </div>
   );
 }
+
