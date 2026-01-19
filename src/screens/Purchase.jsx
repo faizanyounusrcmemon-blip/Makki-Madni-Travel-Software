@@ -80,8 +80,7 @@ export default function Purchase({ onNavigate }) {
 
     setRows(
       data.rows.map((x) => ({
-        item: x.item,
-        item_label: x.item_label,
+        item: x.item, // 🔥 FULL NAME ONLY
         sale_sar: parseNumber(x.sale_sar),
         sale_rate: parseNumber(x.sale_rate),
         sale_pkr: parseNumber(x.sale_pkr),
@@ -286,10 +285,10 @@ export default function Purchase({ onNavigate }) {
                     className="fw-bold"
                     style={{
                       fontSize: "13px",
-                      color: itemCategoryColor(r.item_label || r.item),
+                      color: itemCategoryColor(r.item),
                     }}
                   >
-                    {r.item_label || r.item}
+                    {r.item}
                   </td>
                   <td>{r.sale_sar}</td>
                   <td>{r.sale_rate}</td>
@@ -355,3 +354,4 @@ export default function Purchase({ onNavigate }) {
     </div>
   );
 }
+
