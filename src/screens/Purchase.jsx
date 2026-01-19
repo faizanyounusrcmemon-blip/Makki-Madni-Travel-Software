@@ -73,24 +73,32 @@ export default function Purchase({ onNavigate }) {
     if (!data.success) {
       alert(data.error || "Not found");
       setRows([]);
+      setIsEdit(false);
       return;
     }
 
     setIsEdit(data.is_edit === true);
 
     setRows(
-      data.rows.map((x) => ({
-        item: x.item,
-        sale_sar: parseNumber(x.sale_sar),
-        sale_rate: parseNumber(x.sale_rate),
-        sale_pkr: parseNumber(x.sale_pkr),
-        purchase_sar: x.purchase_sar !== null && x.purchase_sar !== undefined ? parseNumber(x.purchase_sar) : 0,
-        purchase_rate: x.purchase_rate !== null && x.purchase_rate !== undefined ? parseNumber(x.purchase_rate) : 0,
-        purchase_pkr: parseNumber(x.purchase_pkr),
-        profit: parseNumber(x.profit),
-        supplier_code: x.supplier_code || "",
-        supplier_name: x.supplier_name || "",
-      }))
+      data.rows.map((x) => {
+        const sar = x.purchase_sar != null ? parseFloat(x.purchase_sar) : 0;
+        const rate = x.purchase_rate != null ? parseFloat(x.purchase_rate) : 0;
+        const pkr = sar * rate;
+        const profit = parseFloat(x.sale_pkr || 0) - pkr;
+
+        return {
+          item: x.item,
+          sale_sar: parseFloat(x.sale_sar || 0),
+          sale_rate: parseFloat(x.sale_rate || 0),
+          sale_pkr: parseFloat(x.sale_pkr || 0),
+          purchase_sar: sar,
+          purchase_rate: rate,
+          purchase_pkr: pkr,
+          profit: profit,
+          supplier_code: x.supplier_code || "",
+          supplier_name: x.supplier_name || "",
+        };
+      })
     );
   };
 
@@ -103,10 +111,10 @@ export default function Purchase({ onNavigate }) {
       r.supplier_code = value;
       const s = suppliers.find((x) => x.supplier_code === value);
       r.supplier_name = s ? s.supplier_name : "";
-    } else {
-      const num = parseNumber(value); // string => number
-      if (field === "purchase_sar") r.purchase_sar = num;
-      else if (field === "purchase_rate") r.purchase_rate = num;
+    } else if (field === "purchase_sar") {
+      r.purchase_sar = value === "" ? 0 : parseFloat(value);
+    } else if (field === "purchase_rate") {
+      r.purchase_rate = value === "" ? 0 : parseFloat(value);
     }
 
     const sar = r.purchase_sar || 0;
@@ -356,6 +364,7 @@ export default function Purchase({ onNavigate }) {
     </div>
   );
 }
+
 
 
 
