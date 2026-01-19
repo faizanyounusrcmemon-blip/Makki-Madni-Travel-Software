@@ -100,7 +100,7 @@ export default function PurchaseDetail({ refNo, onNavigate }) {
 
       <div ref={boxRef}>
         {/* ================= HEADER ================= */}
-        <h3 className="fw-bold mb-1">PURCHASE DETAIL</h3>
+        <h4 className="fw-bold text-primary">PURCHASE DETAIL</h4>
 
         <div className="fw-bold text-primary">
           Ref No: {rows[0].ref_no}
@@ -182,4 +182,5 @@ export default function PurchaseDetail({ refNo, onNavigate }) {
     </div>
   );
 }
+
 
