@@ -141,6 +141,7 @@ export default function SupplierPurchasedetailreport({ onNavigate }) {
                 <option value="Hotel">Hotel</option>
                 <option value="Visa">Visa</option>
                 <option value="Transport">Transport</option>
+                <option value="Ziyarat">Ziyarat</option>
               </select>
             </div>
 
@@ -289,4 +290,5 @@ export default function SupplierPurchasedetailreport({ onNavigate }) {
     </div>
   );
 }
+
 
