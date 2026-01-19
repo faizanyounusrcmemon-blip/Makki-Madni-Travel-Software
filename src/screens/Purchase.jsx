@@ -73,32 +73,25 @@ export default function Purchase({ onNavigate }) {
     if (!data.success) {
       alert(data.error || "Not found");
       setRows([]);
-      setIsEdit(false);
       return;
     }
 
     setIsEdit(data.is_edit === true);
 
     setRows(
-      data.rows.map((x) => {
-        const sar = x.purchase_sar != null ? parseFloat(x.purchase_sar) : 0;
-        const rate = x.purchase_rate != null ? parseFloat(x.purchase_rate) : 0;
-        const pkr = sar * rate;
-        const profit = parseFloat(x.sale_pkr || 0) - pkr;
-
-        return {
-          item: x.item,
-          sale_sar: parseFloat(x.sale_sar || 0),
-          sale_rate: parseFloat(x.sale_rate || 0),
-          sale_pkr: parseFloat(x.sale_pkr || 0),
-          purchase_sar: sar,
-          purchase_rate: rate,
-          purchase_pkr: pkr,
-          profit: profit,
-          supplier_code: x.supplier_code || "",
-          supplier_name: x.supplier_name || "",
-        };
-      })
+      data.rows.map((x) => ({
+        item: x.item,
+        item_label: x.item_label,
+        sale_sar: parseNumber(x.sale_sar),
+        sale_rate: parseNumber(x.sale_rate),
+        sale_pkr: parseNumber(x.sale_pkr),
+        purchase_sar: x.purchase_sar ? formatInput(String(x.purchase_sar)) : "",
+        purchase_rate: x.purchase_rate ? formatInput(String(x.purchase_rate)) : "",
+        purchase_pkr: parseNumber(x.purchase_pkr),
+        profit: parseNumber(x.profit),
+        supplier_code: x.supplier_code || "",
+        supplier_name: x.supplier_name || "",
+      }))
     );
   };
 
@@ -111,14 +104,12 @@ export default function Purchase({ onNavigate }) {
       r.supplier_code = value;
       const s = suppliers.find((x) => x.supplier_code === value);
       r.supplier_name = s ? s.supplier_name : "";
-    } else if (field === "purchase_sar") {
-      r.purchase_sar = value === "" ? 0 : parseFloat(value);
-    } else if (field === "purchase_rate") {
-      r.purchase_rate = value === "" ? 0 : parseFloat(value);
+    } else {
+      r[field] = formatInput(value); // decimal-safe input
     }
 
-    const sar = r.purchase_sar || 0;
-    const rate = r.purchase_rate || 0;
+    const sar = parseNumber(r.purchase_sar);
+    const rate = parseNumber(r.purchase_rate);
     r.purchase_pkr = sar * rate;
     r.profit = r.sale_pkr - r.purchase_pkr;
 
@@ -295,10 +286,10 @@ export default function Purchase({ onNavigate }) {
                     className="fw-bold"
                     style={{
                       fontSize: "13px",
-                      color: itemCategoryColor(r.item),
+                      color: itemCategoryColor(r.item_label || r.item),
                     }}
                   >
-                    {r.item}
+                    {r.item_label || r.item}
                   </td>
                   <td>{r.sale_sar}</td>
                   <td>{r.sale_rate}</td>
@@ -364,7 +355,3 @@ export default function Purchase({ onNavigate }) {
     </div>
   );
 }
-
-
-
-
