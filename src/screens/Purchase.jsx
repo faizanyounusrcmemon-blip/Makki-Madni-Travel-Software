@@ -5,6 +5,7 @@ import React, { useEffect, useState } from "react";
 =============================== */
 const formatInput = (v) => {
   if (v === "" || v === null || v === undefined) return "";
+  // allow digits and one dot
   let clean = v.replace(/[^0-9.]/g, "");
   const parts = clean.split(".");
   if (parts.length > 2) clean = parts[0] + "." + parts[1];
@@ -57,7 +58,7 @@ export default function Purchase({ onNavigate }) {
     loadPending();
   }, []);
 
-  /* ================= LOAD PACKAGE ================= */
+  /* ================= LOAD PACKAGE (MANUAL) ================= */
   const loadPackage = async (r = refNo) => {
     if (!r) return alert("Ref No required");
     setRefNo(r);
@@ -79,16 +80,13 @@ export default function Purchase({ onNavigate }) {
 
     setRows(
       data.rows.map((x) => ({
-        item: x.item, // 🔥 FULL ITEM NAME ONLY
+        item: x.item,
+        item_label: x.item_label,
         sale_sar: parseNumber(x.sale_sar),
         sale_rate: parseNumber(x.sale_rate),
         sale_pkr: parseNumber(x.sale_pkr),
-        purchase_sar: x.purchase_sar
-          ? formatInput(String(x.purchase_sar))
-          : "",
-        purchase_rate: x.purchase_rate
-          ? formatInput(String(x.purchase_rate))
-          : "",
+        purchase_sar: x.purchase_sar ? formatInput(String(x.purchase_sar)) : "",
+        purchase_rate: x.purchase_rate ? formatInput(String(x.purchase_rate)) : "",
         purchase_pkr: parseNumber(x.purchase_pkr),
         profit: parseNumber(x.profit),
         supplier_code: x.supplier_code || "",
@@ -107,7 +105,7 @@ export default function Purchase({ onNavigate }) {
       const s = suppliers.find((x) => x.supplier_code === value);
       r.supplier_name = s ? s.supplier_name : "";
     } else {
-      r[field] = formatInput(value);
+      r[field] = formatInput(value); // decimal-safe input
     }
 
     const sar = parseNumber(r.purchase_sar);
@@ -154,7 +152,9 @@ export default function Purchase({ onNavigate }) {
   const isPartial =
     rows.length > 0 &&
     rows.some(
-      (r) => !parseNumber(r.purchase_sar) || !parseNumber(r.purchase_rate)
+      (r) =>
+        !parseNumber(r.purchase_sar) ||
+        !parseNumber(r.purchase_rate)
     );
 
   /* ================= UI ================= */
@@ -163,7 +163,7 @@ export default function Purchase({ onNavigate }) {
 
       {/* HEADER */}
       <div className="card shadow-sm mb-3">
-        <div className="card-body d-flex justify-content-between">
+        <div className="card-body d-flex justify-content-between mb-2">
           <h4 className="fw-bold mb-0">
             🧾 Purchase Entry
             {isEdit && (
@@ -196,7 +196,7 @@ export default function Purchase({ onNavigate }) {
         </div>
       )}
 
-      {/* PENDING */}
+      {/* PENDING LIST */}
       <div className="card shadow-sm mb-3">
         <div className="card-header fw-bold text-danger">
           ⏳ Pending / Partial Purchases
@@ -209,13 +209,22 @@ export default function Purchase({ onNavigate }) {
               {pending.map((p, i) => (
                 <li
                   key={i}
-                  className="list-group-item d-flex justify-content-between"
+                  className="list-group-item d-flex justify-content-between align-items-center"
                 >
                   <div className="fw-bold">
-                    <span className="badge bg-secondary me-2">
+                    <span className={`badge bg-secondary me-2`}>
                       {p.ref_no}
                     </span>
-                    <span className="text-primary">{p.customer_name}</span>
+                    <span className="text-primary ms-1">{p.customer_name}</span>
+                    <span
+                      className={`badge ms-2 ${
+                        p.status === "PENDING"
+                          ? "bg-danger"
+                          : "bg-warning text-dark"
+                      }`}
+                    >
+                      {p.status}
+                    </span>
                   </div>
                   <button
                     className="btn btn-sm btn-outline-primary"
@@ -230,11 +239,33 @@ export default function Purchase({ onNavigate }) {
         </div>
       </div>
 
+      {/* MANUAL REF NO ENTRY */}
+      <div className="card shadow-sm mb-3">
+        <div className="card-header fw-bold text-info">
+          🔢 Enter Ref No Manually
+        </div>
+        <div className="card-body d-flex gap-2">
+          <input
+            className="form-control form-control-sm"
+            placeholder="Ref No"
+            value={refNo}
+            onChange={(e) => setRefNo(e.target.value)}
+          />
+          <button
+            className="btn btn-primary btn-sm"
+            onClick={() => loadPackage()}
+            disabled={loading}
+          >
+            {loading ? "Loading..." : "Load"}
+          </button>
+        </div>
+      </div>
+
       {/* TABLE */}
       <div className="card shadow">
         <div className="table-responsive">
           <table className="table table-sm table-hover mb-0">
-            <thead className="table-dark">
+            <thead className="table-dark sticky-top">
               <tr>
                 <th>Item</th>
                 <th>Sale SAR</th>
@@ -255,10 +286,10 @@ export default function Purchase({ onNavigate }) {
                     className="fw-bold"
                     style={{
                       fontSize: "13px",
-                      color: itemCategoryColor(r.item),
+                      color: itemCategoryColor(r.item_label || r.item),
                     }}
                   >
-                    {r.item}
+                    {r.item_label || r.item}
                   </td>
                   <td>{r.sale_sar}</td>
                   <td>{r.sale_rate}</td>
