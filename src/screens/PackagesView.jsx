@@ -50,24 +50,28 @@ export default function PackagesView({ id, onNavigate }) {
 
     const imgData = canvas.toDataURL("image/jpeg", 1.0);
 
-    // ✅ PORTRAIT A4
     const pdf = new jsPDF("p", "mm", "a4");
 
     const pdfWidth = pdf.internal.pageSize.getWidth();
     const pdfHeight = pdf.internal.pageSize.getHeight();
 
-    const imgWidth = canvas.width;
-    const imgHeight = canvas.height;
+    const imgWidth = pdfWidth;
+    const imgHeight = (canvas.height * imgWidth) / canvas.width;
 
-    const ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight);
+    let heightLeft = imgHeight;
+    let position = 10; // top margin
 
-    const imgW = imgWidth * ratio;
-    const imgH = imgHeight * ratio;
+    // 🔹 First page
+    pdf.addImage(imgData, "JPEG", 0, position, imgWidth, imgHeight);
+    heightLeft -= pdfHeight;
 
-    const x = (pdfWidth - imgW) / 2;
-    const y = 8;
-
-    pdf.addImage(imgData, "JPEG", x, y, imgW, imgH);
+    // 🔹 Extra pages
+    while (heightLeft > 0) {
+      position = heightLeft - imgHeight + 10;
+      pdf.addPage();
+      pdf.addImage(imgData, "JPEG", 0, position, imgWidth, imgHeight);
+      heightLeft -= pdfHeight;
+    }
 
     const fileName = `${cleanName(data?.customer_name)}_${formatDateForFile(
       data?.booking_date
@@ -234,3 +238,4 @@ export default function PackagesView({ id, onNavigate }) {
     </div>
   );
 }
+
