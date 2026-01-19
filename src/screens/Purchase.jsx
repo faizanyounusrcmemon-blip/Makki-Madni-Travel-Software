@@ -84,8 +84,8 @@ export default function Purchase({ onNavigate }) {
         sale_sar: parseNumber(x.sale_sar),
         sale_rate: parseNumber(x.sale_rate),
         sale_pkr: parseNumber(x.sale_pkr),
-        purchase_sar: parseNumber(x.purchase_sar),
-        purchase_rate: parseNumber(x.purchase_rate),
+        purchase_sar: x.purchase_sar !== null && x.purchase_sar !== undefined ? parseNumber(x.purchase_sar) : 0,
+        purchase_rate: x.purchase_rate !== null && x.purchase_rate !== undefined ? parseNumber(x.purchase_rate) : 0,
         purchase_pkr: parseNumber(x.purchase_pkr),
         profit: parseNumber(x.profit),
         supplier_code: x.supplier_code || "",
@@ -104,7 +104,7 @@ export default function Purchase({ onNavigate }) {
       const s = suppliers.find((x) => x.supplier_code === value);
       r.supplier_name = s ? s.supplier_name : "";
     } else {
-      const num = parseNumber(formatInput(value)); // 🔹 convert to number
+      const num = parseNumber(value); // string => number
       if (field === "purchase_sar") r.purchase_sar = num;
       else if (field === "purchase_rate") r.purchase_rate = num;
     }
@@ -356,5 +356,6 @@ export default function Purchase({ onNavigate }) {
     </div>
   );
 }
+
 
 
