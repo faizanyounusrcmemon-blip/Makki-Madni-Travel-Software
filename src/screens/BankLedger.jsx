@@ -40,14 +40,22 @@ export default function BankLedger({ onNavigate }) {
   const [toDate, setToDate] = useState("");
 
   /* ================= COLOR MAP REF ================= */
-  const supplierColorMap = useRef({}); // ✅ persist across renders
+  const supplierColorMap = useRef({}); // persist across renders
 
-  const getSupplierColor = (name) => {
-    if (!name) return "#000";
-    const lower = name.toLowerCase();
-    if (lower.includes("customer")) return "#007BFF"; // all customers same blue
+  /* ================= NAME EXTRACTION ================= */
+  const extractName = (str) => {
+    if (!str) return "";
+    // Match "Supplier Payment - NAME (Ref: ...)" or "Customer Payment - NAME (Ref: ...)"
+    const match = str.match(/- (.+?) \(/);
+    if (match) return match[1].trim();
+    return str.trim();
+  };
+
+  const getSupplierColor = (str) => {
+    const name = extractName(str);
+    if (!name) return "#000"; // default black
+    if (name.toLowerCase().includes("customer")) return "#007BFF"; // all customers same blue
     if (!supplierColorMap.current[name]) {
-      // assign next color from palette
       const index = Object.keys(supplierColorMap.current).length % colorPalette.length;
       supplierColorMap.current[name] = colorPalette[index];
     }
@@ -220,7 +228,7 @@ export default function BankLedger({ onNavigate }) {
                     className="fw-bold"
                     style={{
                       fontSize: "0.85rem",
-                      color: r.type === "withdraw" ? "red" : getSupplierColor(r.supplier_name || r.description || "")
+                      color: r.type === "withdraw" ? "red" : getSupplierColor(r.description || r.supplier_name || "")
                     }}
                   >
                     {r.description || "-"}
