@@ -1,20 +1,7 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 
-// ================= COLOR HELPER =================
+/* ================= COLOR PALETTE ================= */
 const colorPalette = ["#FF6B6B", "#4ECDC4", "#FFD93D", "#6A4C93", "#FF8C42", "#00A6ED", "#FF5D8F"];
-const supplierColorMap = {}; // supplier name/code => color
-
-const getSupplierColor = (name) => {
-  if (!name) return "#000"; // default black
-  const lower = name.toLowerCase();
-  if (lower.includes("customer")) return "#007BFF"; // all customers same blue
-  if (!supplierColorMap[name]) {
-    // assign next color from palette, in order
-    supplierColorMap[name] = colorPalette[Object.keys(supplierColorMap).length % colorPalette.length];
-  }
-  return supplierColorMap[name];
-};
-
 
 /* ================= HELPERS ================= */
 const fmtAmount = (v) => (v !== null && v !== undefined ? Number(v).toLocaleString("en-US") : "-");
@@ -37,6 +24,7 @@ const formatDate = (dateStr) => {
   return date.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }).toUpperCase();
 };
 
+/* ================= MAIN COMPONENT ================= */
 export default function BankLedger({ onNavigate }) {
   const [rows, setRows] = useState([]);
   const [filtered, setFiltered] = useState([]);
@@ -51,6 +39,22 @@ export default function BankLedger({ onNavigate }) {
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
 
+  /* ================= COLOR MAP REF ================= */
+  const supplierColorMap = useRef({}); // ✅ persist across renders
+
+  const getSupplierColor = (name) => {
+    if (!name) return "#000";
+    const lower = name.toLowerCase();
+    if (lower.includes("customer")) return "#007BFF"; // all customers same blue
+    if (!supplierColorMap.current[name]) {
+      // assign next color from palette
+      const index = Object.keys(supplierColorMap.current).length % colorPalette.length;
+      supplierColorMap.current[name] = colorPalette[index];
+    }
+    return supplierColorMap.current[name];
+  };
+
+  /* ================= LOAD DATA ================= */
   useEffect(() => {
     load();
   }, []);
@@ -65,7 +69,7 @@ export default function BankLedger({ onNavigate }) {
     }
   };
 
-  // ================= FILTER / SEARCH =================
+  /* ================= FILTER / SEARCH ================= */
   useEffect(() => {
     let temp = [...rows];
     if (fromDate) temp = temp.filter((r) => new Date(r.txn_date) >= new Date(fromDate));
@@ -84,6 +88,7 @@ export default function BankLedger({ onNavigate }) {
     setFiltered(temp);
   }, [fromDate, toDate, rows, search]);
 
+  /* ================= SAVE ================= */
   const save = async () => {
     if (!date || !amount) return setMsg({ type: "danger", text: "Date & Amount required" });
     const r = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/bank-ledger/transaction`, {
@@ -100,6 +105,7 @@ export default function BankLedger({ onNavigate }) {
     } else setMsg({ type: "danger", text: d.error });
   };
 
+  /* ================= DELETE ================= */
   const del = async (id) => {
     const pass = prompt("Enter delete password");
     if (!pass) return;
@@ -117,6 +123,7 @@ export default function BankLedger({ onNavigate }) {
 
   const currentBalance = filtered.length > 0 ? filtered[0].balance : 0;
 
+  /* ================= RENDER ================= */
   return (
     <div className="container py-4">
       {/* HEADER */}
@@ -214,11 +221,10 @@ export default function BankLedger({ onNavigate }) {
                     style={{
                       fontSize: "0.85rem",
                       color: r.type === "withdraw" ? "red" : getSupplierColor(r.supplier_name || r.description || "")
-                   }}
+                    }}
                   >
                     {r.description || "-"}
                   </td>
-
                   <td className="text-danger fw-bold" style={{ fontSize: "0.85rem" }}>{fmtAmount(r.debit)}</td>
                   <td className="text-success fw-bold" style={{ fontSize: "0.85rem" }}>{fmtAmount(r.credit)}</td>
                   <td className="fw-bold" style={{ fontSize: "0.85rem" }}>{fmtAmount(r.balance)}</td>
@@ -239,6 +245,3 @@ export default function BankLedger({ onNavigate }) {
     </div>
   );
 }
-
-
-
