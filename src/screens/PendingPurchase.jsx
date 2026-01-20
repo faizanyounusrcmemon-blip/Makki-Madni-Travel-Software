@@ -49,40 +49,28 @@ export default function PendingPurchase({ onNavigate }) {
         );
         const listData = await listRes.json();
         let purchase_pkr = 0;
-        let missingSupplier = false;
-
         if (listData.success && listData.rows.length) {
-          const row = listData.rows[0];
-          purchase_pkr = row.purchase_pkr || 0;
-
-          // Check if supplier name or code missing
-          if (!row.supplier_name || !row.supplier_code) {
-            missingSupplier = true;
-          }
+          purchase_pkr = listData.rows[0].purchase_pkr || 0;
         }
 
         // Sale amount from reports
         const sale_pkr = saleMap[r.ref_no] || 0;
 
-        // ✅ Determine status
-        let status = "PENDING";
-        if (purchase_pkr > 0 && sale_pkr < purchase_pkr) status = "PARTIAL";
-        if (purchase_pkr > 0 && sale_pkr >= purchase_pkr) status = "COMPLETE";
-
         return {
           ...r,
           sale_pkr,
           purchase_pkr,
-          missingSupplier,
-          status,
+          // Ensure status exists
+          status: r.status || "PENDING",
         };
       });
 
       const finalRows = await Promise.all(promises);
 
-      // 4️⃣ Filter rows: show pending/partial OR missing supplier
+      // 4️⃣ Filter: pending/partial OR completed but missing supplier info
       const filtered = finalRows.filter(
-        (r) => r.status !== "COMPLETE" || r.missingSupplier
+        (r) =>
+          r.status !== "COMPLETE" || !r.supplier_name || !r.supplier_code
       );
 
       setRows(filtered);
@@ -98,7 +86,8 @@ export default function PendingPurchase({ onNavigate }) {
     if (!search) return true;
     const q = search.toLowerCase();
     const ref = typeof r.ref_no === "string" ? r.ref_no.toLowerCase() : "";
-    const name = typeof r.customer_name === "string" ? r.customer_name.toLowerCase() : "";
+    const name =
+      typeof r.customer_name === "string" ? r.customer_name.toLowerCase() : "";
     return ref.includes(q) || name.includes(q);
   });
 
@@ -134,9 +123,9 @@ export default function PendingPurchase({ onNavigate }) {
                 <th>Customer</th>
                 <th>Status</th>
                 <th>Note</th>
+                <th>Supplier</th>
                 <th className="text-end">Sale Amount (PKR)</th>
                 <th className="text-end">Purchase Amount (PKR)</th>
-                <th>Missing Supplier Info</th>
                 <th>Action</th>
               </tr>
             </thead>
@@ -152,39 +141,48 @@ export default function PendingPurchase({ onNavigate }) {
               {filteredRows.map((r, i) => (
                 <tr key={i} className="align-middle">
                   <td className="fw-bold text-primary">{r.ref_no}</td>
-                  <td className="text-dark fw-semibold">{r.customer_name || "-"}</td>
+                  <td className="text-dark fw-semibold">
+                    {r.customer_name || "-"}
+                  </td>
 
                   <td>
                     {r.status === "PENDING" && (
                       <span className="badge bg-danger">Pending</span>
                     )}
                     {r.status === "PARTIAL" && (
-                      <span className="badge bg-warning text-dark">Partial</span>
+                      <span className="badge bg-warning text-dark">
+                        Partial
+                      </span>
                     )}
-                    {r.status === "COMPLETE" && !r.missingSupplier && (
+                    {r.status === "COMPLETE" && (
                       <span className="badge bg-success">Complete</span>
-                    )}
-                    {r.status === "COMPLETE" && r.missingSupplier && (
-                      <span className="badge bg-info text-dark">Complete (Missing Supplier)</span>
                     )}
                   </td>
 
-                  <td>{r.note}</td>
+                  <td>{r.note || "-"}</td>
+
+                  <td>
+                    {!r.supplier_name || !r.supplier_code ? (
+                      <span className="badge bg-info text-dark">
+                        Missing Supplier
+                      </span>
+                    ) : (
+                      <span className="text-success">
+                        {r.supplier_name}
+                      </span>
+                    )}
+                  </td>
 
                   <td className="text-end fw-bold text-success">
-                    {r.sale_pkr ? Number(r.sale_pkr).toLocaleString("en-US") : "0"}
+                    {r.sale_pkr
+                      ? Number(r.sale_pkr).toLocaleString("en-US")
+                      : "0"}
                   </td>
 
                   <td className="text-end fw-bold text-primary">
-                    {r.purchase_pkr ? Number(r.purchase_pkr).toLocaleString("en-US") : "0"}
-                  </td>
-
-                  <td>
-                    {r.missingSupplier ? (
-                      <span className="badge bg-danger">Missing</span>
-                    ) : (
-                      <span className="text-success">✔️</span>
-                    )}
+                    {r.purchase_pkr
+                      ? Number(r.purchase_pkr).toLocaleString("en-US")
+                      : "0"}
                   </td>
 
                   <td>
