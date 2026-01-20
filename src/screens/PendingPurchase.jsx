@@ -64,16 +64,28 @@ export default function PendingPurchase({ onNavigate }) {
         // Sale amount from reports
         const sale_pkr = saleMap[r.ref_no] || 0;
 
+        // ✅ Determine status
+        let status = "PENDING";
+        if (purchase_pkr > 0 && sale_pkr < purchase_pkr) status = "PARTIAL";
+        if (purchase_pkr > 0 && sale_pkr >= purchase_pkr) status = "COMPLETE";
+
         return {
           ...r,
           sale_pkr,
           purchase_pkr,
-          missingSupplier, // ✅ new field
+          missingSupplier,
+          status,
         };
       });
 
       const finalRows = await Promise.all(promises);
-      setRows(finalRows);
+
+      // 4️⃣ Filter rows: show pending/partial OR missing supplier
+      const filtered = finalRows.filter(
+        (r) => r.status !== "COMPLETE" || r.missingSupplier
+      );
+
+      setRows(filtered);
       setLoading(false);
     } catch (err) {
       console.error("Error loading pending purchases:", err);
@@ -124,7 +136,7 @@ export default function PendingPurchase({ onNavigate }) {
                 <th>Note</th>
                 <th className="text-end">Sale Amount (PKR)</th>
                 <th className="text-end">Purchase Amount (PKR)</th>
-                <th>Missing Supplier Info</th> {/* ✅ New Column */}
+                <th>Missing Supplier Info</th>
                 <th>Action</th>
               </tr>
             </thead>
@@ -140,18 +152,20 @@ export default function PendingPurchase({ onNavigate }) {
               {filteredRows.map((r, i) => (
                 <tr key={i} className="align-middle">
                   <td className="fw-bold text-primary">{r.ref_no}</td>
-                  <td className="text-dark fw-semibold">
-                    {r.customer_name || "-"}
-                  </td>
+                  <td className="text-dark fw-semibold">{r.customer_name || "-"}</td>
 
                   <td>
                     {r.status === "PENDING" && (
                       <span className="badge bg-danger">Pending</span>
                     )}
                     {r.status === "PARTIAL" && (
-                      <span className="badge bg-warning text-dark">
-                        Partial
-                      </span>
+                      <span className="badge bg-warning text-dark">Partial</span>
+                    )}
+                    {r.status === "COMPLETE" && !r.missingSupplier && (
+                      <span className="badge bg-success">Complete</span>
+                    )}
+                    {r.status === "COMPLETE" && r.missingSupplier && (
+                      <span className="badge bg-info text-dark">Complete (Missing Supplier)</span>
                     )}
                   </td>
 
