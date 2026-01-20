@@ -56,6 +56,7 @@ export default function SupplierLedger({ onNavigate }) {
   const [saving, setSaving] = useState(false);
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
+  const [ledgerView, setLedgerView] = useState([]);
   const pdfRef = useRef(null);
    
   /* =========================
@@ -111,8 +112,8 @@ export default function SupplierLedger({ onNavigate }) {
             ref_no: row.ref_no || row.purchase_ref || row.invoice_no || "-"   // ✅ NEW
           };
         });
-        mapped.sort((a, b) => new Date(b.date) - new Date(a.date));
         setLedger(mapped);
+        setLedgerView(mapped);
       } else {
         alert(d.error || "Failed to load ledger");
         setLedger([]);
@@ -135,8 +136,8 @@ export default function SupplierLedger({ onNavigate }) {
     if (toDate)
       rows = rows.filter((r) => new Date(r.date) <= new Date(toDate));
 
-    setLedger(rows);
-  }, [fromDate, toDate]);
+    setLedgerView(rows);
+  }, [fromDate, toDate, ledger]);
 
   /* =========================
      SAVE ENTRY
@@ -309,7 +310,7 @@ return (
           <tbody>
             {ledger.length === 0 &&
               <tr><td colSpan="10" className="text-center text-muted">No ledger entries</td></tr>}
-            {ledger.map((r,i)=>(
+            {ledgerView.map((r,i)=>(
               <tr key={i}>
                 <td className="text-center fw-bold small">{formatDate(r.date)}</td>
                 <td className="text-center">
@@ -350,6 +351,7 @@ return (
  );
 }
    
+
 
 
 
