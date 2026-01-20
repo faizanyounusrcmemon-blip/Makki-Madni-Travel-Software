@@ -209,7 +209,15 @@ export default function BankLedger({ onNavigate }) {
               {filtered.map((r, i) => (
                 <tr key={i}>
                   <td style={{ fontSize: "0.85rem" }}><span className="text-muted fw-bold">{formatDate(r.txn_date)}</span></td>
-                  <tdclassName="fw-bold"style={{fontSize: "0.85rem",color: r.type === "withdraw" ? "red" : getSupplierColor(r.supplier_name || r.description || "")}}>{r.description || "-"}</td>
+                  <td
+                    className="fw-bold"
+                    style={{
+                      fontSize: "0.85rem",
+                      color: r.type === "withdraw" ? "red" : getSupplierColor(r.supplier_name || r.description || "")
+                   }}
+                  >
+                    {r.description || "-"}
+                  </td>
 
                   <td className="text-danger fw-bold" style={{ fontSize: "0.85rem" }}>{fmtAmount(r.debit)}</td>
                   <td className="text-success fw-bold" style={{ fontSize: "0.85rem" }}>{fmtAmount(r.credit)}</td>
@@ -231,5 +239,6 @@ export default function BankLedger({ onNavigate }) {
     </div>
   );
 }
+
 
 
