@@ -49,8 +49,16 @@ export default function PendingPurchase({ onNavigate }) {
         );
         const listData = await listRes.json();
         let purchase_pkr = 0;
+        let missingSupplier = false;
+
         if (listData.success && listData.rows.length) {
-          purchase_pkr = listData.rows[0].purchase_pkr || 0;
+          const row = listData.rows[0];
+          purchase_pkr = row.purchase_pkr || 0;
+
+          // Check if supplier name or code missing
+          if (!row.supplier_name || !row.supplier_code) {
+            missingSupplier = true;
+          }
         }
 
         // Sale amount from reports
@@ -60,6 +68,7 @@ export default function PendingPurchase({ onNavigate }) {
           ...r,
           sale_pkr,
           purchase_pkr,
+          missingSupplier, // ✅ new field
         };
       });
 
@@ -115,13 +124,14 @@ export default function PendingPurchase({ onNavigate }) {
                 <th>Note</th>
                 <th className="text-end">Sale Amount (PKR)</th>
                 <th className="text-end">Purchase Amount (PKR)</th>
+                <th>Missing Supplier Info</th> {/* ✅ New Column */}
                 <th>Action</th>
               </tr>
             </thead>
             <tbody>
               {filteredRows.length === 0 && (
                 <tr>
-                  <td colSpan="7" className="text-center text-success">
+                  <td colSpan="8" className="text-center text-success">
                     🎉 All purchases completed
                   </td>
                 </tr>
@@ -153,6 +163,14 @@ export default function PendingPurchase({ onNavigate }) {
 
                   <td className="text-end fw-bold text-primary">
                     {r.purchase_pkr ? Number(r.purchase_pkr).toLocaleString("en-US") : "0"}
+                  </td>
+
+                  <td>
+                    {r.missingSupplier ? (
+                      <span className="badge bg-danger">Missing</span>
+                    ) : (
+                      <span className="text-success">✔️</span>
+                    )}
                   </td>
 
                   <td>
