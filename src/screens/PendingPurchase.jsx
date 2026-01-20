@@ -1,69 +1,107 @@
 import React, { useEffect, useState } from "react";
 
-// ================= DATE FORMAT HELPER =================
+// ================= DATE FORMAT =================
 const formatDate = (d) => {
   if (!d) return "";
   const date = new Date(d);
-  const options = { day: "2-digit", month: "short", year: "numeric" };
-  return date.toLocaleDateString("en-US", options); // 01/Dec/2025
+  return date.toLocaleDateString("en-US", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
 };
 
 export default function PendingPurchase({ onNavigate }) {
   const [pendingRows, setPendingRows] = useState([]);
-  const [missingSupplierRows, setMissingSupplierRows] = useState([]);
+  const [missingRows, setMissingRows] = useState([]);
+  const [activeTab, setActiveTab] = useState("pending");
   const [search, setSearch] = useState("");
-  const [loadingPending, setLoadingPending] = useState(false);
-  const [loadingMissing, setLoadingMissing] = useState(false);
-  const [activeTab, setActiveTab] = useState("pending"); // "pending" or "missing"
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    loadPending();
-    loadMissingSupplier();
+    loadAll();
   }, []);
 
-  // ================= LOAD PENDING / PARTIAL =================
-  const loadPending = async () => {
+  // ================= MAIN LOADER =================
+  const loadAll = async () => {
     try {
-      setLoadingPending(true);
-      const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/purchase/pending`);
-      const data = await res.json();
-      if (data.success) setPendingRows(data.rows);
-      setLoadingPending(false);
+      setLoading(true);
+
+      // 1️⃣ Pending / Partial
+      const pendingRes = await fetch(
+        `${import.meta.env.VITE_BACKEND_URL}/api/purchase/pending`
+      );
+      const pendingData = await pendingRes.json();
+      const pendingBase = pendingData.success ? pendingData.rows : [];
+
+      // 2️⃣ Missing Supplier (Completed)
+      const missingRes = await fetch(
+        `${import.meta.env.VITE_BACKEND_URL}/api/purchase/missing-supplier`
+      );
+      const missingData = await missingRes.json();
+      const missingBase = missingData.success ? missingData.rows : [];
+
+      // 3️⃣ Sale amounts
+      const reportRes = await fetch(
+        `${import.meta.env.VITE_BACKEND_URL}/api/reports/all`
+      );
+      const reportData = await reportRes.json();
+
+      const saleMap = {};
+      reportData.forEach((r) => {
+        saleMap[r.ref_no] = r.total_pkr || 0;
+      });
+
+      // 4️⃣ Attach purchase + sale amounts
+      const attachAmounts = async (rows) => {
+        return Promise.all(
+          rows.map(async (r) => {
+            let purchase_pkr = 0;
+
+            const listRes = await fetch(
+              `${import.meta.env.VITE_BACKEND_URL}/api/purchase/list?ref=${r.ref_no}`
+            );
+            const listData = await listRes.json();
+            if (listData.success && listData.rows.length) {
+              purchase_pkr = listData.rows[0].purchase_pkr || 0;
+            }
+
+            return {
+              ...r,
+              sale_pkr: saleMap[r.ref_no] || 0,
+              purchase_pkr,
+            };
+          })
+        );
+      };
+
+      setPendingRows(await attachAmounts(pendingBase));
+      setMissingRows(await attachAmounts(missingBase));
+
+      setLoading(false);
     } catch (err) {
-      console.error("Error loading pending purchases:", err);
-      setLoadingPending(false);
+      console.error(err);
+      setLoading(false);
     }
   };
 
-  // ================= LOAD COMPLETED BUT MISSING SUPPLIER =================
-  const loadMissingSupplier = async () => {
-    try {
-      setLoadingMissing(true);
-      const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/purchase/missing-supplier`);
-      const data = await res.json();
-      if (data.success) setMissingSupplierRows(data.rows);
-      setLoadingMissing(false);
-    } catch (err) {
-      console.error("Error loading missing supplier purchases:", err);
-      setLoadingMissing(false);
-    }
-  };
-
-  // ================= FILTER FUNCTION =================
+  // ================= FILTER =================
   const filterRows = (rows) => {
     if (!search) return rows;
     const q = search.toLowerCase();
-    return rows.filter((r) => {
-      const ref = r.ref_no?.toLowerCase() || "";
-      const customer = r.customer_name?.toLowerCase() || "";
-      const supplier = r.supplier_name?.toLowerCase() || "";
-      return ref.includes(q) || customer.includes(q) || supplier.includes(q);
-    });
+    return rows.filter(
+      (r) =>
+        r.ref_no?.toLowerCase().includes(q) ||
+        r.customer_name?.toLowerCase().includes(q)
+    );
   };
 
-  const pendingFiltered = filterRows(pendingRows);
-  const missingFiltered = filterRows(missingSupplierRows);
+  const rows =
+    activeTab === "pending"
+      ? filterRows(pendingRows)
+      : filterRows(missingRows);
 
+  // ================= UI =================
   return (
     <div className="container p-3">
       <button
@@ -73,129 +111,120 @@ export default function PendingPurchase({ onNavigate }) {
         ⬅ Back
       </button>
 
-      <h4 className="fw-bold text-warning mb-3">
-        ⚠️ Purchase Overview
-      </h4>
+      <h4 className="fw-bold text-warning mb-3">⚠️ Purchase Overview</h4>
 
-      {/* TAB SWITCH */}
+      {/* TABS */}
       <div className="mb-3">
         <button
-          className={`btn btn-sm me-2 ${activeTab === "pending" ? "btn-primary" : "btn-outline-primary"}`}
+          className={`btn btn-sm me-2 ${
+            activeTab === "pending"
+              ? "btn-primary"
+              : "btn-outline-primary"
+          }`}
           onClick={() => setActiveTab("pending")}
         >
           Pending / Partial
         </button>
+
         <button
-          className={`btn btn-sm ${activeTab === "missing" ? "btn-primary" : "btn-outline-primary"}`}
+          className={`btn btn-sm ${
+            activeTab === "missing"
+              ? "btn-primary"
+              : "btn-outline-primary"
+          }`}
           onClick={() => setActiveTab("missing")}
         >
-          Completed but Missing Supplier
+          Missing Supplier
         </button>
       </div>
 
       {/* SEARCH */}
       <input
-        type="text"
-        placeholder="Search Ref / Customer / Supplier..."
         className="form-control form-control-sm mb-3"
+        placeholder="Search Ref / Customer..."
         value={search}
         onChange={(e) => setSearch(e.target.value)}
       />
 
-      {/* ================= PENDING / PARTIAL TABLE ================= */}
-      {activeTab === "pending" && (
-        loadingPending ? (
-          <div className="text-center text-muted">Loading Pending / Partial...</div>
-        ) : (
-          <div className="table-responsive shadow-sm rounded">
-            <table className="table table-bordered table-hover table-sm align-middle mb-0">
-              <thead className="table-dark">
+      {loading ? (
+        <div className="text-center text-muted">Loading...</div>
+      ) : (
+        <div className="table-responsive shadow-sm rounded">
+          <table className="table table-bordered table-hover table-sm align-middle">
+            <thead className="table-dark">
+              <tr>
+                <th>Ref No</th>
+                <th>Customer</th>
+                {activeTab === "missing" && <th>Supplier</th>}
+                <th>Status</th>
+                <th className="text-end">Sale (PKR)</th>
+                <th className="text-end">Purchase (PKR)</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              {rows.length === 0 && (
                 <tr>
-                  <th>Ref No</th>
-                  <th>Customer</th>
-                  <th>Status</th>
-                  <th>Note</th>
-                  <th className="text-end">Sale Amount (PKR)</th>
-                  <th className="text-end">Purchase Amount (PKR)</th>
-                  <th>Action</th>
+                  <td colSpan="7" className="text-center text-success">
+                    🎉 No records
+                  </td>
                 </tr>
-              </thead>
-              <tbody>
-                {pendingFiltered.length === 0 && (
-                  <tr>
-                    <td colSpan="7" className="text-center text-success">
-                      🎉 All purchases completed
+              )}
+
+              {rows.map((r, i) => (
+                <tr key={i}>
+                  <td className="fw-bold text-primary">{r.ref_no}</td>
+                  <td>{r.customer_name || "-"}</td>
+
+                  {activeTab === "missing" && (
+                    <td className="text-danger fw-bold">
+                      {r.supplier_name || "MISSING"}
                     </td>
-                  </tr>
-                )}
-                {pendingFiltered.map((r, i) => (
-                  <tr key={i} className="align-middle">
-                    <td className="fw-bold text-primary">{r.ref_no}</td>
-                    <td className="text-dark fw-semibold">{r.customer_name || "-"}</td>
-                    <td>
-                      {r.status === "PENDING" && <span className="badge bg-danger">Pending</span>}
-                      {r.status === "PARTIAL" && <span className="badge bg-warning text-dark">Partial</span>}
-                    </td>
-                    <td>{r.note}</td>
-                    <td className="text-end fw-bold text-success">{r.sale_pkr ? Number(r.sale_pkr).toLocaleString("en-US") : "0"}</td>
-                    <td className="text-end fw-bold text-primary">{r.purchase_pkr ? Number(r.purchase_pkr).toLocaleString("en-US") : "0"}</td>
-                    <td>
+                  )}
+
+                  <td>
+                    {r.status === "PENDING" && (
+                      <span className="badge bg-danger">Pending</span>
+                    )}
+                    {r.status === "PARTIAL" && (
+                      <span className="badge bg-warning text-dark">
+                        Partial
+                      </span>
+                    )}
+                    {activeTab === "missing" && (
+                      <span className="badge bg-success">Complete</span>
+                    )}
+                  </td>
+
+                  <td className="text-end text-success fw-bold">
+                    {Number(r.sale_pkr).toLocaleString("en-US")}
+                  </td>
+
+                  <td className="text-end text-primary fw-bold">
+                    {Number(r.purchase_pkr).toLocaleString("en-US")}
+                  </td>
+
+                  <td>
+                    {activeTab === "pending" && (
                       <button
                         className="btn btn-sm btn-primary"
-                        onClick={() => onNavigate("purchase", r.ref_no)}
+                        onClick={() =>
+                          onNavigate("purchase", r.ref_no)
+                        }
                       >
-                        ➕ Complete Purchase
+                        ➕ Complete
                       </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )
-      )}
-
-      {/* ================= MISSING SUPPLIER TABLE ================= */}
-      {activeTab === "missing" && (
-        loadingMissing ? (
-          <div className="text-center text-muted">Loading Missing Supplier...</div>
-        ) : (
-          <div className="table-responsive shadow-sm rounded">
-            <table className="table table-bordered table-hover table-sm align-middle mb-0">
-              <thead className="table-dark">
-                <tr>
-                  <th>Ref No</th>
-                  <th>Customer</th>
-                  <th>Supplier Name</th>
-                  <th>Supplier Code</th>
-                  <th className="text-end">Total Amount (PKR)</th>
-                  <th>Status</th>
-                  <th>Note</th>
+                    )}
+                    {activeTab === "missing" && (
+                      <span className="text-muted">—</span>
+                    )}
+                  </td>
                 </tr>
-              </thead>
-              <tbody>
-                {missingFiltered.length === 0 && (
-                  <tr>
-                    <td colSpan="7" className="text-center text-success">
-                      🎉 No missing suppliers
-                    </td>
-                  </tr>
-                )}
-                {missingFiltered.map((r, i) => (
-                  <tr key={i} className="align-middle">
-                    <td className="fw-bold text-primary">{r.ref_no}</td>
-                    <td className="text-dark fw-semibold">{r.customer_name || "-"}</td>
-                    <td className="text-dark fw-semibold">{r.supplier_name || "-"}</td>
-                    <td className="text-dark fw-semibold">{r.supplier_code || "-"}</td>
-                    <td className="text-end fw-bold text-primary">{r.total_amount ? Number(r.total_amount).toLocaleString("en-US") : "0"}</td>
-                    <td><span className="badge bg-success">Complete</span></td>
-                    <td>{r.note || "-"}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
     </div>
   );
