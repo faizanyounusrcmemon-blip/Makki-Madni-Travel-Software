@@ -136,7 +136,7 @@ export default function SupplierLedger({ onNavigate }) {
     if (toDate)
       rows = rows.filter((r) => new Date(r.date) <= new Date(toDate));
 
-    setLedgerView(rows);
+    setLedgerView([...rows].reverse());
   }, [fromDate, toDate, ledger]);
 
   /* =========================
@@ -351,6 +351,7 @@ return (
  );
 }
    
+
 
 
 
