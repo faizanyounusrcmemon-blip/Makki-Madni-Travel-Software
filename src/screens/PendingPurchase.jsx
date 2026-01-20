@@ -189,7 +189,7 @@ export default function PendingPurchase({ onNavigate }) {
                     <td className="text-dark fw-semibold">{r.supplier_code || "-"}</td>
                     <td className="text-end fw-bold text-primary">{r.total_amount ? Number(r.total_amount).toLocaleString("en-US") : "0"}</td>
                     <td><span className="badge bg-success">Complete</span></td>
-                    <td>{r.note}</td>
+                    <td>{r.note || "-"}</td>
                   </tr>
                 ))}
               </tbody>
