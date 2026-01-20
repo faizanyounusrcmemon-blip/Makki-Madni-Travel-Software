@@ -1,69 +1,84 @@
 import React, { useEffect, useState } from "react";
 
+// ================= DATE FORMAT HELPER =================
+const formatDate = (d) => {
+  const date = new Date(d);
+  const options = { day: "2-digit", month: "short", year: "numeric" };
+  return date.toLocaleDateString("en-US", options); // 01/Dec/2025
+};
+
 export default function PendingPurchase({ onNavigate }) {
   const [rows, setRows] = useState([]);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    loadAll();
+    loadPending();
   }, []);
 
-  const loadAll = async () => {
+  const loadPending = async () => {
     try {
       setLoading(true);
 
-      /* ===============================
-         1️⃣ Pending / Partial Purchases
-      =============================== */
+      // 1️⃣ Pending / Partial refs
       const pendingRes = await fetch(
         `${import.meta.env.VITE_BACKEND_URL}/api/purchase/pending`
       );
       const pendingData = await pendingRes.json();
+      if (!pendingData.success) return;
 
-      const pendingRows = pendingData.success
-        ? pendingData.rows.map(r => ({
-            ...r,
-            source: "PENDING"
-          }))
-        : [];
+      const pendingRows = pendingData.rows;
 
-      /* =====================================
-         2️⃣ Completed BUT Supplier Missing
-      ===================================== */
-      const missingRes = await fetch(
-        `${import.meta.env.VITE_BACKEND_URL}/api/purchase/missing-supplier`
+      // 2️⃣ Sale amounts from /reports/all
+      const reportsRes = await fetch(
+        `${import.meta.env.VITE_BACKEND_URL}/api/reports/all`
       );
-      const missingData = await missingRes.json();
+      const reportsData = await reportsRes.json();
 
-      const missingRows = missingData.success
-        ? missingData.rows.map(r => ({
-            ...r,
-            source: "MISSING_SUPPLIER"
-          }))
-        : [];
+      // Map sale amount by ref_no
+      const saleMap = {};
+      reportsData.forEach((r) => {
+        saleMap[r.ref_no] = r.total_pkr || 0;
+      });
 
-      /* ===============================
-         3️⃣ Merge both results
-      =============================== */
-      const merged = [...pendingRows, ...missingRows];
+      // 3️⃣ Merge with purchase amounts from /list
+      const promises = pendingRows.map(async (r) => {
+        // Purchase amount
+        const listRes = await fetch(
+          `${import.meta.env.VITE_BACKEND_URL}/api/purchase/list?ref=${r.ref_no}`
+        );
+        const listData = await listRes.json();
+        let purchase_pkr = 0;
+        if (listData.success && listData.rows.length) {
+          purchase_pkr = listData.rows[0].purchase_pkr || 0;
+        }
 
-      setRows(merged);
+        // Sale amount from reports
+        const sale_pkr = saleMap[r.ref_no] || 0;
+
+        return {
+          ...r,
+          sale_pkr,
+          purchase_pkr,
+        };
+      });
+
+      const finalRows = await Promise.all(promises);
+      setRows(finalRows);
       setLoading(false);
     } catch (err) {
-      console.error("LOAD PURCHASE ERROR:", err);
+      console.error("Error loading pending purchases:", err);
       setLoading(false);
     }
   };
 
-  /* ================= FILTER ================= */
-  const filteredRows = rows.filter(r => {
+  // ================= FILTER ROWS =================
+  const filteredRows = rows.filter((r) => {
     if (!search) return true;
     const q = search.toLowerCase();
-    return (
-      String(r.ref_no).toLowerCase().includes(q) ||
-      String(r.customer_name || "").toLowerCase().includes(q)
-    );
+    const ref = typeof r.ref_no === "string" ? r.ref_no.toLowerCase() : "";
+    const name = typeof r.customer_name === "string" ? r.customer_name.toLowerCase() : "";
+    return ref.includes(q) || name.includes(q);
   });
 
   return (
@@ -76,7 +91,7 @@ export default function PendingPurchase({ onNavigate }) {
       </button>
 
       <h4 className="fw-bold text-warning mb-3">
-        ⚠️ Pending / Supplier Missing Purchases
+        ⚠️ Pending / Partial Purchases
       </h4>
 
       <input
@@ -98,44 +113,46 @@ export default function PendingPurchase({ onNavigate }) {
                 <th>Customer</th>
                 <th>Status</th>
                 <th>Note</th>
-                <th className="text-end">Purchase Amount</th>
+                <th className="text-end">Sale Amount (PKR)</th>
+                <th className="text-end">Purchase Amount (PKR)</th>
                 <th>Action</th>
               </tr>
             </thead>
             <tbody>
               {filteredRows.length === 0 && (
                 <tr>
-                  <td colSpan="6" className="text-center text-success">
+                  <td colSpan="7" className="text-center text-success">
                     🎉 All purchases completed
                   </td>
                 </tr>
               )}
 
               {filteredRows.map((r, i) => (
-                <tr key={i}>
+                <tr key={i} className="align-middle">
                   <td className="fw-bold text-primary">{r.ref_no}</td>
-                  <td>{r.customer_name || "-"}</td>
+                  <td className="text-dark fw-semibold">
+                    {r.customer_name || "-"}
+                  </td>
 
                   <td>
-                    {r.source === "PENDING" && r.status === "PENDING" && (
+                    {r.status === "PENDING" && (
                       <span className="badge bg-danger">Pending</span>
                     )}
-                    {r.source === "PENDING" && r.status === "PARTIAL" && (
+                    {r.status === "PARTIAL" && (
                       <span className="badge bg-warning text-dark">
                         Partial
-                      </span>
-                    )}
-                    {r.source === "MISSING_SUPPLIER" && (
-                      <span className="badge bg-info text-dark">
-                        Supplier Missing
                       </span>
                     )}
                   </td>
 
                   <td>{r.note}</td>
 
-                  <td className="text-end fw-bold">
-                    {Number(r.total_amount || r.purchase_pkr || 0).toLocaleString()}
+                  <td className="text-end fw-bold text-success">
+                    {r.sale_pkr ? Number(r.sale_pkr).toLocaleString("en-US") : "0"}
+                  </td>
+
+                  <td className="text-end fw-bold text-primary">
+                    {r.purchase_pkr ? Number(r.purchase_pkr).toLocaleString("en-US") : "0"}
                   </td>
 
                   <td>
@@ -143,7 +160,7 @@ export default function PendingPurchase({ onNavigate }) {
                       className="btn btn-sm btn-primary"
                       onClick={() => onNavigate("purchase", r.ref_no)}
                     >
-                      ➕ Open Purchase
+                      ➕ Complete Purchase
                     </button>
                   </td>
                 </tr>
@@ -151,6 +168,52 @@ export default function PendingPurchase({ onNavigate }) {
             </tbody>
           </table>
         </div>
+      )}
+    </div>
+  );
+}
+
+      {/* ================= MISSING SUPPLIER TABLE ================= */}
+      {activeTab === "missing" && (
+        loadingMissing ? (
+          <div className="text-center text-muted">Loading Missing Supplier...</div>
+        ) : (
+          <div className="table-responsive shadow-sm rounded">
+            <table className="table table-bordered table-hover table-sm align-middle mb-0">
+              <thead className="table-dark">
+                <tr>
+                  <th>Ref No</th>
+                  <th>Customer</th>
+                  <th>Supplier Name</th>
+                  <th>Supplier Code</th>
+                  <th className="text-end">Total Amount (PKR)</th>
+                  <th>Status</th>
+                  <th>Note</th>
+                </tr>
+              </thead>
+              <tbody>
+                {missingFiltered.length === 0 && (
+                  <tr>
+                    <td colSpan="7" className="text-center text-success">
+                      🎉 No missing suppliers
+                    </td>
+                  </tr>
+                )}
+                {missingFiltered.map((r, i) => (
+                  <tr key={i} className="align-middle">
+                    <td className="fw-bold text-primary">{r.ref_no}</td>
+                    <td className="text-dark fw-semibold">{r.customer_name || "-"}</td>
+                    <td className="text-dark fw-semibold">{r.supplier_name || "-"}</td>
+                    <td className="text-dark fw-semibold">{r.supplier_code || "-"}</td>
+                    <td className="text-end fw-bold text-primary">{r.total_amount ? Number(r.total_amount).toLocaleString("en-US") : "0"}</td>
+                    <td><span className="badge bg-success">Complete</span></td>
+                    <td>{r.note || "-"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )
       )}
     </div>
   );
