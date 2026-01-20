@@ -51,10 +51,15 @@ export default function BankLedger({ onNavigate }) {
     return str.trim();
   };
 
+  const isCustomerPayment = (str) => {
+    if (!str) return false;
+    return str.toLowerCase().includes("customer");
+  };
+
   const getSupplierColor = (str) => {
     const name = extractName(str);
     if (!name) return "#000"; // default black
-    if (name.toLowerCase().includes("customer")) return "#007BFF"; // all customers same blue
+    if (isCustomerPayment(str)) return "#007BFF"; // all customers same blue
     if (!supplierColorMap.current[name]) {
       const index = Object.keys(supplierColorMap.current).length % colorPalette.length;
       supplierColorMap.current[name] = colorPalette[index];
