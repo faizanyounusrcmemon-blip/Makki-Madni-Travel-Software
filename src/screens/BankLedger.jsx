@@ -1,17 +1,18 @@
 import React, { useEffect, useState } from "react";
 
 // ================= COLOR HELPER =================
-const supplierColors = {};
-const colors = ["#FF6B6B", "#4ECDC4", "#FFD93D", "#6A4C93", "#FF8C42", "#00A6ED", "#FF5D8F"]; // sample palette
+const colorPalette = ["#FF6B6B", "#4ECDC4", "#FFD93D", "#6A4C93", "#FF8C42", "#00A6ED", "#FF5D8F"];
+const supplierColorMap = {}; // supplier name/code => color
 
-const getColor = (name) => {
+const getSupplierColor = (name) => {
   if (!name) return "#000"; // default black
-  if (name.toLowerCase().includes("customer")) return "#007BFF"; // all customers same color (blue)
-  if (!supplierColors[name]) {
-    // assign next color from palette in loop
-    supplierColors[name] = colors[Object.keys(supplierColors).length % colors.length];
+  const lower = name.toLowerCase();
+  if (lower.includes("customer")) return "#007BFF"; // all customers same blue
+  if (!supplierColorMap[name]) {
+    // assign next color from palette, in order
+    supplierColorMap[name] = colorPalette[Object.keys(supplierColorMap).length % colorPalette.length];
   }
-  return supplierColors[name];
+  return supplierColorMap[name];
 };
 
 
@@ -208,7 +209,8 @@ export default function BankLedger({ onNavigate }) {
               {filtered.map((r, i) => (
                 <tr key={i}>
                   <td style={{ fontSize: "0.85rem" }}><span className="text-muted fw-bold">{formatDate(r.txn_date)}</span></td>
-                  <td className="fw-bold" style={{ fontSize: "0.85rem", color: r.type === "withdraw" ? "red" : getColor(r.description || r.supplier_name || "") }}>   {r.description || "-"} </td>
+                  <tdclassName="fw-bold"style={{fontSize: "0.85rem",color: r.type === "withdraw" ? "red" : getSupplierColor(r.supplier_name || r.description || "")}}>{r.description || "-"}</td>
+
                   <td className="text-danger fw-bold" style={{ fontSize: "0.85rem" }}>{fmtAmount(r.debit)}</td>
                   <td className="text-success fw-bold" style={{ fontSize: "0.85rem" }}>{fmtAmount(r.credit)}</td>
                   <td className="fw-bold" style={{ fontSize: "0.85rem" }}>{fmtAmount(r.balance)}</td>
@@ -229,4 +231,5 @@ export default function BankLedger({ onNavigate }) {
     </div>
   );
 }
+
 
