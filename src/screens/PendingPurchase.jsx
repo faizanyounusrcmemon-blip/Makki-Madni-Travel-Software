@@ -27,56 +27,56 @@ export default function PendingPurchase({ onNavigate }) {
     try {
       setLoading(true);
 
-      // 1️⃣ Pending / Partial
-      const pendingRes = await fetch(
-        `${import.meta.env.VITE_BACKEND_URL}/api/purchase/pending`
-      );
-      const pendingData = await pendingRes.json();
-      const pendingBase = pendingData.success ? pendingData.rows : [];
+      // Pending + Missing + Reports parallel fetch
+      const [pendingRes, missingRes, reportRes] = await Promise.all([
+        fetch(`${import.meta.env.VITE_BACKEND_URL}/api/purchase/pending`),
+        fetch(`${import.meta.env.VITE_BACKEND_URL}/api/purchase/missing-supplier`),
+        fetch(`${import.meta.env.VITE_BACKEND_URL}/api/reports/all`)
+      ]);
 
-      // 2️⃣ Missing Supplier (Completed)
-      const missingRes = await fetch(
-        `${import.meta.env.VITE_BACKEND_URL}/api/purchase/missing-supplier`
-      );
-      const missingData = await missingRes.json();
+      const [pendingData, missingData, reportData] = await Promise.all([
+        pendingRes.json(),
+        missingRes.json(),
+        reportRes.json()
+      ]);
+
+      const pendingBase = pendingData.success ? pendingData.rows : [];
       const missingBase = missingData.success ? missingData.rows : [];
 
-      // 3️⃣ Sale amounts
-      const reportRes = await fetch(
-        `${import.meta.env.VITE_BACKEND_URL}/api/reports/all`
-      );
-      const reportData = await reportRes.json();
-
+      // Sale map
       const saleMap = {};
       reportData.forEach((r) => {
         saleMap[r.ref_no] = r.total_pkr || 0;
       });
 
-      // 4️⃣ Attach purchase + sale amounts
-      const attachAmounts = async (rows) => {
-        return Promise.all(
+      // Attach purchase + sale amounts per row
+      const attachAmounts = async (rows) =>
+        Promise.all(
           rows.map(async (r) => {
             let purchase_pkr = 0;
-
-            const listRes = await fetch(
-              `${import.meta.env.VITE_BACKEND_URL}/api/purchase/list?ref=${r.ref_no}`
-            );
-            const listData = await listRes.json();
-            if (listData.success && listData.rows.length) {
-              purchase_pkr = listData.rows[0].purchase_pkr || 0;
+            try {
+              const listRes = await fetch(
+                `${import.meta.env.VITE_BACKEND_URL}/api/purchase/list?ref=${r.ref_no}`
+              );
+              const listData = await listRes.json();
+              if (listData.success && listData.rows.length) {
+                purchase_pkr = listData.rows[0].purchase_pkr || 0;
+              }
+            } catch (err) {
+              console.error(err);
             }
-
-            return {
-              ...r,
-              sale_pkr: saleMap[r.ref_no] || 0,
-              purchase_pkr,
-            };
+            return { ...r, sale_pkr: saleMap[r.ref_no] || 0, purchase_pkr };
           })
         );
-      };
 
-      setPendingRows(await attachAmounts(pendingBase));
-      setMissingRows(await attachAmounts(missingBase));
+      // Pending + Missing rows with amounts parallel
+      const [pendingRowsWithAmounts, missingRowsWithAmounts] = await Promise.all([
+        attachAmounts(pendingBase),
+        attachAmounts(missingBase)
+      ]);
+
+      setPendingRows(pendingRowsWithAmounts);
+      setMissingRows(missingRowsWithAmounts);
 
       setLoading(false);
     } catch (err) {
@@ -117,9 +117,7 @@ export default function PendingPurchase({ onNavigate }) {
       <div className="mb-3">
         <button
           className={`btn btn-sm me-2 ${
-            activeTab === "pending"
-              ? "btn-primary"
-              : "btn-outline-primary"
+            activeTab === "pending" ? "btn-primary" : "btn-outline-primary"
           }`}
           onClick={() => setActiveTab("pending")}
         >
@@ -128,9 +126,7 @@ export default function PendingPurchase({ onNavigate }) {
 
         <button
           className={`btn btn-sm ${
-            activeTab === "missing"
-              ? "btn-primary"
-              : "btn-outline-primary"
+            activeTab === "missing" ? "btn-primary" : "btn-outline-primary"
           }`}
           onClick={() => setActiveTab("missing")}
         >
@@ -146,8 +142,14 @@ export default function PendingPurchase({ onNavigate }) {
         onChange={(e) => setSearch(e.target.value)}
       />
 
+      {/* LOADING SPINNER */}
       {loading ? (
-        <div className="text-center text-muted">Loading...</div>
+        <div className="text-center my-5">
+          <div className="spinner-border text-primary" role="status">
+            <span className="visually-hidden">Loading...</span>
+          </div>
+          <div className="mt-2 text-muted">Please wait, loading data...</div>
+        </div>
       ) : (
         <div className="table-responsive shadow-sm rounded">
           <table className="table table-bordered table-hover table-sm align-middle">
@@ -188,9 +190,7 @@ export default function PendingPurchase({ onNavigate }) {
                       <span className="badge bg-danger">Pending</span>
                     )}
                     {r.status === "PARTIAL" && (
-                      <span className="badge bg-warning text-dark">
-                        Partial
-                      </span>
+                      <span className="badge bg-warning text-dark">Partial</span>
                     )}
                     {activeTab === "missing" && (
                       <span className="badge bg-success">Complete</span>
@@ -206,17 +206,14 @@ export default function PendingPurchase({ onNavigate }) {
                   </td>
 
                   <td>
-                    {activeTab === "pending" && (
+                    {activeTab === "pending" ? (
                       <button
                         className="btn btn-sm btn-primary"
-                        onClick={() =>
-                          onNavigate("purchase", r.ref_no)
-                        }
+                        onClick={() => onNavigate("purchase", r.ref_no)}
                       >
                         ➕ Complete
                       </button>
-                    )}
-                    {activeTab === "missing" && (
+                    ) : (
                       <span className="text-muted">—</span>
                     )}
                   </td>
