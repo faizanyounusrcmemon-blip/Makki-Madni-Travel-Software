@@ -1,3 +1,4 @@
+
 import React, { useState, useRef } from "react";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
@@ -115,7 +116,7 @@ export default function Visa({ onNavigate }) {
     setBookingDate(d.booking_date);
     setRows(d.rows || []);
     setPkrRate(d.pkr_rate || 0);
-    alert("Visa load ho gaya — ab edit karo");
+    alert("✅ Visa Edit Mode load successfully!");
   };
 
   const saveData = async () => {
@@ -138,7 +139,7 @@ export default function Visa({ onNavigate }) {
     const data = await res.json();
     if (data.success) {
       setRefNo(data.ref_no);
-      alert("Visa saved successfully");
+      alert("✅ Visa Saved Successfully! Ref#: " + data.ref_no);
       onNavigate("dashboard");
     } else {
       alert("ERROR: " + data.error);

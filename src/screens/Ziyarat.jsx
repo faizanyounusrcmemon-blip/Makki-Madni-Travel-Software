@@ -114,7 +114,7 @@ export default function Ziyarat({ onNavigate }) {
     setBookingDate(d.booking_date);
     setRows(d.rows || []);
     setPkrRate(d.pkr_rate || 0);
-    alert("Ziyarat load ho gayi — ab edit karo");
+    alert("✅ Ziyarat Edit Mode load successfully!");
   };
 
   const saveData = async () => {
@@ -127,7 +127,7 @@ export default function Ziyarat({ onNavigate }) {
     const data = await res.json();
     if (data.success) {
       setRefNo(data.ref_no);
-      alert("Ziyarat saved successfully");
+      alert("✅ Ziyarat Saved Successfully! Ref#: " + data.ref_no);
       onNavigate("dashboard");
     } else alert(data.error || "Save failed");
   };

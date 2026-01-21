@@ -106,7 +106,7 @@ export default function Transport({ onNavigate }) {
     setBookingDate(d.booking_date);
     setRows(d.rows || []);
     setPkrRate(d.pkr_rate || 0);
-    alert("Transport load ho gaya — ab edit karo");
+    alert("✅ Transport Edit Mode load successfully!");
   };
 
   const saveData = async () => {
@@ -119,7 +119,7 @@ export default function Transport({ onNavigate }) {
     const data = await res.json();
     if (data.success) {
       setRefNo(data.ref_no);
-      alert("Transport saved successfully");
+      alert("✅ Transport Saved Successfully! Ref#: " + data.ref_no);
       onNavigate("dashboard");
     } else alert(data.error || "Save failed");
   };

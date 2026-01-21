@@ -142,14 +142,14 @@ export default function Hotels({ onNavigate }) {
     setBookingDate(d.booking_date);
     setRows(d.hotels || []);
     setSarRate(d.sar_rate || 0);
-    alert("Hotel load ho gaya — ab edit karo");
+    alert("✅ Hotel Edit Mode load successfully!");
   };
 
   const saveData = async () => {
     const payload = { ref_no: refNo || null, customer_name: customerName, booking_date: bookingDate, hotels: rows, hotels_total: hotelsTotal, sar_rate: sarRate, total_pkr: hotelPKR };
     const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/hotels/save`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
     const data = await res.json();
-    if (data.success) { setRefNo(data.ref_no); alert("Hotels Saved Successfully!"); onNavigate("dashboard"); }
+    if (data.success) { setRefNo(data.ref_no); alert("✅ Hotels Saved Successfully! Ref#: " + data.ref_no); onNavigate("dashboard"); }
     else alert("ERROR: " + data.error);
   };
 

@@ -154,7 +154,7 @@ export default function Packages({ onNavigate }) {
     setTransportRate(d.transport_sar_rate);
     setZiyaratRate(d.ziyarat_sar_rate || 0);
     setPersonQty(d.per_person_qty || 1);
-    alert("Package load ho gaya — ab edit karo");
+    alert("✅ Package Edit Mode load successfully!");
   };
 
   const handleSavePackage = async () => {
@@ -205,7 +205,7 @@ export default function Packages({ onNavigate }) {
     const data = await res.json();
     if (data.success) {
       setRefNo(data.ref_no);
-      alert("Saved Successfully! Ref#: " + data.ref_no);
+      alert("✅ Saved Successfully! Ref#: " + data.ref_no);
       onNavigate("bookings");
     } else alert("Error: " + data.error);
   };

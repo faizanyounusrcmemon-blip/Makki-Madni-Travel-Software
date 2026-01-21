@@ -5,7 +5,6 @@ import React, { useEffect, useState } from "react";
 =============================== */
 const formatInput = (v) => {
   if (v === "" || v === null || v === undefined) return "";
-  // allow digits and one dot
   let clean = v.replace(/[^0-9.]/g, "");
   const parts = clean.split(".");
   if (parts.length > 2) clean = parts[0] + "." + parts[1];
@@ -180,15 +179,10 @@ export default function Purchase({ onNavigate }) {
             >
               ⬅ Back
             </button>
-            <button
-              className="btn btn-success btn-sm"
-              onClick={savePurchase}
-            >
-              💾 {isEdit ? "Update Purchase" : "Save Purchase"}
-            </button>
           </div>
         </div>
       </div>
+
 
       {isPartial && (
         <div className="alert alert-warning fw-bold">
@@ -212,19 +206,9 @@ export default function Purchase({ onNavigate }) {
                   className="list-group-item d-flex justify-content-between align-items-center"
                 >
                   <div className="fw-bold">
-                    <span className={`badge bg-secondary me-2`}>
-                      {p.ref_no}
-                    </span>
+                    <span className={`badge bg-secondary me-2`}>{p.ref_no}</span>
                     <span className="text-primary ms-1">{p.customer_name}</span>
-                    <span
-                      className={`badge ms-2 ${
-                        p.status === "PENDING"
-                          ? "bg-danger"
-                          : "bg-warning text-dark"
-                      }`}
-                    >
-                      {p.status}
-                    </span>
+                    <span className={`badge ms-2 ${p.status === "PENDING" ? "bg-danger" : "bg-warning text-dark"}`}>{p.status}</span>
                   </div>
                   <button
                     className="btn btn-sm btn-outline-primary"
@@ -261,6 +245,22 @@ export default function Purchase({ onNavigate }) {
         </div>
       </div>
 
+      {/* SAVE / UPDATE HEADER + BUTTON */}
+      <div className="card shadow-sm mb-3">
+        <div className="card-body d-flex justify-content-between align-items-center">
+          <h5 className="fw-bold mb-0">
+            💾 {isEdit ? "Update Purchase" : "Save Purchase"}
+            {isEdit && <span className="badge bg-warning text-dark ms-2">EDIT MODE</span>}
+          </h5>
+          <button
+            className="btn btn-success btn-sm"
+            onClick={savePurchase}
+          >
+            {isEdit ? "💾 Update Purchase" : "💾 Save Purchase"}
+          </button>
+        </div>
+      </div>
+
       {/* TABLE */}
       <div className="card shadow">
         <div className="table-responsive">
@@ -278,67 +278,45 @@ export default function Purchase({ onNavigate }) {
                 <th>Supplier</th>
               </tr>
             </thead>
-
             <tbody>
               {rows.map((r, i) => (
                 <tr key={i}>
                   <td
                     className="fw-bold"
-                    style={{
-                      fontSize: "13px",
-                      color: itemCategoryColor(r.item_label || r.item),
-                    }}
+                    style={{ fontSize: "13px", color: itemCategoryColor(r.item_label || r.item) }}
                   >
                     {r.item_label || r.item}
                   </td>
                   <td>{r.sale_sar}</td>
                   <td>{r.sale_rate}</td>
                   <td>{r.sale_pkr.toLocaleString()}</td>
-
                   <td>
                     <input
                       className="form-control form-control-sm"
                       value={r.purchase_sar}
-                      onChange={(e) =>
-                        updateRow(i, "purchase_sar", e.target.value)
-                      }
+                      onChange={(e) => updateRow(i, "purchase_sar", e.target.value)}
                     />
                   </td>
-
                   <td>
                     <input
                       className="form-control form-control-sm"
                       value={r.purchase_rate}
-                      onChange={(e) =>
-                        updateRow(i, "purchase_rate", e.target.value)
-                      }
+                      onChange={(e) => updateRow(i, "purchase_rate", e.target.value)}
                     />
                   </td>
-
                   <td>{r.purchase_pkr.toLocaleString()}</td>
-
-                  <td
-                    className={`fw-bold ${
-                      r.profit >= 0 ? "text-success" : "text-danger"
-                    }`}
-                  >
+                  <td className={`fw-bold ${r.profit >= 0 ? "text-success" : "text-danger"}`}>
                     {r.profit.toLocaleString()}
                   </td>
-
                   <td>
                     <select
                       className="form-select form-select-sm"
                       value={r.supplier_code}
-                      onChange={(e) =>
-                        updateRow(i, "supplier_code", e.target.value)
-                      }
+                      onChange={(e) => updateRow(i, "supplier_code", e.target.value)}
                     >
                       <option value="">Select Supplier</option>
                       {suppliers.map((s) => (
-                        <option
-                          key={s.supplier_code}
-                          value={s.supplier_code}
-                        >
+                        <option key={s.supplier_code} value={s.supplier_code}>
                           {s.supplier_name}
                         </option>
                       ))}
@@ -347,7 +325,6 @@ export default function Purchase({ onNavigate }) {
                 </tr>
               ))}
             </tbody>
-
           </table>
         </div>
       </div>

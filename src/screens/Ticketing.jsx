@@ -105,7 +105,7 @@ export default function Ticketing({ onNavigate }) {
     setInfantQty(d.infant_qty);
     setInfantRate(d.infant_rate);
     setTicketRate(d.pkr_rate);
-    alert("Ticketing load ho gaya — ab edit karo");
+    alert("✅ Ticketing Edit Mode load successfully!");
   };
 
   // ===== SAVE DATA =====
@@ -134,7 +134,7 @@ export default function Ticketing({ onNavigate }) {
       const data = await res.json();
       if (data.success) {
         setRefNo(data.ref_no);
-        alert("Ticketing Saved Successfully!");
+        alert("✅ Ticketing Saved Successfully! Ref#: " + data.ref_no);
         onNavigate("dashboard");
       } else alert("Error: " + data.error);
     } catch (err) {
