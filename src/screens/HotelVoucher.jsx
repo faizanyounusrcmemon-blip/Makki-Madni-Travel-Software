@@ -123,7 +123,7 @@ export default function HotelVoucher({ onNavigate }) {
 
           {/* ADDRESS */}
           <div className="text-center small mb-3" style={{ color: "#444" }}>
-            Shop #4 Daimon City Building, Near Zeenat-ul-Islam Masjid<br />
+            Shop #4 Diamond City Building, Near Zeenat-ul-Islam Masjid<br />
             Garden West Karachi<br />
             ✉️ makkimadnitravel@gmail.com | ☎️ 0335-7476744
           </div>
@@ -216,3 +216,4 @@ export default function HotelVoucher({ onNavigate }) {
     </div>
   );
 }
+
