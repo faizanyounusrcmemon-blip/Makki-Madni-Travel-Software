@@ -145,7 +145,7 @@ export default function TransportVoucher({ onNavigate }) {
           >
             <h1 style={{ fontWeight: 800 }}>✈ MAKKI MADNI TRAVEL</h1>
             <div style={{ fontSize: 14 }}>
-              Shop #4 Daimon City Building, Near Zeenat-ul-Islam Masjid<br />
+              Shop #4 Diamond City Building, Near Zeenat-ul-Islam Masjid<br />
               Garden West Karachi<br />
               ✉ makkimadnitravel@gmail.com | ☎ 0335-7476744
             </div>
@@ -288,3 +288,4 @@ export default function TransportVoucher({ onNavigate }) {
     </div>
   );
 }
+
