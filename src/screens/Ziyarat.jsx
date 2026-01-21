@@ -158,7 +158,7 @@ export default function Ziyarat({ onNavigate }) {
       <div ref={quoteRef} style={styles.card}>
         <h1 style={styles.mainHeader}>✈️ MAKKI MADNI TRAVEL</h1>
         <p style={styles.subHeader}>
-          Shop #4 Daimon City Building, Near Zeenat-ul-Islam Masjid<br />
+          Shop #4 Diamond City Building, Near Zeenat-ul-Islam Masjid<br />
           Garden West, Karachi<br />
           ✉️ makkimadnitravel@gmail.com | ☎️ 0335-7476744
         </p>
@@ -226,3 +226,4 @@ export default function Ziyarat({ onNavigate }) {
     </div>
   );
 }
+
