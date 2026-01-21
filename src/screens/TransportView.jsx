@@ -91,7 +91,7 @@ export default function TransportView({ id, onNavigate }) {
           <h2 className="fw-bold mb-1">✈️ MAKKI MADNI TRAVEL</h2>
           <div style={{ fontSize: "13px", lineHeight: "1.4" }}>
             <div>
-              Shop #4 Daimon City Building, Near Zeenat-ul-Islam Masjid
+              Shop #4 Diamond City Building, Near Zeenat-ul-Islam Masjid
             </div>
             <div>Garden West, Karachi</div>
             <div>
@@ -172,3 +172,4 @@ export default function TransportView({ id, onNavigate }) {
     </div>
   );
 }
+
