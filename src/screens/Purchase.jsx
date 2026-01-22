@@ -256,7 +256,7 @@ export default function Purchase({ onNavigate }) {
             className="btn btn-success btn-sm"
             onClick={savePurchase}
           >
-            {isEdit ? "💾 Update Purchase" : "💾 Save Purchase"}
+            {isEdit ? "✏ Update Purchase" : "💾 Save Purchase"}
           </button>
         </div>
       </div>
@@ -332,3 +332,4 @@ export default function Purchase({ onNavigate }) {
     </div>
   );
 }
+
