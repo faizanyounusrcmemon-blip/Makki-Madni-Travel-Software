@@ -246,36 +246,43 @@ export default function Purchase({ onNavigate }) {
       </div>
 
       {/* SAVE / UPDATE HEADER + BUTTON */}
-      <div className="card-body d-flex justify-content-between align-items-center">
-        <h5
-          className={`fw-bold mb-4 ${
-           isEdit ? "text-warning" : "text-success"
-          }`}
-        >
-          💾 {isEdit ? "Update Purchase" : "Save Purchase"}
-          {isEdit && <span className="badge bg-warning text-dark ms-2">EDIT MODE</span>}
-        </h5>
+      <div className="card shadow-sm mb-3">
+        <div className="card-body d-flex justify-content-between align-items-center">
 
-        <div className="d-flex gap-2">
-          <button
-            className={`btn btn-sm ${isEdit ? "btn-warning text-dark" : "btn-success"}`}
-            onClick={savePurchase}
-          >
-            {isEdit ? "✏ Update Purchase" : "💾 Save Purchase"}
-          </button>
+          <h5 className="fw-bold mb-0">
+            💾 {isEdit ? "Update Purchase" : "Save Purchase"}
+            {isEdit && (
+              <span className="badge bg-warning text-dark ms-2">
+                EDIT MODE
+              </span>
+            )}
+          </h5>
 
-          {isEdit && (
+          {/* RIGHT SIDE BUTTONS */}
+          <div className="d-flex gap-2">
             <button
-              className="btn btn-secondary btn-sm"
-              onClick={() => {
-                setRows([]);
-                setRefNo("");
-                setIsEdit(false);
-              }}
+              className={`btn btn-sm ${
+                isEdit ? "btn-warning text-dark" : "btn-success"
+              }`}
+              onClick={savePurchase}
             >
-              ❌ Cancel
+              {isEdit ? "✏ Update Purchase" : "💾 Save Purchase"}
             </button>
-          )}
+
+            {isEdit && (
+              <button
+                className="btn btn-secondary btn-sm"
+                onClick={() => {
+                  setRows([]);
+                  setRefNo("");
+                  setIsEdit(false);
+                }}
+              >
+                ❌ Cancel
+              </button>
+            )}
+          </div>
+
         </div>
       </div>
 
