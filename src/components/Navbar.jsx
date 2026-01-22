@@ -109,7 +109,7 @@ export default function Navbar({ onNavigate }) {
             <div className="menu-box">
               {can("create_user") && <a onClick={() => go("createUser")}>👤 Create User</a>}
               {can("manage_users") && <a onClick={() => go("manageUsers")}>🛠 Manage Users</a>}
-              {can("supplier") && <a onClick={() => go("supplier")}>🏷 Supplier</a>}
+              {can("supplier") && <a onClick={() => go("supplier")}>🏷 Supplier Profile</a>}
               {can("deleted_reports") && <a onClick={() => go("deletedReports")}>🗑 Deleted Reports</a>}
               {can("restore") && <a onClick={() => go("restore")}>♻ Restore</a>}
             </div>
