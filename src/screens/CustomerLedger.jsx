@@ -212,8 +212,12 @@ export default function CustomerLedger({ onNavigate }) {
               const raw = parseAmt(e.target.value);
               if (!isNaN(raw)) { setAmountRaw(raw); setAmountDisp(fmtAmt(raw)); }
             }} />
-            {amountRaw > 0 && <small className="text-success fw-bold">{numberToWords(amountRaw)}</small>}
-          </div>
+          {amountRaw > 0 && (
+            <span style={{ fontSize: "0.8rem", fontWeight: "bold", color: "green" }}>
+              {numberToWords(amountRaw)}
+            </span>
+          )}
+        </div>
 
           <div className="col-md-3">
             <select className="form-control" value={type} onChange={(e) => setType(e.target.value)}>
@@ -274,5 +278,6 @@ export default function CustomerLedger({ onNavigate }) {
     </div>
   );
 }
+
 
 
