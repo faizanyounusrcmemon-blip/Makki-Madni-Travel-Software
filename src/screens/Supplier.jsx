@@ -147,7 +147,7 @@ export default function Supplier({ onNavigate }) {
               className={`btn ${editId ? "btn-warning" : "btn-success"}`}
               onClick={save}
             >
-              {editId ? "Update Supplier" : "Save Supplier"}
+              {editId ? "✏ Update Supplier" : "💾 Save Supplier"}
             </button>
           </div>
         </div>
@@ -216,3 +216,4 @@ export default function Supplier({ onNavigate }) {
     </div>
   );
 }
+
