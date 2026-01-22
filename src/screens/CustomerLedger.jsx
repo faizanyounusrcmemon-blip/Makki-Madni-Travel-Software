@@ -30,6 +30,11 @@ const numberToWords = (num) => {
       return a[Math.floor(n / 100)] + " Hundred" + (n % 100 ? " " + w(n % 100) : "");
     if (n < 1000000)
       return w(Math.floor(n / 1000)) + " Thousand" + (n % 1000 ? " " + w(n % 1000) : "");
+    if (n < 10000000)
+      return w(Math.floor(n / 100000)) + " Lac" + (n % 100000 ? " " + w(n % 100000) : "");
+    if (n < 100000000)
+      return w(Math.floor(n / 1000000)) + " Million" + (n % 1000000 ? " " + w(n % 1000000) : "");
+
     return "";
   };
 
@@ -269,4 +274,5 @@ export default function CustomerLedger({ onNavigate }) {
     </div>
   );
 }
+
 
