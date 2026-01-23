@@ -15,6 +15,8 @@ export default function Packages({ onNavigate }) {
   const [bookingDate, setBookingDate] = useState("");
   const [contactNo, setContactNo] = useState("");
   const [searchRef, setSearchRef] = useState("");
+  const [isEdit, setIsEdit] = useState(false);
+
 
   const [adultCount, setAdultCount] = useState(0);
   const [adultRate, setAdultRate] = useState(0);
@@ -22,6 +24,7 @@ export default function Packages({ onNavigate }) {
   const [childRate, setChildRate] = useState(0);
   const [infantCount, setInfantCount] = useState(0);
   const [infantRate, setInfantRate] = useState(0);
+
 
   const flightTotal = adultCount * adultRate + childCount * childRate + infantCount * infantRate;
 
@@ -154,6 +157,8 @@ export default function Packages({ onNavigate }) {
     setTransportRate(d.transport_sar_rate);
     setZiyaratRate(d.ziyarat_sar_rate || 0);
     setPersonQty(d.per_person_qty || 1);
+    setIsEdit(true);
+
     alert("✅ Package Edit Mode load successfully!");
   };
 
@@ -226,7 +231,16 @@ export default function Packages({ onNavigate }) {
       <div className="d-flex justify-content-between mb-3">
         <button className="btn btn-secondary btn-sm" onClick={() => onNavigate("dashboard")}>⬅ Back</button>
         <div className="d-flex gap-2">
-          <button className="btn btn-primary btn-sm" onClick={handleSavePackage}>💾 Save</button>
+          <button
+            className={`btn btn-sm ${
+              isEdit ? "btn-warning text-dark" : "btn-primary"
+            }`}
+            style={styles.button}
+            onClick={handleSavePackage}
+          >
+            {isEdit ? "✏ Update Save" : "💾 Save"}
+          </button>
+
           <input className="form-control form-control-sm" style={{ width: "150px" }} placeholder="Search Ref No" value={searchRef} onChange={(e) => setSearchRef(e.target.value)} />
           <button className="btn btn-warning btn-sm" onClick={loadPackage}>🔄 Load / Edit</button>
           <button className="btn btn-success btn-sm" onClick={handleExportPDF}>📄 Export PDF</button>

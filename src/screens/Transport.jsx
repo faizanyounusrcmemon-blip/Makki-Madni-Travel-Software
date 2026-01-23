@@ -81,6 +81,8 @@ export default function Transport({ onNavigate }) {
   const [bookingDate, setBookingDate] = useState("");
   const [rows, setRows] = useState([]);
   const [pkrRate, setPkrRate] = useState(0);
+  const [isEdit, setIsEdit] = useState(false);
+
 
   const quoteRef = useRef(null);
 
@@ -106,6 +108,8 @@ export default function Transport({ onNavigate }) {
     setBookingDate(d.booking_date);
     setRows(d.rows || []);
     setPkrRate(d.pkr_rate || 0);
+    setIsEdit(true);
+
     alert("✅ Transport Edit Mode load successfully!");
   };
 
@@ -139,7 +143,16 @@ export default function Transport({ onNavigate }) {
       <div className="d-flex justify-content-between mb-4">
         <button className="btn btn-outline-success fw-bold" style={styles.button} onClick={() => onNavigate("dashboard")}>🚌 Back</button>
         <div className="d-flex gap-2">
-          <button className="btn btn-warning fw-bold" style={styles.button} onClick={saveData}>💾 Save</button>
+          <button
+            className={`btn btn-sm ${
+              isEdit ? "btn-warning text-dark" : "btn-primary"
+            }`}
+            style={styles.button}
+            onClick={saveData}
+          >
+            {isEdit ? "✏ Update Save" : "💾 Save"}
+          </button>
+
           <input className="form-control" style={{ width: 150, borderRadius: 50 }} placeholder="Search Ref" value={searchRef} onChange={(e) => setSearchRef(e.target.value)} />
           <button className="btn btn-info fw-bold" style={styles.button} onClick={loadTransport}>🔄 Load / Edit</button>
           <button className="btn btn-success fw-bold" style={styles.button} onClick={exportPDF}>📄 Export PDF</button>

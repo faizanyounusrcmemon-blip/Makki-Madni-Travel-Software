@@ -85,6 +85,8 @@ export default function Visa({ onNavigate }) {
   const [rows, setRows] = useState([]);
   const [pkrRate, setPkrRate] = useState(0);
   const pdfRef = useRef(null);
+  const [isEdit, setIsEdit] = useState(false);
+
 
   const addRow = () =>
     setRows([...rows, { type: "", persons: 0, rate: 0, total: 0 }]);
@@ -116,6 +118,7 @@ export default function Visa({ onNavigate }) {
     setBookingDate(d.booking_date);
     setRows(d.rows || []);
     setPkrRate(d.pkr_rate || 0);
+    setIsEdit(true);
     alert("✅ Visa Edit Mode load successfully!");
   };
 
@@ -168,7 +171,16 @@ export default function Visa({ onNavigate }) {
           ← Back
         </button>
         <div className="d-flex gap-2">
-          <button className="btn btn-primary btn-sm" style={styles.button} onClick={saveData}>💾 Save</button>
+          <button
+            className={`btn btn-sm ${
+              isEdit ? "btn-warning text-dark" : "btn-primary"
+            }`}
+            style={styles.button}
+            onClick={saveData}
+          >
+            {isEdit ? "✏ Update Save" : "💾 Save"}
+          </button>
+
           <input
             className="form-control form-control-sm"
             style={{ width: 140, borderRadius: 50 }}

@@ -41,7 +41,15 @@ export default function Restore({ onNavigate }) {
     });
   };
 
-  // BYTES → KB / MB
+  const onlyDate = (d) => {
+    if (!d) return "-";
+    return new Date(d).toLocaleDateString("en-GB", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    });
+  };
+
   const fmtSize = (bytes) => {
     if (!bytes) return "-";
     if (bytes < 1024) return bytes + " B";
@@ -67,6 +75,22 @@ export default function Restore({ onNavigate }) {
   useEffect(() => {
     loadBackups();
   }, []);
+
+  /* ================= SUMMARY ================= */
+
+  const backupCount = files.length;
+
+  const sortedDates = files
+    .map((f) => new Date(f.created_at))
+    .sort((a, b) => a - b);
+
+  const fromDate =
+    sortedDates.length > 0 ? onlyDate(sortedDates[0]) : "-";
+
+  const toDate =
+    sortedDates.length > 0
+      ? onlyDate(sortedDates[sortedDates.length - 1])
+      : "-";
 
   /* ================= RESTORE ================= */
 
@@ -180,9 +204,17 @@ export default function Restore({ onNavigate }) {
     <div className="restore-wrapper">
       <div className="restore-card">
 
-        <div className="restore-header">
-          <h2>🛡 VIP Backup & Restore</h2>
-          <p>Secure • Reliable • Professional</p>
+        <div className="restore-header d-flex justify-content-between align-items-center">
+          <div>
+            <h2>🛡 VIP Backup & Restore</h2>
+            <p>Secure • Reliable • Professional</p>
+          </div>
+
+          <div className="vip-summary text-end">
+            <div>📦 <strong>Total:</strong> {backupCount}</div>
+            <div>📅 <strong>From:</strong> {fromDate}</div>
+            <div>📅 <strong>To:</strong> {toDate}</div>
+          </div>
         </div>
 
         <button
@@ -297,6 +329,3 @@ export default function Restore({ onNavigate }) {
     </div>
   );
 }
-
-
-

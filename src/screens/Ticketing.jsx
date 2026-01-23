@@ -59,6 +59,8 @@ export default function Ticketing({ onNavigate }) {
   const [customerName, setCustomerName] = useState("");
   const [refNo, setRefNo] = useState("");
   const [bookingDate, setBookingDate] = useState("");
+  const [isEdit, setIsEdit] = useState(false);
+
 
   // ===== FLIGHTS =====
   const [flights, setFlights] = useState([
@@ -105,6 +107,8 @@ export default function Ticketing({ onNavigate }) {
     setInfantQty(d.infant_qty);
     setInfantRate(d.infant_rate);
     setTicketRate(d.pkr_rate);
+    setIsEdit(true);
+
     alert("✅ Ticketing Edit Mode load successfully!");
   };
 
@@ -157,7 +161,16 @@ export default function Ticketing({ onNavigate }) {
       <div className="d-flex justify-content-between mb-3">
         <button className="btn btn-dark btn-sm" onClick={() => onNavigate("dashboard")}>← Back</button>
         <div className="d-flex gap-2">
-          <button className="btn btn-primary btn-sm" onClick={saveData}>💾 Save</button>
+          <button
+            className={`btn btn-sm ${
+              isEdit ? "btn-warning text-dark" : "btn-primary"
+            }`}
+            style={styles.button}
+            onClick={saveData}
+          >
+            {isEdit ? "✏ Update Save" : "💾 Save"}
+          </button>
+
           <input className="form-control form-control-sm" style={{ width: 140 }} placeholder="Search Ref" value={searchRef} onChange={(e) => setSearchRef(e.target.value)} />
           <button className="btn btn-warning btn-sm" onClick={loadTicketing}>🔄 Load / Edit</button>
           <button className="btn btn-success btn-sm" onClick={exportPDF}>📄 Export PDF</button>

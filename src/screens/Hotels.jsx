@@ -91,6 +91,8 @@ export default function Hotels({ onNavigate }) {
   const [rows, setRows] = useState([]);
   const [sarRate, setSarRate] = useState(0);
   const pdfRef = useRef(null);
+  const [isEdit, setIsEdit] = useState(false);
+
 
   const showDate = (val) => {
     if (!val) return "";
@@ -142,6 +144,8 @@ export default function Hotels({ onNavigate }) {
     setBookingDate(d.booking_date);
     setRows(d.hotels || []);
     setSarRate(d.sar_rate || 0);
+    setIsEdit(true);
+
     alert("✅ Hotel Edit Mode load successfully!");
   };
 
@@ -167,7 +171,16 @@ export default function Hotels({ onNavigate }) {
       <div className="d-flex justify-content-between mb-3">
         <button className="btn btn-dark btn-sm" onClick={() => onNavigate("dashboard")}>← Back</button>
         <div className="d-flex gap-2">
-          <button className="btn btn-primary btn-sm" onClick={saveData}>💾 Save</button>
+          <button
+            className={`btn btn-sm ${
+              isEdit ? "btn-warning text-dark" : "btn-primary"
+            }`}
+            style={styles.button}
+            onClick={saveData}
+          >
+            {isEdit ? "✏ Update Save" : "💾 Save"}
+          </button>
+
           <input className="form-control form-control-sm" style={{ width: "140px" }} placeholder="Search Ref" value={searchRef} onChange={(e) => setSearchRef(e.target.value)} />
           <button className="btn btn-warning btn-sm" onClick={loadHotel}>🔄 Load / Edit</button>
           <button className="btn btn-success btn-sm" onClick={exportPDF}>📄 Export PDF</button>
