@@ -133,19 +133,18 @@ export default function SupplierPurchasedetailreport({ onNavigate }) {
       </div>
 
       {/* FILTERS */}
-      <div className="card shadow-sm mb-2">
-        <div className="card-body py-2">
+      <div className="card shadow-sm mb-3 border-info border-2">
+        <div className="card-body py-3">
           <div className="row g-2 align-items-end">
             <div className="col-md-2">
-              <select className="form-select form-select-sm" value={supplier} onChange={(e) => setSupplier(e.target.value)}>
+              <select className="form-select form-select-sm border-primary" value={supplier} onChange={(e) => setSupplier(e.target.value)}>
                 {suppliers.map((s, i) => (
                   <option key={i} value={s}>{s}</option>
                 ))}
               </select>
             </div>
-
             <div className="col-md-2">
-              <select className="form-select form-select-sm" value={itemType} onChange={(e) => setItemType(e.target.value)}>
+              <select className="form-select form-select-sm border-primary" value={itemType} onChange={(e) => setItemType(e.target.value)}>
                 <option value="ALL">All Items</option>
                 <option value="Ticket">Ticket</option>
                 <option value="Hotel">Hotel</option>
@@ -154,33 +153,28 @@ export default function SupplierPurchasedetailreport({ onNavigate }) {
                 <option value="Ziyarat">Ziyarat</option>
               </select>
             </div>
-
             <div className="col-md-2">
-              <input type="date" className="form-control form-control-sm" value={from} onChange={(e) => setFrom(e.target.value)} />
+              <input type="date" className="form-control form-control-sm border-info" value={from} onChange={(e) => setFrom(e.target.value)} />
             </div>
-
             <div className="col-md-2">
-              <input type="date" className="form-control form-control-sm" value={to} onChange={(e) => setTo(e.target.value)} />
+              <input type="date" className="form-control form-control-sm border-info" value={to} onChange={(e) => setTo(e.target.value)} />
             </div>
-
             <div className="col-md-2">
-              <input className="form-control form-control-sm" placeholder="Search" value={search} onChange={(e) => setSearch(e.target.value)} />
+              <input className="form-control form-control-sm border-warning" placeholder="Search" value={search} onChange={(e) => setSearch(e.target.value)} />
             </div>
-
             <div className="col-md-2 d-grid">
-              <button className="btn btn-primary btn-sm" onClick={loadReport}>
-                {loading ? "Loading..." : "Load"}
+              <button className="btn btn-primary btn-sm rounded-pill" onClick={loadReport} disabled={loading}>
+                {loading ? <span className="spinner-border spinner-border-sm"></span> : "Load"}
               </button>
             </div>
           </div>
 
           {/* CHECKBOXES */}
-          <div className="d-flex gap-4 mt-2">
+          <div className="d-flex gap-4 mt-3">
             <div className="form-check">
               <input className="form-check-input" type="checkbox" checked={showSale} onChange={(e) => setShowSale(e.target.checked)} />
               <label className="form-check-label">Show Sale</label>
             </div>
-
             <div className="form-check">
               <input className="form-check-input" type="checkbox" checked={showProfit} onChange={(e) => setShowProfit(e.target.checked)} />
               <label className="form-check-label">Show Profit</label>
@@ -190,12 +184,17 @@ export default function SupplierPurchasedetailreport({ onNavigate }) {
       </div>
 
       {/* TABLE + TOTALS */}
-      <div ref={boxRef} className="card shadow-sm">
+      <div ref={boxRef} className="card shadow-sm rounded" style={{ overflowX: "auto", maxHeight: "70vh" }}>
         <div className="card-body py-2">
-          <div className="fw-bold mb-2 text-end">
-            {showSale && <>Sale PKR: {fmt(totals.sale)} | </>}
-            Purchase PKR: {fmt(totals.purchase)}
-            {showProfit && <> | Profit: {fmt(totals.profit)}</>}
+          {/* TOTALS */}
+          <div className="mb-2 text-end" style={{ fontWeight: "bold" }}>
+            {showSale && <span className="text-primary me-2">Sale PKR: {fmt(totals.sale)}</span>}
+            <span className="text-danger me-2">Purchase PKR: {fmt(totals.purchase)}</span>
+            {showProfit && (
+              <span className={totals.profit >= 0 ? "text-success" : "text-danger"}>
+                Profit: {fmt(totals.profit)}
+              </span>
+            )}
           </div>
 
           <table className="table table-sm table-bordered table-striped text-center align-middle">
