@@ -31,29 +31,21 @@ export default function SupplierPurchasedetailreport({ onNavigate }) {
 
   /* ================= LOAD SUPPLIERS ================= */
   const loadSuppliers = async () => {
-    try {
-      const res = await fetch(
-        `${import.meta.env.VITE_BACKEND_URL}/api/reports/supplier-purchase`
-      );
-      const data = await res.json();
-      if (data.success) setSuppliers(["ALL", ...(data.suppliers || [])]);
-    } catch (err) {
-      console.error("Failed to load suppliers:", err);
-    }
+    const res = await fetch(
+      `${import.meta.env.VITE_BACKEND_URL}/api/reports/supplier-purchase`
+    );
+    const data = await res.json();
+    if (data.success) setSuppliers(["ALL", ...(data.suppliers || [])]);
   };
 
   /* ================= LOAD REPORT ================= */
   const loadReport = async () => {
     setLoading(true);
-    try {
-      const res = await fetch(
-        `${import.meta.env.VITE_BACKEND_URL}/api/reports/supplier-purchase`
-      );
-      const data = await res.json();
-      if (data.success) setRows(data.rows || []);
-    } catch (err) {
-      console.error("Failed to load report:", err);
-    }
+    const res = await fetch(
+      `${import.meta.env.VITE_BACKEND_URL}/api/reports/supplier-purchase`
+    );
+    const data = await res.json();
+    if (data.success) setRows(data.rows || []);
     setLoading(false);
   };
 
@@ -63,8 +55,7 @@ export default function SupplierPurchasedetailreport({ onNavigate }) {
 
   /* ================= FILTER ================= */
   const filtered = rows.filter((r) => {
-    if (supplier !== "ALL" && r.supplier_name?.trim() !== supplier.trim())
-      return false;
+    if (supplier !== "ALL" && r.supplier_name?.trim() !== supplier.trim()) return false;
 
     if (
       itemType !== "ALL" &&
@@ -100,7 +91,6 @@ export default function SupplierPurchasedetailreport({ onNavigate }) {
 
   /* ================= PDF (MULTI PAGE) ================= */
   const exportPDF = async () => {
-    if (!boxRef.current) return;
     const canvas = await html2canvas(boxRef.current, { scale: 2 });
     const imgData = canvas.toDataURL("image/png");
 
@@ -126,9 +116,9 @@ export default function SupplierPurchasedetailreport({ onNavigate }) {
   };
 
   return (
-    <div className="container-fluid p-3" style={{ fontSize: 13, fontFamily: "Arial, sans-serif" }}>
+    <div className="container-fluid p-2 bg-light" style={{ fontSize: 12 }}>
       {/* HEADER */}
-      <div className="card shadow-sm mb-3">
+      <div className="card shadow-sm mb-2">
         <div className="card-body py-2 d-flex justify-content-between align-items-center bg-primary text-white rounded">
           <b>📦 Supplier Purchase Detail Report</b>
           <div className="d-flex gap-2">
@@ -136,36 +126,26 @@ export default function SupplierPurchasedetailreport({ onNavigate }) {
               ⬅ Back
             </button>
             <button className="btn btn-success btn-sm" onClick={exportPDF}>
-              Export PDF
+              PDF
             </button>
           </div>
         </div>
       </div>
 
       {/* FILTERS */}
-      <div className="card shadow-sm mb-3">
-        <div className="card-body py-3">
+      <div className="card shadow-sm mb-2">
+        <div className="card-body py-2">
           <div className="row g-2 align-items-end">
             <div className="col-md-2">
-              <select
-                className="form-select form-select-sm"
-                value={supplier}
-                onChange={(e) => setSupplier(e.target.value)}
-              >
+              <select className="form-select form-select-sm" value={supplier} onChange={(e) => setSupplier(e.target.value)}>
                 {suppliers.map((s, i) => (
-                  <option key={i} value={s}>
-                    {s}
-                  </option>
+                  <option key={i} value={s}>{s}</option>
                 ))}
               </select>
             </div>
 
             <div className="col-md-2">
-              <select
-                className="form-select form-select-sm"
-                value={itemType}
-                onChange={(e) => setItemType(e.target.value)}
-              >
+              <select className="form-select form-select-sm" value={itemType} onChange={(e) => setItemType(e.target.value)}>
                 <option value="ALL">All Items</option>
                 <option value="Ticket">Ticket</option>
                 <option value="Hotel">Hotel</option>
@@ -176,67 +156,33 @@ export default function SupplierPurchasedetailreport({ onNavigate }) {
             </div>
 
             <div className="col-md-2">
-              <input
-                type="date"
-                className="form-control form-control-sm"
-                value={from}
-                onChange={(e) => setFrom(e.target.value)}
-              />
+              <input type="date" className="form-control form-control-sm" value={from} onChange={(e) => setFrom(e.target.value)} />
             </div>
 
             <div className="col-md-2">
-              <input
-                type="date"
-                className="form-control form-control-sm"
-                value={to}
-                onChange={(e) => setTo(e.target.value)}
-              />
+              <input type="date" className="form-control form-control-sm" value={to} onChange={(e) => setTo(e.target.value)} />
             </div>
 
             <div className="col-md-2">
-              <input
-                type="text"
-                className="form-control form-control-sm"
-                placeholder="Search"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-              />
+              <input className="form-control form-control-sm" placeholder="Search" value={search} onChange={(e) => setSearch(e.target.value)} />
             </div>
 
             <div className="col-md-2 d-grid">
-              <button
-                className="btn btn-primary btn-sm"
-                onClick={loadReport}
-                disabled={loading}
-              >
-                {loading ? (
-                  <span className="spinner-border spinner-border-sm"></span>
-                ) : (
-                  "Load"
-                )}
+              <button className="btn btn-primary btn-sm" onClick={loadReport}>
+                {loading ? "Loading..." : "Load"}
               </button>
             </div>
           </div>
 
           {/* CHECKBOXES */}
-          <div className="d-flex gap-4 mt-3">
+          <div className="d-flex gap-4 mt-2">
             <div className="form-check">
-              <input
-                className="form-check-input"
-                type="checkbox"
-                checked={showSale}
-                onChange={(e) => setShowSale(e.target.checked)}
-              />
+              <input className="form-check-input" type="checkbox" checked={showSale} onChange={(e) => setShowSale(e.target.checked)} />
               <label className="form-check-label">Show Sale</label>
             </div>
 
             <div className="form-check">
-              <input
-                className="form-check-input"
-                type="checkbox"
-                checked={showProfit}
-                onChange={(e) => setShowProfit(e.target.checked)}
-              />
+              <input className="form-check-input" type="checkbox" checked={showProfit} onChange={(e) => setShowProfit(e.target.checked)} />
               <label className="form-check-label">Show Profit</label>
             </div>
           </div>
@@ -244,34 +190,26 @@ export default function SupplierPurchasedetailreport({ onNavigate }) {
       </div>
 
       {/* TABLE + TOTALS */}
-      <div
-        ref={boxRef}
-        className="card shadow-sm"
-        style={{ overflowX: "auto", maxHeight: "70vh" }}
-      >
+      <div ref={boxRef} className="card shadow-sm">
         <div className="card-body py-2">
-          {/* TOTALS */}
           <div className="fw-bold mb-2 text-end">
             {showSale && <>Sale PKR: {fmt(totals.sale)} | </>}
             Purchase PKR: {fmt(totals.purchase)}
             {showProfit && <> | Profit: {fmt(totals.profit)}</>}
           </div>
 
-          {/* TABLE */}
-          <table className="table table-sm table-bordered table-striped text-center align-middle mb-0">
-            <thead className="table-dark sticky-top">
+          <table className="table table-sm table-bordered table-striped text-center align-middle">
+            <thead className="table-dark">
               <tr>
                 <th>Date</th>
                 <th>Supplier</th>
                 <th>Ref</th>
                 <th>Item</th>
-                {showSale && (
-                  <>
-                    <th>Sale SAR</th>
-                    <th>Sale Rate</th>
-                    <th>Sale PKR</th>
-                  </>
-                )}
+                {showSale && <>
+                  <th>Sale SAR</th>
+                  <th>Sale Rate</th>
+                  <th>Sale PKR</th>
+                </>}
                 <th>Purchase SAR</th>
                 <th>Purchase Rate</th>
                 <th>Purchase PKR</th>
@@ -286,36 +224,23 @@ export default function SupplierPurchasedetailreport({ onNavigate }) {
                   <td>{r.ref_no}</td>
                   <td>{r.item}</td>
 
-                  {showSale && (
-                    <>
-                      <td className="text-end">{fmt(r.sale_sar)}</td>
-                      <td className="text-end">{fmt(r.sale_rate)}</td>
-                      <td className="text-end">{fmt(r.sale_pkr)}</td>
-                    </>
-                  )}
+                  {showSale && <>
+                    <td className="text-end">{fmt(r.sale_sar)}</td>
+                    <td className="text-end">{fmt(r.sale_rate)}</td>
+                    <td className="text-end">{fmt(r.sale_pkr)}</td>
+                  </>}
 
                   <td className="text-end">{fmt(r.purchase_sar)}</td>
                   <td className="text-end">{fmt(r.purchase_rate)}</td>
                   <td className="text-end">{fmt(r.purchase_pkr)}</td>
 
                   {showProfit && (
-                    <td
-                      className={`text-end fw-bold ${
-                        r.profit >= 0 ? "text-success" : "text-danger"
-                      }`}
-                    >
+                    <td className={`text-end fw-bold ${r.profit >= 0 ? "text-success" : "text-danger"}`}>
                       {fmt(r.profit)}
                     </td>
                   )}
                 </tr>
               ))}
-              {filtered.length === 0 && (
-                <tr>
-                  <td colSpan={showSale && showProfit ? 11 : showSale || showProfit ? 10 : 7}>
-                    No records found
-                  </td>
-                </tr>
-              )}
             </tbody>
           </table>
         </div>
