@@ -5,6 +5,15 @@ import jsPDF from "jspdf";
 /* ================= HELPERS ================= */
 const fmt = (n) => Number(n || 0).toLocaleString("en-US");
 
+const formatDate = (d) => {
+  if (!d) return "";
+  return new Date(d).toLocaleDateString("en-GB", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
+};
+
 export default function SupplierPurchasedetailreport({ onNavigate }) {
   const [rows, setRows] = useState([]);
   const [suppliers, setSuppliers] = useState(["ALL"]);
@@ -15,28 +24,36 @@ export default function SupplierPurchasedetailreport({ onNavigate }) {
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(false);
 
-  /* 🔥 NEW STATE */
+  const [showSale, setShowSale] = useState(false);
   const [showProfit, setShowProfit] = useState(false);
 
   const boxRef = useRef(null);
 
   /* ================= LOAD SUPPLIERS ================= */
   const loadSuppliers = async () => {
-    const res = await fetch(
-      `${import.meta.env.VITE_BACKEND_URL}/api/reports/supplier-purchase`
-    );
-    const data = await res.json();
-    if (data.success) setSuppliers(data.suppliers || ["ALL"]);
+    try {
+      const res = await fetch(
+        `${import.meta.env.VITE_BACKEND_URL}/api/reports/supplier-purchase`
+      );
+      const data = await res.json();
+      if (data.success) setSuppliers(["ALL", ...(data.suppliers || [])]);
+    } catch (err) {
+      console.error("Failed to load suppliers:", err);
+    }
   };
 
   /* ================= LOAD REPORT ================= */
   const loadReport = async () => {
     setLoading(true);
-    const res = await fetch(
-      `${import.meta.env.VITE_BACKEND_URL}/api/reports/supplier-purchase`
-    );
-    const data = await res.json();
-    if (data.success) setRows(data.rows || []);
+    try {
+      const res = await fetch(
+        `${import.meta.env.VITE_BACKEND_URL}/api/reports/supplier-purchase`
+      );
+      const data = await res.json();
+      if (data.success) setRows(data.rows || []);
+    } catch (err) {
+      console.error("Failed to load report:", err);
+    }
     setLoading(false);
   };
 
@@ -46,14 +63,19 @@ export default function SupplierPurchasedetailreport({ onNavigate }) {
 
   /* ================= FILTER ================= */
   const filtered = rows.filter((r) => {
-    if (supplier !== "ALL" && r.supplier_name !== supplier) return false;
+    if (supplier !== "ALL" && r.supplier_name?.trim() !== supplier.trim())
+      return false;
+
     if (
       itemType !== "ALL" &&
       !r.item?.toLowerCase().includes(itemType.toLowerCase())
     )
       return false;
-    if (from && new Date(r.booking_date) < new Date(from)) return false;
-    if (to && new Date(r.booking_date) > new Date(to)) return false;
+
+    const d = r.booking_date ? new Date(r.booking_date) : null;
+    if (from && d && d < new Date(from)) return false;
+    if (to && d && d > new Date(to)) return false;
+
     if (search) {
       const s = search.toLowerCase();
       return (
@@ -68,54 +90,63 @@ export default function SupplierPurchasedetailreport({ onNavigate }) {
   /* ================= TOTALS ================= */
   const totals = filtered.reduce(
     (a, b) => {
+      if (showSale) a.sale += Number(b.sale_pkr || 0);
       a.purchase += Number(b.purchase_pkr || 0);
-      a.sale += Number(b.sale_pkr || 0);
-      a.profit += Number(b.profit || 0);
+      if (showProfit) a.profit += Number(b.profit || 0);
       return a;
     },
-    { purchase: 0, sale: 0, profit: 0 }
+    { sale: 0, purchase: 0, profit: 0 }
   );
 
-  /* ================= PDF ================= */
+  /* ================= PDF (MULTI PAGE) ================= */
   const exportPDF = async () => {
+    if (!boxRef.current) return;
     const canvas = await html2canvas(boxRef.current, { scale: 2 });
-    const img = canvas.toDataURL("image/png");
+    const imgData = canvas.toDataURL("image/png");
+
     const pdf = new jsPDF("l", "mm", "a4");
-    const w = pdf.internal.pageSize.getWidth();
-    const h = (canvas.height * w) / canvas.width;
-    pdf.addImage(img, "PNG", 0, 0, w, h);
+    const pageWidth = pdf.internal.pageSize.getWidth();
+    const pageHeight = pdf.internal.pageSize.getHeight();
+
+    const imgHeight = (canvas.height * pageWidth) / canvas.width;
+    let heightLeft = imgHeight;
+    let position = 0;
+
+    pdf.addImage(imgData, "PNG", 0, position, pageWidth, imgHeight);
+    heightLeft -= pageHeight;
+
+    while (heightLeft > 0) {
+      position -= pageHeight;
+      pdf.addPage();
+      pdf.addImage(imgData, "PNG", 0, position, pageWidth, imgHeight);
+      heightLeft -= pageHeight;
+    }
+
     pdf.save("supplier-purchase-report.pdf");
   };
 
   return (
-    <div className="container-fluid p-3 bg-light min-vh-100">
+    <div className="container-fluid p-3" style={{ fontSize: 13, fontFamily: "Arial, sans-serif" }}>
       {/* HEADER */}
-      <div className="card shadow-sm mb-3 border-0">
-        <div className="card-body d-flex justify-content-between align-items-center bg-primary text-white rounded">
-          <h4 className="mb-0">📦 Supplier Wise Purchase Report</h4>
+      <div className="card shadow-sm mb-3">
+        <div className="card-body py-2 d-flex justify-content-between align-items-center bg-primary text-white rounded">
+          <b>📦 Supplier Purchase Detail Report</b>
           <div className="d-flex gap-2">
-            <button
-              className="btn btn-light btn-sm"
-              onClick={() => onNavigate("dashboard")}
-            >
+            <button className="btn btn-light btn-sm" onClick={() => onNavigate("dashboard")}>
               ⬅ Back
             </button>
-            <button
-              className="btn btn-success btn-sm"
-              onClick={exportPDF}
-            >
-              📄 Export PDF
+            <button className="btn btn-success btn-sm" onClick={exportPDF}>
+              Export PDF
             </button>
           </div>
         </div>
       </div>
 
       {/* FILTERS */}
-      <div className="card shadow-sm mb-3 border-0">
-        <div className="card-body">
+      <div className="card shadow-sm mb-3">
+        <div className="card-body py-3">
           <div className="row g-2 align-items-end">
-            <div className="col-md-3">
-              <label className="fw-semibold">Supplier</label>
+            <div className="col-md-2">
               <select
                 className="form-select form-select-sm"
                 value={supplier}
@@ -123,20 +154,19 @@ export default function SupplierPurchasedetailreport({ onNavigate }) {
               >
                 {suppliers.map((s, i) => (
                   <option key={i} value={s}>
-                    {s === "ALL" ? "All Suppliers" : s}
+                    {s}
                   </option>
                 ))}
               </select>
             </div>
 
             <div className="col-md-2">
-              <label className="fw-semibold">Item</label>
               <select
                 className="form-select form-select-sm"
                 value={itemType}
                 onChange={(e) => setItemType(e.target.value)}
               >
-                <option value="ALL">All</option>
+                <option value="ALL">All Items</option>
                 <option value="Ticket">Ticket</option>
                 <option value="Hotel">Hotel</option>
                 <option value="Visa">Visa</option>
@@ -146,7 +176,6 @@ export default function SupplierPurchasedetailreport({ onNavigate }) {
             </div>
 
             <div className="col-md-2">
-              <label className="fw-semibold">From</label>
               <input
                 type="date"
                 className="form-control form-control-sm"
@@ -156,7 +185,6 @@ export default function SupplierPurchasedetailreport({ onNavigate }) {
             </div>
 
             <div className="col-md-2">
-              <label className="fw-semibold">To</label>
               <input
                 type="date"
                 className="form-control form-control-sm"
@@ -166,103 +194,110 @@ export default function SupplierPurchasedetailreport({ onNavigate }) {
             </div>
 
             <div className="col-md-2">
-              <label className="fw-semibold">Search</label>
               <input
+                type="text"
                 className="form-control form-control-sm"
-                placeholder="Ref / Item / Supplier"
+                placeholder="Search"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
               />
             </div>
 
-            <div className="col-md-1">
+            <div className="col-md-2 d-grid">
               <button
-                className="btn btn-primary btn-sm w-100"
+                className="btn btn-primary btn-sm"
                 onClick={loadReport}
                 disabled={loading}
               >
-                {loading ? "..." : "Load"}
+                {loading ? (
+                  <span className="spinner-border spinner-border-sm"></span>
+                ) : (
+                  "Load"
+                )}
               </button>
             </div>
+          </div>
 
-            {/* ✅ SHOW PROFIT CHECKBOX */}
-            <div className="col-md-2 mt-2">
-              <div className="form-check">
-                <input
-                  className="form-check-input"
-                  type="checkbox"
-                  id="showProfit"
-                  checked={showProfit}
-                  onChange={(e) => setShowProfit(e.target.checked)}
-                />
-                <label className="form-check-label fw-semibold" htmlFor="showProfit">
-                  Show Profit
-                </label>
-              </div>
+          {/* CHECKBOXES */}
+          <div className="d-flex gap-4 mt-3">
+            <div className="form-check">
+              <input
+                className="form-check-input"
+                type="checkbox"
+                checked={showSale}
+                onChange={(e) => setShowSale(e.target.checked)}
+              />
+              <label className="form-check-label">Show Sale</label>
+            </div>
+
+            <div className="form-check">
+              <input
+                className="form-check-input"
+                type="checkbox"
+                checked={showProfit}
+                onChange={(e) => setShowProfit(e.target.checked)}
+              />
+              <label className="form-check-label">Show Profit</label>
             </div>
           </div>
         </div>
       </div>
 
-      {/* SUMMARY */}
-      <div className="row g-3 mb-3">
-        <div className="col-md-4">
-          <div className="card shadow-sm border-0 text-success">
-            <div className="card-body text-center">
-              <div className="fw-semibold">Sale</div>
-              <h4 className="fw-bold mb-0">{fmt(totals.sale)}</h4>
-            </div>
+      {/* TABLE + TOTALS */}
+      <div
+        ref={boxRef}
+        className="card shadow-sm"
+        style={{ overflowX: "auto", maxHeight: "70vh" }}
+      >
+        <div className="card-body py-2">
+          {/* TOTALS */}
+          <div className="fw-bold mb-2 text-end">
+            {showSale && <>Sale PKR: {fmt(totals.sale)} | </>}
+            Purchase PKR: {fmt(totals.purchase)}
+            {showProfit && <> | Profit: {fmt(totals.profit)}</>}
           </div>
-        </div>
 
-        <div className="col-md-4">
-          <div className="card shadow-sm border-0 text-warning">
-            <div className="card-body text-center">
-              <div className="fw-semibold">Purchase</div>
-              <h4 className="fw-bold mb-0">{fmt(totals.purchase)}</h4>
-            </div>
-          </div>
-        </div>
-
-        {showProfit && (
-          <div className="col-md-4">
-            <div
-              className={`card shadow-sm border-0 text-${
-                totals.profit >= 0 ? "primary" : "danger"
-              }`}
-            >
-              <div className="card-body text-center">
-                <div className="fw-semibold">Profit</div>
-                <h4 className="fw-bold mb-0">{fmt(totals.profit)}</h4>
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* TABLE */}
-      <div ref={boxRef} className="card shadow-sm border-0">
-        <table className="table table-hover table-sm mb-0">
-          <thead className="table-dark sticky-top text-center">
-            <tr>
-              <th>Supplier</th>
-              <th>Ref No</th>
-              <th>Item</th>
-              <th className="text-end">Sale</th>
-              <th className="text-end">Purchase</th>
-              {showProfit && <th className="text-end">Profit</th>}
-            </tr>
-          </thead>
-
-          <tbody>
-            {filtered.length ? (
-              filtered.map((r, i) => (
+          {/* TABLE */}
+          <table className="table table-sm table-bordered table-striped text-center align-middle mb-0">
+            <thead className="table-dark sticky-top">
+              <tr>
+                <th>Date</th>
+                <th>Supplier</th>
+                <th>Ref</th>
+                <th>Item</th>
+                {showSale && (
+                  <>
+                    <th>Sale SAR</th>
+                    <th>Sale Rate</th>
+                    <th>Sale PKR</th>
+                  </>
+                )}
+                <th>Purchase SAR</th>
+                <th>Purchase Rate</th>
+                <th>Purchase PKR</th>
+                {showProfit && <th>Profit</th>}
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.map((r, i) => (
                 <tr key={i}>
+                  <td>{formatDate(r.booking_date)}</td>
                   <td>{r.supplier_name}</td>
                   <td>{r.ref_no}</td>
                   <td>{r.item}</td>
-                  <td className="text-end">{fmt(r.sale_pkr)}</td>
+
+                  {showSale && (
+                    <>
+                      <td className="text-end">{fmt(r.sale_sar)}</td>
+                      <td className="text-end">{fmt(r.sale_rate)}</td>
+                      <td className="text-end">{fmt(r.sale_pkr)}</td>
+                    </>
+                  )}
+
+                  <td className="text-end">{fmt(r.purchase_sar)}</td>
+                  <td className="text-end">{fmt(r.purchase_rate)}</td>
                   <td className="text-end">{fmt(r.purchase_pkr)}</td>
+
                   {showProfit && (
                     <td
                       className={`text-end fw-bold ${
@@ -273,22 +308,18 @@ export default function SupplierPurchasedetailreport({ onNavigate }) {
                     </td>
                   )}
                 </tr>
-              ))
-            ) : (
-              <tr>
-                <td
-                  colSpan={showProfit ? 6 : 5}
-                  className="text-center text-muted py-4"
-                >
-                  📌 Report load karne ke liye <b>Load</b> button dabayein
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
+              ))}
+              {filtered.length === 0 && (
+                <tr>
+                  <td colSpan={showSale && showProfit ? 11 : showSale || showProfit ? 10 : 7}>
+                    No records found
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );
 }
-
-
