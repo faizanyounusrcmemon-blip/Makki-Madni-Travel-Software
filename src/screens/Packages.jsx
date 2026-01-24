@@ -111,7 +111,6 @@ export default function Packages({ onNavigate }) {
     const imgProps = pdf.getImageProperties(img);
     const pdfWidth = w - 20;
     const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
-    pdf.text("MAKKI MADNI TRAVEL", w / 2, 10, { align: "center" });
     let position = 15;
     let heightLeft = pdfHeight;
     const x = (w - pdfWidth) / 2;
