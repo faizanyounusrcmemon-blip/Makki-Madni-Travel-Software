@@ -17,9 +17,7 @@ export default function ExpenseLedger({ onNavigate }) {
   const [toDate, setToDate] = useState("");
   const [search, setSearch] = useState("");
 
-  /* =========================
-     LOAD LEDGER
-  ========================= */
+  /* ================= LOAD ================= */
   const load = async () => {
     const r = await fetch(
       `${import.meta.env.VITE_BACKEND_URL}/api/expense-ledger`
@@ -32,9 +30,7 @@ export default function ExpenseLedger({ onNavigate }) {
     load();
   }, []);
 
-  /* =========================
-     SAVE EXPENSE
-  ========================= */
+  /* ================= SAVE ================= */
   const save = async () => {
     if (!date || !title || !amount) return alert("Missing fields");
 
@@ -62,9 +58,7 @@ export default function ExpenseLedger({ onNavigate }) {
     } else alert(d.error);
   };
 
-  /* =========================
-     DELETE EXPENSE
-  ========================= */
+  /* ================= DELETE ================= */
   const del = async (id) => {
     const pass = prompt("Password");
     if (!pass) return;
@@ -83,27 +77,16 @@ export default function ExpenseLedger({ onNavigate }) {
     else alert(d.error);
   };
 
-  /* =========================
-     FILTERED ROWS
-  ========================= */
+  /* ================= FILTER ================= */
   const filteredRows = rows.filter((r) => {
     const d = r.expense_date?.slice(0, 10);
-
     if (fromDate && d < fromDate) return false;
     if (toDate && d > toDate) return false;
-
-    if (
-      search &&
-      !r.title?.toLowerCase().includes(search.toLowerCase())
-    )
+    if (search && !r.title?.toLowerCase().includes(search.toLowerCase()))
       return false;
-
     return true;
   });
 
-  /* =========================
-     TOTAL (FULL / FILTERED)
-  ========================= */
   const totalAmount = filteredRows.reduce(
     (sum, r) => sum + Number(r.amount || 0),
     0
@@ -113,172 +96,154 @@ export default function ExpenseLedger({ onNavigate }) {
 
   return (
     <div className="container p-3">
-      <button
-        className="btn btn-secondary btn-sm mb-2"
-        onClick={() => onNavigate("dashboard")}
+
+      {/* HEADER */}
+      <div
+        className="p-3 mb-3 rounded text-white"
+        style={{
+          background: "linear-gradient(135deg,#6f42c1,#d63384)",
+          boxShadow: "0 6px 18px rgba(0,0,0,.25)",
+        }}
       >
-        ⬅ Back
-      </button>
-
-      <h4 className="text-warning fw-bold mb-2">
-        💸 Expense Ledger
-      </h4>
-
-      {/* =========================
-         ADD EXPENSE
-      ========================= */}
-      <div className="row g-2 mb-3">
-        <div className="col-md-2">
-          <input
-            type="date"
-            className="form-control"
-            value={date}
-            onChange={(e) => setDate(e.target.value)}
-          />
-        </div>
-
-        <div className="col-md-3">
-          <input
-            className="form-control"
-            placeholder="Title"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-          />
-        </div>
-
-        <div className="col-md-2">
-          <input
-            className="form-control"
-            placeholder="Amount"
-            value={amount}
-            onChange={(e) =>
-              setAmount(
-                e.target.value
-                  .replace(/,/g, "")
-                  .replace(/\B(?=(\d{3})+(?!\d))/g, ",")
-              )
-            }
-          />
-        </div>
-
-        <div className="col-md-2">
-          <select
-            className="form-control"
-            value={method}
-            onChange={(e) => setMethod(e.target.value)}
+        <div className="d-flex justify-content-between align-items-center">
+          <h4 className="fw-bold m-0">💸 Expense Ledger</h4>
+          <button
+            className="btn btn-light btn-sm fw-bold"
+            onClick={() => onNavigate("dashboard")}
           >
-            <option>Cash</option>
-            <option>Bank</option>
-          </select>
-        </div>
-
-        <div className="col-md-2">
-          <input
-            className="form-control"
-            placeholder="Remarks"
-            value={remarks}
-            onChange={(e) => setRemarks(e.target.value)}
-          />
-        </div>
-
-        <div className="col-md-1">
-          <button className="btn btn-success w-100" onClick={save}>
-            Save
+            ⬅ Back
           </button>
         </div>
       </div>
 
-      {/* =========================
-         FILTERS
-      ========================= */}
-      <div className="row g-2 mb-2">
-        <div className="col-md-2">
-          <input
-            type="date"
-            className="form-control"
-            value={fromDate}
-            onChange={(e) => setFromDate(e.target.value)}
-          />
-        </div>
-
-        <div className="col-md-2">
-          <input
-            type="date"
-            className="form-control"
-            value={toDate}
-            onChange={(e) => setToDate(e.target.value)}
-          />
-        </div>
-
-        <div className="col-md-4">
-          <input
-            className="form-control"
-            placeholder="Search by title"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
+      {/* ADD EXPENSE */}
+      <div className="card shadow-sm mb-3">
+        <div className="card-body">
+          <h6 className="fw-bold text-primary mb-2">➕ Add Expense</h6>
+          <div className="row g-2 small fw-bold">
+            <div className="col-md-2">
+              <input type="date" className="form-control form-control-sm"
+                value={date} onChange={(e) => setDate(e.target.value)} />
+            </div>
+            <div className="col-md-3">
+              <input className="form-control form-control-sm"
+                placeholder="Title"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)} />
+            </div>
+            <div className="col-md-2">
+              <input className="form-control form-control-sm"
+                placeholder="Amount"
+                value={amount}
+                onChange={(e) =>
+                  setAmount(
+                    e.target.value
+                      .replace(/,/g, "")
+                      .replace(/\B(?=(\d{3})+(?!\d))/g, ",")
+                  )
+                } />
+            </div>
+            <div className="col-md-2">
+              <select className="form-control form-control-sm"
+                value={method}
+                onChange={(e) => setMethod(e.target.value)}>
+                <option>Cash</option>
+                <option>Bank</option>
+              </select>
+            </div>
+            <div className="col-md-2">
+              <input className="form-control form-control-sm"
+                placeholder="Remarks"
+                value={remarks}
+                onChange={(e) => setRemarks(e.target.value)} />
+            </div>
+            <div className="col-md-1">
+              <button className="btn btn-success btn-sm w-100" onClick={save}>
+                Save
+              </button>
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* =========================
-         TABLE
-      ========================= */}
-      <table className="table table-bordered table-sm">
-        <thead className="table-dark">
-          <tr>
-            <th>Date</th>
-            <th>Title</th>
-            <th>Amount</th>
-            <th>Method</th>
-            <th>Remarks</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody>
-          {filteredRows.map((r) => (
-            <tr key={r.id}>
-              <td>
-                {new Date(r.expense_date).toLocaleDateString()}
-              </td>
-              <td>{r.title}</td>
-              <td>{Number(r.amount).toLocaleString()}</td>
-              <td>{r.payment_method}</td>
-              <td>{r.remarks}</td>
-              <td>
-                <button
-                  className="btn btn-danger btn-sm"
-                  onClick={() => del(r.id)}
-                >
-                  ❌
-                </button>
-              </td>
-            </tr>
-          ))}
+      {/* FILTERS */}
+      <div className="card shadow-sm mb-3">
+        <div className="card-body">
+          <h6 className="fw-bold text-info mb-2">🔍 Filters</h6>
+          <div className="row g-2 small fw-bold">
+            <div className="col-md-2">
+              <input type="date" className="form-control form-control-sm"
+                value={fromDate} onChange={(e) => setFromDate(e.target.value)} />
+            </div>
+            <div className="col-md-2">
+              <input type="date" className="form-control form-control-sm"
+                value={toDate} onChange={(e) => setToDate(e.target.value)} />
+            </div>
+            <div className="col-md-4">
+              <input className="form-control form-control-sm"
+                placeholder="Search title"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)} />
+            </div>
+          </div>
+        </div>
+      </div>
 
-          {filteredRows.length === 0 && (
-            <tr>
-              <td colSpan="6" className="text-center">
-                No expenses found
-              </td>
+      {/* TABLE */}
+      <div className="table-responsive shadow-sm rounded">
+        <table className="table table-sm table-bordered mb-0 align-middle">
+          <thead style={{ background: "#212529", color: "#ffc107" }}>
+            <tr className="small text-center">
+              <th>Date</th>
+              <th>Title</th>
+              <th>Amount</th>
+              <th>Method</th>
+              <th>Remarks</th>
+              <th></th>
             </tr>
-          )}
-        </tbody>
-      </table>
+          </thead>
+          <tbody className="small fw-bold">
+            {filteredRows.map((r) => (
+              <tr key={r.id}>
+                <td>{new Date(r.expense_date).toLocaleDateString()}</td>
+                <td>{r.title}</td>
+                <td className="text-end text-success">
+                  {Number(r.amount).toLocaleString()}
+                </td>
+                <td>{r.payment_method}</td>
+                <td>{r.remarks}</td>
+                <td className="text-center">
+                  <button
+                    className="btn btn-danger btn-sm"
+                    onClick={() => del(r.id)}
+                  >
+                    ❌
+                  </button>
+                </td>
+              </tr>
+            ))}
+            {filteredRows.length === 0 && (
+              <tr>
+                <td colSpan="6" className="text-center text-muted py-3">
+                  No expenses found
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
 
-      {/* =========================
-         TOTAL (VISIBLE)
-      ========================= */}
+      {/* TOTAL */}
       <div className="d-flex justify-content-end mt-3">
         <div
+          className="fw-bold"
           style={{
-            background: "#111",
-            color: "#ffc107",
-            padding: "10px 18px",
-            borderRadius: "6px",
+            background: "linear-gradient(135deg,#198754,#20c997)",
+            color: "#fff",
+            padding: "12px 22px",
+            borderRadius: "30px",
             fontSize: "18px",
-            fontWeight: "bold",
-            minWidth: "260px",
-            textAlign: "right",
+            boxShadow: "0 4px 12px rgba(0,0,0,.25)",
           }}
         >
           {isFiltered ? "Filtered Total" : "Total Expense"}:{" "}
@@ -288,5 +253,3 @@ export default function ExpenseLedger({ onNavigate }) {
     </div>
   );
 }
-
-
