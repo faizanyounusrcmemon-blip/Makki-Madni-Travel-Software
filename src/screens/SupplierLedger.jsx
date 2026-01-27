@@ -329,7 +329,7 @@ return (
                 </td>
                 <td className="text-center fw-bold text-secondary small">{r.ref_no || "-"}</td>
                 <td className="text-start fw-bold text-primary small">{r.entry_type === "purchase" ? r.supplier_name : "-"}</td>
-                <td className="text-start text-success small">{r.entry_type === "purchase" ? r.detail : "-"}</td>
+                <td className="fontSize: "0.6rem", fontWeight: "bold", color: "green"">{r.entry_type === "purchase" ? r.detail : "-"}</td>
                 <td className="text-center small">
                   {r.payment_method ? (
                     <span className={`badge ${
@@ -356,6 +356,7 @@ return (
  );
 }
    
+
 
 
 
