@@ -183,11 +183,33 @@ export default function SupplierLedger({ onNavigate }) {
   ========================== */
   const deleteEntry = async (entry) => {
     if (entry.entry_type !== "payment" || !entry.id) return;
-    if (prompt("Enter password") !== "786") return;
 
-    await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/supplier-ledger/delete/${entry.id}`, { method: "DELETE" });
+    const pwd = prompt("Enter password");
+    if (pwd !== "786") return alert("Wrong password");
+
+    const res = await fetch(
+      `${import.meta.env.VITE_BACKEND_URL}/api/supplier-ledger/delete/${entry.id}`,
+      {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          password: pwd,
+          type: "payment", // 🔥 THIS WAS MISSING
+        }),
+      }
+    );
+
+    const d = await res.json();
+    if (!d.success) {
+      alert(d.error || "Delete failed");
+      return;
+    }
+
     await loadLedger();
     await loadPendingAlways();
+    alert("✅ Entry deleted");
   };
 
   /* =========================
@@ -356,6 +378,7 @@ return (
  );
 }
    
+
 
 
 
