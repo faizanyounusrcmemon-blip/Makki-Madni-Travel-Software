@@ -39,6 +39,7 @@ import CreateUser from "./screens/CreateUser";
 import DeletedReports from "./screens/DeletedReports";
 import Restore from "./screens/Restore";
 import SystemStorage from "./screens/SystemStorage";
+import SaleChangeCheckReport from "./screens/SaleChangeCheckReport";
 
 
 // VOUCHERS
@@ -113,6 +114,7 @@ export default function App() {
       {page === "saleAdjustmentReport" && <SaleAdjustmentReport onNavigate={navigate} />}
       {page === "supplierAdjustmentOnly" && <SupplierAdjustmentOnly onNavigate={navigate} />}
       {page === "supplierPurchaseDetailReport" && <SupplierPurchaseDetailReport onNavigate={navigate} />}
+      {page === "saleChangeCheckReport" && <SaleChangeCheckReport onNavigate={navigate} />}
       {page === "createUser" && <CreateUser onNavigate={navigate} />}
       {page === "deletedReports" && (
         <DeletedReports onNavigate={navigate} />
