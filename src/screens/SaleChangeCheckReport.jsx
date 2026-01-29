@@ -1,22 +1,15 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import axios from "axios";
 
-export default function SaleChangeCheckReport() {
-  const [refNo, setRefNo] = useState("");
+export default function SaleMismatchReport() {
   const [rows, setRows] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
   const loadReport = async () => {
-    if (!refNo) return alert("Ref No required");
-
-    setLoading(true);
-    setError("");
-    setRows([]);
-
     try {
       const res = await axios.get(
-        `/api/purchase/sale-change-check/${refNo}`
+        "/api/purchase/sale-mismatch-report"
       );
 
       if (!res.data.success) {
@@ -31,81 +24,67 @@ export default function SaleChangeCheckReport() {
     }
   };
 
-  const changedCount = rows.filter(r => r.status === "CHANGED").length;
+  useEffect(() => {
+    loadReport();
+  }, []);
 
   return (
     <div style={{ padding: 20 }}>
-      <h2>📊 Sale vs Purchase Sale Check</h2>
-
-      {/* ================= INPUT ================= */}
-      <div style={{ marginBottom: 15 }}>
-        <input
-          value={refNo}
-          onChange={e => setRefNo(e.target.value)}
-          placeholder="Enter Ref No (PKG- / HOT- / etc)"
-          style={{ padding: 8, width: 260 }}
-        />
-        <button
-          onClick={loadReport}
-          style={{ marginLeft: 10, padding: "8px 16px" }}
-        >
-          Check
-        </button>
-      </div>
+      <h2>🚨 Sale Change Audit Report</h2>
+      <p style={{ color: "#555" }}>
+        Only items where <b>sale has changed after purchase</b>
+      </p>
 
       {loading && <p>Loading...</p>}
       {error && <p style={{ color: "red" }}>{error}</p>}
 
-      {/* ================= SUMMARY ================= */}
-      {rows.length > 0 && (
-        <div style={{ marginBottom: 10 }}>
-          <b>Total Items:</b> {rows.length} &nbsp; | &nbsp;
-          <b style={{ color: "red" }}>Changed:</b> {changedCount}
-        </div>
+      {!loading && rows.length === 0 && (
+        <p style={{ color: "green" }}>
+          ✅ No sale mismatch found
+        </p>
       )}
 
-      {/* ================= TABLE ================= */}
       {rows.length > 0 && (
         <table
+          width="100%"
           border="1"
           cellPadding="8"
           cellSpacing="0"
-          width="100%"
         >
-          <thead style={{ background: "#f3f3f3" }}>
+          <thead style={{ background: "#ffe0e0" }}>
             <tr>
+              <th>Ref No</th>
               <th>Item</th>
-              <th>Old Sale PKR</th>
+              <th>Purchase Sale PKR</th>
               <th>Current Sale PKR</th>
-              <th>Status</th>
-              <th>Note</th>
+              <th>Difference</th>
             </tr>
           </thead>
 
           <tbody>
             {rows.map((r, i) => (
-              <tr
-                key={i}
-                style={{
-                  background:
-                    r.status === "CHANGED" ? "#ffe5e5" : "#e9ffe9"
-                }}
-              >
+              <tr key={i} style={{ background: "#fff5f5" }}>
+                <td><b>{r.ref_no}</b></td>
                 <td>{r.item}</td>
 
                 <td style={{ textAlign: "right" }}>
-                  {Number(r.old_sale_pkr).toLocaleString()}
+                  {Number(r.purchase_sale_pkr).toLocaleString()}
                 </td>
 
                 <td style={{ textAlign: "right" }}>
                   {Number(r.current_sale_pkr).toLocaleString()}
                 </td>
 
-                <td style={{ fontWeight: "bold" }}>
-                  {r.status === "CHANGED" ? "❌ CHANGED" : "✅ OK"}
+                <td
+                  style={{
+                    textAlign: "right",
+                    color: "red",
+                    fontWeight: "bold"
+                  }}
+                >
+                  {(r.current_sale_pkr - r.purchase_sale_pkr)
+                    .toLocaleString()}
                 </td>
-
-                <td>{r.note}</td>
               </tr>
             ))}
           </tbody>
