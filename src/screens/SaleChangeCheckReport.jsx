@@ -6,19 +6,30 @@ export default function SaleMismatchReport() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
+  // 🔹 Base API URL for Vercel deployment
+  const API_BASE =
+    process.env.NEXT_PUBLIC_API_BASE || ""; // Example: "https://makki-madni-travel-software.vercel.app/api"
+
   const loadReport = async () => {
+    setLoading(true);
+    setError("");
+
     try {
-      const res = await axios.get(
-        "/api/purchase/sale-mismatch-report"
-      );
+      const res = await axios.get(`${API_BASE}/purchase/sale-mismatch-report`);
 
       if (!res.data.success) {
         setError(res.data.error || "Failed to load report");
+        setRows([]);
       } else {
         setRows(res.data.rows || []);
       }
     } catch (err) {
-      setError(err.message);
+      setError(
+        err.response?.data?.error ||
+        err.message ||
+        "Failed to fetch report"
+      );
+      setRows([]);
     } finally {
       setLoading(false);
     }
@@ -38,10 +49,8 @@ export default function SaleMismatchReport() {
       {loading && <p>Loading...</p>}
       {error && <p style={{ color: "red" }}>{error}</p>}
 
-      {!loading && rows.length === 0 && (
-        <p style={{ color: "green" }}>
-          ✅ No sale mismatch found
-        </p>
+      {!loading && !error && rows.length === 0 && (
+        <p style={{ color: "green" }}>✅ No sale mismatch found</p>
       )}
 
       {rows.length > 0 && (
@@ -50,6 +59,7 @@ export default function SaleMismatchReport() {
           border="1"
           cellPadding="8"
           cellSpacing="0"
+          style={{ borderCollapse: "collapse" }}
         >
           <thead style={{ background: "#ffe0e0" }}>
             <tr>
@@ -60,33 +70,31 @@ export default function SaleMismatchReport() {
               <th>Difference</th>
             </tr>
           </thead>
-
           <tbody>
-            {rows.map((r, i) => (
-              <tr key={i} style={{ background: "#fff5f5" }}>
-                <td><b>{r.ref_no}</b></td>
-                <td>{r.item}</td>
-
-                <td style={{ textAlign: "right" }}>
-                  {Number(r.purchase_sale_pkr).toLocaleString()}
-                </td>
-
-                <td style={{ textAlign: "right" }}>
-                  {Number(r.current_sale_pkr).toLocaleString()}
-                </td>
-
-                <td
-                  style={{
-                    textAlign: "right",
-                    color: "red",
-                    fontWeight: "bold"
-                  }}
-                >
-                  {(r.current_sale_pkr - r.purchase_sale_pkr)
-                    .toLocaleString()}
-                </td>
-              </tr>
-            ))}
+            {rows.map((r, i) => {
+              const diff = (Number(r.current_sale_pkr || 0) - Number(r.purchase_sale_pkr || 0));
+              return (
+                <tr key={i} style={{ background: "#fff5f5" }}>
+                  <td><b>{r.ref_no}</b></td>
+                  <td>{r.item}</td>
+                  <td style={{ textAlign: "right" }}>
+                    {Number(r.purchase_sale_pkr || 0).toLocaleString()}
+                  </td>
+                  <td style={{ textAlign: "right" }}>
+                    {Number(r.current_sale_pkr || 0).toLocaleString()}
+                  </td>
+                  <td
+                    style={{
+                      textAlign: "right",
+                      color: diff !== 0 ? "red" : "black",
+                      fontWeight: "bold"
+                    }}
+                  >
+                    {diff.toLocaleString()}
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       )}
