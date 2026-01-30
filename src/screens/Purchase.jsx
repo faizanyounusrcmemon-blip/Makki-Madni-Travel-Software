@@ -104,13 +104,16 @@ export default function Purchase({ onNavigate }) {
       const s = suppliers.find((x) => x.supplier_code === value);
       r.supplier_name = s ? s.supplier_name : "";
     } else {
-      r[field] = formatInput(value); // decimal-safe input
+      r[field] = formatInput(value);
     }
 
     const sar = parseNumber(r.purchase_sar);
     const rate = parseNumber(r.purchase_rate);
-    r.purchase_pkr = sar * rate;
-    r.profit = r.sale_pkr - r.purchase_pkr;
+
+    const purchaseComplete = sar > 0 && rate > 0;
+
+    r.purchase_pkr = purchaseComplete ? sar * rate : 0;
+    r.profit = purchaseComplete ? r.sale_pkr - r.purchase_pkr : 0;
 
     setRows(copy);
   };
