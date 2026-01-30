@@ -133,12 +133,24 @@ export default function Hotels({ onNavigate }) {
     setRows(u);
   };
 
+  // ===== LOAD HOTEL WITH PURCHASE CHECK =====
   const loadHotel = async () => {
     if (!searchRef) return alert("Search Ref No likho");
+
+    // Load hotel record
     const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/hotels/get/${searchRef}`);
     const data = await res.json();
     if (!data.success) return alert("Record not found");
+
     const d = data.row;
+
+    // 🔹 CHECK PURCHASE ENTRIES BEFORE EDIT
+    const purchaseRes = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/purchase/check/${d.ref_no}`);
+    const purchaseData = await purchaseRes.json();
+    if (purchaseData.total > 0) {
+      return alert("❌ Cannot edit. Purchase entries exist for this Ref No. Delete purchases first.");
+    }
+
     setRefNo(d.ref_no);
     setCustomerName(d.customer_name);
     setBookingDate(d.booking_date);

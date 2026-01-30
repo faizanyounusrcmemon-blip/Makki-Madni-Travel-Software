@@ -107,18 +107,37 @@ export default function Visa({ onNavigate }) {
 
   const loadVisa = async () => {
     if (!searchRef) return alert("Ref No likho");
-    const res = await fetch(
-      `${import.meta.env.VITE_BACKEND_URL}/api/visa/get/${searchRef}`
-    );
+
+    // ========================
+    // 1️⃣ Fetch Visa
+    // ========================
+    const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/visa/get/${searchRef}`);
     const data = await res.json();
+
     if (!data.success) return alert("Record not found");
     const d = data.row;
+
+    // ========================
+    // 2️⃣ Check if purchase entries exist
+    // ========================
+    const purchaseRes = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/purchase/check/${d.ref_no}`);
+    const purchaseData = await purchaseRes.json();
+
+    // Ziyarat wala check style
+    if (purchaseData.total > 0) {
+      return alert("❌ Cannot edit. Purchase entries exist for this Ref No. Delete purchases first.");
+    }
+
+    // ========================
+    // 3️⃣ Load Visa data into form
+    // ========================
     setRefNo(d.ref_no);
     setCustomerName(d.customer_name);
     setBookingDate(d.booking_date);
     setRows(d.rows || []);
     setPkrRate(d.pkr_rate || 0);
     setIsEdit(true);
+
     alert("✅ Visa Edit Mode load successfully!");
   };
 

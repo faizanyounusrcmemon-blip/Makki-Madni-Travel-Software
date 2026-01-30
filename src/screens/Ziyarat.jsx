@@ -107,16 +107,37 @@ export default function Ziyarat({ onNavigate }) {
 
   const loadZiyarat = async () => {
     if (!searchRef) return alert("Ref No likho");
+
+    // ========================
+    // 1️⃣ Fetch Ziyarat
+    // ========================
     const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/ziyarat/get/${searchRef}`);
     const data = await res.json();
+
     if (!data.success) return alert("Record not found");
+
     const d = data.row;
+
+    // ========================
+    // 2️⃣ Check if purchase entries exist
+    // ========================
+    const purchaseRes = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/purchase/check/${d.ref_no}`);
+    const purchaseData = await purchaseRes.json();
+
+    if (purchaseData.total > 0) {
+      return alert("❌ Cannot edit. Purchase entries exist for this Ref No. Delete purchases first.");
+    }
+
+    // ========================
+    // 3️⃣ Load Ziyarat data into form
+    // ========================
     setRefNo(d.ref_no);
     setCustomerName(d.customer_name);
     setBookingDate(d.booking_date);
     setRows(d.rows || []);
     setPkrRate(d.pkr_rate || 0);
     setIsEdit(true);
+
     alert("✅ Ziyarat Edit Mode load successfully!");
   };
 
@@ -125,14 +146,42 @@ export default function Ziyarat({ onNavigate }) {
       alert("Customer name & booking date required");
       return;
     }
-    const payload = { ref_no: refNo || null, customer_name: customerName, booking_date: bookingDate, rows, total_sar: totalSar, pkr_rate: pkrRate, total_pkr: totalPkr };
-    const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/ziyarat/save`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
-    const data = await res.json();
-    if (data.success) {
-      setRefNo(data.ref_no);
-      alert("✅ Ziyarat Saved Successfully! Ref#: " + data.ref_no);
-      onNavigate("dashboard");
-    } else alert(data.error || "Save failed");
+
+    const payload = {
+      ref_no: refNo || null,
+      customer_name: customerName,
+      booking_date: bookingDate,
+      rows,
+      total_sar: totalSar,
+      pkr_rate: pkrRate,
+      total_pkr: totalPkr,
+    };
+
+    try {
+      const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/ziyarat/save`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await res.json();
+
+      if (data.success) {
+        setRefNo(data.ref_no);
+        alert("✅ Ziyarat Saved Successfully! Ref#: " + data.ref_no);
+        onNavigate("dashboard");
+      } else {
+        // 🔹 Agar purchase entries exist, special alert
+        if (data.error?.includes("Purchase entries exist")) {
+          alert("❌ Edit blocked! Purchase entries already exist for this Ref No. Delete purchases first.");
+        } else {
+          alert(data.error || "Save failed");
+        }
+      }
+    } catch (err) {
+      console.error("SAVE ERROR:", err);
+      alert("❌ Something went wrong while saving.");
+    }
   };
 
   const exportPDF = async () => {
@@ -238,4 +287,3 @@ export default function Ziyarat({ onNavigate }) {
     </div>
   );
 }
-

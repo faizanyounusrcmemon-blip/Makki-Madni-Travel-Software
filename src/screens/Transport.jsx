@@ -99,10 +99,24 @@ export default function Transport({ onNavigate }) {
 
   const loadTransport = async () => {
     if (!searchRef) return alert("Ref No likho");
+
+    // 1️⃣ Fetch transport record
     const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/transport/get/${searchRef}`);
     const data = await res.json();
     if (!data.success) return alert("Record not found");
+
     const d = data.row;
+
+    // 2️⃣ Check if purchase entries exist
+    const purchaseRes = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/purchase/check/${d.ref_no}`);
+    const purchaseData = await purchaseRes.json();
+
+    // ❌ Alert if purchase exists
+    if (purchaseData.total > 0) {
+      return alert("❌ Cannot edit. Purchase entries exist for this Ref No. Delete purchases first.");
+    }
+
+    // 3️⃣ Load transport data into form
     setRefNo(d.ref_no);
     setCustomerName(d.customer_name);
     setBookingDate(d.booking_date);
