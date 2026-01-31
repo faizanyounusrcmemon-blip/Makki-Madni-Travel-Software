@@ -40,7 +40,7 @@ import DeletedReports from "./screens/DeletedReports";
 import Restore from "./screens/Restore";
 import SystemStorage from "./screens/SystemStorage";
 import SaleChangeCheckReport from "./screens/SaleChangeCheckReport";
-
+import ItemLossZeroReport from "./screens/ItemLossZeroReport";
 
 // VOUCHERS
 import HotelVoucher from "./screens/HotelVoucher";
@@ -115,6 +115,7 @@ export default function App() {
       {page === "supplierAdjustmentOnly" && <SupplierAdjustmentOnly onNavigate={navigate} />}
       {page === "supplierPurchaseDetailReport" && <SupplierPurchaseDetailReport onNavigate={navigate} />}
       {page === "saleChangeCheckReport" && <SaleChangeCheckReport onNavigate={navigate} />}
+      {page === "itemLossZeroReport" && <ItemLossZeroReport onNavigate={navigate} />}
       {page === "createUser" && <CreateUser onNavigate={navigate} />}
       {page === "deletedReports" && (
         <DeletedReports onNavigate={navigate} />
