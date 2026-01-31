@@ -1,69 +1,161 @@
-import React, { useEffect, useState } from "react";
+import React, { useState, useEffect } from "react";
 
-export default function SaleChangeCheckReport() {
-  const [rows, setRows] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
+const fmt = (v) => Number(v || 0).toLocaleString("en-US");
 
-  useEffect(() => {
-    fetch("/api/next/sale-mismatch-report")
-      .then(res => {
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        return res.json();
-      })
-      .then(data => {
-        if (data.success) setRows(data.rows);
-        else setError(data.error || "Unknown error");
-      })
-      .catch(err => setError(err.message))
-      .finally(() => setLoading(false));
-  }, []);
+export default function SaleChangeCheckReport({ onNavigate }) {
+  const [data, setData] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [from, setFrom] = useState("");
+  const [to, setTo] = useState("");
+  const [ref, setRef] = useState("");
 
-  if (loading) return <div>Loading report...</div>;
-  if (error) return <div style={{ color: "red" }}>Error: {error}</div>;
+  const loadData = async () => {
+    try {
+      setLoading(true);
+      setError("");
 
-  if (!rows.length) return <div>No mismatches found.</div>;
+      // 🔹 PURCHASE LIST
+      const purchaseUrl = new URL(`${BACKEND_URL}/api/purchase/list`);
+      if (from) purchaseUrl.searchParams.append("from", from);
+      if (to) purchaseUrl.searchParams.append("to", to);
+      if (ref) purchaseUrl.searchParams.append("ref", ref);
+
+      const purchaseRes = await fetch(purchaseUrl.toString());
+      if (!purchaseRes.ok) throw new Error("Failed to fetch purchase data");
+      const purchaseData = await purchaseRes.json();
+      if (!purchaseData.success) throw new Error(purchaseData.error || "Purchase API error");
+
+      // Create map for faster lookup
+      const purchaseMap = {};
+      purchaseData.rows.forEach((p) => {
+        const salePkr = parseFloat(p.sale_pkr) || 0;
+        const purchasePkr = parseFloat(p.purchase_pkr) || 0;
+        if (purchasePkr > 0) { // 🔹 Only include if purchase exists
+          purchaseMap[p.ref_no] = salePkr;
+        }
+      });
+
+      // 🔹 SALE DATA FROM REPORTS
+      const reportRes = await fetch(`${BACKEND_URL}/api/reports/all`);
+      if (!reportRes.ok) throw new Error("Failed to fetch reports");
+      const reportData = await reportRes.json();
+
+      // 🔹 COMBINE AND CALCULATE DIFF
+      const combined = reportData
+        .filter(r => r.total_pkr && purchaseMap[r.ref_no]) // 🔹 Only rows with purchase
+        .map(r => {
+          const saleFromPurchase = purchaseMap[r.ref_no] || 0;
+          const saleFromReport = parseFloat(r.total_pkr) || 0;
+          const diff = saleFromReport - saleFromPurchase;
+          return {
+            ref_no: r.ref_no,
+            customer_name: r.customer_name,
+            type: r.type,
+            sale_report: saleFromReport,
+            sale_purchase: saleFromPurchase,
+            diff,
+          };
+        })
+        .filter(row => row.diff !== 0); // 🔹 Hide rows where diff = 0
+
+      setData(combined);
+    } catch (err) {
+      console.error(err);
+      setError(err.message || "Failed to load data");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
-    <div style={{ padding: "20px" }}>
-      <h2>Sale vs Purchase Mismatch Report</h2>
-      <table style={{ width: "100%", borderCollapse: "collapse", marginTop: "20px" }}>
-        <thead>
-          <tr>
-            <th style={thStyle}>Ref No</th>
-            <th style={thStyle}>Item</th>
-            <th style={thStyle}>Purchase Sale (PKR)</th>
-            <th style={thStyle}>Current Sale (PKR)</th>
-            <th style={thStyle}>Difference</th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((r, i) => (
-            <tr key={i} style={i % 2 ? { background: "#f9f9f9" } : {}}>
-              <td style={tdStyle}>{r.ref_no}</td>
-              <td style={tdStyle}>{r.item}</td>
-              <td style={tdStyle}>{r.purchase_sale_pkr.toLocaleString()}</td>
-              <td style={tdStyle}>{r.current_sale_pkr.toLocaleString()}</td>
-              <td style={{ ...tdStyle, color: r.diff !== 0 ? "red" : "black" }}>
-                {r.diff.toLocaleString()}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+    <div className="container my-4">
+      {/* HEADING */}
+      <div className="text-center mb-4">
+        <h2 className="fw-bold text-primary">📊 Sale vs Purchase Check Report</h2>
+        <p className="text-muted">Only showing mismatches and records with purchases</p>
+      </div>
+
+      {/* FILTERS */}
+      <div className="row mb-3 g-2">
+        <div className="col-md-3">
+          <input
+            type="date"
+            className="form-control form-control-sm"
+            value={from}
+            onChange={(e) => setFrom(e.target.value)}
+          />
+        </div>
+        <div className="col-md-3">
+          <input
+            type="date"
+            className="form-control form-control-sm"
+            value={to}
+            onChange={(e) => setTo(e.target.value)}
+          />
+        </div>
+        <div className="col-md-3">
+          <input
+            type="text"
+            className="form-control form-control-sm"
+            value={ref}
+            onChange={(e) => setRef(e.target.value)}
+            placeholder="Ref No / Customer"
+          />
+        </div>
+        <div className="col-md-3 d-flex gap-2">
+          <button className="btn btn-primary btn-sm w-50" onClick={loadData}>
+            🔍 Load
+          </button>
+          <button className="btn btn-secondary btn-sm w-50" onClick={() => onNavigate && onNavigate("dashboard")}>
+            ⬅ Back
+          </button>
+        </div>
+      </div>
+
+      {loading && <div>Loading...</div>}
+      {error && <div className="text-danger">{error}</div>}
+
+      {!loading && !error && (
+        <div className="table-responsive">
+          <table className="table table-bordered table-striped table-hover">
+            <thead className="table-dark">
+              <tr>
+                <th>#</th>
+                <th>Ref No</th>
+                <th>Customer Name</th>
+                <th>Type</th>
+                <th>Sale (Report)</th>
+                <th>Sale (Purchase)</th>
+                <th>Difference</th>
+              </tr>
+            </thead>
+            <tbody>
+              {data.length === 0 && (
+                <tr>
+                  <td colSpan="7" className="text-center text-muted">
+                    No mismatches found
+                  </td>
+                </tr>
+              )}
+              {data.map((row, i) => (
+                <tr key={row.ref_no}>
+                  <td>{i + 1}</td>
+                  <td>{row.ref_no}</td>
+                  <td>{row.customer_name}</td>
+                  <td>{row.type}</td>
+                  <td>{fmt(row.sale_report)}</td>
+                  <td>{fmt(row.sale_purchase)}</td>
+                  <td style={{ color: "red", fontWeight: "bold" }}>
+                    {fmt(row.diff)}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   );
 }
-
-const thStyle = {
-  border: "1px solid #ddd",
-  padding: "8px",
-  background: "#4CAF50",
-  color: "white",
-  textAlign: "left"
-};
-
-const tdStyle = {
-  border: "1px solid #ddd",
-  padding: "8px"
-};
