@@ -117,8 +117,6 @@ export default function HotelVoucher({ onNavigate }) {
             <h3 style={{ color: "#0d6efd", fontWeight: "bold" }}>
               ✈️ MAKKI MADNI TRAVEL
             </h3>
-            <div className="fw-bold">HOTEL VOUCHER</div>
-          </div>
 
           {/* ADDRESS */}
           <div className="text-center small mb-3" style={{ color: "#444" }}>
@@ -128,6 +126,8 @@ export default function HotelVoucher({ onNavigate }) {
           </div>
 
           <hr />
+            <div className="fw-bold">HOTEL VOUCHER</div>
+          </div>
 
           {/* BASIC INFO */}
           <div className="row mb-2">
