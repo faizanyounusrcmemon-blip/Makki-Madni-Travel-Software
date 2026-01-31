@@ -41,7 +41,7 @@ export default function PackagesView({ id, onNavigate }) {
       });
   }, [id]);
 
-  /* ================= EXPORT PDF (PORTRAIT – NO BLUR) ================= */
+  /* ================= EXPORT PDF ================= */
   const exportPDF = async () => {
     const canvas = await html2canvas(ref.current, {
       scale: 2,
@@ -49,7 +49,6 @@ export default function PackagesView({ id, onNavigate }) {
     });
 
     const imgData = canvas.toDataURL("image/jpeg", 1.0);
-
     const pdf = new jsPDF("p", "mm", "a4");
 
     const pdfWidth = pdf.internal.pageSize.getWidth();
@@ -59,13 +58,11 @@ export default function PackagesView({ id, onNavigate }) {
     const imgHeight = (canvas.height * imgWidth) / canvas.width;
 
     let heightLeft = imgHeight;
-    let position = 10; // top margin
+    let position = 10;
 
-    // 🔹 First page
     pdf.addImage(imgData, "JPEG", 0, position, imgWidth, imgHeight);
     heightLeft -= pdfHeight;
 
-    // 🔹 Extra pages
     while (heightLeft > 0) {
       position = heightLeft - imgHeight + 10;
       pdf.addPage();
@@ -144,14 +141,18 @@ export default function PackagesView({ id, onNavigate }) {
         ) : (
           <p>No flights</p>
         )}
+
         <p>
           Adults: {data.adult_count} × {data.adult_rate}<br />
           Child: {data.child_count} × {data.child_rate}<br />
           Infant: {data.infant_count} × {data.infant_rate}
         </p>
+
         <p>
-          <b>Flight SAR:</b> {Number(data.flight_sar_total || 0).toLocaleString()}<br />
-          <b>Flight PKR:</b> {Number(data.flight_pkr_total || 0).toLocaleString()}
+          <b>Flight SAR:</b>{" "}
+          {Number(data.flight_sar_total || 0).toLocaleString()}<br />
+          <b>Flight PKR:</b>{" "}
+          {Number(data.flight_pkr_total || 0).toLocaleString()}
         </p>
 
         <hr />
@@ -171,21 +172,30 @@ export default function PackagesView({ id, onNavigate }) {
         ) : (
           <p>No hotels</p>
         )}
+
         <p>
-          <b>Hotel SAR:</b> {Number(data.hotel_sar_total || 0).toLocaleString()}<br />
-          <b>Hotel PKR:</b> {Number(data.hotel_pkr_total || 0).toLocaleString()}
+          <b>Hotel SAR:</b>{" "}
+          {Number(data.hotel_sar_total || 0).toLocaleString()}<br />
+          <b>Hotel PKR:</b>{" "}
+          {Number(data.hotel_pkr_total || 0).toLocaleString()}
         </p>
 
         <hr />
 
-        {/* ================= VISA ================= */}
+        {/* ================= VISA (JSONB) ================= */}
         <h5 className="fw-bold">🛂 Visa</h5>
-        {data.visa_persons > 0 ? (
+        {Array.isArray(data.visa) && data.visa.length > 0 ? (
           <>
-            <p>Persons: {data.visa_persons} × {data.visa_rate}</p>
-            <p>
-              <b>Visa SAR:</b> {Number(data.visa_sar_total || 0).toLocaleString()}<br />
-              <b>Visa PKR:</b> {Number(data.visa_pkr_total || 0).toLocaleString()}
+            {data.visa.map((v, i) => (
+              <div key={i}>
+                {v.type || "Visa"} — {v.persons} × {v.rate} = {v.total}
+              </div>
+            ))}
+            <p className="mt-1">
+              <b>Visa SAR:</b>{" "}
+              {Number(data.visa_sar_total || 0).toLocaleString()}<br />
+              <b>Visa PKR:</b>{" "}
+              {Number(data.visa_pkr_total || 0).toLocaleString()}
             </p>
           </>
         ) : (
@@ -205,9 +215,12 @@ export default function PackagesView({ id, onNavigate }) {
         ) : (
           <p>No transport</p>
         )}
+
         <p>
-          <b>Transport SAR:</b> {Number(data.transport_sar_total || 0).toLocaleString()}<br />
-          <b>Transport PKR:</b> {Number(data.transport_pkr_total || 0).toLocaleString()}
+          <b>Transport SAR:</b>{" "}
+          {Number(data.transport_sar_total || 0).toLocaleString()}<br />
+          <b>Transport PKR:</b>{" "}
+          {Number(data.transport_pkr_total || 0).toLocaleString()}
         </p>
 
         <hr />
@@ -217,26 +230,29 @@ export default function PackagesView({ id, onNavigate }) {
         {Array.isArray(data.ziyarat) && data.ziyarat.length > 0 ? (
           data.ziyarat.map((z, i) => (
             <p key={i}>
-              {z.text || z.route || z.description} — {Number(z.amount || 0).toLocaleString()}
+              {z.text || z.route || z.description} —{" "}
+              {Number(z.amount || 0).toLocaleString()}
             </p>
           ))
         ) : (
           <p>No ziyarat</p>
         )}
+
         <p>
-          <b>Ziyarat SAR:</b> {Number(data.ziyarat_sar_total || 0).toLocaleString()}<br />
-          <b>Ziyarat PKR:</b> {Number(data.ziyarat_pkr_total || 0).toLocaleString()}
+          <b>Ziyarat SAR:</b>{" "}
+          {Number(data.ziyarat_sar_total || 0).toLocaleString()}<br />
+          <b>Ziyarat PKR:</b>{" "}
+          {Number(data.ziyarat_pkr_total || 0).toLocaleString()}
         </p>
 
         <hr />
 
         {/* ================= SUMMARY ================= */}
         <h4 className="fw-bold text-end">
-          NET PKR TOTAL: {Number(data.net_pkr_total || 0).toLocaleString()}
+          NET PKR TOTAL:{" "}
+          {Number(data.net_pkr_total || 0).toLocaleString()}
         </h4>
       </div>
     </div>
   );
 }
-
-

@@ -1,4 +1,3 @@
-
 import React, { useState, useRef } from "react";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
@@ -22,7 +21,7 @@ const styles = {
   },
   mainHeader: {
     textAlign: "center",
-    color: "#4b0082", // deep purple
+    color: "#4b0082",
     fontWeight: "bold",
     fontSize: "2rem",
     marginBottom: 0,
@@ -30,7 +29,7 @@ const styles = {
   },
   subHeader: {
     textAlign: "center",
-    color: "#6a0dad", // violet accent
+    color: "#6a0dad",
     fontSize: "1rem",
     marginBottom: 3,
   },
@@ -43,7 +42,7 @@ const styles = {
     marginBottom: 20,
   },
   sectionHeader: {
-    background: "linear-gradient(to right, #6a0dad, #8a2be2)", // violet gradient
+    background: "linear-gradient(to right, #6a0dad, #8a2be2)",
     color: "#fff",
     padding: "5px 10px",
     borderRadius: "5px",
@@ -60,7 +59,7 @@ const styles = {
     overflow: "hidden",
   },
   th: {
-    background: "#8a2be2", // violet
+    background: "#8a2be2",
     color: "#fff",
     padding: "8px",
     textAlign: "left",
@@ -84,13 +83,11 @@ export default function Visa({ onNavigate }) {
   const [bookingDate, setBookingDate] = useState("");
   const [rows, setRows] = useState([]);
   const [pkrRate, setPkrRate] = useState(0);
-  const pdfRef = useRef(null);
   const [isEdit, setIsEdit] = useState(false);
+  const pdfRef = useRef(null);
 
-
-  const addRow = () =>
-    setRows([...rows, { type: "", persons: 0, rate: 0, total: 0 }]);
-
+  // -------------------- Row Management --------------------
+  const addRow = () => setRows([...rows, { type: "", persons: 0, rate: 0, total: 0 }]);
   const removeRow = (i) => setRows(rows.filter((_, x) => x !== i));
 
   const updateRow = (i, field, value) => {
@@ -98,132 +95,100 @@ export default function Visa({ onNavigate }) {
     copy[i][field] = value;
     const persons = Number(copy[i].persons) || 0;
     const rate = Number(copy[i].rate) || 0;
-    copy[i].total = persons * rate;
+    copy[i].total = persons * rate; // total SAR
     setRows(copy);
   };
 
-  const totalSAR = rows.reduce((s, r) => s + r.total, 0);
-  const totalPKR = totalSAR * pkrRate;
-
+  // -------------------- Load Existing Visa --------------------
   const loadVisa = async () => {
     if (!searchRef) return alert("Ref No likho");
 
-    // ========================
-    // 1️⃣ Fetch Visa
-    // ========================
     const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/visa/get/${searchRef}`);
     const data = await res.json();
 
     if (!data.success) return alert("Record not found");
-    const d = data.row;
 
-    // ========================
-    // 2️⃣ Check if purchase entries exist
-    // ========================
-    const purchaseRes = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/purchase/check/${d.ref_no}`);
+    // Purchase check
+    const purchaseRes = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/purchase/check/${data.row.ref_no}`);
     const purchaseData = await purchaseRes.json();
-
-    // Ziyarat wala check style
     if (purchaseData.total > 0) {
-      return alert("❌ Cannot edit. Purchase entries exist for this Ref No. Delete purchases first.");
+      return alert("❌ Cannot edit. Purchase entries exist for this Ref No.");
     }
 
-    // ========================
-    // 3️⃣ Load Visa data into form
-    // ========================
+    const d = data.row;
     setRefNo(d.ref_no);
     setCustomerName(d.customer_name);
     setBookingDate(d.booking_date);
     setRows(d.rows || []);
     setPkrRate(d.pkr_rate || 0);
     setIsEdit(true);
-
-    alert("✅ Visa Edit Mode load successfully!");
+    alert("✅ Visa loaded for edit!");
   };
 
+  // -------------------- Save / Update --------------------
   const saveData = async () => {
     const payload = {
       ref_no: refNo || null,
       customer_name: customerName,
       booking_date: bookingDate,
       rows,
-      persons: rows.reduce((s, r) => s + Number(r.persons || 0), 0),
-      rate: 0,
-      total_sar: totalSAR,
       pkr_rate: pkrRate,
-      total_pkr: totalPKR,
     };
+
     const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/visa/save`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
     });
+
     const data = await res.json();
     if (data.success) {
       setRefNo(data.ref_no);
-      alert("✅ Visa Saved Successfully! Ref#: " + data.ref_no);
+      alert("✅ Visa saved successfully! Ref#: " + data.ref_no);
       onNavigate("dashboard");
     } else {
       alert("ERROR: " + data.error);
     }
   };
 
+  // -------------------- Export PDF --------------------
   const exportPDF = async () => {
     const canvas = await html2canvas(pdfRef.current, { scale: 4 });
     const img = canvas.toDataURL("image/jpeg");
     const pdf = new jsPDF("l", "mm", "a4");
-    pdf.addImage(
-      img,
-      "JPEG",
-      0,
-      0,
-      pdf.internal.pageSize.getWidth(),
-      pdf.internal.pageSize.getHeight()
-    );
-    pdf.save("visa.pdf");
+    pdf.addImage(img, "JPEG", 0, 0, pdf.internal.pageSize.getWidth(), pdf.internal.pageSize.getHeight());
+    pdf.save(`${refNo || "Visa"}.pdf`);
   };
 
+  // -------------------- Calculated Totals --------------------
+  const totalSAR = rows.reduce((s, r) => s + Number(r.total || 0), 0);
+  const totalPKR = totalSAR * (Number(pkrRate) || 0);
+
+  // -------------------- JSX --------------------
   return (
     <div style={styles.container}>
       <div className="d-flex justify-content-between mb-3">
-        <button className="btn btn-dark btn-sm" style={styles.button} onClick={() => onNavigate("dashboard")}>
-          ← Back
-        </button>
+        <button className="btn btn-dark btn-sm" style={styles.button} onClick={() => onNavigate("dashboard")}>← Back</button>
         <div className="d-flex gap-2">
-          <button
-            className={`btn btn-sm ${
-              isEdit ? "btn-warning text-dark" : "btn-primary"
-            }`}
-            style={styles.button}
-            onClick={saveData}
-          >
+          <button className={`btn btn-sm ${isEdit ? "btn-warning text-dark" : "btn-primary"}`} style={styles.button} onClick={saveData}>
             {isEdit ? "✏ Update Save" : "💾 Save"}
           </button>
-
-          <input
-            className="form-control form-control-sm"
-            style={{ width: 140, borderRadius: 50 }}
-            placeholder="Search Ref"
-            value={searchRef}
-            onChange={(e) => setSearchRef(e.target.value)}
-          />
+          <input className="form-control form-control-sm" style={{ width: 140, borderRadius: 50 }} placeholder="Search Ref" value={searchRef} onChange={(e) => setSearchRef(e.target.value)} />
           <button className="btn btn-warning btn-sm" style={styles.button} onClick={loadVisa}>🔄 Load / Edit</button>
           <button className="btn btn-success btn-sm" style={styles.button} onClick={exportPDF}>📄 Export PDF</button>
         </div>
       </div>
 
       <div ref={pdfRef} style={styles.card}>
-        {/* VIP HEADER */}
         <h1 style={styles.mainHeader}>✈️ MAKKI MADNI TRAVEL</h1>
         <p style={styles.subHeader}>
-          Shop #4 Diamond City Building, Near Zeenat-ul-Islam Masjid<br />
-          Garden West, Karachi<br />
+          Shop #4 Diamond City Building, Near Zeenat-ul-Islam Masjid<br/>
+          Garden West, Karachi<br/>
           ✉️ makkimadnitravel@gmail.com | ☎️ 0335-7476744
         </p>
 
         <h4 style={styles.quoteHeader}>VISA QUOTATION</h4>
 
-        {/* INFO */}
         <div className="d-flex gap-3 mb-3">
           <div>
             <label>Ref No</label>
@@ -239,7 +204,6 @@ export default function Visa({ onNavigate }) {
           </div>
         </div>
 
-        {/* TABLE */}
         <h5 style={styles.sectionHeader}>🛂 Visa Details</h5>
         <button className="btn btn-outline-primary btn-sm mb-2" style={styles.button} onClick={addRow}>➕ Add Visa Row</button>
 
@@ -259,14 +223,13 @@ export default function Visa({ onNavigate }) {
                 <td style={styles.td}><input className="form-control form-control-sm" value={r.type} onChange={(e) => updateRow(i, "type", e.target.value)} /></td>
                 <td style={styles.td}><input type="number" className="form-control form-control-sm" value={r.persons} onChange={(e) => updateRow(i, "persons", e.target.value)} /></td>
                 <td style={styles.td}><input type="number" className="form-control form-control-sm" value={r.rate} onChange={(e) => updateRow(i, "rate", e.target.value)} /></td>
-                <td style={{...styles.td, fontWeight: "bold"}}>{r.total}</td>
-                <td style={{...styles.td, textAlign: "center"}}><button className="btn btn-sm btn-danger" onClick={() => removeRow(i)}>✖</button></td>
+                <td style={{...styles.td, fontWeight:"bold"}}>{r.total}</td>
+                <td style={{...styles.td, textAlign:"center"}}><button className="btn btn-sm btn-danger" onClick={() => removeRow(i)}>✖</button></td>
               </tr>
             ))}
           </tbody>
         </table>
 
-        {/* SUMMARY */}
         <h5 style={styles.sectionHeader}>✨ Summary</h5>
         <table className="table table-sm">
           <tbody>

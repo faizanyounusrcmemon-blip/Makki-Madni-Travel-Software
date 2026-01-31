@@ -50,9 +50,26 @@ export default function Packages({ onNavigate }) {
   };
   const hotelsTotal = hotels.reduce((sum, h) => sum + (h.total || 0), 0);
 
-  const [visaPersons, setVisaPersons] = useState(0);
-  const [visaRate, setVisaRate] = useState(0);
-  const visaTotal = visaPersons * visaRate;
+  const [visaRows, setVisaRows] = useState([]);
+
+  const addVisaRow = () =>
+    setVisaRows([...visaRows, { type: "", persons: 0, rate: 0, total: 0 }]);
+
+  const removeVisaRow = (i) =>
+    setVisaRows(visaRows.filter((_, x) => x !== i));
+
+  const handleVisaChange = (i, field, value) => {
+    const rows = [...visaRows];
+    rows[i][field] = value;
+
+    const persons = Number(rows[i].persons);
+    const rate = Number(rows[i].rate);
+    rows[i].total = persons * rate;
+
+    setVisaRows(rows);
+  };
+
+  const visaTotal = visaRows.reduce((sum, v) => sum + (v.total || 0), 0);
 
   const [transportRows, setTransportRows] = useState([]);
   const addTransportRow = () => setTransportRows([...transportRows, { text: "", amount: 0 }]);
@@ -72,7 +89,8 @@ export default function Packages({ onNavigate }) {
 
   const flightPKR = flightTotal * flightRate;
   const hotelsPKR = hotelsTotal * hotelsRate;
-  const visaPKR = visaTotal * visaRatePKR;
+  const sarToPkrRate = Number(visaRatePKR || 0);
+  const visaPKR = visaTotal * sarToPkrRate;
   const transportPKR = transportTotal * transportRate;
   const ziyaratPKR = ziyaratTotal * ziyaratRate;
   const grandPKR = flightPKR + hotelsPKR + visaPKR + transportPKR + ziyaratPKR;
@@ -156,8 +174,19 @@ export default function Packages({ onNavigate }) {
     setInfantRate(d.infant_rate);
     setFlights(d.flights || []);
     setHotels(d.hotels || []);
-    setVisaPersons(d.visa_persons);
-    setVisaRate(d.visa_rate);
+    setVisaRows(
+      d.visa && d.visa.length > 0
+        ? d.visa
+        : d.visa_persons > 0
+        ? [{
+            type: "Visa",
+            persons: d.visa_persons,
+            rate: d.visa_rate,
+            total: d.visa_total
+          }]
+        : []
+    );
+
     setTransportRows(d.transport || []);
     setZiyaratRows(d.ziyarat || []);
     setZiyaratRate(d.ziyarat_sar_rate || 0);
@@ -165,7 +194,6 @@ export default function Packages({ onNavigate }) {
     setHotelsRate(d.hotel_sar_rate);
     setVisaRatePKR(d.visa_sar_rate);
     setTransportRate(d.transport_sar_rate);
-    setZiyaratRate(d.ziyarat_sar_rate || 0);
     setPersonQty(d.per_person_qty || 1);
     setIsEdit(true);
 
@@ -188,15 +216,14 @@ export default function Packages({ onNavigate }) {
       flights,
       hotels,
       hotels_total: hotelsTotal,
-      visa_persons: visaPersons,
-      visa_rate: visaRate,
-      visa_total: visaTotal,
       transport: transportRows,
       transport_total: transportTotal,
       ziyarat: ziyaratRows,
       ziyarat_total: ziyaratTotal,
       flight_sar_total: flightTotal,
       hotel_sar_total: hotelsTotal,
+      visa: visaRows,
+      visa_total: visaTotal,
       visa_sar_total: visaTotal,
       transport_sar_total: transportTotal,
       ziyarat_sar_total: ziyaratTotal,
@@ -570,33 +597,81 @@ export default function Packages({ onNavigate }) {
         ============================= */}
         <h6 className="section-title">🛂 Visa</h6>
 
+        <button
+          className="btn btn-outline-primary btn-sm mb-2"
+          onClick={addVisaRow}
+        >
+          ➕ Add Visa Row
+        </button>
+
         <table className="table table-sm">
-          <tbody>
+          <thead>
             <tr>
-              <td width="150">Persons</td>
-              <td>
-                <input
-                  type="number"
-                  className="form-control form-control-sm"
-                  value={visaPersons}
-                  onChange={(e) => setVisaPersons(+e.target.value)}
-                />
-              </td>
-
-              <td width="150">Rate</td>
-              <td>
-                <input
-                  type="number"
-                  className="form-control form-control-sm"
-                  value={visaRate}
-                  onChange={(e) => setVisaRate(+e.target.value)}
-                />
-              </td>
-
-              <td className="fw-bold">{visaTotal.toLocaleString()}</td>
+              <th>Visa Type</th>
+              <th width="120">Persons</th>
+              <th width="150">Rate</th>
+              <th width="150">Total</th>
+              <th></th>
             </tr>
+          </thead>
+
+          <tbody>
+            {visaRows.map((v, i) => (
+              <tr key={i}>
+                <td>
+                  <input
+                    type="text"
+                    className="form-control form-control-sm"
+                    placeholder="Visa Type"
+                    value={v.type}
+                    onChange={(e) =>
+                      handleVisaChange(i, "type", e.target.value)
+                    }
+                  />
+                </td>
+
+                <td>
+                  <input
+                    type="number"
+                    className="form-control form-control-sm"
+                    value={v.persons}
+                    onChange={(e) =>
+                      handleVisaChange(i, "persons", e.target.value)
+                    }
+                  />
+                </td>
+
+                <td>
+                  <input
+                    type="number"
+                    className="form-control form-control-sm"
+                    value={v.rate}
+                    onChange={(e) =>
+                      handleVisaChange(i, "rate", e.target.value)
+                    }
+                  />
+                </td>
+
+                <td className="fw-bold">{v.total}</td>
+
+                <td>
+                  <button
+                    className="btn btn-link text-danger"
+                    onClick={() => removeVisaRow(i)}
+                  >
+                    ✖
+                  </button>
+                </td>
+              </tr>
+            ))}
           </tbody>
         </table>
+
+        {visaRows.length > 0 && (
+          <div className="fw-bold text-end mb-3">
+            Visa Total: {visaTotal.toLocaleString()}
+          </div>
+        )}
 
         {/* =============================
             TRANSPORT SECTION
