@@ -50,7 +50,7 @@ export default function HotelsView({ id, onNavigate }) {
   }, [id]);
 
   /* ===============================
-     EXPORT PDF (PORTRAIT – NO BLUR)
+     EXPORT PDF
   =============================== */
   const exportPDF = async () => {
     if (!pdfRef.current) return;
@@ -61,22 +61,18 @@ export default function HotelsView({ id, onNavigate }) {
     });
 
     const imgData = canvas.toDataURL("image/jpeg", 1.0);
-
     const pdf = new jsPDF("p", "mm", "a4");
 
     const pdfWidth = pdf.internal.pageSize.getWidth();
     const pdfHeight = pdf.internal.pageSize.getHeight();
 
-    const imgWidth = canvas.width;
-    const imgHeight = canvas.height;
-
     const ratio = Math.min(
-      pdfWidth / imgWidth,
-      pdfHeight / imgHeight
+      pdfWidth / canvas.width,
+      pdfHeight / canvas.height
     );
 
-    const imgW = imgWidth * ratio;
-    const imgH = imgHeight * ratio;
+    const imgW = canvas.width * ratio;
+    const imgH = canvas.height * ratio;
 
     const x = (pdfWidth - imgW) / 2;
     const y = 8;
@@ -90,9 +86,7 @@ export default function HotelsView({ id, onNavigate }) {
     pdf.save(fileName);
   };
 
-  if (!data) {
-    return <div className="p-3">Loading...</div>;
-  }
+  if (!data) return <div className="p-3">Loading...</div>;
 
   return (
     <div className="container mt-3">
@@ -117,15 +111,15 @@ export default function HotelsView({ id, onNavigate }) {
       <div
         ref={pdfRef}
         className="bg-white p-3 border"
-        style={{ width: "794px", margin: "auto" }} // A4 preview
+        style={{ width: "794px", margin: "auto" }}
       >
-        {/* ================= HEADER ================= */}
+        {/* HEADER */}
         <div className="text-center mb-3">
-          <h2 className="fw-bold mb-1" style={{ letterSpacing: "1px" }}>
+          <h2 className="fw-bold mb-1">
             ✈️ MAKKI MADNI TRAVEL
           </h2>
 
-          <div style={{ fontSize: "13px", lineHeight: "1.4" }}>
+          <div style={{ fontSize: "13px" }}>
             <div>
               Shop #4 Diamond City Building, Near Zeenat-ul-Islam Masjid
             </div>
@@ -135,13 +129,14 @@ export default function HotelsView({ id, onNavigate }) {
             </div>
           </div>
 
-          <hr style={{ margin: "8px 0", borderTop: "2px solid #000" }} />
+          <hr style={{ borderTop: "2px solid #000" }} />
         </div>
 
         <h4 className="fw-bold text-center mb-3">
           🏨 HOTEL QUOTATION
         </h4>
 
+        {/* BASIC INFO */}
         <div className="row mb-2">
           <div className="col-6">
             <b>Ref No:</b> {data.ref_no}
@@ -157,8 +152,15 @@ export default function HotelsView({ id, onNavigate }) {
           {data.customer_name || "-"}
         </p>
 
+        {/* ✅ AGENT NAME ADDED */}
+        <p>
+          <b>Agent Name:</b>{" "}
+          {data.agent_name || "-"}
+        </p>
+
         <hr />
 
+        {/* HOTEL DETAILS */}
         <h5 className="fw-bold mb-2">Hotel Details</h5>
 
         {(!Array.isArray(data.hotels) ||
@@ -170,10 +172,7 @@ export default function HotelsView({ id, onNavigate }) {
 
         {Array.isArray(data.hotels) &&
           data.hotels.map((h, i) => (
-            <div
-              key={i}
-              className="border rounded p-2 mb-2"
-            >
+            <div key={i} className="border rounded p-2 mb-2">
               <div className="fw-bold mb-1">
                 {i + 1}. {h.hotel}
               </div>
@@ -216,6 +215,7 @@ export default function HotelsView({ id, onNavigate }) {
 
         <hr />
 
+        {/* SUMMARY */}
         <h5 className="fw-bold">Summary</h5>
 
         <p>
@@ -235,4 +235,3 @@ export default function HotelsView({ id, onNavigate }) {
     </div>
   );
 }
-
