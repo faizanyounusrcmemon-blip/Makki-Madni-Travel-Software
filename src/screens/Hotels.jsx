@@ -86,6 +86,7 @@ const styles = {
 export default function Hotels({ onNavigate }) {
   const [searchRef, setSearchRef] = useState("");
   const [customerName, setCustomerName] = useState("");
+  const [agentName, setAgentName] = useState("");
   const [refNo, setRefNo] = useState("");
   const [bookingDate, setBookingDate] = useState("");
   const [rows, setRows] = useState([]);
@@ -153,6 +154,7 @@ export default function Hotels({ onNavigate }) {
 
     setRefNo(d.ref_no);
     setCustomerName(d.customer_name);
+    setAgentName(d.agent_name || "");
     setBookingDate(d.booking_date);
     setRows(d.hotels || []);
     setSarRate(d.sar_rate || 0);
@@ -162,7 +164,7 @@ export default function Hotels({ onNavigate }) {
   };
 
   const saveData = async () => {
-    const payload = { ref_no: refNo || null, customer_name: customerName, booking_date: bookingDate, hotels: rows, hotels_total: hotelsTotal, sar_rate: sarRate, total_pkr: hotelPKR };
+    const payload = { ref_no: refNo || null, customer_name: customerName, agent_name: agentName, booking_date: bookingDate, hotels: rows, hotels_total: hotelsTotal, sar_rate: sarRate, total_pkr: hotelPKR };
     const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/hotels/save`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
     const data = await res.json();
     if (data.success) { setRefNo(data.ref_no); alert("✅ Hotels Saved Successfully! Ref#: " + data.ref_no); onNavigate("dashboard"); }
@@ -214,6 +216,7 @@ export default function Hotels({ onNavigate }) {
         <div className="d-flex gap-3 mb-3">
           <div><label>Ref No</label><input className="form-control form-control-sm" value={refNo} readOnly /></div>
           <div><label>Customer Name</label><input className="form-control form-control-sm" value={customerName} onChange={(e) => setCustomerName(e.target.value)} /></div>
+          <div><label>Agent Name</label><input className="form-control form-control-sm" value={agentName} onChange={(e) => setAgentName(e.target.value)} placeholder="Agent name" /> </div>
           <div><label>Booking Date</label><input type="date" className="form-control form-control-sm" value={bookingDate} onChange={(e) => setBookingDate(e.target.value)} /><small className="text-muted">{showDate(bookingDate)}</small></div>
         </div>
 

@@ -37,16 +37,19 @@ export default function HotelVoucher({ onNavigate }) {
       const d = await res.json();
       if (!d.success) return alert("Voucher not found");
 
-      // normalize data
       if (isPkg) {
         setData({
           ref_no: d.ref_no,
           customer_name: d.customer_name,
           booking_date: d.booking_date,
           hotels: d.hotels || [],
+          agent_name: "", // PKG me agent nahi
         });
       } else {
-        setData(d.row);
+        setData({
+          ...d.row,
+          agent_name: d.row.agent_name || "", // HOT agent
+        });
       }
     } catch {
       alert("Failed to load voucher");
@@ -72,13 +75,9 @@ export default function HotelVoucher({ onNavigate }) {
 
   return (
     <div className="container py-3">
-
       {/* TOP BAR */}
       <div className="d-flex gap-2 mb-3">
-        <button
-          className="btn btn-dark btn-sm"
-          onClick={() => onNavigate("dashboard")}
-        >
+        <button className="btn btn-dark btn-sm" onClick={() => onNavigate("dashboard")}>
           ← Back
         </button>
 
@@ -140,11 +139,14 @@ export default function HotelVoucher({ onNavigate }) {
             </div>
           </div>
 
+          {/* ✅ AGENT NAME (FIXED — LABEL HAMESHA SHOW) */}
+          <div className="mb-2">
+            <b>Agent Name:</b>{" "}
+            {data.agent_name ? data.agent_name : "—"}
+          </div>
+
           {/* CONFIRMATION NO */}
-          <div
-            className="d-flex align-items-center gap-2 mb-3"
-            style={{ maxWidth: 350 }}
-          >
+          <div className="d-flex align-items-center gap-2 mb-3" style={{ maxWidth: 350 }}>
             <b>Confirmation No:</b>
             <input
               type="text"
@@ -170,11 +172,7 @@ export default function HotelVoucher({ onNavigate }) {
           )}
 
           {data?.hotels?.map((h, i) => (
-            <div
-              key={i}
-              className="border rounded p-2 mb-2"
-              style={{ background: "#ffffff" }}
-            >
+            <div key={i} className="border rounded p-2 mb-2" style={{ background: "#ffffff" }}>
               <div><b>Hotel:</b> {h.hotel}</div>
               <div><b>Address:</b> {h.location}</div>
 
@@ -192,7 +190,7 @@ export default function HotelVoucher({ onNavigate }) {
             </div>
           ))}
 
-          {/* ✅ CHECK-IN / CHECK-OUT TIMING (RESTORED) */}
+          {/* CHECK IN / OUT */}
           <div
             className="mt-3 p-2 text-center fw-bold"
             style={{
@@ -206,7 +204,7 @@ export default function HotelVoucher({ onNavigate }) {
             CHECK OUT TIME: 02:00 PM
           </div>
 
-          {/* ✅ FOOTER (RESTORED) */}
+          {/* FOOTER */}
           <div className="text-center small mt-3" style={{ color: "#555" }}>
             Please check your hotel details carefully.<br />
             This voucher is valid only for the mentioned booking.
@@ -216,4 +214,3 @@ export default function HotelVoucher({ onNavigate }) {
     </div>
   );
 }
-
