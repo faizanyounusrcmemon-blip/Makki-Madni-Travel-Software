@@ -3,10 +3,91 @@
   <head>
     <meta charset="UTF-8" />
     <title>Makki Madni Travel</title>
+
+    <!-- MOBILE RESPONSIVE -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <!-- GLOBAL RESPONSIVE + UI CSS -->
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        font-family: "Segoe UI", Tahoma, Arial, sans-serif;
+        background: #f4f6f8;
+        color: #222;
+      }
+
+      /* ROOT WRAPPER */
+      #root {
+        width: 100%;
+      }
+
+      /* GLOBAL CONTAINER */
+      .container,
+      .app-wrapper {
+        width: 100%;
+        max-width: 1400px;
+        margin: auto;
+        padding: 10px;
+      }
+
+      /* TABLE BEAUTY + BORDER */
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        background: #fff;
+      }
+
+      th,
+      td {
+        border: 1px solid #d0d0d0;
+        padding: 8px;
+        font-size: 14px;
+        text-align: left;
+        white-space: nowrap;
+      }
+
+      th {
+        background: #f1f3f5;
+        font-weight: 600;
+      }
+
+      /* TABLE SCROLL FOR MOBILE */
+      .table-responsive {
+        width: 100%;
+        overflow-x: auto;
+      }
+
+      /* BUTTONS */
+      button {
+        cursor: pointer;
+      }
+
+      /* MOBILE ADJUSTMENTS */
+      @media (max-width: 768px) {
+        body {
+          font-size: 13px;
+        }
+
+        th,
+        td {
+          padding: 6px;
+          font-size: 12px;
+        }
+
+        h1, h2, h3 {
+          font-size: 16px;
+        }
+      }
+    </style>
   </head>
-  <body class="bg-dark">
+
+  <body>
     <div id="root"></div>
+
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>
