@@ -3,7 +3,6 @@ import "./Navbar.css";
 
 export default function Navbar({ onNavigate }) {
   const [open, setOpen] = useState(null);
-  const [mobileOpen, setMobileOpen] = useState(false);
 
   const user = JSON.parse(sessionStorage.getItem("user")) || {};
   const isAdmin = user?.role === "admin";
@@ -12,7 +11,6 @@ export default function Navbar({ onNavigate }) {
 
   const go = (page) => {
     setOpen(null);
-    setMobileOpen(false);
     onNavigate(page);
   };
 
@@ -24,20 +22,12 @@ export default function Navbar({ onNavigate }) {
 
   return (
     <nav className="vip-navbar">
-      {/* LOGO */}
       <div className="nav-logo" onClick={() => go("dashboard")}>
         ✈ Makki Madni Travel
       </div>
 
-      {/* MOBILE TOGGLE */}
-      <div className="nav-toggle" onClick={() => setMobileOpen(!mobileOpen)}>
-        ☰
-      </div>
+      <div className="nav-links">
 
-      {/* LINKS */}
-      <div className={`nav-links ${mobileOpen ? "open" : ""}`}>
-
-        {/* SALES */}
         <div className="nav-item">
           <span className="nav-title" onClick={() => setOpen(open === "sales" ? null : "sales")}>
             Sales ▾
@@ -54,7 +44,6 @@ export default function Navbar({ onNavigate }) {
           )}
         </div>
 
-        {/* PURCHASE */}
         <div className="nav-item">
           <span className="nav-title" onClick={() => setOpen(open === "purchase" ? null : "purchase")}>
             Purchase ▾
@@ -68,7 +57,6 @@ export default function Navbar({ onNavigate }) {
           )}
         </div>
 
-        {/* LEDGER */}
         <div className="nav-item">
           <span className="nav-title" onClick={() => setOpen(open === "ledger" ? null : "ledger")}>
             Ledger ▾
@@ -85,7 +73,18 @@ export default function Navbar({ onNavigate }) {
           )}
         </div>
 
-        {/* REPORTS */}
+        <div className="nav-item">
+          <span className="nav-title" onClick={() => setOpen(open === "voucher" ? null : "voucher")}>
+            Vouchers ▾
+          </span>
+          {open === "voucher" && (
+            <div className="menu-box">
+              {can("hotel_voucher") && <a onClick={() => go("hotelVoucher")}>🏨 Hotel Voucher</a>}
+              {can("transport_voucher") && <a onClick={() => go("transportVoucher")}>🚐 Transport Voucher</a>}
+            </div>
+          )}
+        </div>
+
         <div className="nav-item">
           <span className="nav-title" onClick={() => setOpen(open === "reports" ? null : "reports")}>
             Reports ▾
@@ -94,17 +93,21 @@ export default function Navbar({ onNavigate }) {
             <div className="menu-box">
               {can("all_reports") && <a onClick={() => go("allreports")}>📈 All Reports</a>}
               {can("profit_report") && <a onClick={() => go("profitReport")}>💰 Profit Report</a>}
-              {can("sale_adjustment_report") && <a onClick={() => go("saleAdjustmentReport")}>📉 Sale Adjustment</a>}
-              {can("supplier_adjustment_only") && <a onClick={() => go("supplierAdjustmentOnly")}>📉 Supplier Adjustment</a>}
-              {can("supplier_purchase_detail_report") && <a onClick={() => go("supplierPurchaseDetailReport")}>📦 Supplier Purchase Detail</a>}
-              {can("item_loss_zero_report") && <a onClick={() => go("itemLossZeroReport")}>📊 Loss & Zero Profit</a>}
-              {can("sale_change_check_report") && <a onClick={() => go("saleChangeCheckReport")}>📊 Sale vs Purchase Sale Check</a>}
+              {can("sale_adjustment_report") && <a onClick={() => go("saleAdjustmentReport")}>📉 Sale Adjustment Report</a>}
+              {can("supplier_adjustment_only") && <a onClick={() => go("supplierAdjustmentOnly")}>📉 Supplier Adjustment Only</a>}
+              {can("supplier_purchase_detail_report") && <a onClick={() => go("supplierPurchaseDetailReport")}>📦 Supplier Purchase Detail Report</a>}
+              {can("item_loss_zero_report") && (
+                <a onClick={() => go("itemLossZeroReport")}>
+                  📊 Item Loss & Zero Profit Report
+                </a>
+              )}
+
+              {can("sale_change_check_report") && <a onClick={() => go("saleChangeCheckReport")}>📊 Sale vs Purchase Sale Check Report</a>}
               {can("system_storage") && <a onClick={() => go("systemStorage")}>💾 System Storage</a>}
             </div>
           )}
         </div>
 
-        {/* MASTER */}
         <div className="nav-item">
           <span className="nav-title" onClick={() => setOpen(open === "master" ? null : "master")}>
             Master ▾
@@ -113,8 +116,8 @@ export default function Navbar({ onNavigate }) {
             <div className="menu-box">
               {can("create_user") && <a onClick={() => go("createUser")}>👤 Create User</a>}
               {can("manage_users") && <a onClick={() => go("manageUsers")}>🛠 Manage Users</a>}
-              {can("supplier") && <a onClick={() => go("supplier")}>🏷 Supplier</a>}
-              {can("deleted_reports") && <a onClick={() => go("deletedReports")}>🗑 Deleted</a>}
+              {can("supplier") && <a onClick={() => go("supplier")}>🏷 Supplier Profile</a>}
+              {can("deleted_reports") && <a onClick={() => go("deletedReports")}>🗑 Deleted Reports</a>}
               {can("restore") && <a onClick={() => go("restore")}>♻ Restore</a>}
             </div>
           )}
@@ -122,10 +125,11 @@ export default function Navbar({ onNavigate }) {
 
       </div>
 
-      {/* USER */}
       <div className="nav-user">
         <span className="user-name">👤 {user?.name || "User"}</span>
-        <button className="logout-btn" onClick={logout}>Logout</button>
+        <button className="logout-btn" onClick={logout}>
+          Logout
+        </button>
       </div>
     </nav>
   );
