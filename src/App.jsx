@@ -55,6 +55,9 @@ import VisaView from "./screens/VisaView";
 import TransportView from "./screens/TransportView";
 import ZiyaratView from "./screens/ZiyaratView";
 
+// Global CSS
+import "./App.css";
+
 export default function App() {
   const [page, setPage] = useState("dashboard");
   const [detail, setDetail] = useState(null);
@@ -74,7 +77,7 @@ export default function App() {
   }
 
   return (
-    <div>
+    <div className="app-container">
       <Navbar onNavigate={navigate} />
 
       {/* ================= DASHBOARD ================= */}
@@ -117,38 +120,20 @@ export default function App() {
       {page === "saleChangeCheckReport" && <SaleChangeCheckReport onNavigate={navigate} />}
       {page === "itemLossZeroReport" && <ItemLossZeroReport onNavigate={navigate} />}
       {page === "createUser" && <CreateUser onNavigate={navigate} />}
-      {page === "deletedReports" && (
-        <DeletedReports onNavigate={navigate} />
-      )}
+      {page === "deletedReports" && <DeletedReports onNavigate={navigate} />}
       {page === "restore" && <Restore onNavigate={navigate} />}
 
-      {/* ================= VOUCHERS (FIXED) ================= */}
-      {page === "hotelVoucher" && (
-        <HotelVoucher onNavigate={navigate} />
-      )}
-      {page === "transportVoucher" && (
-        <TransportVoucher onNavigate={navigate} />
-      )}
+      {/* ================= VOUCHERS ================= */}
+      {page === "hotelVoucher" && <HotelVoucher onNavigate={navigate} />}
+      {page === "transportVoucher" && <TransportVoucher onNavigate={navigate} />}
 
       {/* ================= DETAIL VIEWS ================= */}
-      {page === "packages_view" && (
-        <PackagesView id={detail} onNavigate={navigate} />
-      )}
-      {page === "hotels_view" && (
-        <HotelsView id={detail} onNavigate={navigate} />
-      )}
-      {page === "ticket_view" && (
-        <TicketingView id={detail} onNavigate={navigate} />
-      )}
-      {page === "visa_view" && (
-        <VisaView id={detail} onNavigate={navigate} />
-      )}
-      {page === "transport_view" && (
-        <TransportView id={detail} onNavigate={navigate} />
-      )}
-      {page === "ziyarat_view" && (
-        <ZiyaratView id={detail} onNavigate={navigate} />
-      )}
+      {page === "packages_view" && <PackagesView id={detail} onNavigate={navigate} />}
+      {page === "hotels_view" && <HotelsView id={detail} onNavigate={navigate} />}
+      {page === "ticket_view" && <TicketingView id={detail} onNavigate={navigate} />}
+      {page === "visa_view" && <VisaView id={detail} onNavigate={navigate} />}
+      {page === "transport_view" && <TransportView id={detail} onNavigate={navigate} />}
+      {page === "ziyarat_view" && <ZiyaratView id={detail} onNavigate={navigate} />}
     </div>
   );
 }
