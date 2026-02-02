@@ -1,0 +1,49 @@
+/* Global reset */
+html, body, #root {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  font-family: Arial, sans-serif;
+}
+
+/* Main container */
+.app-container {
+  padding: 15px;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+/* Tables / grids scrollable on mobile */
+table, .grid-container {
+  width: 100%;
+  display: block;
+  overflow-x: auto;
+}
+
+/* Inputs & buttons responsive */
+input, select, button {
+  width: auto;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+/* ================= MOBILE ================= */
+@media (max-width: 768px) {
+  .app-container {
+    padding: 8px;
+  }
+
+  nav {
+    flex-direction: column;
+  }
+
+  input, select, button {
+    width: 100%;
+    margin-bottom: 8px;
+  }
+
+  table, .grid-container {
+    overflow-x: auto;
+  }
+}
