@@ -28,22 +28,4 @@ input, select, button {
   box-sizing: border-box;
 }
 
-/* ================= MOBILE ================= */
-@media (max-width: 768px) {
-  .app-container {
-    padding: 8px;
-  }
 
-  nav {
-    flex-direction: column;
-  }
-
-  input, select, button {
-    width: 100%;
-    margin-bottom: 8px;
-  }
-
-  table, .grid-container {
-    overflow-x: auto;
-  }
-}
