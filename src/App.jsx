@@ -59,7 +59,7 @@ export default function App() {
   const [page, setPage] = useState("dashboard");
   const [detail, setDetail] = useState(null);
 
-  // 🔐 LOGIN CHECK (sessionStorage)
+  // 🔐 LOGIN CHECK
   const loggedIn = !!sessionStorage.getItem("user");
 
   // NAVIGATION HANDLER
@@ -74,7 +74,7 @@ export default function App() {
   }
 
   return (
-    <div>
+    <div className="app-wrapper">
       <Navbar onNavigate={navigate} />
 
       {/* ================= DASHBOARD ================= */}
@@ -108,21 +108,31 @@ export default function App() {
       {page === "balanceSheet" && <BalanceSheet onNavigate={navigate} />}
       {page === "expenseLedger" && <ExpenseLedger onNavigate={navigate} />}
 
-      {/* ================= REPORTS / MASTER ================= */}
+      {/* ================= REPORTS ================= */}
       {page === "allreports" && <AllReports onNavigate={navigate} />}
       {page === "profitReport" && <ProfitReport onNavigate={navigate} />}
-      {page === "saleAdjustmentReport" && <SaleAdjustmentReport onNavigate={navigate} />}
-      {page === "supplierAdjustmentOnly" && <SupplierAdjustmentOnly onNavigate={navigate} />}
-      {page === "supplierPurchaseDetailReport" && <SupplierPurchaseDetailReport onNavigate={navigate} />}
-      {page === "saleChangeCheckReport" && <SaleChangeCheckReport onNavigate={navigate} />}
-      {page === "itemLossZeroReport" && <ItemLossZeroReport onNavigate={navigate} />}
+      {page === "saleAdjustmentReport" && (
+        <SaleAdjustmentReport onNavigate={navigate} />
+      )}
+      {page === "supplierAdjustmentOnly" && (
+        <SupplierAdjustmentOnly onNavigate={navigate} />
+      )}
+      {page === "supplierPurchaseDetailReport" && (
+        <SupplierPurchaseDetailReport onNavigate={navigate} />
+      )}
+      {page === "saleChangeCheckReport" && (
+        <SaleChangeCheckReport onNavigate={navigate} />
+      )}
+      {page === "itemLossZeroReport" && (
+        <ItemLossZeroReport onNavigate={navigate} />
+      )}
       {page === "createUser" && <CreateUser onNavigate={navigate} />}
       {page === "deletedReports" && (
         <DeletedReports onNavigate={navigate} />
       )}
       {page === "restore" && <Restore onNavigate={navigate} />}
 
-      {/* ================= VOUCHERS (FIXED) ================= */}
+      {/* ================= VOUCHERS ================= */}
       {page === "hotelVoucher" && (
         <HotelVoucher onNavigate={navigate} />
       )}
