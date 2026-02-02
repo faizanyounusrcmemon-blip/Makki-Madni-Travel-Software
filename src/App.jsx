@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import Navbar from "./components/Navbar";
+import "./App.css";
 import Login from "./screens/Login";
 
 // DASHBOARD
