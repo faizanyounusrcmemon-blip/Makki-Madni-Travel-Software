@@ -96,9 +96,10 @@ export default function Navbar({ onNavigate }) {
               {can("profit_report") && <a onClick={() => go("profitReport")}>💰 Profit Report</a>}
               {can("sale_adjustment_report") && <a onClick={() => go("saleAdjustmentReport")}>📉 Sale Adjustment</a>}
               {can("supplier_adjustment_only") && <a onClick={() => go("supplierAdjustmentOnly")}>📉 Supplier Adjustment</a>}
-              {can("supplier_purchase_detail_report") && <a onClick={() => go("supplierPurchaseDetailReport")}>📦 Supplier Purchase</a>}
+              {can("supplier_purchase_detail_report") && <a onClick={() => go("supplierPurchaseDetailReport")}>📦 Supplier Purchase Detail</a>}
               {can("item_loss_zero_report") && <a onClick={() => go("itemLossZeroReport")}>📊 Loss & Zero Profit</a>}
-              {can("sale_change_check_report") && <a onClick={() => go("saleChangeCheckReport")}>📊 Sale vs Purchase</a>}
+              {can("sale_change_check_report") && <a onClick={() => go("saleChangeCheckReport")}>📊 Sale vs Purchase Sale Check</a>}
+              {can("system_storage") && <a onClick={() => go("systemStorage")}>💾 System Storage</a>}
             </div>
           )}
         </div>
