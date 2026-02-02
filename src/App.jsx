@@ -1,6 +1,5 @@
 import React, { useState } from "react";
 import Navbar from "./components/Navbar";
-import "./App.css";
 import Login from "./screens/Login";
 
 // DASHBOARD
@@ -60,7 +59,7 @@ export default function App() {
   const [page, setPage] = useState("dashboard");
   const [detail, setDetail] = useState(null);
 
-  // 🔐 LOGIN CHECK
+  // 🔐 LOGIN CHECK (sessionStorage)
   const loggedIn = !!sessionStorage.getItem("user");
 
   // NAVIGATION HANDLER
@@ -75,7 +74,7 @@ export default function App() {
   }
 
   return (
-    <div className="app-wrapper">
+    <div>
       <Navbar onNavigate={navigate} />
 
       {/* ================= DASHBOARD ================= */}
@@ -109,31 +108,21 @@ export default function App() {
       {page === "balanceSheet" && <BalanceSheet onNavigate={navigate} />}
       {page === "expenseLedger" && <ExpenseLedger onNavigate={navigate} />}
 
-      {/* ================= REPORTS ================= */}
+      {/* ================= REPORTS / MASTER ================= */}
       {page === "allreports" && <AllReports onNavigate={navigate} />}
       {page === "profitReport" && <ProfitReport onNavigate={navigate} />}
-      {page === "saleAdjustmentReport" && (
-        <SaleAdjustmentReport onNavigate={navigate} />
-      )}
-      {page === "supplierAdjustmentOnly" && (
-        <SupplierAdjustmentOnly onNavigate={navigate} />
-      )}
-      {page === "supplierPurchaseDetailReport" && (
-        <SupplierPurchaseDetailReport onNavigate={navigate} />
-      )}
-      {page === "saleChangeCheckReport" && (
-        <SaleChangeCheckReport onNavigate={navigate} />
-      )}
-      {page === "itemLossZeroReport" && (
-        <ItemLossZeroReport onNavigate={navigate} />
-      )}
+      {page === "saleAdjustmentReport" && <SaleAdjustmentReport onNavigate={navigate} />}
+      {page === "supplierAdjustmentOnly" && <SupplierAdjustmentOnly onNavigate={navigate} />}
+      {page === "supplierPurchaseDetailReport" && <SupplierPurchaseDetailReport onNavigate={navigate} />}
+      {page === "saleChangeCheckReport" && <SaleChangeCheckReport onNavigate={navigate} />}
+      {page === "itemLossZeroReport" && <ItemLossZeroReport onNavigate={navigate} />}
       {page === "createUser" && <CreateUser onNavigate={navigate} />}
       {page === "deletedReports" && (
         <DeletedReports onNavigate={navigate} />
       )}
       {page === "restore" && <Restore onNavigate={navigate} />}
 
-      {/* ================= VOUCHERS ================= */}
+      {/* ================= VOUCHERS (FIXED) ================= */}
       {page === "hotelVoucher" && (
         <HotelVoucher onNavigate={navigate} />
       )}
