@@ -5,12 +5,13 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 14px 28px;
-  background: rgba(0, 4, 40, 0.78);
-  backdrop-filter: blur(10px);
-  box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+  padding: 14px 22px;
+  background: rgba(0, 4, 40, 0.85);
+  backdrop-filter: blur(12px);
+  box-shadow: 0 10px 30px rgba(0,0,0,0.55);
   color: #fff;
-  position: relative;
+  position: sticky;
+  top: 0;
   z-index: 1000;
 }
 
@@ -27,10 +28,23 @@
   transform: scale(1.05);
 }
 
-/* LINKS */
+/* ================================
+   MOBILE TOGGLE ☰
+================================ */
+.nav-toggle {
+  display: none;
+  font-size: 26px;
+  cursor: pointer;
+  user-select: none;
+}
+
+/* ================================
+   LINKS
+================================ */
 .nav-links {
   display: flex;
   gap: 26px;
+  align-items: center;
 }
 
 .nav-item {
@@ -47,11 +61,13 @@
   color: #ffd700;
 }
 
-/* USER */
+/* ================================
+   USER
+================================ */
 .nav-user {
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 12px;
 }
 .user-name {
   font-size: 13px;
@@ -59,10 +75,10 @@
 }
 
 /* ================================
-   LOGOUT BUTTON (UPDATED ONLY)
+   LOGOUT BUTTON
 ================================ */
 .logout-btn {
-  background: #ffd700;        /* YELLOW DEFAULT */
+  background: #ffd700;
   border: none;
   padding: 6px 16px;
   border-radius: 20px;
@@ -73,60 +89,49 @@
   box-shadow: 0 6px 18px rgba(255,215,0,0.55);
   transition: transform 0.2s ease, background 0.3s ease;
 }
-
 .logout-btn:hover {
-  background: red;            /* HOVER = RED */
+  background: red;
   color: white;
   transform: scale(1.05);
 }
 
-/* =================================
+/* ================================
    DROPDOWN MENU
-   SUPPORTS: .menu-box & .vip-menu
-================================= */
-.menu-box,
-.vip-menu {
+================================ */
+.menu-box {
   position: absolute;
-  top: 36px;
+  top: 38px;
   left: 0;
-
   background: linear-gradient(145deg, #0f2027, #203a43, #2c5364);
   padding: 8px 0;
-  min-width: 200px;
-
+  min-width: 220px;
   border-radius: 14px;
   border: 1px solid rgba(255,255,255,0.08);
-
   box-shadow:
     0 18px 40px rgba(0,0,0,0.65),
     inset 0 0 10px rgba(255,255,255,0.04);
-
   backdrop-filter: blur(8px);
   animation: fadeSlide 0.25s ease-out;
   z-index: 9999;
 }
 
 /* MENU ITEMS */
-.menu-box a,
-.vip-menu div {
+.menu-box a {
   color: #f1f1f1;
   display: flex;
   align-items: center;
   gap: 10px;
-
   padding: 12px 18px;
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;
   text-decoration: none;
-
   transition: all 0.25s ease;
   border-left: 3px solid transparent;
 }
 
 /* HOVER */
-.menu-box a:hover,
-.vip-menu div:hover {
+.menu-box a:hover {
   background: linear-gradient(
     90deg,
     rgba(255,215,0,0.18),
@@ -138,20 +143,13 @@
 }
 
 /* DIVIDER */
-.menu-box a + a,
-.vip-menu div + div {
+.menu-box a + a {
   border-top: 1px solid rgba(255,255,255,0.06);
 }
 
-/* NO ACCESS */
-.no-access {
-  opacity: 0.5;
-  padding: 12px 18px;
-  font-size: 13px;
-  cursor: not-allowed;
-}
-
-/* ANIMATION */
+/* ================================
+   ANIMATION
+================================ */
 @keyframes fadeSlide {
   from {
     opacity: 0;
@@ -163,12 +161,54 @@
   }
 }
 
-/* MOBILE SAFETY */
+/* ================================
+   📱 MOBILE RESPONSIVE
+================================ */
 @media (max-width: 900px) {
-  .nav-links {
-    gap: 16px;
+  .nav-toggle {
+    display: block;
   }
+
+  .nav-links {
+    position: absolute;
+    top: 64px;
+    left: 0;
+    right: 0;
+    background: rgba(0, 4, 40, 0.95);
+    flex-direction: column;
+    gap: 0;
+    padding: 10px 0;
+    display: none;
+  }
+
+  .nav-links.open {
+    display: flex;
+  }
+
+  .nav-item {
+    width: 100%;
+  }
+
   .nav-title {
-    font-size: 14px;
+    padding: 12px 20px;
+    width: 100%;
+    font-size: 15px;
+  }
+
+  .menu-box {
+    position: relative;
+    top: 0;
+    left: 0;
+    width: 100%;
+    border-radius: 0;
+    box-shadow: none;
+  }
+
+  .menu-box a {
+    padding: 12px 24px;
+  }
+
+  .nav-user {
+    display: none;
   }
 }
