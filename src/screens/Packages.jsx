@@ -460,13 +460,13 @@ export default function Packages({ onNavigate }) {
             <tr>
               <th style={{ width: "140px" }}>Check-in</th>
               <th style={{ width: "140px" }}>Check-out</th>
-              <th style={{ width: "110px" }}>Nights</th>
-              <th style={{ width: "190px" }}>Location</th>
+              <th style={{ width: "80px" }}>Nights</th>
+              <th style={{ width: "250px" }}>Location</th>
 
               <th style={{ width: "380px" }}>Hotel (Full Row)</th>
 
-              <th style={{ width: "120px" }}>Rooms</th>
-              <th style={{ width: "150px" }}>Type</th>
+              <th style={{ width: "80px" }}>Rooms</th>
+              <th style={{ width: "160px" }}>Type</th>
               <th style={{ width: "140px" }}>Rate</th>
               <th style={{ width: "140px" }}>Total</th>
               <th></th>
