@@ -21,7 +21,6 @@ export default function HotelVoucher({ onNavigate }) {
   /* ================= LOAD VOUCHER (PKG + HOT) ================= */
   const loadVoucher = async () => {
     if (!ref) return alert("Please enter Ref No");
-
     try {
       let url = "";
       let isPkg = false;
@@ -40,6 +39,7 @@ export default function HotelVoucher({ onNavigate }) {
       if (!d.success) return alert("Voucher not found");
 
       let hotelsData = [];
+
       if (isPkg) {
         hotelsData = (d.hotels || []).map((h) => ({
           hotel: h.hotel,
@@ -55,10 +55,9 @@ export default function HotelVoucher({ onNavigate }) {
           ref_no: d.ref_no,
           customer_name: d.customer_name,
           booking_date: d.booking_date,
-          agent_name: "", 
+          agent_name: "", // PKG me agent nahi
         });
       } else {
-        // HOT booking
         const row = d.row || {};
         hotelsData = [
           {
@@ -100,13 +99,10 @@ export default function HotelVoucher({ onNavigate }) {
       scale: 2,
       backgroundColor: "#ffffff",
     });
-
     const img = canvas.toDataURL("image/png");
     const pdf = new jsPDF("p", "mm", "a4");
-
     const w = pdf.internal.pageSize.getWidth();
     const h = (canvas.height * w) / canvas.width;
-
     pdf.addImage(img, "PNG", 0, 0, w, h);
     pdf.save(`Hotel-Voucher-${data.ref_no}.pdf`);
   };
