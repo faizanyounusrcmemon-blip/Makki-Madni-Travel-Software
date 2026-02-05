@@ -170,8 +170,13 @@ export default function HotelVoucher({ onNavigate }) {
           </div>
 
           {/* AGENT NAME */}
-          <div className="mb-3">
+          <div className="mb-2">
             <b>Agent Name:</b> {data.agent_name || "—"}
+          </div>
+
+          {/* CUSTOMER NAME */}
+          <div className="mb-2">
+            <b>Customer Name:</b> {data.customer_name || "—"}
           </div>
 
           {/* ================= HOTEL BLOCKS ================= */}
@@ -192,17 +197,6 @@ export default function HotelVoucher({ onNavigate }) {
                     handleHotelChange(i, "confirmNo", e.target.value)
                   }
                   placeholder="Enter Confirmation No"
-                />
-              </div>
-
-              {/* Customer Name */}
-              <div className="mb-2">
-                <label className="fw-bold">Customer Name</label>
-                <input
-                  type="text"
-                  className="form-control form-control-sm"
-                  value={data.customer_name}
-                  readOnly
                 />
               </div>
 
