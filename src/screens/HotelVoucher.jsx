@@ -37,21 +37,33 @@ export default function HotelVoucher({ onNavigate }) {
       const d = await res.json();
       if (!d.success) return alert("Voucher not found");
 
-      let hotelsData = isPkg
-        ? (d.hotels || []).map((h) => ({
-            ...h,
+      let hotelsData = [];
+      if (isPkg) {
+        hotelsData = (d.hotels || []).map((h) => ({
+          hotel: h.hotel,
+          location: h.location,
+          checkIn: h.checkIn,
+          checkOut: h.checkOut,
+          nights: h.nights,
+          confirmNo: "",
+          contact1: "",
+          contact2: "",
+        }));
+      } else {
+        // HOT booking
+        hotelsData = [
+          {
+            hotel: d.row.hotel,
+            location: d.row.location,
+            checkIn: d.row.checkIn,
+            checkOut: d.row.checkOut,
+            nights: d.row.nights,
             confirmNo: "",
             contact1: "",
             contact2: "",
-          }))
-        : [
-            {
-              ...d.row,
-              confirmNo: "",
-              contact1: "",
-              contact2: "",
-            },
-          ];
+          },
+        ];
+      }
 
       setData({
         ref_no: isPkg ? d.ref_no : d.row.ref_no,
@@ -61,7 +73,8 @@ export default function HotelVoucher({ onNavigate }) {
       });
 
       setVoucherHotels(hotelsData);
-    } catch {
+    } catch (err) {
+      console.error(err);
       alert("Failed to load voucher");
     }
   };
@@ -183,30 +196,27 @@ export default function HotelVoucher({ onNavigate }) {
               className="border rounded p-2 mb-2"
               style={{ background: "#ffffff" }}
             >
-              <div>
+              <div className="mb-1">
                 <b>Hotel:</b> {h.hotel}
               </div>
-              <div>
+              <div className="mb-2">
                 <b>Address:</b> {h.location}
               </div>
 
-              {/* CONFIRMATION NO */}
-              <div className="d-flex align-items-center gap-2 mt-2">
-                <b>Confirmation No:</b>
-                <input
-                  type="text"
-                  className="form-control form-control-sm"
-                  value={h.confirmNo}
-                  onChange={(e) =>
-                    handleHotelChange(i, "confirmNo", e.target.value)
-                  }
-                  placeholder="Enter Confirmation No"
-                />
-              </div>
-
-              {/* CONTACT NOS */}
-              <div className="row mt-2">
-                <div className="col">
+              {/* CONFIRMATION NO & CONTACT NOS */}
+              <div className="row g-2 mb-2">
+                <div className="col-md-4">
+                  <input
+                    type="text"
+                    className="form-control form-control-sm"
+                    value={h.confirmNo}
+                    onChange={(e) =>
+                      handleHotelChange(i, "confirmNo", e.target.value)
+                    }
+                    placeholder="Confirmation No"
+                  />
+                </div>
+                <div className="col-md-4">
                   <input
                     type="text"
                     className="form-control form-control-sm"
@@ -217,7 +227,7 @@ export default function HotelVoucher({ onNavigate }) {
                     placeholder="Contact No 1"
                   />
                 </div>
-                <div className="col">
+                <div className="col-md-4">
                   <input
                     type="text"
                     className="form-control form-control-sm"
@@ -231,20 +241,20 @@ export default function HotelVoucher({ onNavigate }) {
               </div>
 
               {/* CHECK-IN / CHECK-OUT */}
-              <div className="row mt-2">
+              <div className="row text-center fw-bold">
                 <div
-                  className="col text-center fw-bold"
-                  style={{ backgroundColor: "yellow" }}
+                  className="col p-1"
+                  style={{ backgroundColor: "yellow", borderRadius: "4px" }}
                 >
                   Check-in: {showDate(h.checkIn)}
                 </div>
                 <div
-                  className="col text-center fw-bold"
-                  style={{ backgroundColor: "lightgreen" }}
+                  className="col p-1"
+                  style={{ backgroundColor: "lightgreen", borderRadius: "4px" }}
                 >
                   Check-out: {showDate(h.checkOut)}
                 </div>
-                <div className="col text-center fw-bold">Nights: {h.nights}</div>
+                <div className="col p-1">Nights: {h.nights}</div>
               </div>
             </div>
           ))}
