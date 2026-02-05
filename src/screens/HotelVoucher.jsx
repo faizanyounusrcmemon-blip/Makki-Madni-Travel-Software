@@ -92,10 +92,7 @@ export default function HotelVoucher({ onNavigate }) {
   return (
     <div
       className="container py-3"
-      style={{
-        fontFamily: "'Inter', sans-serif",
-        background: "#f8f9fa",
-      }}
+      style={{ fontFamily: "'Inter', sans-serif", background: "#f8f9fa" }}
     >
       {/* TOP BAR */}
       <div className="d-flex gap-2 mb-3 flex-wrap">
@@ -231,11 +228,12 @@ export default function HotelVoucher({ onNavigate }) {
                 ))}
               </div>
 
+              {/* CHECK-IN / CHECK-OUT / NIGHTS */}
               <div className="row g-2 mt-2">
                 <div
                   className="col text-center p-2"
                   style={{
-                    background: "#cfe2ff",
+                    backgroundColor: "#fff3cd", // Yellow fill
                     borderRadius: "8px",
                     fontWeight: "500",
                   }}
@@ -245,7 +243,7 @@ export default function HotelVoucher({ onNavigate }) {
                 <div
                   className="col text-center p-2"
                   style={{
-                    background: "#d1e7dd",
+                    backgroundColor: "#d1e7dd", // Green fill
                     borderRadius: "8px",
                     fontWeight: "500",
                   }}
@@ -255,7 +253,7 @@ export default function HotelVoucher({ onNavigate }) {
                 <div
                   className="col text-center p-2"
                   style={{
-                    background: "#fff3cd",
+                    backgroundColor: "#e2e3e5", // neutral grey for nights
                     borderRadius: "8px",
                     fontWeight: "500",
                   }}
