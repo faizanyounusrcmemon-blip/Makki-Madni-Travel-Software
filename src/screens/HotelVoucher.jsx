@@ -147,7 +147,6 @@ export default function HotelVoucher({ onNavigate }) {
               ✈️ MAKKI MADNI TRAVEL
             </h3>
 
-            {/* ADDRESS */}
             <div className="text-center small mb-3" style={{ color: "#444" }}>
               Shop #4 Diamond City Building, Near Zeenat-ul-Islam Masjid
               <br />
@@ -206,6 +205,34 @@ export default function HotelVoucher({ onNavigate }) {
                 </div>
               </div>
 
+              {/* Check-in / Check-out / Nights */}
+              <div className="row g-2 mb-2">
+                <div
+                  className="col"
+                  style={{
+                    backgroundColor: "#f1c40f", // DARK YELLOW
+                    padding: "5px",
+                    borderRadius: "4px",
+                  }}
+                >
+                  <b>Check-in:</b> {showDate(h.checkIn)}
+                </div>
+                <div
+                  className="col"
+                  style={{
+                    backgroundColor: "#27ae60", // DARK GREEN
+                    color: "#fff",
+                    padding: "5px",
+                    borderRadius: "4px",
+                  }}
+                >
+                  <b>Check-out:</b> {showDate(h.checkOut)}
+                </div>
+                <div className="col">
+                  <b>Nights:</b> {h.nights}
+                </div>
+              </div>
+
               {/* Contacts */}
               <div className="row mb-2 g-2">
                 <div className="col">
@@ -231,33 +258,6 @@ export default function HotelVoucher({ onNavigate }) {
                     }
                     placeholder="Enter Contact No 2"
                   />
-                </div>
-              </div>
-
-              {/* Check-in / Check-out / Nights */}
-              <div className="row g-2">
-                <div
-                  className="col"
-                  style={{
-                    backgroundColor: "#fff3cd",
-                    padding: "5px",
-                    borderRadius: "4px",
-                  }}
-                >
-                  <b>Check-in:</b> {showDate(h.checkIn)}
-                </div>
-                <div
-                  className="col"
-                  style={{
-                    backgroundColor: "#d4edda",
-                    padding: "5px",
-                    borderRadius: "4px",
-                  }}
-                >
-                  <b>Check-out:</b> {showDate(h.checkOut)}
-                </div>
-                <div className="col">
-                  <b>Nights:</b> {h.nights}
                 </div>
               </div>
             </div>
