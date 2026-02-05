@@ -16,6 +16,7 @@ export default function Packages({ onNavigate }) {
   const [contactNo, setContactNo] = useState("");
   const [searchRef, setSearchRef] = useState("");
   const [isEdit, setIsEdit] = useState(false);
+  const [saving, setSaving] = useState(false);
 
 
   const [adultCount, setAdultCount] = useState(0);
@@ -202,7 +203,7 @@ export default function Packages({ onNavigate }) {
 
   const handleSavePackage = async () => {
     const payload = {
-      ref_no: refNo || null,
+      ...(isEdit ? { ref_no: refNo } : {}),
       customer_name: customerName,
       contact_no: contactNo,
       booking_date: bookingDate,
@@ -247,6 +248,7 @@ export default function Packages({ onNavigate }) {
     const data = await res.json();
     if (data.success) {
       setRefNo(data.ref_no);
+      setIsEdit(true);
       alert("✅ Saved Successfully! Ref#: " + data.ref_no);
       onNavigate("bookings");
     } else alert("Error: " + data.error);
@@ -269,13 +271,16 @@ export default function Packages({ onNavigate }) {
         <button className="btn btn-secondary btn-sm" onClick={() => onNavigate("dashboard")}>⬅ Back</button>
         <div className="d-flex gap-2">
           <button
-            className={`btn btn-sm ${
-              isEdit ? "btn-warning text-dark" : "btn-primary"
-            }`}
-            style={styles.button}
-            onClick={handleSavePackage}
+            disabled={saving}
+            className={`btn btn-sm ${isEdit ? "btn-warning text-dark" : "btn-primary"}`}
+            onClick={async () => {
+              if (saving) return;
+              setSaving(true);
+              await handleSavePackage();
+              setSaving(false);
+            }}
           >
-            {isEdit ? "✏ Update Save" : "💾 Save"}
+            {saving ? "Saving..." : isEdit ? "✏ Update Save" : "💾 Save"}
           </button>
 
           <input className="form-control form-control-sm" style={{ width: "150px" }} placeholder="Search Ref No" value={searchRef} onChange={(e) => setSearchRef(e.target.value)} />
