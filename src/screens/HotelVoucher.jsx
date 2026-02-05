@@ -15,12 +15,10 @@ const showDate = (val) => {
 export default function HotelVoucher({ onNavigate }) {
   const [ref, setRef] = useState("");
   const [data, setData] = useState(null);
-  const [voucherHotels, setVoucherHotels] = useState([]);
   const voucherRef = useRef(null);
 
   /* ================= LOAD VOUCHER (PKG + HOT) ================= */
   const loadVoucher = async () => {
-    if (!ref) return alert("Please enter Ref No");
     try {
       let url = "";
       let isPkg = false;
@@ -41,58 +39,40 @@ export default function HotelVoucher({ onNavigate }) {
       let hotelsData = [];
 
       if (isPkg) {
-        // PKG ke liye hotels array already hota hai
         hotelsData = (d.hotels || []).map((h) => ({
-          hotel: h.hotel,
-          location: h.location,
-          checkIn: h.checkIn,
-          checkOut: h.checkOut,
-          nights: h.nights,
+          ...h,
           confirmNo: "",
           contact1: "",
           contact2: "",
         }));
+
         setData({
           ref_no: d.ref_no,
           customer_name: d.customer_name,
           booking_date: d.booking_date,
-          agent_name: "", // PKG me agent nahi
+          agent_name: "",
+          hotels: hotelsData,
         });
       } else {
-        // HOT ke liye manually hotels array create karte hain
-        const row = d.row || {};
-        hotelsData = [
-          {
-            hotel: row.hotel || "",
-            location: row.location || "",
-            checkIn: row.checkIn || "",
-            checkOut: row.checkOut || "",
-            nights: row.nights || "",
-            confirmNo: "",
-            contact1: "",
-            contact2: "",
-          },
-        ];
+        hotelsData = (d.row.hotels || []).map((h) => ({
+          ...h,
+          confirmNo: "",
+          contact1: "",
+          contact2: "",
+        }));
+
         setData({
-          ref_no: row.ref_no || "",
-          customer_name: row.customer_name || "",
-          booking_date: row.booking_date || "",
-          agent_name: row.agent_name || "",
+          ref_no: d.row.ref_no,
+          customer_name: d.row.customer_name,
+          booking_date: d.row.booking_date,
+          agent_name: d.row.agent_name || "",
+          hotels: hotelsData,
         });
       }
-
-      setVoucherHotels(hotelsData);
     } catch (err) {
-      console.error(err);
+      console.error("LOAD VOUCHER ERROR:", err);
       alert("Failed to load voucher");
     }
-  };
-
-  /* ================= HANDLE HOTEL INPUT CHANGE ================= */
-  const handleHotelChange = (index, field, value) => {
-    const updated = [...voucherHotels];
-    updated[index][field] = value;
-    setVoucherHotels(updated);
   };
 
   /* ================= EXPORT PDF ================= */
@@ -101,12 +81,22 @@ export default function HotelVoucher({ onNavigate }) {
       scale: 2,
       backgroundColor: "#ffffff",
     });
+
     const img = canvas.toDataURL("image/png");
     const pdf = new jsPDF("p", "mm", "a4");
+
     const w = pdf.internal.pageSize.getWidth();
     const h = (canvas.height * w) / canvas.width;
+
     pdf.addImage(img, "PNG", 0, 0, w, h);
     pdf.save(`Hotel-Voucher-${data.ref_no}.pdf`);
+  };
+
+  /* ================= HANDLE HOTEL FIELD CHANGE ================= */
+  const handleHotelChange = (index, field, value) => {
+    const updatedHotels = [...data.hotels];
+    updatedHotels[index][field] = value;
+    setData({ ...data, hotels: updatedHotels });
   };
 
   return (
@@ -148,7 +138,7 @@ export default function HotelVoucher({ onNavigate }) {
             background: "linear-gradient(180deg,#ffffff,#eef6ff)",
             border: "3px solid #0d6efd",
             borderRadius: "12px",
-            padding: "25px",
+            padding: "20px",
           }}
         >
           {/* HEADER */}
@@ -157,6 +147,7 @@ export default function HotelVoucher({ onNavigate }) {
               ✈️ MAKKI MADNI TRAVEL
             </h3>
 
+            {/* ADDRESS */}
             <div className="text-center small mb-3" style={{ color: "#444" }}>
               Shop #4 Diamond City Building, Near Zeenat-ul-Islam Masjid
               <br />
@@ -180,44 +171,36 @@ export default function HotelVoucher({ onNavigate }) {
           </div>
 
           {/* AGENT NAME */}
-          <div className="mb-2">
-            <b>Agent Name:</b> {data.agent_name ? data.agent_name : "—"}
-          </div>
-
-          {/* PAX */}
           <div className="mb-3">
-            <b>PAX Name:</b> {data.customer_name}
+            <b>Agent Name:</b> {data.agent_name || "—"}
           </div>
 
           {/* HOTEL DETAILS */}
           <h6 className="bg-primary text-white p-2 rounded">🏨 Hotel Details</h6>
 
-          {voucherHotels?.length === 0 && (
+          {data.hotels.length === 0 && (
             <div className="text-muted">No hotel service in this booking</div>
           )}
 
-          {voucherHotels?.map((h, i) => (
+          {data.hotels.map((h, i) => (
             <div
               key={i}
-              className="border rounded p-3 mb-3"
+              className="border rounded p-2 mb-2"
               style={{ background: "#ffffff" }}
             >
-              <div className="mb-2">
-                <b>Hotel:</b> {h.hotel}
-              </div>
-              <div className="mb-2">
-                <b>Address:</b> {h.location}
-              </div>
-
-              {/* CONFIRMATION & CONTACT */}
-              <div className="row fw-bold mb-1">
-                <div className="col">Confirmation No</div>
-                <div className="col">Contact No 1</div>
-                <div className="col">Contact No 2</div>
-              </div>
-
               <div className="row mb-2">
                 <div className="col">
+                  <b>Hotel:</b> {h.hotel}
+                </div>
+                <div className="col">
+                  <b>Address:</b> {h.location}
+                </div>
+              </div>
+
+              {/* Confirmation No + Contact1 + Contact2 */}
+              <div className="row mb-2 g-2">
+                <div className="col">
+                  <label className="fw-bold">Confirmation No</label>
                   <input
                     type="text"
                     className="form-control form-control-sm"
@@ -225,9 +208,11 @@ export default function HotelVoucher({ onNavigate }) {
                     onChange={(e) =>
                       handleHotelChange(i, "confirmNo", e.target.value)
                     }
+                    placeholder="Enter Confirmation No"
                   />
                 </div>
                 <div className="col">
+                  <label className="fw-bold">Contact No 1</label>
                   <input
                     type="text"
                     className="form-control form-control-sm"
@@ -235,9 +220,11 @@ export default function HotelVoucher({ onNavigate }) {
                     onChange={(e) =>
                       handleHotelChange(i, "contact1", e.target.value)
                     }
+                    placeholder="Enter Contact No 1"
                   />
                 </div>
                 <div className="col">
+                  <label className="fw-bold">Contact No 2</label>
                   <input
                     type="text"
                     className="form-control form-control-sm"
@@ -245,32 +232,35 @@ export default function HotelVoucher({ onNavigate }) {
                     onChange={(e) =>
                       handleHotelChange(i, "contact2", e.target.value)
                     }
+                    placeholder="Enter Contact No 2"
                   />
                 </div>
               </div>
 
-              {/* CHECK-IN / CHECK-OUT / NIGHTS */}
-              <div className="row text-center fw-bold">
+              {/* Check-in / Check-out / Nights */}
+              <div className="row g-2">
                 <div
-                  className="col p-2"
-                  style={{ backgroundColor: "#fff59d", borderRadius: "5px" }}
+                  className="col"
+                  style={{ backgroundColor: "#fff3cd", padding: "5px", borderRadius: "4px" }}
                 >
-                  Check-in: {showDate(h.checkIn)}
+                  <b>Check-in:</b> {showDate(h.checkIn)}
                 </div>
                 <div
-                  className="col p-2"
-                  style={{ backgroundColor: "#b9f6ca", borderRadius: "5px" }}
+                  className="col"
+                  style={{ backgroundColor: "#d4edda", padding: "5px", borderRadius: "4px" }}
                 >
-                  Check-out: {showDate(h.checkOut)}
+                  <b>Check-out:</b> {showDate(h.checkOut)}
                 </div>
-                <div className="col p-2">Nights: {h.nights}</div>
+                <div className="col">
+                  <b>Nights:</b> {h.nights}
+                </div>
               </div>
             </div>
           ))}
 
-          {/* CHECK IN / CHECK OUT TIME */}
+          {/* CHECK IN / OUT TIME */}
           <div
-            className="mt-2 p-2 text-center fw-bold"
+            className="mt-3 p-2 text-center fw-bold"
             style={{
               background: "#e7f1ff",
               border: "1px dashed #0d6efd",
