@@ -92,7 +92,6 @@ export default function HotelVoucher({ onNavigate }) {
     pdf.save(`Hotel-Voucher-${data.ref_no}.pdf`);
   };
 
-  /* ================= HANDLE HOTEL FIELD CHANGE ================= */
   const handleHotelChange = (index, field, value) => {
     const updatedHotels = [...data.hotels];
     updatedHotels[index][field] = value;
@@ -100,11 +99,11 @@ export default function HotelVoucher({ onNavigate }) {
   };
 
   return (
-    <div className="container py-3">
+    <div className="container py-3" style={{ fontFamily: "'Poppins', sans-serif" }}>
       {/* TOP BAR */}
       <div className="d-flex gap-2 mb-3 flex-wrap">
         <button
-          className="btn btn-dark btn-sm"
+          className="btn btn-dark btn-sm shadow-sm"
           onClick={() => onNavigate("dashboard")}
         >
           ← Back
@@ -117,12 +116,12 @@ export default function HotelVoucher({ onNavigate }) {
           onChange={(e) => setRef(e.target.value)}
         />
 
-        <button className="btn btn-primary btn-sm" onClick={loadVoucher}>
+        <button className="btn btn-primary btn-sm shadow-sm" onClick={loadVoucher}>
           Load Voucher
         </button>
 
         {data && (
-          <button className="btn btn-success btn-sm" onClick={exportPDF}>
+          <button className="btn btn-success btn-sm shadow-sm" onClick={exportPDF}>
             📄 Download PDF
           </button>
         )}
@@ -133,40 +132,57 @@ export default function HotelVoucher({ onNavigate }) {
         <div
           ref={voucherRef}
           style={{
-            maxWidth: "820px",
+            maxWidth: "850px",
             margin: "0 auto",
-            background: "linear-gradient(180deg,#ffffff,#eef6ff)",
-            border: "3px solid #0d6efd",
-            borderRadius: "12px",
-            padding: "20px",
+            background: "linear-gradient(to bottom, #fff7e6, #e0f7fa)",
+            borderRadius: "15px",
+            padding: "25px",
+            boxShadow: "0 8px 25px rgba(0,0,0,0.1)",
+            border: "3px solid #4dabf7",
           }}
         >
           {/* HEADER */}
-          <div className="text-center mb-3">
-            <h3 style={{ color: "#0d6efd", fontWeight: "bold" }}>
+          <div className="text-center mb-4">
+            <h2 style={{ color: "#1971c2", fontWeight: "bold" }}>
               ✈️ MAKKI MADNI TRAVEL
-            </h3>
+            </h2>
 
-            {/* ADDRESS */}
-            <div className="text-center small mb-3" style={{ color: "#444" }}>
-              Shop #4 Diamond City Building, Near Zeenat-ul-Islam Masjid
+            <div className="small mb-2" style={{ color: "#495057" }}>
+              <strong>Shop #4 Diamond City Building, Near Zeenat-ul-Islam Masjid</strong>
               <br />
               Garden West Karachi
               <br />
               ✉️ makkimadnitravel@gmail.com | ☎️ 0335-7476744
             </div>
 
-            <hr />
-            <div className="fw-bold">HOTEL VOUCHER</div>
+            <div
+              style={{
+                background: "linear-gradient(to right, #ffd6a5, #ffd6a5 50%, #74c0fc 50%, #74c0fc)",
+                height: "5px",
+                borderRadius: "5px",
+                margin: "10px 0",
+              }}
+            ></div>
+
+            <div
+              style={{
+                fontSize: "18px",
+                fontWeight: "bold",
+                color: "#d6336c",
+                letterSpacing: "1px",
+              }}
+            >
+              HOTEL VOUCHER
+            </div>
           </div>
 
           {/* BASIC INFO */}
-          <div className="row mb-2">
+          <div className="row mb-3">
             <div className="col">
-              <b>Ref No:</b> {data.ref_no}
+              <b style={{ color: "#0b7285" }}>Ref No:</b> {data.ref_no}
             </div>
             <div className="col text-end">
-              <b>Booking Date:</b> {showDate(data.booking_date)}
+              <b style={{ color: "#0b7285" }}>Booking Date:</b> {showDate(data.booking_date)}
             </div>
           </div>
 
@@ -176,7 +192,17 @@ export default function HotelVoucher({ onNavigate }) {
           </div>
 
           {/* HOTEL DETAILS */}
-          <h6 className="bg-primary text-white p-2 rounded">🏨 Hotel Details</h6>
+          <h5
+            style={{
+              background: "linear-gradient(90deg,#74c0fc,#f783ac)",
+              color: "white",
+              padding: "10px",
+              borderRadius: "8px",
+              marginBottom: "10px",
+            }}
+          >
+            🏨 Hotel Details
+          </h5>
 
           {data.hotels.length === 0 && (
             <div className="text-muted">No hotel service in this booking</div>
@@ -185,8 +211,11 @@ export default function HotelVoucher({ onNavigate }) {
           {data.hotels.map((h, i) => (
             <div
               key={i}
-              className="border rounded p-2 mb-2"
-              style={{ background: "#ffffff" }}
+              className="border rounded p-3 mb-3"
+              style={{
+                background: "linear-gradient(135deg,#ffe066,#fab005)",
+                boxShadow: "0 4px 15px rgba(0,0,0,0.1)",
+              }}
             >
               <div className="row mb-2">
                 <div className="col">
@@ -197,7 +226,6 @@ export default function HotelVoucher({ onNavigate }) {
                 </div>
               </div>
 
-              {/* Confirmation No + Contact1 + Contact2 */}
               <div className="row mb-2 g-2">
                 <div className="col">
                   <label className="fw-bold">Confirmation No</label>
@@ -205,9 +233,7 @@ export default function HotelVoucher({ onNavigate }) {
                     type="text"
                     className="form-control form-control-sm"
                     value={h.confirmNo}
-                    onChange={(e) =>
-                      handleHotelChange(i, "confirmNo", e.target.value)
-                    }
+                    onChange={(e) => handleHotelChange(i, "confirmNo", e.target.value)}
                     placeholder="Enter Confirmation No"
                   />
                 </div>
@@ -217,9 +243,7 @@ export default function HotelVoucher({ onNavigate }) {
                     type="text"
                     className="form-control form-control-sm"
                     value={h.contact1}
-                    onChange={(e) =>
-                      handleHotelChange(i, "contact1", e.target.value)
-                    }
+                    onChange={(e) => handleHotelChange(i, "contact1", e.target.value)}
                     placeholder="Enter Contact No 1"
                   />
                 </div>
@@ -229,50 +253,64 @@ export default function HotelVoucher({ onNavigate }) {
                     type="text"
                     className="form-control form-control-sm"
                     value={h.contact2}
-                    onChange={(e) =>
-                      handleHotelChange(i, "contact2", e.target.value)
-                    }
+                    onChange={(e) => handleHotelChange(i, "contact2", e.target.value)}
                     placeholder="Enter Contact No 2"
                   />
                 </div>
               </div>
 
-              {/* Check-in / Check-out / Nights */}
               <div className="row g-2">
                 <div
                   className="col"
-                  style={{ backgroundColor: "#fff3cd", padding: "5px", borderRadius: "4px" }}
+                  style={{
+                    backgroundColor: "#ffd8a8",
+                    padding: "5px",
+                    borderRadius: "4px",
+                    textAlign: "center",
+                  }}
                 >
                   <b>Check-in:</b> {showDate(h.checkIn)}
                 </div>
                 <div
                   className="col"
-                  style={{ backgroundColor: "#d4edda", padding: "5px", borderRadius: "4px" }}
+                  style={{
+                    backgroundColor: "#90ee90",
+                    padding: "5px",
+                    borderRadius: "4px",
+                    textAlign: "center",
+                  }}
                 >
                   <b>Check-out:</b> {showDate(h.checkOut)}
                 </div>
-                <div className="col">
+                <div
+                  className="col"
+                  style={{
+                    backgroundColor: "#ffb3b3",
+                    padding: "5px",
+                    borderRadius: "4px",
+                    textAlign: "center",
+                  }}
+                >
                   <b>Nights:</b> {h.nights}
                 </div>
               </div>
             </div>
           ))}
 
-          {/* CHECK IN / OUT TIME */}
           <div
             className="mt-3 p-2 text-center fw-bold"
             style={{
-              background: "#e7f1ff",
-              border: "1px dashed #0d6efd",
-              borderRadius: "8px",
-              color: "#0d6efd",
+              background: "linear-gradient(to right,#74c0fc,#fab005)",
+              borderRadius: "10px",
+              color: "#fff",
+              fontSize: "16px",
+              boxShadow: "0 3px 10px rgba(0,0,0,0.1)",
             }}
           >
             CHECK IN TIME: 04:00 PM &nbsp; | &nbsp; CHECK OUT TIME: 02:00 PM
           </div>
 
-          {/* FOOTER */}
-          <div className="text-center small mt-3" style={{ color: "#555" }}>
+          <div className="text-center small mt-3" style={{ color: "#495057" }}>
             Please check your hotel details carefully.
             <br />
             This voucher is valid only for the mentioned booking.
