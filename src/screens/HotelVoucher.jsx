@@ -92,7 +92,10 @@ export default function HotelVoucher({ onNavigate }) {
   return (
     <div
       className="container py-3"
-      style={{ fontFamily: "'Comic Neue', cursive", background: "#fef9f0" }}
+      style={{
+        fontFamily: "'Inter', sans-serif",
+        background: "#f8f9fa",
+      }}
     >
       {/* TOP BAR */}
       <div className="d-flex gap-2 mb-3 flex-wrap">
@@ -125,18 +128,20 @@ export default function HotelVoucher({ onNavigate }) {
         <div
           ref={voucherRef}
           style={{
-            maxWidth: "900px",
+            maxWidth: "850px",
             margin: "0 auto",
-            background: "linear-gradient(135deg, #ffecd2, #fcb69f)",
-            borderRadius: "20px",
+            background: "#ffffff",
+            borderRadius: "16px",
             padding: "30px",
-            boxShadow: "0 12px 30px rgba(0,0,0,0.15)",
-            border: "5px dashed #ff6b6b",
+            boxShadow: "0 10px 25px rgba(0,0,0,0.1)",
+            borderTop: "6px solid #0d6efd",
           }}
         >
           {/* HEADER */}
           <div className="text-center mb-4">
-            <h1 style={{ color: "#ff6b6b", fontWeight: "bold" }}>✈️ MAKKI MADNI TRAVEL</h1>
+            <h2 style={{ color: "#0d6efd", fontWeight: "700", letterSpacing: "1px" }}>
+              ✈️ MAKKI MADNI TRAVEL
+            </h2>
             <div className="small mb-2" style={{ color: "#6c757d" }}>
               Shop #4 Diamond City Building, Near Zeenat-ul-Islam Masjid
               <br />
@@ -144,26 +149,16 @@ export default function HotelVoucher({ onNavigate }) {
               <br />
               ✉️ makkimadnitravel@gmail.com | ☎️ 0335-7476744
             </div>
+            <hr style={{ borderTop: "3px solid #0d6efd", width: "50px", margin: "10px auto" }} />
             <div
               style={{
-                height: "6px",
-                width: "100%",
-                background:
-                  "linear-gradient(90deg, #ffd6a5, #74c0fc, #ff8787, #ffd6a5)",
-                borderRadius: "10px",
-                margin: "10px 0",
-              }}
-            ></div>
-            <div
-              style={{
-                fontSize: "20px",
-                fontWeight: "bold",
-                color: "#ff8787",
-                letterSpacing: "2px",
-                textShadow: "1px 1px 3px #ffe066",
+                fontSize: "18px",
+                fontWeight: "600",
+                color: "#198754",
+                letterSpacing: "1px",
               }}
             >
-              🏨 HOTEL VOUCHER
+              HOTEL VOUCHER
             </div>
           </div>
 
@@ -184,12 +179,12 @@ export default function HotelVoucher({ onNavigate }) {
           {/* HOTEL DETAILS */}
           <h5
             style={{
-              background: "linear-gradient(90deg,#fcb69f,#ff6b6b)",
+              backgroundColor: "#0d6efd",
               color: "white",
-              padding: "10px",
+              padding: "10px 15px",
               borderRadius: "10px",
-              marginBottom: "10px",
-              boxShadow: "0 4px 10px rgba(0,0,0,0.2)",
+              marginBottom: "12px",
+              fontWeight: "600",
             }}
           >
             🏨 Hotel Details
@@ -200,10 +195,10 @@ export default function HotelVoucher({ onNavigate }) {
               key={i}
               className="mb-3 p-3"
               style={{
-                background: "linear-gradient(135deg,#ffe066,#fab005)",
-                borderRadius: "15px",
-                boxShadow: "0 6px 15px rgba(0,0,0,0.1)",
-                border: "3px solid #ff6b6b",
+                background: "#f1f3f5",
+                borderRadius: "12px",
+                boxShadow: "0 4px 12px rgba(0,0,0,0.05)",
+                borderLeft: "5px solid #0d6efd",
               }}
             >
               <div className="row mb-2">
@@ -240,9 +235,9 @@ export default function HotelVoucher({ onNavigate }) {
                 <div
                   className="col text-center p-2"
                   style={{
-                    background: "#ffb3ba",
+                    background: "#cfe2ff",
                     borderRadius: "8px",
-                    fontWeight: "bold",
+                    fontWeight: "500",
                   }}
                 >
                   Check-in: {showDate(h.checkIn)}
@@ -250,9 +245,9 @@ export default function HotelVoucher({ onNavigate }) {
                 <div
                   className="col text-center p-2"
                   style={{
-                    background: "#baffc9",
+                    background: "#d1e7dd",
                     borderRadius: "8px",
-                    fontWeight: "bold",
+                    fontWeight: "500",
                   }}
                 >
                   Check-out: {showDate(h.checkOut)}
@@ -260,9 +255,9 @@ export default function HotelVoucher({ onNavigate }) {
                 <div
                   className="col text-center p-2"
                   style={{
-                    background: "#bae1ff",
+                    background: "#fff3cd",
                     borderRadius: "8px",
-                    fontWeight: "bold",
+                    fontWeight: "500",
                   }}
                 >
                   Nights: {h.nights}
@@ -274,11 +269,9 @@ export default function HotelVoucher({ onNavigate }) {
           <div
             className="mt-3 p-3 text-center fw-bold"
             style={{
-              background: "linear-gradient(90deg,#74c0fc,#ff6b6b)",
-              borderRadius: "15px",
+              backgroundColor: "#0d6efd",
+              borderRadius: "10px",
               color: "#fff",
-              fontSize: "16px",
-              textShadow: "1px 1px 2px #00000022",
             }}
           >
             CHECK IN TIME: 04:00 PM &nbsp; | &nbsp; CHECK OUT TIME: 02:00 PM
