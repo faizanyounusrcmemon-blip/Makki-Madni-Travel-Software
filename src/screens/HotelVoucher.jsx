@@ -15,7 +15,7 @@ const showDate = (val) => {
 export default function HotelVoucher({ onNavigate }) {
   const [ref, setRef] = useState("");
   const [data, setData] = useState(null);
-  const [confirmNo, setConfirmNo] = useState("");
+  const [voucherHotels, setVoucherHotels] = useState([]);
   const voucherRef = useRef(null);
 
   /* ================= LOAD VOUCHER (PKG + HOT) ================= */
@@ -37,23 +37,40 @@ export default function HotelVoucher({ onNavigate }) {
       const d = await res.json();
       if (!d.success) return alert("Voucher not found");
 
-      if (isPkg) {
-        setData({
-          ref_no: d.ref_no,
-          customer_name: d.customer_name,
-          booking_date: d.booking_date,
-          hotels: d.hotels || [],
-          agent_name: "", // PKG me agent nahi
-        });
-      } else {
-        setData({
-          ...d.row,
-          agent_name: d.row.agent_name || "", // HOT agent
-        });
-      }
+      let hotelsData = isPkg
+        ? (d.hotels || []).map((h) => ({
+            ...h,
+            confirmNo: "",
+            contact1: "",
+            contact2: "",
+          }))
+        : [
+            {
+              ...d.row,
+              confirmNo: "",
+              contact1: "",
+              contact2: "",
+            },
+          ];
+
+      setData({
+        ref_no: isPkg ? d.ref_no : d.row.ref_no,
+        customer_name: isPkg ? d.customer_name : d.row.customer_name,
+        booking_date: isPkg ? d.booking_date : d.row.booking_date,
+        agent_name: isPkg ? "" : d.row.agent_name || "",
+      });
+
+      setVoucherHotels(hotelsData);
     } catch {
       alert("Failed to load voucher");
     }
+  };
+
+  /* ================= HANDLE HOTEL INPUT CHANGE ================= */
+  const handleHotelChange = (index, field, value) => {
+    const updated = [...voucherHotels];
+    updated[index][field] = value;
+    setVoucherHotels(updated);
   };
 
   /* ================= EXPORT PDF ================= */
@@ -77,7 +94,10 @@ export default function HotelVoucher({ onNavigate }) {
     <div className="container py-3">
       {/* TOP BAR */}
       <div className="d-flex gap-2 mb-3">
-        <button className="btn btn-dark btn-sm" onClick={() => onNavigate("dashboard")}>
+        <button
+          className="btn btn-dark btn-sm"
+          onClick={() => onNavigate("dashboard")}
+        >
           ← Back
         </button>
 
@@ -118,14 +138,15 @@ export default function HotelVoucher({ onNavigate }) {
               ✈️ MAKKI MADNI TRAVEL
             </h3>
 
-          {/* ADDRESS */}
-          <div className="text-center small mb-3" style={{ color: "#444" }}>
-            Shop #4 Diamond City Building, Near Zeenat-ul-Islam Masjid<br />
-            Garden West Karachi<br />
-            ✉️ makkimadnitravel@gmail.com | ☎️ 0335-7476744
-          </div>
+            <div className="text-center small mb-3" style={{ color: "#444" }}>
+              Shop #4 Diamond City Building, Near Zeenat-ul-Islam Masjid
+              <br />
+              Garden West Karachi
+              <br />
+              ✉️ makkimadnitravel@gmail.com | ☎️ 0335-7476744
+            </div>
 
-          <hr />
+            <hr />
             <div className="fw-bold">HOTEL VOUCHER</div>
           </div>
 
@@ -139,22 +160,9 @@ export default function HotelVoucher({ onNavigate }) {
             </div>
           </div>
 
-          {/* ✅ AGENT NAME (FIXED — LABEL HAMESHA SHOW) */}
+          {/* AGENT NAME */}
           <div className="mb-2">
-            <b>Agent Name:</b>{" "}
-            {data.agent_name ? data.agent_name : "—"}
-          </div>
-
-          {/* CONFIRMATION NO */}
-          <div className="d-flex align-items-center gap-2 mb-3" style={{ maxWidth: 350 }}>
-            <b>Confirmation No:</b>
-            <input
-              type="text"
-              className="form-control form-control-sm"
-              value={confirmNo}
-              onChange={(e) => setConfirmNo(e.target.value)}
-              placeholder="Enter number"
-            />
+            <b>Agent Name:</b> {data.agent_name ? data.agent_name : "—"}
           </div>
 
           {/* PAX */}
@@ -163,50 +171,88 @@ export default function HotelVoucher({ onNavigate }) {
           </div>
 
           {/* HOTEL DETAILS */}
-          <h6 className="bg-primary text-white p-2 rounded">
-            🏨 Hotel Details
-          </h6>
+          <h6 className="bg-primary text-white p-2 rounded">🏨 Hotel Details</h6>
 
-          {data?.hotels?.length === 0 && (
+          {voucherHotels?.length === 0 && (
             <div className="text-muted">No hotel service in this booking</div>
           )}
 
-          {data?.hotels?.map((h, i) => (
-            <div key={i} className="border rounded p-2 mb-2" style={{ background: "#ffffff" }}>
-              <div><b>Hotel:</b> {h.hotel}</div>
-              <div><b>Address:</b> {h.location}</div>
+          {voucherHotels?.map((h, i) => (
+            <div
+              key={i}
+              className="border rounded p-2 mb-2"
+              style={{ background: "#ffffff" }}
+            >
+              <div>
+                <b>Hotel:</b> {h.hotel}
+              </div>
+              <div>
+                <b>Address:</b> {h.location}
+              </div>
 
+              {/* CONFIRMATION NO */}
+              <div className="d-flex align-items-center gap-2 mt-2">
+                <b>Confirmation No:</b>
+                <input
+                  type="text"
+                  className="form-control form-control-sm"
+                  value={h.confirmNo}
+                  onChange={(e) =>
+                    handleHotelChange(i, "confirmNo", e.target.value)
+                  }
+                  placeholder="Enter Confirmation No"
+                />
+              </div>
+
+              {/* CONTACT NOS */}
               <div className="row mt-2">
                 <div className="col">
-                  Check-in: <b>{showDate(h.checkIn)}</b>
+                  <input
+                    type="text"
+                    className="form-control form-control-sm"
+                    value={h.contact1}
+                    onChange={(e) =>
+                      handleHotelChange(i, "contact1", e.target.value)
+                    }
+                    placeholder="Contact No 1"
+                  />
                 </div>
                 <div className="col">
-                  Check-out: <b>{showDate(h.checkOut)}</b>
+                  <input
+                    type="text"
+                    className="form-control form-control-sm"
+                    value={h.contact2}
+                    onChange={(e) =>
+                      handleHotelChange(i, "contact2", e.target.value)
+                    }
+                    placeholder="Contact No 2"
+                  />
                 </div>
-                <div className="col">
-                  Nights: <b>{h.nights}</b>
+              </div>
+
+              {/* CHECK-IN / CHECK-OUT */}
+              <div className="row mt-2">
+                <div
+                  className="col text-center fw-bold"
+                  style={{ backgroundColor: "yellow" }}
+                >
+                  Check-in: {showDate(h.checkIn)}
                 </div>
+                <div
+                  className="col text-center fw-bold"
+                  style={{ backgroundColor: "lightgreen" }}
+                >
+                  Check-out: {showDate(h.checkOut)}
+                </div>
+                <div className="col text-center fw-bold">Nights: {h.nights}</div>
               </div>
             </div>
           ))}
 
-          {/* CHECK IN / OUT */}
-          <div
-            className="mt-3 p-2 text-center fw-bold"
-            style={{
-              background: "#e7f1ff",
-              border: "1px dashed #0d6efd",
-              borderRadius: "8px",
-              color: "#0d6efd",
-            }}
-          >
-            CHECK IN TIME: 04:00 PM &nbsp; | &nbsp;
-            CHECK OUT TIME: 02:00 PM
-          </div>
-
           {/* FOOTER */}
           <div className="text-center small mt-3" style={{ color: "#555" }}>
-            Please check your hotel details carefully.<br />
+            Please check your hotel details carefully.
+            <br />
             This voucher is valid only for the mentioned booking.
           </div>
         </div>
