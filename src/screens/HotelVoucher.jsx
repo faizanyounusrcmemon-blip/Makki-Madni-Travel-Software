@@ -49,8 +49,8 @@ export default function HotelVoucher({ onNavigate }) {
         setData({
           ref_no: d.ref_no,
           customer_name: d.customer_name,
+          agent_name: "", // Editable input
           booking_date: d.booking_date,
-          agent_name: "",
           hotels: hotelsData,
         });
       } else {
@@ -64,8 +64,8 @@ export default function HotelVoucher({ onNavigate }) {
         setData({
           ref_no: d.row.ref_no,
           customer_name: d.row.customer_name,
+          agent_name: d.row.agent_name || "", // Editable input
           booking_date: d.row.booking_date,
-          agent_name: d.row.agent_name || "",
           hotels: hotelsData,
         });
       }
@@ -169,9 +169,18 @@ export default function HotelVoucher({ onNavigate }) {
             </div>
           </div>
 
-          {/* AGENT NAME */}
+          {/* AGENT NAME (Editable) */}
           <div className="mb-2">
-            <b>Agent Name:</b> {data.agent_name || "—"}
+            <label className="fw-bold">Agent Name</label>
+            <input
+              type="text"
+              className="form-control form-control-sm"
+              value={data.agent_name}
+              onChange={(e) =>
+                setData({ ...data, agent_name: e.target.value })
+              }
+              placeholder="Enter Agent Name"
+            />
           </div>
 
           {/* CUSTOMER NAME */}
