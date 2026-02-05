@@ -20,6 +20,8 @@ export default function HotelVoucher({ onNavigate }) {
 
   /* ================= LOAD VOUCHER (PKG + HOT) ================= */
   const loadVoucher = async () => {
+    if (!ref) return alert("Please enter Ref No");
+
     try {
       let url = "";
       let isPkg = false;
@@ -49,28 +51,34 @@ export default function HotelVoucher({ onNavigate }) {
           contact1: "",
           contact2: "",
         }));
+        setData({
+          ref_no: d.ref_no,
+          customer_name: d.customer_name,
+          booking_date: d.booking_date,
+          agent_name: "", 
+        });
       } else {
         // HOT booking
+        const row = d.row || {};
         hotelsData = [
           {
-            hotel: d.row.hotel,
-            location: d.row.location,
-            checkIn: d.row.checkIn,
-            checkOut: d.row.checkOut,
-            nights: d.row.nights,
+            hotel: row.hotel || "",
+            location: row.location || "",
+            checkIn: row.checkIn || "",
+            checkOut: row.checkOut || "",
+            nights: row.nights || "",
             confirmNo: "",
             contact1: "",
             contact2: "",
           },
         ];
+        setData({
+          ref_no: row.ref_no || "",
+          customer_name: row.customer_name || "",
+          booking_date: row.booking_date || "",
+          agent_name: row.agent_name || "",
+        });
       }
-
-      setData({
-        ref_no: isPkg ? d.ref_no : d.row.ref_no,
-        customer_name: isPkg ? d.customer_name : d.row.customer_name,
-        booking_date: isPkg ? d.booking_date : d.row.booking_date,
-        agent_name: isPkg ? "" : d.row.agent_name || "",
-      });
 
       setVoucherHotels(hotelsData);
     } catch (err) {
@@ -106,7 +114,7 @@ export default function HotelVoucher({ onNavigate }) {
   return (
     <div className="container py-3">
       {/* TOP BAR */}
-      <div className="d-flex gap-2 mb-3">
+      <div className="d-flex gap-2 mb-3 flex-wrap">
         <button
           className="btn btn-dark btn-sm"
           onClick={() => onNavigate("dashboard")}
@@ -142,15 +150,15 @@ export default function HotelVoucher({ onNavigate }) {
             background: "linear-gradient(180deg,#ffffff,#eef6ff)",
             border: "3px solid #0d6efd",
             borderRadius: "12px",
-            padding: "20px",
+            padding: "25px",
+            boxShadow: "0 8px 20px rgba(0,0,0,0.15)",
           }}
         >
           {/* HEADER */}
           <div className="text-center mb-3">
-            <h3 style={{ color: "#0d6efd", fontWeight: "bold" }}>
+            <h2 style={{ color: "#0d6efd", fontWeight: "bold" }}>
               ✈️ MAKKI MADNI TRAVEL
-            </h3>
-
+            </h2>
             <div className="text-center small mb-3" style={{ color: "#444" }}>
               Shop #4 Diamond City Building, Near Zeenat-ul-Islam Masjid
               <br />
@@ -158,9 +166,8 @@ export default function HotelVoucher({ onNavigate }) {
               <br />
               ✉️ makkimadnitravel@gmail.com | ☎️ 0335-7476744
             </div>
-
             <hr />
-            <div className="fw-bold">HOTEL VOUCHER</div>
+            <div className="fw-bold fs-5 text-center">HOTEL VOUCHER</div>
           </div>
 
           {/* BASIC INFO */}
@@ -174,7 +181,7 @@ export default function HotelVoucher({ onNavigate }) {
           </div>
 
           {/* AGENT NAME */}
-          <div className="mb-2">
+          <div className="mb-3">
             <b>Agent Name:</b> {data.agent_name ? data.agent_name : "—"}
           </div>
 
@@ -193,18 +200,21 @@ export default function HotelVoucher({ onNavigate }) {
           {voucherHotels?.map((h, i) => (
             <div
               key={i}
-              className="border rounded p-2 mb-2"
-              style={{ background: "#ffffff" }}
+              className="border rounded p-3 mb-3"
+              style={{
+                background: "#fdfdfd",
+                boxShadow: "0 3px 10px rgba(0,0,0,0.05)",
+              }}
             >
-              <div className="mb-1">
+              <div className="mb-2">
                 <b>Hotel:</b> {h.hotel}
               </div>
-              <div className="mb-2">
+              <div className="mb-3">
                 <b>Address:</b> {h.location}
               </div>
 
               {/* CONFIRMATION NO & CONTACT NOS */}
-              <div className="row g-2 mb-2">
+              <div className="row g-2 mb-3">
                 <div className="col-md-4">
                   <input
                     type="text"
@@ -243,18 +253,26 @@ export default function HotelVoucher({ onNavigate }) {
               {/* CHECK-IN / CHECK-OUT */}
               <div className="row text-center fw-bold">
                 <div
-                  className="col p-1"
-                  style={{ backgroundColor: "yellow", borderRadius: "4px" }}
+                  className="col p-2"
+                  style={{
+                    backgroundColor: "#fff59d",
+                    borderRadius: "5px",
+                    marginRight: "5px",
+                  }}
                 >
                   Check-in: {showDate(h.checkIn)}
                 </div>
                 <div
-                  className="col p-1"
-                  style={{ backgroundColor: "lightgreen", borderRadius: "4px" }}
+                  className="col p-2"
+                  style={{
+                    backgroundColor: "#b9f6ca",
+                    borderRadius: "5px",
+                    marginLeft: "5px",
+                  }}
                 >
                   Check-out: {showDate(h.checkOut)}
                 </div>
-                <div className="col p-1">Nights: {h.nights}</div>
+                <div className="col p-2">Nights: {h.nights}</div>
               </div>
             </div>
           ))}
