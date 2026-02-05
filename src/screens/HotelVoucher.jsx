@@ -195,6 +195,17 @@ export default function HotelVoucher({ onNavigate }) {
                 />
               </div>
 
+              {/* Customer Name */}
+              <div className="mb-2">
+                <label className="fw-bold">Customer Name</label>
+                <input
+                  type="text"
+                  className="form-control form-control-sm"
+                  value={data.customer_name}
+                  readOnly
+                />
+              </div>
+
               {/* Hotel Details */}
               <div className="row mb-2">
                 <div className="col">
