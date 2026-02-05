@@ -19,8 +19,8 @@ export default function HotelVoucher({ onNavigate }) {
   const voucherRef = useRef(null);
 
   /* ================= LOAD VOUCHER (PKG + HOT) ================= */
-  /* ================= LOAD VOUCHER (PKG + HOT) ================= */
   const loadVoucher = async () => {
+    if (!ref) return alert("Please enter Ref No");
     try {
       let url = "";
       let isPkg = false;
@@ -38,24 +38,62 @@ export default function HotelVoucher({ onNavigate }) {
       const d = await res.json();
       if (!d.success) return alert("Voucher not found");
 
+      let hotelsData = [];
+
       if (isPkg) {
+        hotelsData = (d.hotels || []).map((h) => ({
+          hotel: h.hotel,
+          location: h.location,
+          checkIn: h.checkIn,
+          checkOut: h.checkOut,
+          nights: h.nights,
+          confirmNo: "",
+          contact1: "",
+          contact2: "",
+        }));
         setData({
           ref_no: d.ref_no,
           customer_name: d.customer_name,
           booking_date: d.booking_date,
-          hotels: d.hotels || [],
           agent_name: "", // PKG me agent nahi
         });
       } else {
+        // HOT ke liye hotels array create kar rahe hain
+        const row = d.row || {};
+        hotelsData = [
+          {
+            hotel: row.hotel || "",
+            location: row.location || "",
+            checkIn: row.checkIn || "",
+            checkOut: row.checkOut || "",
+            nights: row.nights || "",
+            confirmNo: "",
+            contact1: "",
+            contact2: "",
+          },
+        ];
         setData({
-          ...d.row,
-          agent_name: d.row.agent_name || "", // HOT agent
+          ref_no: row.ref_no || "",
+          customer_name: row.customer_name || "",
+          booking_date: row.booking_date || "",
+          agent_name: row.agent_name || "",
         });
       }
-    } catch {
+
+      setVoucherHotels(hotelsData);
+    } catch (err) {
+      console.error(err);
       alert("Failed to load voucher");
     }
   };
+
+  /* ================= HANDLE HOTEL INPUT CHANGE ================= */
+  const handleHotelChange = (index, field, value) => {
+    const updated = [...voucherHotels];
+    updated[index][field] = value;
+    setVoucherHotels(updated);
+  };
+
   /* ================= EXPORT PDF ================= */
   const exportPDF = async () => {
     const canvas = await html2canvas(voucherRef.current, {
@@ -267,4 +305,3 @@ export default function HotelVoucher({ onNavigate }) {
     </div>
   );
 }
-
