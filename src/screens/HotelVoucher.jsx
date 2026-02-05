@@ -209,9 +209,16 @@ export default function HotelVoucher({ onNavigate }) {
                 <b>Address:</b> {h.location}
               </div>
 
-              {/* CONFIRMATION NO & CONTACT NOS */}
-              <div className="row g-2 mb-3">
-                <div className="col-md-4">
+              {/* HEADING LINE */}
+              <div className="row fw-bold mb-1">
+                <div className="col">Confirmation No</div>
+                <div className="col">Contact No 1</div>
+                <div className="col">Contact No 2</div>
+              </div>
+
+              {/* INPUT BOXES */}
+              <div className="row mb-3">
+                <div className="col">
                   <input
                     type="text"
                     className="form-control form-control-sm"
@@ -219,10 +226,10 @@ export default function HotelVoucher({ onNavigate }) {
                     onChange={(e) =>
                       handleHotelChange(i, "confirmNo", e.target.value)
                     }
-                    placeholder="Confirmation No"
+                    placeholder="Enter Confirmation No"
                   />
                 </div>
-                <div className="col-md-4">
+                <div className="col">
                   <input
                     type="text"
                     className="form-control form-control-sm"
@@ -230,10 +237,10 @@ export default function HotelVoucher({ onNavigate }) {
                     onChange={(e) =>
                       handleHotelChange(i, "contact1", e.target.value)
                     }
-                    placeholder="Contact No 1"
+                    placeholder="Enter Contact No 1"
                   />
                 </div>
-                <div className="col-md-4">
+                <div className="col">
                   <input
                     type="text"
                     className="form-control form-control-sm"
@@ -241,12 +248,12 @@ export default function HotelVoucher({ onNavigate }) {
                     onChange={(e) =>
                       handleHotelChange(i, "contact2", e.target.value)
                     }
-                    placeholder="Contact No 2"
+                    placeholder="Enter Contact No 2"
                   />
                 </div>
               </div>
 
-              {/* CHECK-IN / CHECK-OUT */}
+              {/* CHECK-IN / CHECK-OUT / NIGHTS */}
               <div className="row text-center fw-bold">
                 <div
                   className="col p-2"
@@ -272,6 +279,19 @@ export default function HotelVoucher({ onNavigate }) {
               </div>
             </div>
           ))}
+
+          {/* CHECK IN / CHECK OUT TIME */}
+          <div
+            className="mt-2 p-2 text-center fw-bold"
+            style={{
+              background: "#e7f1ff",
+              border: "1px dashed #0d6efd",
+              borderRadius: "8px",
+              color: "#0d6efd",
+            }}
+          >
+            CHECK IN TIME: 04:00 PM &nbsp; | &nbsp; CHECK OUT TIME: 02:00 PM
+          </div>
 
           {/* FOOTER */}
           <div className="text-center small mt-3" style={{ color: "#555" }}>
