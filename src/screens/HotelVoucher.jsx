@@ -20,7 +20,7 @@ const calcNights = (inD, outD) => {
   return diff > 0 ? diff : "—";
 };
 
-/* ================= NORMALIZER ================= */
+/* ================= NORMALIZE HOTEL ================= */
 const normalizeHotel = (h = {}) => ({
   hotel: h.hotel || h.hotel_name || "—",
   location: h.location || h.address || h.hotel_location || "—",
@@ -28,7 +28,10 @@ const normalizeHotel = (h = {}) => ({
   room_type: h.room_type || h.type || h.type_name || "—",
   checkIn: h.checkIn || h.check_in || null,
   checkOut: h.checkOut || h.check_out || null,
-  nights: calcNights(h.checkIn || h.check_in, h.checkOut || h.check_out),
+  nights: calcNights(
+    h.checkIn || h.check_in,
+    h.checkOut || h.check_out
+  ),
   confirmNo: "",
   contact1: "",
   contact2: "",
@@ -95,7 +98,7 @@ export default function HotelVoucher({ onNavigate }) {
   return (
     <div className="container py-3">
       {/* TOP BAR */}
-      <div className="d-flex gap-2 mb-3">
+      <div className="d-flex gap-2 mb-3 flex-wrap">
         <button className="btn btn-dark btn-sm" onClick={() => onNavigate("dashboard")}>
           ← Back
         </button>
@@ -108,12 +111,12 @@ export default function HotelVoucher({ onNavigate }) {
         />
 
         <button className="btn btn-primary btn-sm" onClick={loadVoucher}>
-          Load
+          Load Voucher
         </button>
 
         {data && (
           <button className="btn btn-success btn-sm" onClick={exportPDF}>
-            PDF
+            📄 Download PDF
           </button>
         )}
       </div>
@@ -147,7 +150,7 @@ export default function HotelVoucher({ onNavigate }) {
 
           {/* INFO */}
           <div className="row mb-2">
-            <div className="col"><b>Ref:</b> {data.ref_no}</div>
+            <div className="col"><b>Ref No:</b> {data.ref_no}</div>
             <div className="col text-end"><b>Date:</b> {showDate(data.booking_date)}</div>
           </div>
 
@@ -158,11 +161,19 @@ export default function HotelVoucher({ onNavigate }) {
             onChange={(e) => setData({ ...data, agent_name: e.target.value })}
           />
 
-          <div className="mb-2"><b>Customer:</b> {data.customer_name}</div>
+          <div className="mb-2"><b>Customer Name:</b> {data.customer_name}</div>
 
           {/* HOTELS */}
           {data.hotels.map((h, i) => (
             <div key={i} className="border p-2 mb-2 rounded">
+              {/* CONFIRMATION */}
+              <input
+                className="form-control form-control-sm mb-2"
+                placeholder="Confirmation No"
+                value={h.confirmNo}
+                onChange={(e) => handleHotelChange(i, "confirmNo", e.target.value)}
+              />
+
               <b>Hotel:</b> {h.hotel}<br />
               <b>Address:</b> {h.location}
 
@@ -179,6 +190,26 @@ export default function HotelVoucher({ onNavigate }) {
                   <b>Check-Out:</b> {showDate(h.checkOut)}
                 </div>
                 <div className="col"><b>Nights:</b> {h.nights}</div>
+              </div>
+
+              {/* CONTACTS */}
+              <div className="row mt-2">
+                <div className="col">
+                  <input
+                    className="form-control form-control-sm"
+                    placeholder="Contact No 1"
+                    value={h.contact1}
+                    onChange={(e) => handleHotelChange(i, "contact1", e.target.value)}
+                  />
+                </div>
+                <div className="col">
+                  <input
+                    className="form-control form-control-sm"
+                    placeholder="Contact No 2"
+                    value={h.contact2}
+                    onChange={(e) => handleHotelChange(i, "contact2", e.target.value)}
+                  />
+                </div>
               </div>
             </div>
           ))}
