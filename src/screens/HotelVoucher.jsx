@@ -249,17 +249,30 @@ export default function HotelVoucher({ onNavigate }) {
             </div>
           ))}
 
-          <div className="mt-3 text-center fw-bold">
-            CHECK IN TIME: 04:00 PM | CHECK OUT TIME: 02:00 PM
+          {/* CHECK IN / OUT TIME */}
+          <div
+            className="mt-3 p-2 text-center fw-bold"
+            style={{
+              background: "#e7f1ff",
+              border: "1px dashed #0d6efd",
+              borderRadius: "8px",
+              color: "#0d6efd",
+            }}
+          >
+            CHECK IN TIME: 04:00 PM &nbsp; | &nbsp; CHECK OUT TIME: 02:00 PM
           </div>
 
-          <div className="text-center small mt-3">
+          {/* FOOTER */}
+          <div className="text-center small mt-3" style={{ color: "#555" }}>
             Please check your hotel details carefully.
+            <br />
+            This voucher is valid only for the mentioned booking.
           </div>
         </div>
       )}
     </div>
   );
 }
+
 
 
