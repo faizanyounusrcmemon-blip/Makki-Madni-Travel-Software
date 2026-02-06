@@ -169,15 +169,20 @@ export default function HotelVoucher({ onNavigate }) {
             </div>
           </div>
 
-          <input
-            className="form-control form-control-sm mb-2"
-            value={data.agent_name}
-            placeholder="Agent Name"
-            onChange={(e) =>
-              setData({ ...data, agent_name: e.target.value })
-            }
-          />
-
+          {/* AGENT NAME (Editable) */}
+          <div className="mb-2">
+            <label className="fw-bold">Agent Name</label>
+            <input
+              type="text"
+              className="form-control form-control-sm"
+              value={data.agent_name}
+              onChange={(e) =>
+                setData({ ...data, agent_name: e.target.value })
+              }
+              placeholder="Enter Agent Name"
+            />
+          </div>
+          
           <div className="mb-2">
             <b>Customer Name:</b> {data.customer_name}
           </div>
@@ -256,4 +261,5 @@ export default function HotelVoucher({ onNavigate }) {
     </div>
   );
 }
+
 
