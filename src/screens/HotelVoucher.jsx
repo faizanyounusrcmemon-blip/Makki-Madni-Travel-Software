@@ -12,12 +12,28 @@ const showDate = (val) => {
   return `${day}/${mon}/${year}`;
 };
 
+// 🔥 NORMALIZER (PKG + HOT SAFE)
+const normalizeHotel = (h) => ({
+  hotel: h.hotel || h.hotel_name || "",
+  location: h.location || "",
+  checkIn: h.checkIn || h.check_in || "",
+  checkOut: h.checkOut || h.check_out || "",
+  nights: h.nights || "",
+  rooms: h.rooms || h.room || "",
+  type: h.type || h.roomType || h.room_type || "",
+  rate: h.rate || "",
+  total: h.total || "",
+  confirmNo: "",
+  contact1: "",
+  contact2: "",
+});
+
 export default function HotelVoucher({ onNavigate }) {
   const [ref, setRef] = useState("");
   const [data, setData] = useState(null);
   const voucherRef = useRef(null);
 
-  /* ================= LOAD VOUCHER ================= */
+  /* ================= LOAD ================= */
   const loadVoucher = async () => {
     try {
       let url = "";
@@ -29,163 +45,78 @@ export default function HotelVoucher({ onNavigate }) {
       } else if (ref.startsWith("HOT-")) {
         url = `${import.meta.env.VITE_BACKEND_URL}/api/hotels/get/${ref}`;
       } else {
-        return alert("Invalid Ref No (PKG- / HOT-)");
+        return alert("Invalid Ref No");
       }
 
       const res = await fetch(url);
       const d = await res.json();
       if (!d.success) return alert("Voucher not found");
 
-      let hotelsData = [];
-
-      const srcHotels = isPkg ? d.hotels : d.row.hotels;
-
-      hotelsData = (srcHotels || []).map((h) => ({
-        ...h,
-        confirmNo: "",
-        contact1: "",
-        contact2: "",
-        room: h.room || h.room_name || "",
-        roomType: h.roomType || h.room_type || "",
-      }));
-
-      setData({
-        ref_no: isPkg ? d.ref_no : d.row.ref_no,
-        customer_name: isPkg ? d.customer_name : d.row.customer_name,
-        agent_name: isPkg ? "" : d.row.agent_name || "",
-        booking_date: isPkg ? d.booking_date : d.row.booking_date,
-        hotels: hotelsData,
-      });
-    } catch (err) {
-      console.error(err);
-      alert("Failed to load voucher");
+      if (isPkg) {
+        setData({
+          ref_no: d.ref_no,
+          customer_name: d.customer_name,
+          agent_name: d.agent_name || "",
+          booking_date: d.booking_date,
+          hotels: (d.hotels || []).map(normalizeHotel),
+        });
+      } else {
+        setData({
+          ref_no: d.row.ref_no,
+          customer_name: d.row.customer_name,
+          agent_name: d.row.agent_name || "",
+          booking_date: d.row.booking_date,
+          hotels: (d.row.hotels || []).map(normalizeHotel),
+        });
+      }
+    } catch (e) {
+      console.error(e);
+      alert("Load failed");
     }
   };
 
   /* ================= PDF ================= */
   const exportPDF = async () => {
-    const canvas = await html2canvas(voucherRef.current, {
-      scale: 2,
-      backgroundColor: "#fff",
-    });
-
-    const img = canvas.toDataURL("image/png");
+    const canvas = await html2canvas(voucherRef.current, { scale: 2 });
     const pdf = new jsPDF("p", "mm", "a4");
     const w = pdf.internal.pageSize.getWidth();
     const h = (canvas.height * w) / canvas.width;
-
-    pdf.addImage(img, "PNG", 0, 0, w, h);
+    pdf.addImage(canvas.toDataURL(), "PNG", 0, 0, w, h);
     pdf.save(`Hotel-Voucher-${data.ref_no}.pdf`);
-  };
-
-  const handleHotelChange = (i, field, val) => {
-    const hotels = [...data.hotels];
-    hotels[i][field] = val;
-    setData({ ...data, hotels });
   };
 
   return (
     <div className="container py-3">
-      {/* TOP BAR */}
-      <div className="d-flex gap-2 mb-3 flex-wrap">
-        <button className="btn btn-dark btn-sm" onClick={() => onNavigate("dashboard")}>
-          ← Back
-        </button>
-
-        <input
-          className="form-control form-control-sm w-25"
-          placeholder="PKG-00001 / HOT-00001"
-          value={ref}
-          onChange={(e) => setRef(e.target.value)}
-        />
-
-        <button className="btn btn-primary btn-sm" onClick={loadVoucher}>
-          Load Voucher
-        </button>
-
-        {data && (
-          <button className="btn btn-success btn-sm" onClick={exportPDF}>
-            📄 Download PDF
-          </button>
-        )}
+      <div className="d-flex gap-2 mb-3">
+        <button className="btn btn-dark btn-sm" onClick={() => onNavigate("dashboard")}>← Back</button>
+        <input className="form-control form-control-sm w-25" value={ref} onChange={e=>setRef(e.target.value)} />
+        <button className="btn btn-primary btn-sm" onClick={loadVoucher}>Load</button>
+        {data && <button className="btn btn-success btn-sm" onClick={exportPDF}>PDF</button>}
       </div>
 
-      {/* ================= VOUCHER ================= */}
       {data && (
-        <div
-          ref={voucherRef}
-          style={{
-            maxWidth: "820px",
-            margin: "0 auto",
-            background: "linear-gradient(180deg,#ffffff,#eef6ff)",
-            border: "3px solid #0d6efd",
-            borderRadius: "12px",
-            padding: "20px",
-          }}
-        >
-          {/* HEADER */}
-          <div className="text-center mb-3">
-            <h3 style={{ color: "#0d6efd", fontWeight: "bold" }}>
-              ✈️ MAKKI MADNI TRAVEL
-            </h3>
-            <div className="small">
-              Garden West Karachi<br />
-              ☎️ 0335-7476744
-            </div>
-            <hr />
-            <b>HOTEL VOUCHER</b>
-          </div>
+        <div ref={voucherRef} style={{ maxWidth: 820, margin: "auto", padding: 20, border: "3px solid #0d6efd" }}>
+          <h4 className="text-center">HOTEL VOUCHER</h4>
 
-          {/* BASIC */}
           <div className="row mb-2">
-            <div className="col"><b>Ref No:</b> {data.ref_no}</div>
-            <div className="col text-end"><b>Booking Date:</b> {showDate(data.booking_date)}</div>
+            <div className="col"><b>Ref:</b> {data.ref_no}</div>
+            <div className="col text-end"><b>Date:</b> {showDate(data.booking_date)}</div>
           </div>
 
-          {/* AGENT */}
-          <label className="fw-bold">Agent Name</label>
-          <input
-            className="form-control form-control-sm mb-2"
-            value={data.agent_name}
-            onChange={(e) => setData({ ...data, agent_name: e.target.value })}
-          />
+          <b>Agent:</b> {data.agent_name}<br />
+          <b>Customer:</b> {data.customer_name}
 
-          <b>Customer Name:</b> {data.customer_name}
+          {data.hotels.map((h,i)=>(
+            <div key={i} className="border p-2 mt-3">
+              <b>Hotel:</b> {h.hotel}<br/>
+              <b>Address:</b> {h.location}<br/>
+              <b>Room:</b> {h.rooms || "—"} &nbsp;
+              <b>Type:</b> {h.type || "—"}
 
-          {/* HOTELS */}
-          {data.hotels.map((h, i) => (
-            <div key={i} className="border rounded p-2 mt-3">
-              <label className="fw-bold">Confirmation No</label>
-              <input
-                className="form-control form-control-sm mb-2"
-                value={h.confirmNo}
-                onChange={(e) => handleHotelChange(i, "confirmNo", e.target.value)}
-              />
-
-              <div className="row mb-2">
-                <div className="col"><b>Hotel:</b> {h.hotel}</div>
-                <div className="col"><b>Address:</b> {h.location}</div>
-              </div>
-
-              {/* ROOM INFO */}
-              <div className="row mb-2">
-                <div className="col">
-                  <b>Room:</b> {h.room || "—"}
-                </div>
-                <div className="col">
-                  <b>Room Type:</b> {h.roomType || "—"}
-                </div>
-              </div>
-
-              {/* DATES */}
-              <div className="row g-2 mb-2">
-                <div className="col" style={{ background: "#f1c40f", padding: 6 }}>
-                  <b>Check-in:</b> {showDate(h.checkIn)}
-                </div>
-                <div className="col" style={{ background: "#27ae60", color: "#fff", padding: 6 }}>
-                  <b>Check-out:</b> {showDate(h.checkOut)}
-                </div>
-                <div className="col"><b>Nights:</b> {h.nights}</div>
+              <div className="row mt-2">
+                <div className="col" style={{background:"#f1c40f"}}>Check-in: {showDate(h.checkIn)}</div>
+                <div className="col" style={{background:"#27ae60",color:"#fff"}}>Check-out: {showDate(h.checkOut)}</div>
+                <div className="col">Nights: {h.nights}</div>
               </div>
             </div>
           ))}
