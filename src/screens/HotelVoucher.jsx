@@ -147,14 +147,18 @@ export default function HotelVoucher({ onNavigate }) {
             <h3 style={{ color: "#0d6efd", fontWeight: "bold" }}>
               ✈️ MAKKI MADNI TRAVEL
             </h3>
-            <div className="small">
-              Garden West Karachi<br />
+
+            <div className="text-center small mb-3" style={{ color: "#444" }}>
+              Shop #4 Diamond City Building, Near Zeenat-ul-Islam Masjid
+              <br />
+              Garden West Karachi
+              <br />
               ✉️ makkimadnitravel@gmail.com | ☎️ 0335-7476744
             </div>
-            <hr />
-            <b>HOTEL VOUCHER</b>
-          </div>
 
+            <hr />
+            <div className="fw-bold">HOTEL VOUCHER</div>
+          </div>
           {/* INFO */}
           <div className="row mb-2">
             <div className="col">
@@ -252,3 +256,4 @@ export default function HotelVoucher({ onNavigate }) {
     </div>
   );
 }
+
