@@ -217,6 +217,7 @@ export default function HotelVoucher({ onNavigate }) {
                   <b>Room Type:</b> {h.room_type}
                 </div>
               </div>
+              
 
               <div className="row mt-2">
                 <div className="col bg-warning p-2">
@@ -281,6 +282,7 @@ export default function HotelVoucher({ onNavigate }) {
     </div>
   );
 }
+
 
 
 
