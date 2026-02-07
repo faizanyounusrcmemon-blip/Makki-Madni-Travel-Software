@@ -187,9 +187,15 @@ export default function HotelVoucher({ onNavigate }) {
             <b>Customer Name:</b> {data.customer_name}
           </div>
 
+          {/* HOTEL DETAILS */}
+          <h6 className="bg-primary text-white p-2 rounded">
+            🏨 Hotel Details
+          </h6>
+
           {/* HOTELS */}
           {data.hotels.map((h, i) => (
             <div key={i} className="border p-2 mb-2 rounded">
+              <label className="fw-bold">Confirm No</label>
               <input
                 className="form-control form-control-sm mb-2"
                 placeholder="Confirmation No"
@@ -226,6 +232,7 @@ export default function HotelVoucher({ onNavigate }) {
 
               <div className="row mt-2">
                 <div className="col">
+                  <label className="fw-bold">CONTACT 1</label>
                   <input
                     className="form-control form-control-sm"
                     placeholder="Contact No 1"
@@ -236,6 +243,7 @@ export default function HotelVoucher({ onNavigate }) {
                   />
                 </div>
                 <div className="col">
+                  <label className="fw-bold">CONTACT 2</label>
                   <input
                     className="form-control form-control-sm"
                     placeholder="Contact No 2"
@@ -273,6 +281,5 @@ export default function HotelVoucher({ onNavigate }) {
     </div>
   );
 }
-
 
 
