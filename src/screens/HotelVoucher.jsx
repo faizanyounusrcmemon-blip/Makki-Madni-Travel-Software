@@ -205,9 +205,9 @@ export default function HotelVoucher({ onNavigate }) {
                 }
               />
 
-              <b>Hotel:</b> {h.hotel}
+              <b>🏨 Hotel:</b> {h.hotel}
               <br />
-              <b>Address:</b> {h.location}
+              <b>📍 Address:</b> {h.location}
 
               <div className="row mt-2">
                 <div className="col">
@@ -281,6 +281,7 @@ export default function HotelVoucher({ onNavigate }) {
     </div>
   );
 }
+
 
 
 
