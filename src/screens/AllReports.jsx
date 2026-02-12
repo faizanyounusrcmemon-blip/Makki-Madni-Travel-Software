@@ -248,7 +248,7 @@ export default function AllReports({ onNavigate }) {
                   <td className="text-center">
                     <button
                       className="btn btn-outline-danger btn-sm"
-                      onClick={() => handleDelete(r.type, r.ref_no)}
+                      onClick={() => handleDelete(r.type, r.ref_no, r.customer_name)}
                     >
                       DELETE
                     </button>
@@ -280,3 +280,4 @@ export default function AllReports({ onNavigate }) {
     </div>
   );
 }
+
