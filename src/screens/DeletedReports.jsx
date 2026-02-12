@@ -4,6 +4,7 @@ export default function DeletedReports({ onNavigate }) {
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(false);
 
+  /* ================= LOAD DATA ================= */
   const load = async () => {
     setLoading(true);
     try {
@@ -54,11 +55,7 @@ export default function DeletedReports({ onNavigate }) {
       return;
     }
 
-    if (
-      !window.confirm(
-        "PERMANENT DELETE?\nThis action cannot be undone!"
-      )
-    )
+    if (!window.confirm("PERMANENT DELETE?\nThis action cannot be undone!"))
       return;
 
     const res = await fetch(
@@ -80,12 +77,14 @@ export default function DeletedReports({ onNavigate }) {
   };
 
   /* ================= DATE FORMAT ================= */
-  const formatDate = (d) =>
-    new Date(d).toLocaleDateString("en-GB", {
+  const formatDate = (d) => {
+    if (!d) return "-";
+    return new Date(d).toLocaleDateString("en-GB", {
       day: "2-digit",
       month: "short",
       year: "numeric",
     });
+  };
 
   return (
     <div className="container py-4">
@@ -144,18 +143,31 @@ export default function DeletedReports({ onNavigate }) {
 
               {rows.map((r, i) => (
                 <tr key={i}>
+                  {/* TYPE BADGE */}
                   <td>
-                    <span className="badge bg-danger">
+                    <span
+                      className={`badge ${
+                        r.type === "PURCHASE" ? "bg-primary" : "bg-danger"
+                      }`}
+                    >
                       {r.type}
                     </span>
                   </td>
+
+                  {/* REF */}
                   <td className="fw-bold">{r.ref_no}</td>
+
+                  {/* CUSTOMER */}
                   <td className="fw-semibold text-primary">
                     {r.customer_name || "-"}
                   </td>
+
+                  {/* DATE */}
                   <td className="text-muted">
-                    {formatDate(r.created_at)}
+                    {formatDate(r.booking_date)}
                   </td>
+
+                  {/* ACTIONS */}
                   <td className="text-center">
                     <button
                       className="btn btn-outline-success btn-sm me-1"
