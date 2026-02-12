@@ -36,20 +36,20 @@ export default function DeletedReports({ onNavigate }) {
       return;
     }
 
-    if (!window.confirm(`Confirm restore?\nREF NO: ${ref_no}`)) return;
+    if (!window.confirm(`Confirm restore?\nREF NO: ${ref_no}\nCustomer: ${customer_name}`)) return;
 
     const res = await fetch(
       `${import.meta.env.VITE_BACKEND_URL}/api/deleted/restore`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ type, ref_no }),
+        body: JSON.stringify({ type, ref_no, customer_name }),
       }
     );
 
     const data = await res.json();
     if (data.success) {
-      alert(`✅ Restored\nREF NO: ${ref_no}`);
+      alert(`✅ Restored\nREF NO: ${ref_no}\nCustomer: ${customer_name}`);
       load();
     } else {
       alert(data.error || "Restore failed");
@@ -59,7 +59,7 @@ export default function DeletedReports({ onNavigate }) {
   /* ================= DELETE ================= */
   const permanentDelete = async (type, ref_no) => {
     const pass = prompt(
-      `PERMANENT DELETE ⚠\nREF NO: ${ref_no}\n\nEnter password`
+      `PERMANENT DELETE ⚠\nREF NO: ${ref_no}\nCustomer: ${customer_name}\n\nEnter password`
     );
 
     if (pass !== "7865") {
@@ -69,7 +69,7 @@ export default function DeletedReports({ onNavigate }) {
 
     if (
       !window.confirm(
-        `FINAL WARNING ⚠\nThis cannot be undone!\nREF NO: ${ref_no}`
+        `FINAL WARNING ⚠\nThis cannot be undone!\nREF NO: ${ref_no}\nCustomer: ${customer_name}`
       )
     )
       return;
@@ -79,13 +79,13 @@ export default function DeletedReports({ onNavigate }) {
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ type, ref_no, password: pass }),
+        body: JSON.stringify({ type, ref_no, customer_name password: pass }),
       }
     );
 
     const data = await res.json();
     if (data.success) {
-      alert(`🔥 Permanently deleted\nREF NO: ${ref_no}`);
+      alert(`🔥 Permanently deleted\nREF NO: ${ref_no}\nCustomer: ${customer_name}`);
       load();
     } else {
       alert(data.error || "Delete failed");
@@ -219,4 +219,5 @@ export default function DeletedReports({ onNavigate }) {
     </div>
   );
 }
+
 
