@@ -98,30 +98,21 @@ export default function AllReports({ onNavigate }) {
       temp = temp.filter(
         (r) =>
           (r.ref_no || "").toLowerCase().includes(search.toLowerCase()) ||
-          (r.customer_name || "")
-            .toLowerCase()
-            .includes(search.toLowerCase())
+          (r.customer_name || "").toLowerCase().includes(search.toLowerCase())
       );
 
     if (fromDate)
-      temp = temp.filter(
-        (r) => new Date(r.booking_date) >= new Date(fromDate)
-      );
+      temp = temp.filter((r) => new Date(r.booking_date) >= new Date(fromDate));
 
     if (toDate)
-      temp = temp.filter(
-        (r) => new Date(r.booking_date) <= new Date(toDate)
-      );
+      temp = temp.filter((r) => new Date(r.booking_date) <= new Date(toDate));
 
     setFiltered(temp);
   }, [search, fromDate, toDate, rows]);
 
   /* ================= TOTAL ================= */
   const totalPKR = useMemo(() => {
-    return filtered.reduce(
-      (sum, r) => sum + Number(r.total_pkr || 0),
-      0
-    );
+    return filtered.reduce((sum, r) => sum + Number(r.total_pkr || 0), 0);
   }, [filtered]);
 
   /* ================= FORMAT ================= */
@@ -211,6 +202,7 @@ export default function AllReports({ onNavigate }) {
           <table className="table table-hover table-sm mb-0 align-middle">
             <thead className="table-light">
               <tr>
+                <th>SR#</th>
                 <th>Type</th>
                 <th>Ref</th>
                 <th>Customer</th>
@@ -224,6 +216,8 @@ export default function AllReports({ onNavigate }) {
             <tbody>
               {filtered.map((r, i) => (
                 <tr key={i}>
+                  <td className="fw-bold text-muted">{i + 1}</td>
+
                   <td>
                     <span className="badge bg-info text-dark">
                       {typeIcon(r.type)} {r.type}
@@ -236,14 +230,10 @@ export default function AllReports({ onNavigate }) {
                     {r.customer_name || "-"}
                   </td>
 
-                  <td className="text-muted">
-                    {formatDate(r.booking_date)}
-                  </td>
+                  <td className="text-muted">{formatDate(r.booking_date)}</td>
 
                   <td>
-                    <span className="badge bg-success">
-                      💰 {fmtPKR(r.total_pkr)}
-                    </span>
+                    <span className="badge bg-success">💰 {fmtPKR(r.total_pkr)}</span>
                   </td>
 
                   <td className="text-center">
@@ -268,19 +258,17 @@ export default function AllReports({ onNavigate }) {
 
               {filtered.length > 0 && (
                 <tr className="table-dark">
-                  <td colSpan={4} className="text-end fw-bold">
+                  <td colSpan={5} className="text-end fw-bold">
                     TOTAL
                   </td>
-                  <td className="fw-bold">
-                    {fmtPKR(totalPKR)}
-                  </td>
+                  <td className="fw-bold">{fmtPKR(totalPKR)}</td>
                   <td colSpan={2}></td>
                 </tr>
               )}
 
               {filtered.length === 0 && (
                 <tr>
-                  <td colSpan={7} className="text-center text-muted py-3">
+                  <td colSpan={8} className="text-center text-muted py-3">
                     No Records Found
                   </td>
                 </tr>
@@ -292,4 +280,3 @@ export default function AllReports({ onNavigate }) {
     </div>
   );
 }
-
