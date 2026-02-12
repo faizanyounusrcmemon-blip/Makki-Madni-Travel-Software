@@ -27,7 +27,16 @@ export default function DeletedReports({ onNavigate }) {
 
   /* ================= RESTORE ================= */
   const restore = async (type, ref_no) => {
-    if (!window.confirm("Restore this record?")) return;
+    const pass = prompt(
+      `RESTORE RECORD\nREF NO: ${ref_no}\n\nEnter password`
+    );
+
+    if (pass !== "7865") {
+      alert("Wrong password");
+      return;
+    }
+
+    if (!window.confirm(`Confirm restore?\nREF NO: ${ref_no}`)) return;
 
     const res = await fetch(
       `${import.meta.env.VITE_BACKEND_URL}/api/deleted/restore`,
@@ -40,17 +49,30 @@ export default function DeletedReports({ onNavigate }) {
 
     const data = await res.json();
     if (data.success) {
-      alert("✅ Record restored");
+      alert(`✅ Restored\nREF NO: ${ref_no}`);
       load();
-    } else alert(data.error || "Restore failed");
+    } else {
+      alert(data.error || "Restore failed");
+    }
   };
 
   /* ================= DELETE ================= */
   const permanentDelete = async (type, ref_no) => {
-    const pass = prompt("Enter permanent delete password");
-    if (pass !== "7865") return alert("Wrong password");
+    const pass = prompt(
+      `PERMANENT DELETE ⚠\nREF NO: ${ref_no}\n\nEnter password`
+    );
 
-    if (!window.confirm("PERMANENT DELETE?\nCannot undo!")) return;
+    if (pass !== "7865") {
+      alert("Wrong password");
+      return;
+    }
+
+    if (
+      !window.confirm(
+        `FINAL WARNING ⚠\nThis cannot be undone!\nREF NO: ${ref_no}`
+      )
+    )
+      return;
 
     const res = await fetch(
       `${import.meta.env.VITE_BACKEND_URL}/api/deleted/permanent-delete`,
@@ -63,9 +85,11 @@ export default function DeletedReports({ onNavigate }) {
 
     const data = await res.json();
     if (data.success) {
-      alert("✅ Deleted permanently");
+      alert(`🔥 Permanently deleted\nREF NO: ${ref_no}`);
       load();
-    } else alert(data.error || "Delete failed");
+    } else {
+      alert(data.error || "Delete failed");
+    }
   };
 
   /* ================= FORMAT ================= */
@@ -75,7 +99,7 @@ export default function DeletedReports({ onNavigate }) {
   };
 
   const formatPKR = (v) => {
-    if (!v) return "-";
+    if (v === null || v === undefined) return "-";
     return Number(v).toLocaleString("en-PK") + " PKR";
   };
 
@@ -83,7 +107,6 @@ export default function DeletedReports({ onNavigate }) {
 
   return (
     <div className="container py-4">
-
       {/* HEADER */}
       <div className="card shadow-sm border-0 mb-3">
         <div
@@ -114,7 +137,7 @@ export default function DeletedReports({ onNavigate }) {
                 <th>Ref</th>
                 <th>Customer</th>
                 <th>Date</th>
-                <th className="text-end">Amount Pkr</th>
+                <th className="text-end">Amount PKR</th>
                 <th className="text-center">Actions</th>
               </tr>
             </thead>
@@ -138,7 +161,6 @@ export default function DeletedReports({ onNavigate }) {
 
               {rows.map((r, i) => (
                 <tr key={i}>
-                  
                   {/* TYPE */}
                   <td>
                     <span
@@ -167,7 +189,7 @@ export default function DeletedReports({ onNavigate }) {
 
                   {/* AMOUNT */}
                   <td className="text-end fw-bold">
-                    {r.amount}
+                    {formatPKR(r.amount)}
                   </td>
 
                   {/* ACTIONS */}
@@ -191,11 +213,9 @@ export default function DeletedReports({ onNavigate }) {
                 </tr>
               ))}
             </tbody>
-
           </table>
         </div>
       </div>
     </div>
   );
 }
-
