@@ -41,7 +41,6 @@ export default function PurchaseList({ onNavigate }) {
     const password = prompt(
       `DELETE PURCHASE\nREF NO: ${refNo}\n\nEnter password`
     );
-
     if (!password) return;
 
     if (
@@ -108,7 +107,6 @@ export default function PurchaseList({ onNavigate }) {
 
   return (
     <div className="container py-3">
-
       {/* HEADER */}
       <div
         className="p-3 rounded text-white mb-3"
@@ -179,6 +177,7 @@ export default function PurchaseList({ onNavigate }) {
         <table className="table table-sm align-middle mb-0">
           <thead className="text-white" style={{ background: "#212529" }}>
             <tr>
+              <th>SR#</th>
               <th>Ref</th>
               <th>Customer</th>
               <th>Sale</th>
@@ -192,7 +191,7 @@ export default function PurchaseList({ onNavigate }) {
           <tbody>
             {loading && (
               <tr>
-                <td colSpan={showProfit ? 7 : 6} className="text-center py-3">
+                <td colSpan={showProfit ? 8 : 7} className="text-center py-3">
                   Loading...
                 </td>
               </tr>
@@ -200,7 +199,7 @@ export default function PurchaseList({ onNavigate }) {
 
             {!loading && filteredRows.length === 0 && (
               <tr>
-                <td colSpan={showProfit ? 7 : 6} className="text-center text-muted py-3">
+                <td colSpan={showProfit ? 8 : 7} className="text-center text-muted py-3">
                   No records found
                 </td>
               </tr>
@@ -209,6 +208,8 @@ export default function PurchaseList({ onNavigate }) {
             {!loading &&
               filteredRows.map((r, i) => (
                 <tr key={i}>
+                  <td className="fw-bold text-muted">{i + 1}</td>
+
                   <td className="fw-bold">{r.ref_no}</td>
 
                   <td className="fw-semibold text-primary small">
@@ -239,9 +240,7 @@ export default function PurchaseList({ onNavigate }) {
                     </td>
                   )}
 
-                  <td className="small text-muted">
-                    {fmtDate(r.created_at)}
-                  </td>
+                  <td className="small text-muted">{fmtDate(r.created_at)}</td>
 
                   <td className="text-center">
                     <button
@@ -265,7 +264,7 @@ export default function PurchaseList({ onNavigate }) {
 
             {!loading && filteredRows.length > 0 && (
               <tr className="table-dark fw-bold">
-                <td colSpan={2} className="text-end">
+                <td colSpan={3} className="text-end">
                   TOTAL
                 </td>
                 <td>{fmtPKR(totals.sale)}</td>
@@ -275,7 +274,7 @@ export default function PurchaseList({ onNavigate }) {
                     {fmtPKR(totals.profit)}
                   </td>
                 )}
-                <td colSpan={showProfit ? 2 : 3}></td>
+                <td colSpan={showProfit ? 2 : 2}></td>
               </tr>
             )}
           </tbody>
@@ -284,5 +283,3 @@ export default function PurchaseList({ onNavigate }) {
     </div>
   );
 }
-
-
