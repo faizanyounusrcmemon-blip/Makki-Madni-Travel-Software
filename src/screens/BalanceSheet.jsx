@@ -28,7 +28,7 @@ export default function BalanceSheet({ onNavigate }) {
 
   if (loading)
     return (
-      <div className="p-5 text-center text-muted fw-bold">
+      <div className="p-5 text-center text-danger fw-bold">
         ⏳ Loading Balance Sheet...
       </div>
     );
@@ -40,8 +40,8 @@ export default function BalanceSheet({ onNavigate }) {
     .sort((a, b) => b.balance - a.balance);
 
   const supplierRows = data.suppliers
-    .filter((r) => r.balance > 0)          // صرف non-zero balance
-    .sort((a, b) => b.balance - a.balance); // highest balance اوپر
+    .filter((r) => r.balance > 0)
+    .sort((a, b) => b.balance - a.balance);
 
   /* ================= TOTALS ================= */
   const customerTotals = customerRows.reduce(
@@ -65,6 +65,16 @@ export default function BalanceSheet({ onNavigate }) {
   );
 
   const netPosition = customerTotals.balance - supplierTotals.balance;
+
+  /* ================= STATUS LOGIC ================= */
+  const getStatusBadge = (status) => {
+    if (!status) return <span className="badge bg-secondary">UNKNOWN</span>;
+    const s = status.toUpperCase();
+    if (s === "PENDING") return <span className="badge bg-danger">{s}</span>;
+    if (s === "PARTIAL") return <span className="badge bg-warning text-dark">{s}</span>;
+    if (s === "PAID") return <span className="badge bg-success">{s}</span>;
+    return <span className="badge bg-secondary">{s}</span>;
+  };
 
   return (
     <div className="container py-4">
@@ -113,6 +123,7 @@ export default function BalanceSheet({ onNavigate }) {
                 <th className="text-end">Total Sale</th>
                 <th className="text-end">Received</th>
                 <th className="text-end">Balance</th>
+                <th className="text-center">Status</th>
               </tr>
             </thead>
             <tbody>
@@ -124,6 +135,7 @@ export default function BalanceSheet({ onNavigate }) {
                   <td className="text-end">{fmt(r.sale_total)}</td>
                   <td className="text-end">{fmt(r.received)}</td>
                   <td className="text-end text-success fw-bold">{fmt(r.balance)}</td>
+                  <td className="text-center">{getStatusBadge(r.status)}</td>
                 </tr>
               ))}
               {customerRows.length > 0 && (
@@ -132,6 +144,7 @@ export default function BalanceSheet({ onNavigate }) {
                   <td className="text-end">{fmt(customerTotals.sale)}</td>
                   <td className="text-end">{fmt(customerTotals.received)}</td>
                   <td className="text-end text-success">{fmt(customerTotals.balance)}</td>
+                  <td></td>
                 </tr>
               )}
             </tbody>
@@ -166,15 +179,7 @@ export default function BalanceSheet({ onNavigate }) {
                   <td className="text-end">{fmt(r.purchase_total)}</td>
                   <td className="text-end">{fmt(r.paid)}</td>
                   <td className="text-end text-danger fw-bold">{fmt(r.balance)}</td>
-                  <td className="text-center">
-                    <span className={`badge ${
-                      r.status === "PENDING" ? "bg-danger" :
-                      r.status === "PARTIAL" ? "bg-warning text-dark" :
-                      "bg-success"
-                    }`}>
-                      {r.status}
-                    </span>
-                  </td>
+                  <td className="text-center">{getStatusBadge(r.status)}</td>
                 </tr>
               ))}
               {supplierRows.length > 0 && (
