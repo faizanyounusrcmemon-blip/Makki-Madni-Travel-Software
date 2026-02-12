@@ -247,7 +247,9 @@ return (
             <div>
               <b>{p.supplier_code} — <span className="text-primary">{p.supplier_name}</span></b>
               <span className={`badge ms-2 ${
-                normalizeZero(p.pending_amount) === 0
+                p.status === "EXTRA PAID"
+                  ? "bg-primary"        // 🔵 BLUE
+                  : normalizeZero(p.pending_amount) === 0
                   ? "bg-success"
                   : p.status === "PARTIAL"
                   ? "bg-warning text-dark"
@@ -255,6 +257,7 @@ return (
               }`}>
                 {normalizeZero(p.pending_amount) === 0 ? "PAID" : p.status}
               </span>
+
             </div>
             <button className="btn btn-sm btn-outline-primary"
               onClick={()=>{setSupplierCode(p.supplier_code); loadLedger(p.supplier_code);}}>
@@ -378,6 +381,7 @@ return (
  );
 }
    
+
 
 
 
