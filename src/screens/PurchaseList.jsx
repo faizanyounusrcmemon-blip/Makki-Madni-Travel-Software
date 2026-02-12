@@ -6,8 +6,6 @@ export default function PurchaseList({ onNavigate }) {
   const [to, setTo] = useState("");
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(false);
-
-  /* 🔥 NEW */
   const [showProfit, setShowProfit] = useState(false);
 
   useEffect(() => {
@@ -19,6 +17,7 @@ export default function PurchaseList({ onNavigate }) {
     return () => clearTimeout(t);
   }, [from, to]);
 
+  /* ================= LOAD ================= */
   const loadList = async () => {
     setLoading(true);
     const qs = new URLSearchParams();
@@ -37,9 +36,20 @@ export default function PurchaseList({ onNavigate }) {
     setLoading(false);
   };
 
+  /* ================= DELETE ================= */
   const deletePurchase = async (refNo) => {
-    const password = prompt("Enter delete password (786)");
+    const password = prompt(
+      `DELETE PURCHASE\nREF NO: ${refNo}\n\nEnter password`
+    );
+
     if (!password) return;
+
+    if (
+      !window.confirm(
+        `Confirm delete?\nREF NO: ${refNo}\n\nThis will move to deleted list`
+      )
+    )
+      return;
 
     const res = await fetch(
       `${import.meta.env.VITE_BACKEND_URL}/api/purchase/delete/${refNo}`,
@@ -49,11 +59,18 @@ export default function PurchaseList({ onNavigate }) {
         body: JSON.stringify({ password }),
       }
     );
+
     const data = await res.json();
-    if (data.success) loadList();
-    else alert(data.error || "Delete failed");
+
+    if (data.success) {
+      alert(`✅ Deleted\nREF NO: ${refNo}`);
+      loadList();
+    } else {
+      alert(data.error || "Delete failed");
+    }
   };
 
+  /* ================= FILTER ================= */
   const filteredRows = useMemo(() => {
     if (!search) return rows;
     return rows.filter((r) =>
@@ -61,6 +78,7 @@ export default function PurchaseList({ onNavigate }) {
     );
   }, [rows, search]);
 
+  /* ================= TOTALS ================= */
   const totals = useMemo(() => {
     return filteredRows.reduce(
       (a, r) => {
@@ -73,12 +91,20 @@ export default function PurchaseList({ onNavigate }) {
     );
   }, [filteredRows]);
 
-  const fmtDate = (d) =>
-    new Date(d).toLocaleDateString("en-GB", {
+  /* ================= FORMAT ================= */
+  const fmtDate = (d) => {
+    if (!d) return "-";
+    return new Date(d).toLocaleDateString("en-GB", {
       day: "2-digit",
       month: "short",
       year: "numeric",
     });
+  };
+
+  const fmtPKR = (v) => {
+    if (!v) return "0";
+    return Number(v).toLocaleString("en-PK");
+  };
 
   return (
     <div className="container py-3">
@@ -95,7 +121,7 @@ export default function PurchaseList({ onNavigate }) {
           >
             ⬅ Back
           </button>
-          <h4 className="fw-bold mb-0">📄 Purchase List</h4>
+          <h4 className="fw-bold mb-0">🛒 Purchase List</h4>
         </div>
       </div>
 
@@ -111,6 +137,7 @@ export default function PurchaseList({ onNavigate }) {
                 onChange={(e) => setFrom(e.target.value)}
               />
             </div>
+
             <div className="col-md-3">
               <input
                 type="date"
@@ -119,6 +146,7 @@ export default function PurchaseList({ onNavigate }) {
                 onChange={(e) => setTo(e.target.value)}
               />
             </div>
+
             <div className="col-md-4">
               <input
                 className="form-control form-control-sm"
@@ -128,7 +156,6 @@ export default function PurchaseList({ onNavigate }) {
               />
             </div>
 
-            {/* ✅ PROFIT CHECKBOX */}
             <div className="col-md-2">
               <div className="form-check mt-1">
                 <input
@@ -189,14 +216,14 @@ export default function PurchaseList({ onNavigate }) {
                   </td>
 
                   <td>
-                    <span className="badge bg-primary">
-                      {(+r.sale_pkr).toLocaleString()}
+                    <span className="badge bg-success">
+                      💰 {fmtPKR(r.sale_pkr)}
                     </span>
                   </td>
 
                   <td>
                     <span className="badge bg-secondary">
-                      {(+r.purchase_pkr).toLocaleString()}
+                      🛒 {fmtPKR(r.purchase_pkr)}
                     </span>
                   </td>
 
@@ -207,7 +234,7 @@ export default function PurchaseList({ onNavigate }) {
                           +r.profit >= 0 ? "bg-success" : "bg-danger"
                         }`}
                       >
-                        {(+r.profit).toLocaleString()}
+                        {fmtPKR(r.profit)}
                       </span>
                     </td>
                   )}
@@ -225,6 +252,7 @@ export default function PurchaseList({ onNavigate }) {
                     >
                       Detail
                     </button>
+
                     <button
                       className="btn btn-sm btn-outline-danger"
                       onClick={() => deletePurchase(r.ref_no)}
@@ -240,15 +268,11 @@ export default function PurchaseList({ onNavigate }) {
                 <td colSpan={2} className="text-end">
                   TOTAL
                 </td>
-                <td>{totals.sale.toLocaleString()}</td>
-                <td>{totals.purchase.toLocaleString()}</td>
+                <td>{fmtPKR(totals.sale)}</td>
+                <td>{fmtPKR(totals.purchase)}</td>
                 {showProfit && (
-                  <td
-                    className={
-                      totals.profit >= 0 ? "text-success" : "text-danger"
-                    }
-                  >
-                    {totals.profit.toLocaleString()}
+                  <td className={totals.profit >= 0 ? "text-success" : "text-danger"}>
+                    {fmtPKR(totals.profit)}
                   </td>
                 )}
                 <td colSpan={showProfit ? 2 : 3}></td>
