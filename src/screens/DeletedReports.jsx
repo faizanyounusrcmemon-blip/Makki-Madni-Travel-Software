@@ -57,7 +57,7 @@ export default function DeletedReports({ onNavigate }) {
   };
 
   /* ================= DELETE ================= */
-  const permanentDelete = async (type, ref_no) => {
+  const permanentDelete = async (type, ref_no, customer_name) => {
     const pass = prompt(
       `PERMANENT DELETE ⚠\nREF NO: ${ref_no}\nCustomer: ${customer_name}\n\nEnter password`
     );
@@ -79,7 +79,7 @@ export default function DeletedReports({ onNavigate }) {
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ type, ref_no, customer_name password: pass }),
+        body: JSON.stringify({ type, ref_no, customer_name, password: pass }),
       }
     );
 
@@ -161,42 +161,32 @@ export default function DeletedReports({ onNavigate }) {
 
               {rows.map((r, i) => (
                 <tr key={i}>
-                  {/* TYPE */}
                   <td>
                     <span
                       className={`badge ${
-                        isPurchase(r.type)
-                          ? "bg-primary"
-                          : "bg-danger"
+                        isPurchase(r.type) ? "bg-primary" : "bg-danger"
                       }`}
                     >
                       {isPurchase(r.type) ? "🛒" : "💰"} {r.type}
                     </span>
                   </td>
 
-                  {/* REF */}
                   <td className="fw-bold">{r.ref_no}</td>
 
-                  {/* CUSTOMER */}
                   <td className="fw-semibold text-primary">
                     {r.customer_name || "-"}
                   </td>
 
-                  {/* DATE */}
-                  <td className="text-muted">
-                    {formatDate(r.booking_date)}
-                  </td>
+                  <td className="text-muted">{formatDate(r.booking_date)}</td>
 
-                  {/* AMOUNT */}
-                  <td className="text-end fw-bold">
-                    {formatPKR(r.amount)}
-                  </td>
+                  <td className="text-end fw-bold">{formatPKR(r.amount)}</td>
 
-                  {/* ACTIONS */}
                   <td className="text-center">
                     <button
                       className="btn btn-outline-success btn-sm me-1"
-                      onClick={() => restore(r.type, r.ref_no, r.customer_name)}
+                      onClick={() =>
+                        restore(r.type, r.ref_no, r.customer_name)
+                      }
                     >
                       Restore
                     </button>
@@ -219,5 +209,3 @@ export default function DeletedReports({ onNavigate }) {
     </div>
   );
 }
-
-
