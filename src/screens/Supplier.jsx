@@ -2,25 +2,31 @@ import React, { useEffect, useState } from "react";
 
 export default function Supplier({ onNavigate }) {
   const [rows, setRows] = useState([]);
+  const [filteredRows, setFilteredRows] = useState([]);
   const [form, setForm] = useState({
     supplier_name: "",
     category: "",
     contact_no: "",
   });
   const [editId, setEditId] = useState(null);
+  const [search, setSearch] = useState("");
 
   const load = async () => {
     const r = await fetch(
       `${import.meta.env.VITE_BACKEND_URL}/api/supplier/list`
     );
     const d = await r.json();
-    if (d.success) setRows(d.rows);
+    if (d.success) {
+      setRows(d.rows);
+      setFilteredRows(d.rows);
+    }
   };
 
   useEffect(() => {
     load();
   }, []);
 
+  /* ================= SAVE / UPDATE ================= */
   const save = async () => {
     const url = editId ? `/update/${editId}` : "/create";
     const method = editId ? "PUT" : "POST";
@@ -42,6 +48,7 @@ export default function Supplier({ onNavigate }) {
     } else alert(d.error);
   };
 
+  /* ================= DELETE ================= */
   const del = async (id) => {
     const pass = prompt("Delete password?");
     if (!pass) return;
@@ -60,14 +67,25 @@ export default function Supplier({ onNavigate }) {
     else alert(d.error);
   };
 
+  /* ================= SEARCH FILTER ================= */
+  const handleSearch = (value) => {
+    setSearch(value);
+    const lower = value.toLowerCase();
+    const filtered = rows.filter(
+      (r) =>
+        r.supplier_code.toLowerCase().includes(lower) ||
+        r.supplier_name.toLowerCase().includes(lower) ||
+        (r.category && r.category.toLowerCase().includes(lower)) ||
+        (r.contact_no && r.contact_no.toLowerCase().includes(lower))
+    );
+    setFilteredRows(filtered);
+  };
+
   return (
     <div className="container py-3">
-
       {/* ===== TOP BAR ===== */}
       <div className="d-flex justify-content-between align-items-center mb-3">
-        <h4 className="fw-bold text-primary">
-          🏷 Supplier Management
-        </h4>
+        <h4 className="fw-bold text-primary">🏷 Supplier Management</h4>
         <button
           className="btn btn-outline-dark btn-sm"
           onClick={() => onNavigate("dashboard")}
@@ -153,6 +171,16 @@ export default function Supplier({ onNavigate }) {
         </div>
       </div>
 
+      {/* ===== SEARCH BOX ===== */}
+      <div className="mb-2">
+        <input
+          className="form-control"
+          placeholder="Search by Code, Name, Category, Contact..."
+          value={search}
+          onChange={(e) => handleSearch(e.target.value)}
+        />
+      </div>
+
       {/* ===== LIST TABLE ===== */}
       <div className="card shadow-sm border-0">
         <div className="card-header bg-dark text-white fw-bold">
@@ -171,7 +199,7 @@ export default function Supplier({ onNavigate }) {
               </tr>
             </thead>
             <tbody>
-              {rows.length === 0 && (
+              {filteredRows.length === 0 && (
                 <tr>
                   <td colSpan="5" className="text-center text-muted py-4">
                     No suppliers found
@@ -179,14 +207,12 @@ export default function Supplier({ onNavigate }) {
                 </tr>
               )}
 
-              {rows.map((r) => (
+              {filteredRows.map((r) => (
                 <tr key={r.id}>
                   <td className="fw-bold">{r.supplier_code}</td>
                   <td>{r.supplier_name}</td>
                   <td>
-                    <span className="badge bg-info text-dark">
-                      {r.category}
-                    </span>
+                    <span className="badge bg-info text-dark">{r.category}</span>
                   </td>
                   <td>{r.contact_no}</td>
                   <td>
@@ -212,8 +238,6 @@ export default function Supplier({ onNavigate }) {
           </table>
         </div>
       </div>
-
     </div>
   );
 }
-
