@@ -26,30 +26,29 @@ export default function DeletedReports({ onNavigate }) {
   }, []);
 
   /* ================= RESTORE ================= */
-  const restore = async (type, ref_no, customer_name) => {
+  const restore = async (type, ref_no) => {
     const pass = prompt(
-      `RESTORE RECORD\nREF NO: ${ref_no}\nCustomer: ${customer_name}\n\nEnter password`
+      `RESTORE RECORD\nREF NO: ${ref_no}\nType: ${type}\n\nEnter password`
     );
-
     if (pass !== "7865") {
       alert("Wrong password");
       return;
     }
 
-    if (!window.confirm(`Confirm restore?\nREF NO: ${ref_no}\nCustomer: ${customer_name}`)) return;
+    if (!window.confirm(`Confirm restore?\nREF NO: ${ref_no}\nType: ${type}`)) return;
 
     const res = await fetch(
       `${import.meta.env.VITE_BACKEND_URL}/api/deleted/restore`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ type, ref_no, customer_name }),
+        body: JSON.stringify({ type, ref_no }),
       }
     );
 
     const data = await res.json();
     if (data.success) {
-      alert(`✅ Restored\nREF NO: ${ref_no}\nCustomer: ${customer_name}`);
+      alert(`✅ Restored\nREF NO: ${ref_no}\nType: ${type}`);
       load();
     } else {
       alert(data.error || "Restore failed");
@@ -57,21 +56,16 @@ export default function DeletedReports({ onNavigate }) {
   };
 
   /* ================= DELETE ================= */
-  const permanentDelete = async (type, ref_no, customer_name) => {
+  const permanentDelete = async (type, ref_no) => {
     const pass = prompt(
-      `PERMANENT DELETE ⚠\nREF NO: ${ref_no}\nCustomer: ${customer_name}\n\nEnter password`
+      `PERMANENT DELETE ⚠\nREF NO: ${ref_no}\nType: ${type}\n\nEnter password`
     );
-
     if (pass !== "7865") {
       alert("Wrong password");
       return;
     }
 
-    if (
-      !window.confirm(
-        `FINAL WARNING ⚠\nThis cannot be undone!\nREF NO: ${ref_no}\nCustomer: ${customer_name}`
-      )
-    )
+    if (!window.confirm(`FINAL WARNING ⚠\nThis cannot be undone!\nREF NO: ${ref_no}\nType: ${type}`))
       return;
 
     const res = await fetch(
@@ -79,13 +73,13 @@ export default function DeletedReports({ onNavigate }) {
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ type, ref_no, customer_name, password: pass }),
+        body: JSON.stringify({ type, ref_no, password: pass }),
       }
     );
 
     const data = await res.json();
     if (data.success) {
-      alert(`🔥 Permanently deleted\nREF NO: ${ref_no}\nCustomer: ${customer_name}`);
+      alert(`🔥 Permanently deleted\nREF NO: ${ref_no}\nType: ${type}`);
       load();
     } else {
       alert(data.error || "Delete failed");
@@ -104,7 +98,7 @@ export default function DeletedReports({ onNavigate }) {
   };
 
   const isPurchase = (t) => t.toUpperCase() === "PURCHASE";
-
+  const isSupplier = (t) => t.toUpperCase() === "SUPPLIER";
 
   return (
     <div className="container py-4">
@@ -136,7 +130,7 @@ export default function DeletedReports({ onNavigate }) {
               <tr>
                 <th>Type</th>
                 <th>Ref</th>
-                <th>Customer</th>
+                <th>Customer / Name</th>
                 <th>Date</th>
                 <th className="text-end">Amount PKR</th>
                 <th className="text-center">Actions</th>
@@ -165,10 +159,19 @@ export default function DeletedReports({ onNavigate }) {
                   <td>
                     <span
                       className={`badge ${
-                        isPurchase(r.type) ? "bg-primary" : "bg-danger"
+                        isPurchase(r.type)
+                          ? "bg-primary"
+                          : isSupplier(r.type)
+                          ? "bg-warning text-dark"
+                          : "bg-danger"
                       }`}
                     >
-                      {isPurchase(r.type) ? "🛒" : "💰"} {r.type}
+                      {isPurchase(r.type)
+                        ? "🛒"
+                        : isSupplier(r.type)
+                        ? "🏷️"
+                        : "💰"}{" "}
+                      {r.type}
                     </span>
                   </td>
 
@@ -180,23 +183,19 @@ export default function DeletedReports({ onNavigate }) {
 
                   <td className="text-muted">{formatDate(r.booking_date)}</td>
 
-                  <td className="text-end fw-bold">{r.amount}</td>
+                  <td className="text-end fw-bold">{r.amount ? formatPKR(r.amount) : "-"}</td>
 
                   <td className="text-center">
                     <button
                       className="btn btn-outline-success btn-sm me-1"
-                      onClick={() =>
-                        restore(r.type, r.ref_no, r.customer_name)
-                      }
+                      onClick={() => restore(r.type, r.ref_no)}
                     >
                       Restore
                     </button>
 
                     <button
                       className="btn btn-outline-danger btn-sm"
-                      onClick={() =>
-                        permanentDelete(r.type, r.ref_no, r.customer_name)
-                      }
+                      onClick={() => permanentDelete(r.type, r.ref_no)}
                     >
                       Delete
                     </button>
@@ -210,5 +209,3 @@ export default function DeletedReports({ onNavigate }) {
     </div>
   );
 }
-
-
