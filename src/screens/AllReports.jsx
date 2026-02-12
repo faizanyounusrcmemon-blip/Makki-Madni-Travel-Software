@@ -226,7 +226,6 @@ export default function AllReports({ onNavigate }) {
                 <tr key={i}>
                   <td>
                     <span className="badge bg-info text-dark">
-                      suggests
                       {typeIcon(r.type)} {r.type}
                     </span>
                   </td>
@@ -293,3 +292,4 @@ export default function AllReports({ onNavigate }) {
     </div>
   );
 }
+
