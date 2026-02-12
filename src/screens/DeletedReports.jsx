@@ -180,7 +180,7 @@ export default function DeletedReports({ onNavigate }) {
 
                   <td className="text-muted">{formatDate(r.booking_date)}</td>
 
-                  <td className="text-end fw-bold">{formatPKR(r.amount)}</td>
+                  <td className="text-end fw-bold">{r.amount}</td>
 
                   <td className="text-center">
                     <button
@@ -210,4 +210,5 @@ export default function DeletedReports({ onNavigate }) {
     </div>
   );
 }
+
 
