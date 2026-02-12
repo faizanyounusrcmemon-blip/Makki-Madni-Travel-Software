@@ -37,35 +37,39 @@ export default function PurchaseList({ onNavigate }) {
   };
 
   /* ================= DELETE ================= */
-  const deletePurchase = async (refNo) => {
+  const deletePurchase = async (refNo, customer_name) => {
     const password = prompt(
-      `DELETE PURCHASE\nREF NO: ${refNo}\n\nEnter password`
+      `DELETE PURCHASE\nREF NO: ${refNo}\nCustomer: ${customer_name}\n\nEnter password`
     );
     if (!password) return;
 
     if (
       !window.confirm(
-        `Confirm delete?\nREF NO: ${refNo}\n\nThis will move to deleted list`
+        `Confirm delete?\nREF NO: ${refNo}\nCustomer: ${customer_name}\n\nThis will move to deleted list`
       )
     )
       return;
 
-    const res = await fetch(
-      `${import.meta.env.VITE_BACKEND_URL}/api/purchase/delete/${refNo}`,
-      {
-        method: "DELETE",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ password }),
+    try {
+      const res = await fetch(
+        `${import.meta.env.VITE_BACKEND_URL}/api/purchase/delete/${refNo}`,
+        {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ password, customer_name }),
+        }
+      );
+
+      const data = await res.json();
+
+      if (data.success) {
+        alert(`✅ Deleted\nREF NO: ${refNo}\nCustomer: ${customer_name}`);
+        loadList();
+      } else {
+        alert(data.error || "Delete failed");
       }
-    );
-
-    const data = await res.json();
-
-    if (data.success) {
-      alert(`✅ Deleted\nREF NO: ${refNo}`);
-      loadList();
-    } else {
-      alert(data.error || "Delete failed");
+    } catch {
+      alert("Server error");
     }
   };
 
@@ -163,7 +167,10 @@ export default function PurchaseList({ onNavigate }) {
                   checked={showProfit}
                   onChange={(e) => setShowProfit(e.target.checked)}
                 />
-                <label className="form-check-label fw-semibold" htmlFor="showProfit">
+                <label
+                  className="form-check-label fw-semibold"
+                  htmlFor="showProfit"
+                >
                   Show Profit
                 </label>
               </div>
@@ -209,52 +216,36 @@ export default function PurchaseList({ onNavigate }) {
               filteredRows.map((r, i) => (
                 <tr key={i}>
                   <td className="fw-bold text-muted">{i + 1}</td>
-
                   <td className="fw-bold">{r.ref_no}</td>
-
                   <td className="fw-semibold text-primary small">
                     {r.customer_name || "-"}
                   </td>
-
                   <td>
-                    <span className="badge bg-success">
-                      💰 {fmtPKR(r.sale_pkr)}
-                    </span>
+                    <span className="badge bg-success">💰 {fmtPKR(r.sale_pkr)}</span>
                   </td>
-
                   <td>
-                    <span className="badge bg-secondary">
-                      🛒 {fmtPKR(r.purchase_pkr)}
-                    </span>
+                    <span className="badge bg-secondary">🛒 {fmtPKR(r.purchase_pkr)}</span>
                   </td>
-
                   {showProfit && (
                     <td>
                       <span
-                        className={`badge ${
-                          +r.profit >= 0 ? "bg-primary" : "bg-danger"
-                        }`}
+                        className={`badge ${+r.profit >= 0 ? "bg-primary" : "bg-danger"}`}
                       >
                         {fmtPKR(r.profit)}
                       </span>
                     </td>
                   )}
-
                   <td className="small text-muted">{fmtDate(r.created_at)}</td>
-
                   <td className="text-center">
                     <button
                       className="btn btn-sm btn-outline-info me-1"
-                      onClick={() =>
-                        onNavigate("purchase_detail", r.ref_no)
-                      }
+                      onClick={() => onNavigate("purchase_detail", r.ref_no)}
                     >
                       Detail
                     </button>
-
                     <button
                       className="btn btn-sm btn-outline-danger"
-                      onClick={() => deletePurchase(r.ref_no)}
+                      onClick={() => deletePurchase(r.ref_no, r.customer_name)}
                     >
                       Delete
                     </button>
