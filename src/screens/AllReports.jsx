@@ -38,7 +38,7 @@ export default function AllReports({ onNavigate }) {
 
     if (
       !window.confirm(
-        `Confirm delete?\nTYPE: ${type}\nREF NO: ${ref_no}\n\nThis will move to deleted list`
+        `Confirm delete?\nTYPE: ${type}\nREF NO: ${ref_no}\nCustomer: ${customer_name}\n\nThis will move to deleted list`
       )
     )
       return;
@@ -280,6 +280,7 @@ export default function AllReports({ onNavigate }) {
     </div>
   );
 }
+
 
 
 
