@@ -26,7 +26,7 @@ export default function AllReports({ onNavigate }) {
   }, []);
 
   /* ================= DELETE ================= */
-  const handleDelete = async (type, ref_no) => {
+  const handleDelete = async (type, ref_no, customer_name) => {
     const pass = prompt(
       `DELETE RECORD\nTYPE: ${type}\nREF NO: ${ref_no}\nCustomer: ${customer_name}\n\nEnter password`
     );
@@ -280,6 +280,7 @@ export default function AllReports({ onNavigate }) {
     </div>
   );
 }
+
 
 
 
