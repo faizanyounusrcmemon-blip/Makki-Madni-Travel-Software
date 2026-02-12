@@ -26,9 +26,9 @@ export default function DeletedReports({ onNavigate }) {
   }, []);
 
   /* ================= RESTORE ================= */
-  const restore = async (type, ref_no) => {
+  const restore = async (type, ref_no, customer_name) => {
     const pass = prompt(
-      `RESTORE RECORD\nREF NO: ${ref_no}\n\nEnter password`
+      `RESTORE RECORD\nREF NO: ${ref_no}\nCustomer: ${customer_name}\n\nEnter password`
     );
 
     if (pass !== "7865") {
@@ -196,7 +196,7 @@ export default function DeletedReports({ onNavigate }) {
                   <td className="text-center">
                     <button
                       className="btn btn-outline-success btn-sm me-1"
-                      onClick={() => restore(r.type, r.ref_no)}
+                      onClick={() => restore(r.type, r.ref_no, r.customer_name)}
                     >
                       Restore
                     </button>
@@ -204,7 +204,7 @@ export default function DeletedReports({ onNavigate }) {
                     <button
                       className="btn btn-outline-danger btn-sm"
                       onClick={() =>
-                        permanentDelete(r.type, r.ref_no)
+                        permanentDelete(r.type, r.ref_no, r.customer_name)
                       }
                     >
                       Delete
@@ -219,3 +219,4 @@ export default function DeletedReports({ onNavigate }) {
     </div>
   );
 }
+
