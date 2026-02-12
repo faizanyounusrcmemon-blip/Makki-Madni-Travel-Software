@@ -114,7 +114,7 @@ export default function DeletedReports({ onNavigate }) {
                 <th>Ref</th>
                 <th>Customer</th>
                 <th>Date</th>
-                <th className="text-end">Amount</th>
+                <th className="text-end">Amount Pkr</th>
                 <th className="text-center">Actions</th>
               </tr>
             </thead>
@@ -167,7 +167,7 @@ export default function DeletedReports({ onNavigate }) {
 
                   {/* AMOUNT */}
                   <td className="text-end fw-bold">
-                    {formatPKR(r.amount)}
+                    {r.amount}
                   </td>
 
                   {/* ACTIONS */}
@@ -198,3 +198,4 @@ export default function DeletedReports({ onNavigate }) {
     </div>
   );
 }
+
