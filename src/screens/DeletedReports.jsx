@@ -103,7 +103,8 @@ export default function DeletedReports({ onNavigate }) {
     return Number(v).toLocaleString("en-PK") + " PKR";
   };
 
-  const isPurchase = (t) => t === "PURCHASE";
+  const isPurchase = (t) => t.toUpperCase() === "PURCHASE";
+
 
   return (
     <div className="container py-4">
@@ -209,3 +210,4 @@ export default function DeletedReports({ onNavigate }) {
     </div>
   );
 }
+
