@@ -9,12 +9,16 @@ export default function AllReports({ onNavigate }) {
 
   /* ================= LOAD ================= */
   const loadData = async () => {
-    const res = await fetch(
-      `${import.meta.env.VITE_BACKEND_URL}/api/reports/all`
-    );
-    const data = await res.json();
-    setRows(data);
-    setFiltered(data);
+    try {
+      const res = await fetch(
+        `${import.meta.env.VITE_BACKEND_URL}/api/reports/all`
+      );
+      const data = await res.json();
+      setRows(data || []);
+      setFiltered(data || []);
+    } catch {
+      alert("Server error");
+    }
   };
 
   useEffect(() => {
@@ -23,11 +27,21 @@ export default function AllReports({ onNavigate }) {
 
   /* ================= DELETE ================= */
   const handleDelete = async (type, ref_no) => {
-    const pass = prompt("Enter delete password (786)");
+    const pass = prompt(
+      `DELETE RECORD\nTYPE: ${type}\nREF NO: ${ref_no}\n\nEnter password`
+    );
+
     if (pass !== "786") {
-      alert("Wrong Password");
+      alert("❌ Wrong Password");
       return;
     }
+
+    if (
+      !window.confirm(
+        `Confirm delete?\nTYPE: ${type}\nREF NO: ${ref_no}\n\nThis will move to deleted list`
+      )
+    )
+      return;
 
     let endpoint = "";
     if (type === "Packages") endpoint = "bookings";
@@ -50,7 +64,7 @@ export default function AllReports({ onNavigate }) {
         return;
       }
 
-      alert("✅ Record Soft Deleted");
+      alert(`✅ Record Deleted\nREF NO: ${ref_no}`);
       loadData();
     } catch (err) {
       console.error("Delete Error:", err);
@@ -83,8 +97,10 @@ export default function AllReports({ onNavigate }) {
     if (search)
       temp = temp.filter(
         (r) =>
-          r.ref_no.toLowerCase().includes(search.toLowerCase()) ||
-          r.customer_name.toLowerCase().includes(search.toLowerCase())
+          (r.ref_no || "").toLowerCase().includes(search.toLowerCase()) ||
+          (r.customer_name || "")
+            .toLowerCase()
+            .includes(search.toLowerCase())
       );
 
     if (fromDate)
@@ -108,14 +124,29 @@ export default function AllReports({ onNavigate }) {
     );
   }, [filtered]);
 
-  /* ================= DATE FORMAT ================= */
+  /* ================= FORMAT ================= */
   const formatDate = (dateStr) => {
-    if (!dateStr) return "";
+    if (!dateStr) return "-";
     return new Date(dateStr).toLocaleDateString("en-GB", {
       day: "2-digit",
       month: "short",
       year: "numeric",
     });
+  };
+
+  const fmtPKR = (v) => {
+    if (!v) return "0";
+    return Number(v).toLocaleString("en-PK");
+  };
+
+  const typeIcon = (type) => {
+    if (type === "Packages") return "📦";
+    if (type === "Hotels") return "🏨";
+    if (type === "Ticketing") return "✈️";
+    if (type === "Transport") return "🚐";
+    if (type === "Ziyarat") return "🕌";
+    if (type === "Visa") return "🛂";
+    return "📄";
   };
 
   return (
@@ -195,7 +226,8 @@ export default function AllReports({ onNavigate }) {
                 <tr key={i}>
                   <td>
                     <span className="badge bg-info text-dark">
-                      {r.type}
+                      suggests
+                      {typeIcon(r.type)} {r.type}
                     </span>
                   </td>
 
@@ -211,7 +243,7 @@ export default function AllReports({ onNavigate }) {
 
                   <td>
                     <span className="badge bg-success">
-                      {Number(r.total_pkr).toLocaleString()}
+                      💰 {fmtPKR(r.total_pkr)}
                     </span>
                   </td>
 
@@ -241,7 +273,7 @@ export default function AllReports({ onNavigate }) {
                     TOTAL
                   </td>
                   <td className="fw-bold">
-                    {totalPKR.toLocaleString()}
+                    {fmtPKR(totalPKR)}
                   </td>
                   <td colSpan={2}></td>
                 </tr>
