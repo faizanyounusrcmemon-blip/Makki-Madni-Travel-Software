@@ -231,7 +231,7 @@ export default function PurchaseList({ onNavigate }) {
                     <td>
                       <span
                         className={`badge ${
-                          +r.profit >= 0 ? "bg-success" : "bg-danger"
+                          +r.profit >= 0 ? "text-primary" : "bg-danger"
                         }`}
                       >
                         {fmtPKR(r.profit)}
@@ -284,3 +284,4 @@ export default function PurchaseList({ onNavigate }) {
     </div>
   );
 }
+
