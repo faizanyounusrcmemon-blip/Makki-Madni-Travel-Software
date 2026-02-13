@@ -43,8 +43,10 @@ export default function PackagesView({ id, onNavigate }) {
 
   /* ================= EXPORT PDF ================= */
   const exportPDF = async () => {
+    if (!ref.current) return;
+
     const canvas = await html2canvas(ref.current, {
-      scale: 2,
+      scale: 3,
       useCORS: true,
     });
 
@@ -55,16 +57,16 @@ export default function PackagesView({ id, onNavigate }) {
     const pdfHeight = pdf.internal.pageSize.getHeight();
 
     const imgWidth = pdfWidth;
-    const imgHeight = (canvas.height * imgWidth) / canvas.width;
+    const imgHeight = (canvas.height * pdfWidth) / canvas.width;
 
     let heightLeft = imgHeight;
-    let position = 10;
+    let position = 0;
 
     pdf.addImage(imgData, "JPEG", 0, position, imgWidth, imgHeight);
     heightLeft -= pdfHeight;
 
     while (heightLeft > 0) {
-      position = heightLeft - imgHeight + 10;
+      position = -heightLeft + pdfHeight;
       pdf.addPage();
       pdf.addImage(imgData, "JPEG", 0, position, imgWidth, imgHeight);
       heightLeft -= pdfHeight;
@@ -79,23 +81,15 @@ export default function PackagesView({ id, onNavigate }) {
 
   if (!data) return <div className="p-4">Loading...</div>;
 
-  // ================= CALCULATE TOTALS =================
+  /* ================= TOTALS ================= */
   const flightTotal = Number(data.flight_sar_total || 0);
   const hotelsTotal = Number(data.hotel_sar_total || 0);
   const visaTotal = Number(data.visa_sar_total || 0);
   const transportTotal = Number(data.transport_sar_total || 0);
   const ziyaratTotal = Number(data.ziyarat_sar_total || 0);
 
-  
-  const flightSarRate = Number(data.flight_sar_rate || 0);
-  const hotelsSarRate = Number(data.hotel_sar_rate || 0);
-  const visaSarRate = Number(data.visa_sar_rate || 0);
-  const transportSarRate = Number(data.transport_sar_rate || 0);
-  const ziyaratSarRate = Number(data.ziyarat_sar_rate || 0);
-
-
-
-  const sarrate = {
+  /* ================= SAR RATES ================= */
+  const rate = {
     flight: Number(data.flight_sar_rate || 0),
     hotels: Number(data.hotel_sar_rate || 0),
     visa: Number(data.visa_sar_rate || 0),
@@ -103,189 +97,55 @@ export default function PackagesView({ id, onNavigate }) {
     ziyarat: Number(data.ziyarat_sar_rate || 0),
   };
 
+  /* ================= PKR CALC ================= */
   const flightPKR = flightTotal * rate.flight;
   const hotelsPKR = hotelsTotal * rate.hotels;
   const visaPKR = visaTotal * rate.visa;
   const transportPKR = transportTotal * rate.transport;
   const ziyaratPKR = ziyaratTotal * rate.ziyarat;
 
-  const grandPKR = flightPKR + hotelsPKR + visaPKR + transportPKR + ziyaratPKR;
+  const grandPKR =
+    flightPKR + hotelsPKR + visaPKR + transportPKR + ziyaratPKR;
 
   const personQty = Number(data.per_person_qty || 0);
-  const perPerson = grandPKR / personQty;
+  const perPerson = personQty > 0 ? grandPKR / personQty : 0;
 
   return (
     <div className="container mt-3 mb-5">
 
-      {/* ============ TOP ACTIONS ============ */}
-      <div className="d-flex justify-content-start mb-3 gap-2 flex-wrap">
+      {/* ACTIONS */}
+      <div className="d-flex gap-2 mb-3">
         <button
-          className="btn btn-sm text-white fw-bold shadow"
-          style={{
-            background: "linear-gradient(135deg,#000,#434343)",
-            borderRadius: 8,
-            padding: "6px 16px",
-          }}
+          className="btn btn-dark btn-sm"
           onClick={() => onNavigate("allreports")}
         >
           ⬅ Back
         </button>
 
-        <button
-          className="btn btn-success btn-sm fw-bold shadow"
-          style={{ borderRadius: 8, padding: "6px 16px" }}
-          onClick={exportPDF}
-        >
+        <button className="btn btn-success btn-sm" onClick={exportPDF}>
           📄 Export PDF
         </button>
       </div>
 
-      {/* ============ PDF CONTENT ============ */}
+      {/* PDF CONTENT */}
       <div
         ref={ref}
-        className="bg-white p-4 rounded-4 shadow-lg"
-        style={{ maxWidth: "800px", margin: "auto", fontFamily: "Arial, sans-serif" }}
+        className="bg-white p-4 shadow"
+        style={{ maxWidth: 800, margin: "auto" }}
       >
-        {/* ===== HEADER ===== */}
-        <div
-          className="rounded-4 p-3 mb-4 text-white shadow"
-          style={{
-            background: "linear-gradient(135deg,#0d6efd,#00c6ff)",
-          }}
-        >
-          <h2 className="text-center fw-bold mb-1" style={{ letterSpacing: "1px" }}>
-            ✈️ MAKKI MADNI TRAVEL
-          </h2>
-          <div className="text-center" style={{ fontSize: 13, lineHeight: 1.4 }}>
-            Shop #4 Diamond City Building, Near Zeenat-ul-Islam Masjid<br />
-            Garden West, Karachi<br />
-            ✉️ makkimadnitravel@gmail.com | ☎️ 0335-7476744
-          </div>
-          <hr style={{ margin: "8px 0", borderTop: "2px solid #fff" }} />
-        </div>
-
-        {/* ===== PACKAGE INFO ===== */}
-        <div className="mb-3">
-          <h4 className="fw-bold">PACKAGE — {data.ref_no}</h4>
-          <p><b>Customer:</b> {data.customer_name}</p>
-          <p><b>Contact No:</b> {data.contact_no || "-"}</p>
-          <p><b>Booking Date:</b> {fmtDate(data.booking_date)}</p>
-        </div>
+        <h4 className="fw-bold">PACKAGE — {data.ref_no}</h4>
+        <p><b>Customer:</b> {data.customer_name}</p>
+        <p><b>Booking Date:</b> {fmtDate(data.booking_date)}</p>
 
         <hr />
 
-
-        {/* ===== FLIGHTS ===== */}
-        <h5 className="fw-bold text-primary mb-2">✈️ Flight</h5>
-        <div className="border p-2 rounded mb-2">
-          {Array.isArray(data.flights) && data.flights.length > 0 ? (
-            data.flights.map((f, i) => (
-              <div key={i} className="mb-1">
-                {fmtDate(f.date)} — {f.from} → {f.to}{" "}
-                {f.airline && <b>({f.airline})</b>}
-              </div>
-            ))
-          ) : (
-            <p>No flights</p>
-          )}
-        </div>
-        <p>
-          Adults: {data.adult_count} × {data.adult_rate} <br />
-          Child: {data.child_count} × {data.child_rate} <br />
-          Infant: {data.infant_count} × {data.infant_rate} <br />
-          <b>Flight SAR:</b> {flightTotal.toLocaleString()} <br />
-          <b>Flight ROE:</b> {flightRate.toLocaleString()} <br />
-          <b>Flight PKR:</b> {flightPKR.toLocaleString()}
-        </p>
-
-        <hr />
-
-        {/* ===== HOTELS ===== */}
-        <h5 className="fw-bold text-success mb-2">🏨 Hotels</h5>
-        {Array.isArray(data.hotels) && data.hotels.length > 0 ? (
-          data.hotels.map((h, i) => (
-            <div key={i} className="border p-2 rounded mb-2 shadow-sm">
-              <b>{h.hotel}</b> — {h.location}<br />
-              Check In: {fmtDate(h.checkIn)} → Check Out: {fmtDate(h.checkOut)}<br />
-              Nights: {h.nights}, Rooms: {h.rooms}, Type: {h.type}<br />
-              Rate: {h.rate} — Total: {h.total}
-            </div>
-          ))
-        ) : (
-          <p>No hotels</p>
-        )}
-        <p>
-          <b>Hotel SAR:</b> {hotelsTotal.toLocaleString()} <br />
-          <b>Hotel ROE:</b> {hotelsRate.toLocaleString()} <br />
-          <b>Hotel PKR:</b> {hotelsPKR.toLocaleString()}
-        </p>
-
-        <hr />
-
-        {/* ===== VISA ===== */}
-        <h5 className="fw-bold text-warning mb-2">🛂 Visa</h5>
-        {Array.isArray(data.visa) && data.visa.length > 0 ? (
-          data.visa.map((v, i) => (
-            <div key={i} className="border p-2 rounded mb-1 shadow-sm">
-              {v.type || "Visa"} — {v.persons} × {v.rate} = {v.total}
-            </div>
-          ))
-        ) : (
-          <p>No visa</p>
-        )}
-        <p>
-          <b>Visa SAR:</b> {visaTotal.toLocaleString()} <br />
-          <b>Visa ROE:</b> {visaRate.toLocaleString()} <br />
-          <b>Visa PKR:</b> {visaPKR.toLocaleString()}
-        </p>
-
-        <hr />
-
-        {/* ===== TRANSPORT ===== */}
-        <h5 className="fw-bold text-danger mb-2">🚐 Transport</h5>
-        {Array.isArray(data.transport) && data.transport.length > 0 ? (
-          data.transport.map((t, i) => (
-            <div key={i} className="border p-2 rounded mb-1 shadow-sm">
-              {t.text} — {Number(t.amount || 0).toLocaleString()}
-            </div>
-          ))
-        ) : (
-          <p>No transport</p>
-        )}
-        <p>
-          <b>Transport SAR:</b> {transportTotal.toLocaleString()} <br />
-          <b>Transport ROE:</b> {transportRate.toLocaleString()} <br />
-          <b>Transport PKR:</b> {transportPKR.toLocaleString()}
-        </p>
-
-        <hr />
-
-        {/* ===== ZIYARAT ===== */}
-        <h5 className="fw-bold text-purple mb-2">🕌 Ziyarat</h5>
-        {Array.isArray(data.ziyarat) && data.ziyarat.length > 0 ? (
-          data.ziyarat.map((z, i) => (
-            <div key={i} className="border p-2 rounded mb-1 shadow-sm">
-              {z.text || z.route || z.description} — {Number(z.amount || 0).toLocaleString()}
-            </div>
-          ))
-        ) : (
-          <p>No ziyarat</p>
-        )}
-        <p>
-          <b>Ziyarat SAR:</b> {ziyaratTotal.toLocaleString()} <br />
-          <b>Ziyarat ROE:</b> {ziyaratRate.toLocaleString()} <br />
-          <b>Ziyarat PKR:</b> {ziyaratPKR.toLocaleString()}
-        </p>
-
-        <hr />
-                {/* ===== SUMMARY TABLE ===== */}
-        <h6 className="section-title">📊 Summary</h6>
-        <table className="table table-sm mb-4">
+        <h5>Summary</h5>
+        <table className="table table-sm">
           <thead>
             <tr>
               <th>Item</th>
-              <th>SarTotal</th>
-              <th>SarRate</th>
+              <th>SAR</th>
+              <th>Rate</th>
               <th>PKR</th>
             </tr>
           </thead>
@@ -294,70 +154,50 @@ export default function PackagesView({ id, onNavigate }) {
               <td>Flight</td>
               <td>{flightTotal.toLocaleString()}</td>
               <td>{rate.flight}</td>
-              <td className="fw-bold">{flightPKR.toLocaleString()}</td>
+              <td>{flightPKR.toLocaleString()}</td>
             </tr>
             <tr>
               <td>Hotels</td>
               <td>{hotelsTotal.toLocaleString()}</td>
               <td>{rate.hotels}</td>
-              <td className="fw-bold">{hotelsPKR.toLocaleString()}</td>
+              <td>{hotelsPKR.toLocaleString()}</td>
             </tr>
             <tr>
               <td>Visa</td>
               <td>{visaTotal.toLocaleString()}</td>
               <td>{rate.visa}</td>
-              <td className="fw-bold">{visaPKR.toLocaleString()}</td>
+              <td>{visaPKR.toLocaleString()}</td>
             </tr>
             <tr>
               <td>Transport</td>
               <td>{transportTotal.toLocaleString()}</td>
               <td>{rate.transport}</td>
-              <td className="fw-bold">{transportPKR.toLocaleString()}</td>
+              <td>{transportPKR.toLocaleString()}</td>
             </tr>
             <tr>
               <td>Ziyarat</td>
               <td>{ziyaratTotal.toLocaleString()}</td>
               <td>{rate.ziyarat}</td>
-              <td className="fw-bold">{ziyaratPKR.toLocaleString()}</td>
+              <td>{ziyaratPKR.toLocaleString()}</td>
             </tr>
-            <tr className="table-info">
-              <td className="fw-bold">Grand Total PKR</td>
+
+            <tr className="table-info fw-bold">
+              <td>Grand Total PKR</td>
               <td></td>
               <td></td>
-              <td className="fw-bold">{grandPKR.toLocaleString()}</td>
+              <td>{grandPKR.toLocaleString()}</td>
             </tr>
-            <tr style={{ background: "#f1f1f1" }}>
-              <td className="fw-bold">Per Person</td>
+
+            <tr className="table-secondary fw-bold">
+              <td>Per Person</td>
               <td>{personQty}</td>
               <td></td>
-              <td className="fw-bold">{perPerson.toLocaleString()}</td>
+              <td>{perPerson.toLocaleString()}</td>
             </tr>
           </tbody>
         </table>
 
-        <hr />
-
-        {/* FOOTER NOTE */}
-        <div
-          className="mt-2 p-2 text-center small"
-          style={{ background: "#12c1d8", color: "white" }}
-        >
-          THESE ARE TENTATIVE RATES AND CAN CHANGE WITHOUT NOTICE.
-          PACKAGE CAN BE FINALIZED AFTER BOOKING PAYMENTS AND MAY VARY WITH ROE.
-        </div>
       </div>
     </div>
   );
 }
-
-
-
-
-
-
-
-
-
-
-
-
