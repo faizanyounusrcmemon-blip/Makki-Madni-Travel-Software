@@ -36,7 +36,7 @@ export default function BalanceSheet({ onNavigate }) {
   };
 
   if (loading)
-    return <div className="p-5 text-center text-danger fw-bold">⏳ Loading...</div>;
+    return <div className="p-5 text-center text-danger fw-bold">⏳ Loading Balance Sheet...</div>;
   if (!data) return null;
 
   /* ================= CLEAN + FILTER ================= */
@@ -248,4 +248,5 @@ export default function BalanceSheet({ onNavigate }) {
     </div>
   );
 }
+
 
