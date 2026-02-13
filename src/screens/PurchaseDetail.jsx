@@ -42,7 +42,6 @@ export default function PurchaseDetail({ refNo, onNavigate }) {
       if (data.success) {
         setRows(data.rows);
         setTotals(data.totals);
-        setError("");
       } else {
         setError(data.error || "Purchase not found");
       }
@@ -51,40 +50,53 @@ export default function PurchaseDetail({ refNo, onNavigate }) {
     }
   };
 
-  /* ================= PDF ================= */
+  /* ================= MULTI PAGE PDF ================= */
   const exportPDF = async () => {
     const canvas = await html2canvas(boxRef.current, {
       scale: 2,
       backgroundColor: "#ffffff",
     });
 
-    const img = canvas.toDataURL("image/png");
+    const imgData = canvas.toDataURL("image/png");
 
     const pdf = new jsPDF("l", "mm", "a4");
-    const w = pdf.internal.pageSize.getWidth();
-    const h = (canvas.height * w) / canvas.width;
 
-    pdf.addImage(img, "PNG", 0, 0, w, h);
+    const pageWidth = pdf.internal.pageSize.getWidth();
+    const pageHeight = pdf.internal.pageSize.getHeight();
+
+    const imgWidth = pageWidth;
+    const imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+    let heightLeft = imgHeight;
+    let position = 0;
+
+    pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
+    heightLeft -= pageHeight;
+
+    while (heightLeft > 0) {
+      position = heightLeft - imgHeight;
+      pdf.addPage();
+      pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
+      heightLeft -= pageHeight;
+    }
+
     pdf.save(`${rows[0]?.ref_no || refNo}-purchase-detail.pdf`);
   };
 
-  if (error) {
-    return <div className="container py-4 alert alert-danger">{error}</div>;
-  }
+  if (error) return <div className="alert alert-danger">{error}</div>;
 
-  if (!rows.length) {
+  if (!rows.length)
     return (
-      <div className="container py-5 text-center">
+      <div className="text-center py-5">
         <div className="spinner-border text-primary" />
       </div>
     );
-  }
 
   return (
     <div className="container py-4">
 
-      {/* TOP ACTIONS */}
-      <div className="d-flex justify-content-between mb-3 flex-wrap gap-2">
+      {/* ===== TOP ACTIONS ===== */}
+      <div className="d-flex justify-content-between flex-wrap gap-2 mb-3">
         <button
           className="btn btn-sm text-white shadow"
           style={{
@@ -97,32 +109,31 @@ export default function PurchaseDetail({ refNo, onNavigate }) {
           ← Back
         </button>
 
-        <div className="d-flex gap-3 align-items-center">
-
-          {/* SALE TOGGLE */}
+        {/* ✅ FIXED VISIBILITY AREA */}
+        <div
+          className="d-flex align-items-center gap-3 px-3 py-2 rounded shadow-sm"
+          style={{ background: "#ffffff" }}
+        >
           <div className="form-check">
             <input
               type="checkbox"
               className="form-check-input"
-              id="saleToggle"
               checked={showSale}
               onChange={(e) => setShowSale(e.target.checked)}
             />
-            <label className="form-check-label fw-bold">
+            <label className="form-check-label fw-bold text-dark">
               Show Sale
             </label>
           </div>
 
-          {/* PROFIT TOGGLE */}
           <div className="form-check">
             <input
               type="checkbox"
               className="form-check-input"
-              id="profitToggle"
               checked={showProfit}
               onChange={(e) => setShowProfit(e.target.checked)}
             />
-            <label className="form-check-label fw-bold">
+            <label className="form-check-label fw-bold text-dark">
               Show Profit
             </label>
           </div>
@@ -137,9 +148,11 @@ export default function PurchaseDetail({ refNo, onNavigate }) {
         </div>
       </div>
 
-      {/* PRINT AREA */}
-      <div ref={boxRef} className="bg-white rounded-4 shadow-lg p-4">
-
+      {/* ===== PRINT AREA ===== */}
+      <div
+        ref={boxRef}
+        className="bg-white rounded-4 shadow-lg p-4"
+      >
         {/* HEADER */}
         <div
           className="rounded-4 p-3 mb-4 text-white"
@@ -147,11 +160,12 @@ export default function PurchaseDetail({ refNo, onNavigate }) {
             background: "linear-gradient(135deg,#0d6efd,#00c6ff)",
           }}
         >
-          <div className="d-flex justify-content-between flex-wrap">
+          <div className="d-flex justify-content-between">
             <div>
               <h4 className="fw-bold mb-1">PURCHASE DETAIL</h4>
               <div>Ref No: {rows[0].ref_no}</div>
             </div>
+
             <div className="text-end">
               <div className="fw-bold">{rows[0].customer_name}</div>
               <div style={{ fontSize: 13 }}>{fmtDate(rows[0])}</div>
@@ -161,22 +175,18 @@ export default function PurchaseDetail({ refNo, onNavigate }) {
 
         {/* TABLE */}
         <div className="table-responsive">
-          <table className="table align-middle table-bordered">
+          <table className="table table-bordered align-middle">
 
-            {/* HEADER ROW 1 */}
             <thead style={{ background: "#0d6efd", color: "#fff" }}>
               <tr className="text-center">
                 <th rowSpan="2">Item</th>
                 <th rowSpan="2">Supplier</th>
 
                 {showSale && <th colSpan="3">Sale</th>}
-
                 <th colSpan="3">Purchase</th>
-
                 {showProfit && <th rowSpan="2">Profit</th>}
               </tr>
 
-              {/* HEADER ROW 2 */}
               <tr className="text-center">
                 {showSale && (
                   <>
@@ -192,7 +202,6 @@ export default function PurchaseDetail({ refNo, onNavigate }) {
               </tr>
             </thead>
 
-            {/* BODY */}
             <tbody>
               {rows.map((r, i) => (
                 <tr key={i}>
@@ -215,7 +224,9 @@ export default function PurchaseDetail({ refNo, onNavigate }) {
                     <td className="text-center">
                       <span
                         className={`badge px-3 py-2 ${
-                          Number(r.profit) >= 0 ? "bg-success" : "bg-danger"
+                          Number(r.profit) >= 0
+                            ? "bg-success"
+                            : "bg-danger"
                         }`}
                       >
                         {fmt(r.profit)}
@@ -226,7 +237,6 @@ export default function PurchaseDetail({ refNo, onNavigate }) {
               ))}
             </tbody>
 
-            {/* FOOTER */}
             <tfoot className="fw-bold bg-light">
               <tr>
                 <td>TOTAL</td>
@@ -248,7 +258,9 @@ export default function PurchaseDetail({ refNo, onNavigate }) {
                   <td className="text-center">
                     <span
                       className={`badge px-3 py-2 ${
-                        Number(totals.profit) >= 0 ? "bg-success" : "bg-danger"
+                        Number(totals.profit) >= 0
+                          ? "bg-success"
+                          : "bg-danger"
                       }`}
                     >
                       {fmt(totals.profit)}
