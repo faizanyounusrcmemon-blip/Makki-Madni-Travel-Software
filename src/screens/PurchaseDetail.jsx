@@ -23,6 +23,9 @@ export default function PurchaseDetail({ refNo, onNavigate }) {
   const [rows, setRows] = useState([]);
   const [totals, setTotals] = useState(null);
   const [error, setError] = useState("");
+  const [showSale, setShowSale] = useState(false);
+  const [showProfit, setShowProfit] = useState(false);
+
   const boxRef = useRef(null);
 
   useEffect(() => {
@@ -65,43 +68,23 @@ export default function PurchaseDetail({ refNo, onNavigate }) {
     pdf.save(`${rows[0]?.ref_no || refNo}-purchase-detail.pdf`);
   };
 
-  /* ================= ERROR ================= */
   if (error) {
-    return (
-      <div className="container py-4">
-        <button
-          className="btn btn-sm text-white shadow mb-3"
-          style={{
-            background: "linear-gradient(135deg,#000,#434343)",
-            borderRadius: 10,
-            padding: "6px 16px",
-          }}
-          onClick={() => onNavigate("purchaseList")}
-        >
-          ← Back
-        </button>
-
-        <div className="alert alert-danger shadow-sm">{error}</div>
-      </div>
-    );
+    return <div className="container py-4 alert alert-danger">{error}</div>;
   }
 
-  /* ================= LOADING ================= */
   if (!rows.length) {
     return (
       <div className="container py-5 text-center">
         <div className="spinner-border text-primary" />
-        <div className="mt-2">Loading purchase detail...</div>
       </div>
     );
   }
 
-  /* ================= UI ================= */
   return (
     <div className="container py-4">
 
-      {/* TOP ACTION BAR */}
-      <div className="d-flex justify-content-between mb-3">
+      {/* TOP ACTIONS */}
+      <div className="d-flex justify-content-between mb-3 flex-wrap gap-2">
         <button
           className="btn btn-sm text-white shadow"
           style={{
@@ -114,13 +97,44 @@ export default function PurchaseDetail({ refNo, onNavigate }) {
           ← Back
         </button>
 
-        <button
-          className="btn btn-success btn-sm shadow"
-          style={{ borderRadius: 10, padding: "6px 16px" }}
-          onClick={exportPDF}
-        >
-          📄 Export PDF
-        </button>
+        <div className="d-flex gap-3 align-items-center">
+
+          {/* SALE TOGGLE */}
+          <div className="form-check">
+            <input
+              type="checkbox"
+              className="form-check-input"
+              id="saleToggle"
+              checked={showSale}
+              onChange={(e) => setShowSale(e.target.checked)}
+            />
+            <label className="form-check-label fw-bold">
+              Show Sale
+            </label>
+          </div>
+
+          {/* PROFIT TOGGLE */}
+          <div className="form-check">
+            <input
+              type="checkbox"
+              className="form-check-input"
+              id="profitToggle"
+              checked={showProfit}
+              onChange={(e) => setShowProfit(e.target.checked)}
+            />
+            <label className="form-check-label fw-bold">
+              Show Profit
+            </label>
+          </div>
+
+          <button
+            className="btn btn-success btn-sm shadow"
+            style={{ borderRadius: 10, padding: "6px 16px" }}
+            onClick={exportPDF}
+          >
+            📄 Export PDF
+          </button>
+        </div>
       </div>
 
       {/* PRINT AREA */}
@@ -138,10 +152,8 @@ export default function PurchaseDetail({ refNo, onNavigate }) {
               <h4 className="fw-bold mb-1">PURCHASE DETAIL</h4>
               <div>Ref No: {rows[0].ref_no}</div>
             </div>
-
             <div className="text-end">
-              <div>Customer</div>
-              <div className="fw-bold">{rows[0].customer_name || "-"}</div>
+              <div className="fw-bold">{rows[0].customer_name}</div>
               <div style={{ fontSize: 13 }}>{fmtDate(rows[0])}</div>
             </div>
           </div>
@@ -150,75 +162,104 @@ export default function PurchaseDetail({ refNo, onNavigate }) {
         {/* TABLE */}
         <div className="table-responsive">
           <table className="table align-middle table-bordered">
+
+            {/* HEADER ROW 1 */}
             <thead style={{ background: "#0d6efd", color: "#fff" }}>
               <tr className="text-center">
                 <th rowSpan="2">Item</th>
                 <th rowSpan="2">Supplier</th>
-                <th colSpan="3">Sale</th>
+
+                {showSale && <th colSpan="3">Sale</th>}
+
                 <th colSpan="3">Purchase</th>
-                <th rowSpan="2">Profit (PKR)</th>
+
+                {showProfit && <th rowSpan="2">Profit</th>}
               </tr>
+
+              {/* HEADER ROW 2 */}
               <tr className="text-center">
-                <th>SAR</th>
-                <th>Rate</th>
-                <th>PKR</th>
+                {showSale && (
+                  <>
+                    <th>SAR</th>
+                    <th>Rate</th>
+                    <th>PKR</th>
+                  </>
+                )}
+
                 <th>SAR</th>
                 <th>Rate</th>
                 <th>PKR</th>
               </tr>
             </thead>
 
+            {/* BODY */}
             <tbody>
               {rows.map((r, i) => (
                 <tr key={i}>
                   <td className="fw-semibold">{r.item}</td>
                   <td>{r.supplier_name || "-"}</td>
 
-                  <td className="text-end">{fmt(r.sale_sar)}</td>
-                  <td className="text-end">{fmt(r.sale_rate)}</td>
-                  <td className="text-end">{fmt(r.sale_pkr)}</td>
+                  {showSale && (
+                    <>
+                      <td className="text-end">{fmt(r.sale_sar)}</td>
+                      <td className="text-end">{fmt(r.sale_rate)}</td>
+                      <td className="text-end">{fmt(r.sale_pkr)}</td>
+                    </>
+                  )}
 
                   <td className="text-end">{fmt(r.purchase_sar)}</td>
                   <td className="text-end">{fmt(r.purchase_rate)}</td>
                   <td className="text-end">{fmt(r.purchase_pkr)}</td>
 
-                  <td className="text-center">
-                    <span
-                      className={`badge px-3 py-2 ${
-                        Number(r.profit) >= 0 ? "bg-success" : "bg-danger"
-                      }`}
-                    >
-                      {fmt(r.profit)}
-                    </span>
-                  </td>
+                  {showProfit && (
+                    <td className="text-center">
+                      <span
+                        className={`badge px-3 py-2 ${
+                          Number(r.profit) >= 0 ? "bg-success" : "bg-danger"
+                        }`}
+                      >
+                        {fmt(r.profit)}
+                      </span>
+                    </td>
+                  )}
                 </tr>
               ))}
             </tbody>
 
+            {/* FOOTER */}
             <tfoot className="fw-bold bg-light">
               <tr>
                 <td>TOTAL</td>
                 <td></td>
-                <td className="text-end">{fmt(totals.sale_sar)}</td>
-                <td></td>
-                <td className="text-end">{fmt(totals.sale_pkr)}</td>
+
+                {showSale && (
+                  <>
+                    <td className="text-end">{fmt(totals.sale_sar)}</td>
+                    <td></td>
+                    <td className="text-end">{fmt(totals.sale_pkr)}</td>
+                  </>
+                )}
+
                 <td className="text-end">{fmt(totals.purchase_sar)}</td>
                 <td></td>
                 <td className="text-end">{fmt(totals.purchase_pkr)}</td>
-                <td className="text-center">
-                  <span
-                    className={`badge px-3 py-2 ${
-                      Number(totals.profit) >= 0 ? "bg-success" : "bg-danger"
-                    }`}
-                  >
-                    {fmt(totals.profit)}
-                  </span>
-                </td>
+
+                {showProfit && (
+                  <td className="text-center">
+                    <span
+                      className={`badge px-3 py-2 ${
+                        Number(totals.profit) >= 0 ? "bg-success" : "bg-danger"
+                      }`}
+                    >
+                      {fmt(totals.profit)}
+                    </span>
+                  </td>
+                )}
               </tr>
             </tfoot>
+
           </table>
         </div>
-
       </div>
     </div>
   );
