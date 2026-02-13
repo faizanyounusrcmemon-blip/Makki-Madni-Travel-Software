@@ -68,27 +68,33 @@ export default function PurchaseDetail({ refNo, onNavigate }) {
   /* ================= ERROR ================= */
   if (error) {
     return (
-      <button
-        className="btn btn-sm fw-semibold text-white shadow"
-        style={{
-          background: "linear-gradient(135deg,#000,#434343)",
-          border: "none",
-          borderRadius: 10,
-          padding: "6px 16px"
-        }}
-        onClick={() => onNavigate("purchaseList")}
-      >
-        ← Back
-      </button>
+      <div className="container py-4">
+        <button
+          className="btn btn-sm text-white shadow mb-3"
+          style={{
+            background: "linear-gradient(135deg,#000,#434343)",
+            borderRadius: 10,
+            padding: "6px 16px",
+          }}
+          onClick={() => onNavigate("purchaseList")}
+        >
+          ← Back
+        </button>
+
+        <div className="alert alert-danger shadow-sm">{error}</div>
+      </div>
+    );
+  }
 
   /* ================= LOADING ================= */
-  if (!rows.length)
+  if (!rows.length) {
     return (
       <div className="container py-5 text-center">
         <div className="spinner-border text-primary" />
         <div className="mt-2">Loading purchase detail...</div>
       </div>
     );
+  }
 
   /* ================= UI ================= */
   return (
@@ -97,21 +103,30 @@ export default function PurchaseDetail({ refNo, onNavigate }) {
       {/* TOP ACTION BAR */}
       <div className="d-flex justify-content-between mb-3">
         <button
-          className="btn btn-outline-dark btn-sm"
+          className="btn btn-sm text-white shadow"
+          style={{
+            background: "linear-gradient(135deg,#000,#434343)",
+            borderRadius: 10,
+            padding: "6px 16px",
+          }}
           onClick={() => onNavigate("purchaseList")}
         >
           ← Back
         </button>
 
-        <button className="btn btn-success btn-sm shadow-sm" onClick={exportPDF}>
+        <button
+          className="btn btn-success btn-sm shadow"
+          style={{ borderRadius: 10, padding: "6px 16px" }}
+          onClick={exportPDF}
+        >
           📄 Export PDF
         </button>
       </div>
 
-      {/* ================= PRINT AREA ================= */}
+      {/* PRINT AREA */}
       <div ref={boxRef} className="bg-white rounded-4 shadow-lg p-4">
 
-        {/* HEADER CARD */}
+        {/* HEADER */}
         <div
           className="rounded-4 p-3 mb-4 text-white"
           style={{
@@ -126,17 +141,13 @@ export default function PurchaseDetail({ refNo, onNavigate }) {
 
             <div className="text-end">
               <div>Customer</div>
-              <div className="fw-bold">
-                {rows[0].customer_name || "-"}
-              </div>
-              <div style={{ fontSize: 13 }}>
-                {fmtDate(rows[0])}
-              </div>
+              <div className="fw-bold">{rows[0].customer_name || "-"}</div>
+              <div style={{ fontSize: 13 }}>{fmtDate(rows[0])}</div>
             </div>
           </div>
         </div>
 
-        {/* ================= TABLE ================= */}
+        {/* TABLE */}
         <div className="table-responsive">
           <table className="table align-middle table-bordered">
             <thead style={{ background: "#0d6efd", color: "#fff" }}>
@@ -174,9 +185,7 @@ export default function PurchaseDetail({ refNo, onNavigate }) {
                   <td className="text-center">
                     <span
                       className={`badge px-3 py-2 ${
-                        Number(r.profit) >= 0
-                          ? "bg-success"
-                          : "bg-danger"
+                        Number(r.profit) >= 0 ? "bg-success" : "bg-danger"
                       }`}
                     >
                       {fmt(r.profit)}
@@ -190,21 +199,16 @@ export default function PurchaseDetail({ refNo, onNavigate }) {
               <tr>
                 <td>TOTAL</td>
                 <td></td>
-
                 <td className="text-end">{fmt(totals.sale_sar)}</td>
                 <td></td>
                 <td className="text-end">{fmt(totals.sale_pkr)}</td>
-
                 <td className="text-end">{fmt(totals.purchase_sar)}</td>
                 <td></td>
                 <td className="text-end">{fmt(totals.purchase_pkr)}</td>
-
                 <td className="text-center">
                   <span
                     className={`badge px-3 py-2 ${
-                      Number(totals.profit) >= 0
-                        ? "bg-success"
-                        : "bg-danger"
+                      Number(totals.profit) >= 0 ? "bg-success" : "bg-danger"
                     }`}
                   >
                     {fmt(totals.profit)}
@@ -214,9 +218,8 @@ export default function PurchaseDetail({ refNo, onNavigate }) {
             </tfoot>
           </table>
         </div>
+
       </div>
     </div>
   );
 }
-
-
