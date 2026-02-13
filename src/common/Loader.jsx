@@ -1,6 +1,6 @@
 import React from "react";
 
-export const Loader = ({ message = "Loading..." }) => (
+export const Loader = ({ message = "⏳ Loading..." }) => (
   <div
     style={{
       position: "fixed",
@@ -17,3 +17,4 @@ export const Loader = ({ message = "Loading..." }) => (
     {message}
   </div>
 );
+
