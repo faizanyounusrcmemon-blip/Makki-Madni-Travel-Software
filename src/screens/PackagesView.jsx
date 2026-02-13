@@ -111,7 +111,7 @@ export default function PackagesView({ id, onNavigate }) {
         className="bg-white p-4 rounded-4 shadow-lg"
         style={{ maxWidth: "800px", margin: "auto", fontFamily: "Arial, sans-serif" }}
       >
-              {/* ===== HEADER ===== */}
+        {/* ===== HEADER ===== */}
         <div
           className="rounded-4 p-3 mb-4 text-white shadow"
           style={{
@@ -128,37 +128,6 @@ export default function PackagesView({ id, onNavigate }) {
           </div>
           <hr style={{ margin: "8px 0", borderTop: "2px solid #fff" }} />
         </div>
-        
-
-  // ================= CALCULATE TOTALS =================
-  const flightTotal = Number(data.flight_sar_total || 0);
-  const hotelsTotal = Number(data.hotel_sar_total || 0);
-  const visaTotal = Number(data.visa_sar_total || 0);
-  const transportTotal = Number(data.transport_sar_total || 0);
-  const ziyaratTotal = Number(data.ziyarat_sar_total || 0);
-
-  const rate = {
-    flight: Number(data.flight_sar_rate || 0),
-    hotels: Number(data.hotel_sar_rate || 0),
-    visa: Number(data.visa_sar_rate || 0),
-    transport: Number(data.transport_sar_rate || 0),
-    ziyarat: Number(data.ziyarat_sar_rate || 0),
-  };
-
-  const flightPKR = flightTotal * rate.flight;
-  const hotelsPKR = hotelsTotal * rate.hotels;
-  const visaPKR = visaTotal * rate.visa;
-  const transportPKR = transportTotal * rate.transport;
-  const ziyaratPKR = ziyaratTotal * rate.ziyarat;
-
-  const grandPKR = flightPKR + hotelsPKR + visaPKR + transportPKR + ziyaratPKR;
-
-  const personQty = Number(data.per_person_qty || 0);
-  const perPerson = grandPKR / personQty;
-
-  return (
-    <div className="container mt-3 mb-5">
-
 
         {/* ===== PACKAGE INFO ===== */}
         <div className="mb-3">
@@ -169,7 +138,6 @@ export default function PackagesView({ id, onNavigate }) {
         </div>
 
         <hr />
-
 
         {/* ===== FLIGHTS ===== */}
         <h5 className="fw-bold text-primary mb-2">✈️ Flight</h5>
@@ -189,8 +157,8 @@ export default function PackagesView({ id, onNavigate }) {
           Adults: {data.adult_count} × {data.adult_rate} <br />
           Child: {data.child_count} × {data.child_rate} <br />
           Infant: {data.infant_count} × {data.infant_rate} <br />
-          <b>Flight SAR:</b> {flightTotal.toLocaleString()} <br />
-          <b>Flight PKR:</b> {flightPKR.toLocaleString()}
+          <b>Flight SAR:</b> {Number(data.flight_sar_total || 0).toLocaleString()} <br />
+          <b>Flight PKR:</b> {Number(data.flight_pkr_total || 0).toLocaleString()}
         </p>
 
         <hr />
@@ -201,7 +169,7 @@ export default function PackagesView({ id, onNavigate }) {
           data.hotels.map((h, i) => (
             <div key={i} className="border p-2 rounded mb-2 shadow-sm">
               <b>{h.hotel}</b> — {h.location}<br />
-              Check In: {fmtDate(h.checkIn)} → Check Out: {fmtDate(h.checkOut)}<br />
+              {fmtDate(h.checkIn)} → {fmtDate(h.checkOut)}<br />
               Nights: {h.nights}, Rooms: {h.rooms}, Type: {h.type}<br />
               Rate: {h.rate} — Total: {h.total}
             </div>
@@ -210,8 +178,8 @@ export default function PackagesView({ id, onNavigate }) {
           <p>No hotels</p>
         )}
         <p>
-          <b>Hotel SAR:</b> {hotelsTotal.toLocaleString()} <br />
-          <b>Hotel PKR:</b> {hotelsPKR.toLocaleString()}
+          <b>Hotel SAR:</b> {Number(data.hotel_sar_total || 0).toLocaleString()} <br />
+          <b>Hotel PKR:</b> {Number(data.hotel_pkr_total || 0).toLocaleString()}
         </p>
 
         <hr />
@@ -228,8 +196,8 @@ export default function PackagesView({ id, onNavigate }) {
           <p>No visa</p>
         )}
         <p>
-          <b>Visa SAR:</b> {visaTotal.toLocaleString()} <br />
-          <b>Visa PKR:</b> {visaPKR.toLocaleString()}
+          <b>Visa SAR:</b> {Number(data.visa_sar_total || 0).toLocaleString()} <br />
+          <b>Visa PKR:</b> {Number(data.visa_pkr_total || 0).toLocaleString()}
         </p>
 
         <hr />
@@ -246,8 +214,8 @@ export default function PackagesView({ id, onNavigate }) {
           <p>No transport</p>
         )}
         <p>
-          <b>Transport SAR:</b> {transportTotal.toLocaleString()} <br />
-          <b>Transport PKR:</b> {transportPKR.toLocaleString()}
+          <b>Transport SAR:</b> {Number(data.transport_sar_total || 0).toLocaleString()} <br />
+          <b>Transport PKR:</b> {Number(data.transport_pkr_total || 0).toLocaleString()}
         </p>
 
         <hr />
@@ -264,82 +232,17 @@ export default function PackagesView({ id, onNavigate }) {
           <p>No ziyarat</p>
         )}
         <p>
-          <b>Ziyarat SAR:</b> {ziyaratTotal.toLocaleString()} <br />
-          <b>Ziyarat PKR:</b> {ziyaratPKR.toLocaleString()}
+          <b>Ziyarat SAR:</b> {Number(data.ziyarat_sar_total || 0).toLocaleString()} <br />
+          <b>Ziyarat PKR:</b> {Number(data.ziyarat_pkr_total || 0).toLocaleString()}
         </p>
 
         <hr />
-                {/* ===== SUMMARY TABLE ===== */}
-        <h6 className="section-title">📊 Summary</h6>
-        <table className="table table-sm mb-4">
-          <thead>
-            <tr>
-              <th>Item</th>
-              <th>SAR</th>
-              <th>Rate</th>
-              <th>PKR</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>Flight</td>
-              <td>{flightTotal.toLocaleString()}</td>
-              <td>{rate.flight}</td>
-              <td className="fw-bold">{flightPKR.toLocaleString()}</td>
-            </tr>
-            <tr>
-              <td>Hotels</td>
-              <td>{hotelsTotal.toLocaleString()}</td>
-              <td>{rate.hotels}</td>
-              <td className="fw-bold">{hotelsPKR.toLocaleString()}</td>
-            </tr>
-            <tr>
-              <td>Visa</td>
-              <td>{visaTotal.toLocaleString()}</td>
-              <td>{rate.visa}</td>
-              <td className="fw-bold">{visaPKR.toLocaleString()}</td>
-            </tr>
-            <tr>
-              <td>Transport</td>
-              <td>{transportTotal.toLocaleString()}</td>
-              <td>{rate.transport}</td>
-              <td className="fw-bold">{transportPKR.toLocaleString()}</td>
-            </tr>
-            <tr>
-              <td>Ziyarat</td>
-              <td>{ziyaratTotal.toLocaleString()}</td>
-              <td>{rate.ziyarat}</td>
-              <td className="fw-bold">{ziyaratPKR.toLocaleString()}</td>
-            </tr>
-            <tr className="table-info">
-              <td className="fw-bold">Grand Total PKR</td>
-              <td></td>
-              <td></td>
-              <td className="fw-bold">{grandPKR.toLocaleString()}</td>
-            </tr>
-            <tr style={{ background: "#f1f1f1" }}>
-              <td className="fw-bold">Per Person</td>
-              <td>{personQty}</td>
-              <td></td>
-              <td className="fw-bold">{perPerson.toLocaleString()}</td>
-            </tr>
-          </tbody>
-        </table>
 
-        <hr />
-
-        {/* FOOTER NOTE */}
-        <div
-          className="mt-2 p-2 text-center small"
-          style={{ background: "#12c1d8", color: "white" }}
-        >
-          THESE ARE TENTATIVE RATES AND CAN CHANGE WITHOUT NOTICE.
-          PACKAGE CAN BE FINALIZED AFTER BOOKING PAYMENTS AND MAY VARY WITH ROE.
-        </div>
+        {/* ===== SUMMARY ===== */}
+        <h4 className="fw-bold text-end text-success">
+          NET PKR TOTAL: {Number(data.net_pkr_total || 0).toLocaleString()}
+        </h4>
       </div>
     </div>
   );
 }
-
-
-
