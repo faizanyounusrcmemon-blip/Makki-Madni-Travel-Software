@@ -46,6 +46,7 @@ export default function PackagesView({ id, onNavigate }) {
     const canvas = await html2canvas(ref.current, {
       scale: 2,
       useCORS: true,
+      backgroundColor: "#ffffff",
     });
 
     const imgData = canvas.toDataURL("image/jpeg", 1.0);
@@ -58,13 +59,13 @@ export default function PackagesView({ id, onNavigate }) {
     const imgHeight = (canvas.height * imgWidth) / canvas.width;
 
     let heightLeft = imgHeight;
-    let position = 10;
+    let position = 0;
 
     pdf.addImage(imgData, "JPEG", 0, position, imgWidth, imgHeight);
     heightLeft -= pdfHeight;
 
     while (heightLeft > 0) {
-      position = heightLeft - imgHeight + 10;
+      position = heightLeft - imgHeight;
       pdf.addPage();
       pdf.addImage(imgData, "JPEG", 0, position, imgWidth, imgHeight);
       heightLeft -= pdfHeight;
@@ -77,184 +78,182 @@ export default function PackagesView({ id, onNavigate }) {
     pdf.save(fileName);
   };
 
-  if (!data) return <div className="p-4">Loading...</div>;
+  /* ================= LOADING ================= */
+  if (!data)
+    return (
+      <div className="container py-5 text-center">
+        <div className="spinner-border text-primary" />
+        <div className="mt-2">Loading package...</div>
+      </div>
+    );
 
+  /* ================= UI ================= */
   return (
-    <div className="container mt-3">
-      <button
-        className="btn btn-secondary btn-sm mb-2"
-        onClick={() => onNavigate("allreports")}
-      >
-        ⬅ Back
-      </button>
-      
-      <button
-        className="btn btn-success btn-sm mb-2 ms-2"
-        onClick={exportPDF}
-      >
-        📄 Export PDF
-      </button>
+    <div className="container py-4">
 
-      {/* ================= PDF CONTENT ================= */}
+      {/* ACTION BAR */}
+      <div className="d-flex justify-content-between mb-3">
+        <button
+          className="btn btn-sm text-white shadow"
+          style={{
+            background: "linear-gradient(135deg,#000,#434343)",
+            borderRadius: 10,
+            padding: "6px 16px",
+          }}
+          onClick={() => onNavigate("packagesList")}
+        >
+          ← Back
+        </button>
+
+        <button
+          className="btn btn-success btn-sm shadow"
+          style={{ borderRadius: 10, padding: "6px 16px" }}
+          onClick={exportPDF}
+        >
+          📄 Export PDF
+        </button>
+      </div>
+
+      {/* ================= PRINT AREA ================= */}
       <div
         ref={ref}
-        className="bg-white p-3 border"
-        style={{ width: "794px", margin: "auto" }}
+        className="bg-white rounded-4 shadow-lg p-4"
+        style={{ maxWidth: 800, margin: "auto" }}
       >
-        {/* ================= HEADER ================= */}
-        <div className="text-center mb-3">
-          <h2 className="fw-bold mb-1" style={{ letterSpacing: "1px" }}>
+
+        {/* HEADER */}
+        <div className="text-center mb-4">
+          <h2 className="fw-bold mb-1" style={{ letterSpacing: 1 }}>
             ✈️ MAKKI MADNI TRAVEL
           </h2>
 
-          <div style={{ fontSize: "13px", lineHeight: "1.4" }}>
-            <div>
-              Shop #4 Diamond City Building, Near Zeenat-ul-Islam Masjid
-            </div>
-            <div>Garden West, Karachi</div>
-            <div>
-              ✉️ makkimadnitravel@gmail.com | ☎️ 0335-7476744
-            </div>
+          <div style={{ fontSize: 13 }}>
+            Shop #4 Diamond City Building, Near Zeenat-ul-Islam Masjid<br />
+            Garden West, Karachi<br />
+            ✉️ makkimadnitravel@gmail.com | ☎️ 0335-7476744
           </div>
 
-          <hr style={{ margin: "8px 0", borderTop: "2px solid #000" }} />
+          <hr style={{ borderTop: "2px solid #000" }} />
         </div>
 
-        <h4 className="fw-bold mb-2">PACKAGE — {data.ref_no}</h4>
-
-        {/* ================= CUSTOMER ================= */}
-        <p><b>Customer:</b> {data.customer_name}</p>
-        <p><b>Contact No:</b> {data.contact_no || "-"}</p>
-        <p><b>Booking Date:</b> {fmtDate(data.booking_date)}</p>
+        {/* PACKAGE INFO */}
+        <div className="mb-3">
+          <h4 className="fw-bold">PACKAGE — {data.ref_no}</h4>
+          <div><b>Customer:</b> {data.customer_name}</div>
+          <div><b>Contact:</b> {data.contact_no || "-"}</div>
+          <div><b>Booking Date:</b> {fmtDate(data.booking_date)}</div>
+        </div>
 
         <hr />
 
-        {/* ================= FLIGHT ================= */}
+        {/* FLIGHT */}
         <h5 className="fw-bold">✈️ Flight</h5>
-        {Array.isArray(data.flights) && data.flights.length > 0 ? (
-          data.flights.map((f, i) => (
-            <div key={i}>
-              {fmtDate(f.date)} — {f.from} → {f.to}{" "}
-              {f.airline && <b>({f.airline})</b>}
-            </div>
-          ))
-        ) : (
-          <p>No flights</p>
-        )}
+        {data.flights?.length ? data.flights.map((f, i) => (
+          <div key={i}>
+            {fmtDate(f.date)} — {f.from} → {f.to} {f.airline && <b>({f.airline})</b>}
+          </div>
+        )) : <p>No flights</p>}
 
         <p>
-          Adults: {data.adult_count} × {data.adult_rate}<br />
-          Child: {data.child_count} × {data.child_rate}<br />
-          Infant: {data.infant_count} × {data.infant_rate}
+          Adults {data.adult_count} × {data.adult_rate}<br />
+          Child {data.child_count} × {data.child_rate}<br />
+          Infant {data.infant_count} × {data.infant_rate}
         </p>
 
         <p>
-          <b>Flight SAR:</b>{" "}
-          {Number(data.flight_sar_total || 0).toLocaleString()}<br />
-          <b>Flight PKR:</b>{" "}
-          {Number(data.flight_pkr_total || 0).toLocaleString()}
+          <b>Flight SAR:</b> {Number(data.flight_sar_total || 0).toLocaleString()}<br />
+          <b>Flight PKR:</b> {Number(data.flight_pkr_total || 0).toLocaleString()}
         </p>
 
         <hr />
 
-        {/* ================= HOTELS ================= */}
+        {/* HOTELS */}
         <h5 className="fw-bold">🏨 Hotels</h5>
-        {Array.isArray(data.hotels) && data.hotels.length > 0 ? (
-          data.hotels.map((h, i) => (
-            <div key={i} className="mb-2">
-              <b>{h.hotel}</b><br />
-              {h.location}<br />
-              {fmtDate(h.checkIn)} → {fmtDate(h.checkOut)}<br />
-              Nights: {h.nights}, Rooms: {h.rooms}, Type: {h.type}<br />
-              Rate: {h.rate} — Total: {h.total}
-            </div>
-          ))
-        ) : (
-          <p>No hotels</p>
-        )}
+        {data.hotels?.length ? data.hotels.map((h, i) => (
+          <div key={i} className="mb-2">
+            <b>{h.hotel}</b><br />
+            {h.location}<br />
+            {fmtDate(h.checkIn)} → {fmtDate(h.checkOut)}<br />
+            Nights {h.nights} | Rooms {h.rooms} | {h.type}<br />
+            Rate {h.rate} | Total {h.total}
+          </div>
+        )) : <p>No hotels</p>}
 
         <p>
-          <b>Hotel SAR:</b>{" "}
-          {Number(data.hotel_sar_total || 0).toLocaleString()}<br />
-          <b>Hotel PKR:</b>{" "}
-          {Number(data.hotel_pkr_total || 0).toLocaleString()}
+          <b>Hotel SAR:</b> {Number(data.hotel_sar_total || 0).toLocaleString()}<br />
+          <b>Hotel PKR:</b> {Number(data.hotel_pkr_total || 0).toLocaleString()}
         </p>
 
         <hr />
 
-        {/* ================= VISA (JSONB) ================= */}
+        {/* VISA */}
         <h5 className="fw-bold">🛂 Visa</h5>
-        {Array.isArray(data.visa) && data.visa.length > 0 ? (
+        {data.visa?.length ? (
           <>
             {data.visa.map((v, i) => (
               <div key={i}>
                 {v.type || "Visa"} — {v.persons} × {v.rate} = {v.total}
               </div>
             ))}
-            <p className="mt-1">
-              <b>Visa SAR:</b>{" "}
-              {Number(data.visa_sar_total || 0).toLocaleString()}<br />
-              <b>Visa PKR:</b>{" "}
-              {Number(data.visa_pkr_total || 0).toLocaleString()}
+            <p className="mt-2">
+              <b>Visa SAR:</b> {Number(data.visa_sar_total || 0).toLocaleString()}<br />
+              <b>Visa PKR:</b> {Number(data.visa_pkr_total || 0).toLocaleString()}
             </p>
           </>
-        ) : (
-          <p>No visa</p>
-        )}
+        ) : <p>No visa</p>}
 
         <hr />
 
-        {/* ================= TRANSPORT ================= */}
+        {/* TRANSPORT */}
         <h5 className="fw-bold">🚐 Transport</h5>
-        {Array.isArray(data.transport) && data.transport.length > 0 ? (
-          data.transport.map((t, i) => (
-            <p key={i}>
-              {t.text} — {Number(t.amount || 0).toLocaleString()}
-            </p>
-          ))
-        ) : (
-          <p>No transport</p>
-        )}
+        {data.transport?.length
+          ? data.transport.map((t, i) => (
+              <div key={i}>
+                {t.text} — {Number(t.amount || 0).toLocaleString()}
+              </div>
+            ))
+          : <p>No transport</p>}
 
         <p>
-          <b>Transport SAR:</b>{" "}
-          {Number(data.transport_sar_total || 0).toLocaleString()}<br />
-          <b>Transport PKR:</b>{" "}
-          {Number(data.transport_pkr_total || 0).toLocaleString()}
+          <b>Transport SAR:</b> {Number(data.transport_sar_total || 0).toLocaleString()}<br />
+          <b>Transport PKR:</b> {Number(data.transport_pkr_total || 0).toLocaleString()}
         </p>
 
         <hr />
 
-        {/* ================= ZIYARAT ================= */}
+        {/* ZIYARAT */}
         <h5 className="fw-bold">🕌 Ziyarat</h5>
-        {Array.isArray(data.ziyarat) && data.ziyarat.length > 0 ? (
-          data.ziyarat.map((z, i) => (
-            <p key={i}>
-              {z.text || z.route || z.description} —{" "}
-              {Number(z.amount || 0).toLocaleString()}
-            </p>
-          ))
-        ) : (
-          <p>No ziyarat</p>
-        )}
+        {data.ziyarat?.length
+          ? data.ziyarat.map((z, i) => (
+              <div key={i}>
+                {z.text || z.route || z.description} — {Number(z.amount || 0).toLocaleString()}
+              </div>
+            ))
+          : <p>No ziyarat</p>}
 
         <p>
-          <b>Ziyarat SAR:</b>{" "}
-          {Number(data.ziyarat_sar_total || 0).toLocaleString()}<br />
-          <b>Ziyarat PKR:</b>{" "}
-          {Number(data.ziyarat_pkr_total || 0).toLocaleString()}
+          <b>Ziyarat SAR:</b> {Number(data.ziyarat_sar_total || 0).toLocaleString()}<br />
+          <b>Ziyarat PKR:</b> {Number(data.ziyarat_pkr_total || 0).toLocaleString()}
         </p>
 
         <hr />
 
-        {/* ================= SUMMARY ================= */}
-        <h4 className="fw-bold text-end">
-          NET PKR TOTAL:{" "}
-          {Number(data.net_pkr_total || 0).toLocaleString()}
-        </h4>
+        {/* TOTAL */}
+        <div className="text-end">
+          <div
+            className="d-inline-block px-4 py-2 rounded-3 shadow-sm"
+            style={{
+              background: "linear-gradient(135deg,#0d6efd,#00c6ff)",
+              color: "#fff",
+              fontSize: 18,
+              fontWeight: 700,
+            }}
+          >
+            NET PKR TOTAL: {Number(data.net_pkr_total || 0).toLocaleString()}
+          </div>
+        </div>
+
       </div>
     </div>
   );
 }
-
-
