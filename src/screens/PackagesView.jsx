@@ -48,13 +48,10 @@ export default function PackagesView({ id, onNavigate }) {
     const canvas = await html2canvas(element, {
       scale: 3,
       useCORS: true,
-      allowTaint: true,
       scrollY: -window.scrollY,
       windowWidth: element.scrollWidth,
       windowHeight: element.scrollHeight,
     });
-
-    const imgData = canvas.toDataURL("image/jpeg", 1.0);
 
     const pdf = new jsPDF("p", "mm", "a4");
 
@@ -64,19 +61,40 @@ export default function PackagesView({ id, onNavigate }) {
     const imgWidth = pageWidth;
     const imgHeight = (canvas.height * imgWidth) / canvas.width;
 
-    let heightLeft = imgHeight;
-    let position = 0;
+    const totalPages = Math.ceil(imgHeight / pageHeight);
 
-    // FIRST PAGE
-    pdf.addImage(imgData, "JPEG", 0, position, imgWidth, imgHeight);
-    heightLeft -= pageHeight;
+    const pageCanvas = document.createElement("canvas");
+    const pageCtx = pageCanvas.getContext("2d");
 
-    // EXTRA PAGES
-    while (heightLeft > 0) {
-      position = heightLeft - imgHeight;
-      pdf.addPage();
-      pdf.addImage(imgData, "JPEG", 0, position, imgWidth, imgHeight);
-      heightLeft -= pageHeight;
+    const pageHeightPx = (canvas.width * pageHeight) / pageWidth;
+
+    pageCanvas.width = canvas.width;
+    pageCanvas.height = pageHeightPx;
+
+    let renderedHeight = 0;
+
+    for (let page = 0; page < totalPages; page++) {
+      pageCtx.clearRect(0, 0, pageCanvas.width, pageCanvas.height);
+
+      pageCtx.drawImage(
+        canvas,
+        0,
+        renderedHeight,
+        canvas.width,
+        pageHeightPx,
+        0,
+        0,
+        canvas.width,
+        pageHeightPx
+      );
+
+      const imgData = pageCanvas.toDataURL("image/jpeg", 1.0);
+
+      if (page > 0) pdf.addPage();
+
+      pdf.addImage(imgData, "JPEG", 0, 0, imgWidth, pageHeight);
+
+      renderedHeight += pageHeightPx;
     }
 
     const fileName = `${cleanName(data?.customer_name)}_${formatDateForFile(
@@ -344,4 +362,5 @@ export default function PackagesView({ id, onNavigate }) {
     </div>
   );
 }
+
 
