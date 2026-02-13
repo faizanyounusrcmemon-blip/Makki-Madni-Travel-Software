@@ -80,10 +80,6 @@ export default function PurchaseDetail({ refNo, onNavigate }) {
       >
         ← Back
       </button>
-        <div className="alert alert-danger shadow-sm">{error}</div>
-      </div>
-    );
-  }
 
   /* ================= LOADING ================= */
   if (!rows.length)
@@ -222,4 +218,5 @@ export default function PurchaseDetail({ refNo, onNavigate }) {
     </div>
   );
 }
+
 
