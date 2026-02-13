@@ -86,6 +86,9 @@ export default function PackagesView({ id, onNavigate }) {
   const transportTotal = Number(data.transport_sar_total || 0);
   const ziyaratTotal = Number(data.ziyarat_sar_total || 0);
 
+  
+  const flightTotal = Number(data.flight_sar_rate || 0);
+
 
   const rate = {
     flight: Number(data.flight_sar_rate || 0),
@@ -337,6 +340,7 @@ export default function PackagesView({ id, onNavigate }) {
     </div>
   );
 }
+
 
 
 
