@@ -14,8 +14,9 @@ export default function AppWrapper({ children }) {
 
   return (
     <>
-      {loading && <Loader message="Please wait, loading data..." />}
+      {loading && <Loader message="⏳ Please wait, loading data..." />}
       {children}
     </>
   );
 }
+
