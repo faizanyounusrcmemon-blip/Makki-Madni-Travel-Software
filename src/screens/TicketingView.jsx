@@ -4,14 +4,24 @@ import jsPDF from "jspdf";
 
 /* ================= HELPERS ================= */
 const fmt = (v) => Number(v || 0).toLocaleString("en-US");
-const fmtDate = (d) => d ? new Date(d).toLocaleDateString("en-GB") : "";
+
+// ✅ Updated date format: 01/FEB/2026
+const fmtDate = (d) => {
+  if (!d) return "-";
+  const dt = new Date(d);
+  const day = String(dt.getDate()).padStart(2, "0");
+  const mon = dt.toLocaleString("en-US", { month: "short" }).toUpperCase();
+  const year = dt.getFullYear();
+  return `${day}/${mon}/${year}`;
+};
+
 const cleanName = (name) => name ? name.replace(/[^a-zA-Z0-9]/g, "_") : "Customer";
 const formatDateForFile = (date) => {
   if (!date) return "NoDate";
-  const d = new Date(date);
-  const day = String(d.getDate()).padStart(2, "0");
-  const mon = d.toLocaleString("en-US", { month: "short" }).toUpperCase();
-  const year = d.getFullYear();
+  const dt = new Date(date);
+  const day = String(dt.getDate()).padStart(2, "0");
+  const mon = dt.toLocaleString("en-US", { month: "short" }).toUpperCase();
+  const year = dt.getFullYear();
   return `${day}-${mon}-${year}`;
 };
 
