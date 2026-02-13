@@ -197,19 +197,41 @@ export default function BalanceSheet({ onNavigate }) {
         <table className="table mb-0">
           <tbody>
             <tr>
-              <td>Customer Receivable</td>
+              <td>💰 Customer Receivable</td>
               <td className="text-end fw-bold text-success">
-                {fmt(customerTotals.balance)}
+                {fmt(data.summary?.total_receivable)}
               </td>
             </tr>
+
             <tr>
-              <td>Supplier Payable</td>
+              <td>📦 Supplier Payable</td>
               <td className="text-end fw-bold text-danger">
-                {fmt(supplierTotals.balance)}
+                {fmt(data.summary?.total_payable)}
               </td>
             </tr>
+
+            <tr>
+              <td>💎 Extra Received (Customers)</td>
+              <td className="text-end fw-bold text-primary">
+                {fmt(data.summary?.total_extra_received)}
+              </td>
+            </tr>
+
+            <tr>
+              <td>💸 Extra Paid (Suppliers)</td>
+              <td className="text-end fw-bold text-primary">
+                {fmt(data.summary?.total_extra_paid)}
+              </td>
+            </tr>
+
             <tr className="table-light fw-bold">
-              <td>Net Position</td>
+              <td>
+                🔄 Net Position
+                <br />
+                <small className="text-muted">
+                  {netPosition >= 0 ? "Aap lene wale ho" : "Aap dene wale ho"}
+                </small>
+              </td>
               <td className={`text-end ${netPosition >= 0 ? "text-success" : "text-danger"}`}>
                 {fmt(Math.abs(netPosition))}
               </td>
