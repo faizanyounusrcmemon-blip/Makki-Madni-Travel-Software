@@ -128,7 +128,7 @@ export default function Navbar({ onNavigate }) {
       <div className="nav-user">
         <span className="user-name">👤 {user?.name || "User"}</span>
         <button className="logout-btn" onClick={logout}>
-          Logout
+          🏃🚪 Logout
         </button>
       </div>
     </nav>
