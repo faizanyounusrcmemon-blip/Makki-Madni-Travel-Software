@@ -102,7 +102,7 @@ export default function PackagesView({ id, onNavigate }) {
 
   const grandPKR = flightPKR + hotelsPKR + visaPKR + transportPKR + ziyaratPKR;
 
-  const personQty = Number(data.total_persons || 1);
+  const personQty = Number(data.per_person_qty || 0);
   const perPerson = grandPKR / personQty;
 
   return (
@@ -323,12 +323,6 @@ export default function PackagesView({ id, onNavigate }) {
 
         <hr />
 
-                {/* TOTAL */}
-        <h4 className="fw-bold text-end text-success">
-          NET PKR TOTAL: {grandPKR.toLocaleString()}
-        </h4>
-
-
         {/* FOOTER NOTE */}
         <div
           className="mt-2 p-2 text-center small"
@@ -341,6 +335,7 @@ export default function PackagesView({ id, onNavigate }) {
     </div>
   );
 }
+
 
 
 
