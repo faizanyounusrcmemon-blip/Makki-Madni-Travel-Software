@@ -5,9 +5,10 @@ const fmt = (v) =>
   Number(v || 0).toLocaleString("en-US", { maximumFractionDigits: 0 });
 
 /* ================= ROUNDING TOLERANCE ================= */
-const EPS = 1; // 1 rupee ignore globally
+const EPS = 1;
 
-const clean = (v) => {
+/* normalize balance */
+const cleanBalance = (v) => {
   const n = Number(v || 0);
   return Math.abs(n) <= EPS ? 0 : n;
 };
@@ -36,42 +37,54 @@ export default function BalanceSheet({ onNavigate }) {
 
   if (loading)
     return <div className="p-5 text-center text-danger fw-bold">⏳ Loading...</div>;
-
   if (!data) return null;
 
-  /* ================= CLEAN ROWS ================= */
+  /* ================= CLEAN + FILTER ================= */
   const customerRows = (data.customers || [])
-    .map(r => ({ ...r, balance: clean(r.balance) }))
+    .map(r => ({ ...r, balance: cleanBalance(r.balance) }))
     .filter(r => r.balance !== 0)
     .sort((a, b) => b.balance - a.balance);
 
   const supplierRows = (data.suppliers || [])
-    .map(r => ({ ...r, balance: clean(r.balance) }))
+    .map(r => ({ ...r, balance: cleanBalance(r.balance) }))
     .filter(r => r.balance !== 0)
     .sort((a, b) => b.balance - a.balance);
 
-  /* ================= TOTALS ================= */
-  const rawCustomerBalance = customerRows.reduce((a, r) => a + r.balance, 0);
-  const rawSupplierBalance = supplierRows.reduce((a, r) => a + r.balance, 0);
+  /* ================= TOTALS FROM CLEANED ROWS ================= */
+  const customerTotals = customerRows.reduce(
+    (a, r) => {
+      a.sale += Number(r.sale_total || 0);
+      a.received += Number(r.received || 0);
 
-  const customerBalance = clean(rawCustomerBalance);
-  const supplierBalance = clean(rawSupplierBalance);
+      if (r.balance > 0) a.balance += r.balance;
+      if (r.balance < 0) a.extra += Math.abs(r.balance);
+
+      return a;
+    },
+    { sale: 0, received: 0, balance: 0, extra: 0 }
+  );
+
+  const supplierTotals = supplierRows.reduce(
+    (a, r) => {
+      a.purchase += Number(r.purchase_total || 0);
+      a.paid += Number(r.paid || 0);
+
+      if (r.balance > 0) a.balance += r.balance;
+      if (r.balance < 0) a.extra += Math.abs(r.balance);
+
+      return a;
+    },
+    { purchase: 0, paid: 0, balance: 0, extra: 0 }
+  );
+
+  /* ================= CLEAN TOTALS ================= */
+  const totalReceivable = cleanBalance(customerTotals.balance);
+  const totalPayable = cleanBalance(supplierTotals.balance);
+  const totalExtraReceived = cleanBalance(customerTotals.extra);
+  const totalExtraPaid = cleanBalance(supplierTotals.extra);
 
   /* ================= NET POSITION ================= */
-  const netPosition = clean(customerBalance - supplierBalance);
-
-  /* ================= EXTRA TOTALS ================= */
-  const extraReceived = clean(
-    (data.customers || [])
-      .filter(r => Number(r.balance) < 0)
-      .reduce((a, r) => a + Math.abs(Number(r.balance)), 0)
-  );
-
-  const extraPaid = clean(
-    (data.suppliers || [])
-      .filter(r => Number(r.balance) < 0)
-      .reduce((a, r) => a + Math.abs(Number(r.balance)), 0)
-  );
+  const netPosition = cleanBalance(totalReceivable - totalPayable);
 
   /* ================= STATUS ================= */
   const getStatusBadge = (status) => {
@@ -92,18 +105,19 @@ export default function BalanceSheet({ onNavigate }) {
   return (
     <div className="container py-4">
 
-      {/* ================= HEADER ================= */}
+      {/* HEADER */}
       <div className="mb-4 p-4 rounded-3 shadow-sm text-white"
         style={{ background: "linear-gradient(90deg, #2563eb, #06b6d4)" }}>
         <div className="d-flex justify-content-between align-items-center">
           <h4 className="mb-0 fw-bold">Balance Sheet</h4>
-          <button className="btn btn-light btn-sm" onClick={() => onNavigate("dashboard")}>
+          <button className="btn btn-light btn-sm fw-semibold"
+            onClick={() => onNavigate("dashboard")}>
             ← Back
           </button>
         </div>
       </div>
 
-      {/* ================= CUSTOMER ================= */}
+      {/* CUSTOMER */}
       <div className="card shadow-sm mb-4">
         <div className="card-header bg-white fw-bold text-success">
           💰 Customer Receivable
@@ -113,20 +127,20 @@ export default function BalanceSheet({ onNavigate }) {
             <thead className="table-light">
               <tr>
                 <th>#</th>
-                <th>Ref</th>
+                <th>Ref No</th>
                 <th>Customer</th>
-                <th className="text-end">Sale</th>
+                <th className="text-end">Total Sale</th>
                 <th className="text-end">Received</th>
                 <th className="text-end">Balance</th>
                 <th>Status</th>
               </tr>
             </thead>
             <tbody>
-              {customerRows.map((r,i)=>(
+              {customerRows.map((r, i) => (
                 <tr key={i}>
-                  <td>{i+1}</td>
+                  <td>{i + 1}</td>
                   <td>{r.ref_no}</td>
-                  <td className="fw-semibold">{r.customer_name}</td>
+                  <td className="fw-semibold">{r.customer_name || "-"}</td>
                   <td className="text-end">{fmt(r.sale_total)}</td>
                   <td className="text-end">{fmt(r.received)}</td>
                   <td className={`text-end fw-bold ${balanceColor(r.balance,"customer")}`}>
@@ -140,7 +154,7 @@ export default function BalanceSheet({ onNavigate }) {
         </div>
       </div>
 
-      {/* ================= SUPPLIER ================= */}
+      {/* SUPPLIER */}
       <div className="card shadow-sm mb-4">
         <div className="card-header bg-white fw-bold text-danger">
           📦 Supplier Payable
@@ -150,20 +164,20 @@ export default function BalanceSheet({ onNavigate }) {
             <thead className="table-light">
               <tr>
                 <th>#</th>
-                <th>Code</th>
+                <th>Supplier Code</th>
                 <th>Supplier</th>
-                <th className="text-end">Purchase</th>
+                <th className="text-end">Total Purchase</th>
                 <th className="text-end">Paid</th>
                 <th className="text-end">Balance</th>
                 <th>Status</th>
               </tr>
             </thead>
             <tbody>
-              {supplierRows.map((r,i)=>(
+              {supplierRows.map((r, i) => (
                 <tr key={i}>
-                  <td>{i+1}</td>
+                  <td>{i + 1}</td>
                   <td>{r.supplier_code}</td>
-                  <td className="fw-semibold">{r.supplier_name}</td>
+                  <td className="fw-semibold">{r.supplier_name || "-"}</td>
                   <td className="text-end">{fmt(r.purchase_total)}</td>
                   <td className="text-end">{fmt(r.paid)}</td>
                   <td className={`text-end fw-bold ${balanceColor(r.balance,"supplier")}`}>
@@ -177,33 +191,27 @@ export default function BalanceSheet({ onNavigate }) {
         </div>
       </div>
 
-      {/* ================= SUMMARY ================= */}
+      {/* SUMMARY */}
       <div className="card shadow-sm">
-        <div className="card-header bg-white fw-bold text-primary">
-          📌 Summary
-        </div>
+        <div className="card-header bg-white fw-bold text-primary">📌 Summary</div>
         <table className="table mb-0">
           <tbody>
             <tr>
               <td>💰 Customer Receivable</td>
-              <td className="text-end fw-bold text-success">{fmt(customerBalance)}</td>
+              <td className="text-end fw-bold text-success">{fmt(totalReceivable)}</td>
             </tr>
-
             <tr>
               <td>📦 Supplier Payable</td>
-              <td className="text-end fw-bold text-danger">{fmt(supplierBalance)}</td>
+              <td className="text-end fw-bold text-danger">{fmt(totalPayable)}</td>
             </tr>
-
             <tr>
               <td>💎 Extra Received</td>
-              <td className="text-end fw-bold text-primary">{fmt(extraReceived)}</td>
+              <td className="text-end fw-bold text-primary">{fmt(totalExtraReceived)}</td>
             </tr>
-
             <tr>
               <td>💸 Extra Paid</td>
-              <td className="text-end fw-bold text-primary">{fmt(extraPaid)}</td>
+              <td className="text-end fw-bold text-primary">{fmt(totalExtraPaid)}</td>
             </tr>
-
             <tr className="table-light fw-bold">
               <td>
                 🔄 Net Position
