@@ -92,7 +92,7 @@ export default function PackagesView({ id, onNavigate }) {
             borderRadius: 10,
             padding: "6px 16px",
           }}
-          onClick={() => onNavigate("packagesList")}
+          onClick={() => onNavigate("AllReports")}
         >
           ← Back
         </button>
@@ -267,5 +267,6 @@ export default function PackagesView({ id, onNavigate }) {
     </div>
   );
 }
+
 
 
