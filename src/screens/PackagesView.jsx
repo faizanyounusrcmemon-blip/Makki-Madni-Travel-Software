@@ -165,64 +165,6 @@ export default function PackagesView({ id, onNavigate }) {
 
         <hr />
 
-        {/* ===== SUMMARY TABLE ===== */}
-        <h6 className="section-title">📊 Summary</h6>
-        <table className="table table-sm mb-4">
-          <thead>
-            <tr>
-              <th>Item</th>
-              <th>SAR</th>
-              <th>Rate</th>
-              <th>PKR</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>Flight</td>
-              <td>{flightTotal.toLocaleString()}</td>
-              <td>{rate.flight}</td>
-              <td className="fw-bold">{flightPKR.toLocaleString()}</td>
-            </tr>
-            <tr>
-              <td>Hotels</td>
-              <td>{hotelsTotal.toLocaleString()}</td>
-              <td>{rate.hotels}</td>
-              <td className="fw-bold">{hotelsPKR.toLocaleString()}</td>
-            </tr>
-            <tr>
-              <td>Visa</td>
-              <td>{visaTotal.toLocaleString()}</td>
-              <td>{rate.visa}</td>
-              <td className="fw-bold">{visaPKR.toLocaleString()}</td>
-            </tr>
-            <tr>
-              <td>Transport</td>
-              <td>{transportTotal.toLocaleString()}</td>
-              <td>{rate.transport}</td>
-              <td className="fw-bold">{transportPKR.toLocaleString()}</td>
-            </tr>
-            <tr>
-              <td>Ziyarat</td>
-              <td>{ziyaratTotal.toLocaleString()}</td>
-              <td>{rate.ziyarat}</td>
-              <td className="fw-bold">{ziyaratPKR.toLocaleString()}</td>
-            </tr>
-            <tr className="table-info">
-              <td className="fw-bold">Grand Total PKR</td>
-              <td></td>
-              <td></td>
-              <td className="fw-bold">{grandPKR.toLocaleString()}</td>
-            </tr>
-            <tr style={{ background: "#f1f1f1" }}>
-              <td className="fw-bold">Per Person</td>
-              <td>{personQty}</td>
-              <td></td>
-              <td className="fw-bold">{perPerson.toLocaleString()}</td>
-            </tr>
-          </tbody>
-        </table>
-
-        <hr />
 
         {/* ===== FLIGHTS ===== */}
         <h5 className="fw-bold text-primary mb-2">✈️ Flight</h5>
@@ -322,6 +264,65 @@ export default function PackagesView({ id, onNavigate }) {
         </p>
 
         <hr />
+                {/* ===== SUMMARY TABLE ===== */}
+        <h6 className="section-title">📊 Summary</h6>
+        <table className="table table-sm mb-4">
+          <thead>
+            <tr>
+              <th>Item</th>
+              <th>SAR</th>
+              <th>Rate</th>
+              <th>PKR</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Flight</td>
+              <td>{flightTotal.toLocaleString()}</td>
+              <td>{rate.flight}</td>
+              <td className="fw-bold">{flightPKR.toLocaleString()}</td>
+            </tr>
+            <tr>
+              <td>Hotels</td>
+              <td>{hotelsTotal.toLocaleString()}</td>
+              <td>{rate.hotels}</td>
+              <td className="fw-bold">{hotelsPKR.toLocaleString()}</td>
+            </tr>
+            <tr>
+              <td>Visa</td>
+              <td>{visaTotal.toLocaleString()}</td>
+              <td>{rate.visa}</td>
+              <td className="fw-bold">{visaPKR.toLocaleString()}</td>
+            </tr>
+            <tr>
+              <td>Transport</td>
+              <td>{transportTotal.toLocaleString()}</td>
+              <td>{rate.transport}</td>
+              <td className="fw-bold">{transportPKR.toLocaleString()}</td>
+            </tr>
+            <tr>
+              <td>Ziyarat</td>
+              <td>{ziyaratTotal.toLocaleString()}</td>
+              <td>{rate.ziyarat}</td>
+              <td className="fw-bold">{ziyaratPKR.toLocaleString()}</td>
+            </tr>
+            <tr className="table-info">
+              <td className="fw-bold">Grand Total PKR</td>
+              <td></td>
+              <td></td>
+              <td className="fw-bold">{grandPKR.toLocaleString()}</td>
+            </tr>
+            <tr style={{ background: "#f1f1f1" }}>
+              <td className="fw-bold">Per Person</td>
+              <td>{personQty}</td>
+              <td></td>
+              <td className="fw-bold">{perPerson.toLocaleString()}</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <hr />
+
 
         <h4 className="fw-bold text-end text-success">
           NET PKR TOTAL: {grandPKR.toLocaleString()}
@@ -339,3 +340,4 @@ export default function PackagesView({ id, onNavigate }) {
     </div>
   );
 }
+
