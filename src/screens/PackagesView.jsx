@@ -87,11 +87,11 @@ export default function PackagesView({ id, onNavigate }) {
   const ziyaratTotal = Number(data.ziyarat_sar_total || 0);
 
   const rate = {
-    flight: Number(data.flight_sar_total || 0),
-    hotels: Number(data.hotel_sar_total || 0),
-    visa: Number(data.visa_sar_total || 0),
-    transport: Number(data.transport_sar_total || 0),
-    ziyarat: Number(data.ziyarat_sar_total || 0),
+    flight: Number(data.flight_sar_rate || 0),
+    hotels: Number(data.hotel_sar_rate || 0),
+    visa: Number(data.visa_sar_rate || 0),
+    transport: Number(data.transport_sar_rate || 0),
+    ziyarat: Number(data.ziyarat_sar_rate || 0),
   };
 
   const flightPKR = flightTotal * rate.flight;
@@ -340,5 +340,6 @@ export default function PackagesView({ id, onNavigate }) {
     </div>
   );
 }
+
 
 
