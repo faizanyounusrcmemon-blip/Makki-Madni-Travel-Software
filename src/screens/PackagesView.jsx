@@ -81,36 +81,6 @@ export default function PackagesView({ id, onNavigate }) {
 
   return (
     <div className="container mt-3 mb-5">
-      
-
-  // ================= CALCULATE TOTALS =================
-  const flightTotal = Number(data.flight_sar_total || 0);
-  const hotelsTotal = Number(data.hotel_sar_total || 0);
-  const visaTotal = Number(data.visa_sar_total || 0);
-  const transportTotal = Number(data.transport_sar_total || 0);
-  const ziyaratTotal = Number(data.ziyarat_sar_total || 0);
-
-  const rate = {
-    flight: Number(data.flight_sar_rate || 0),
-    hotels: Number(data.hotel_sar_rate || 0),
-    visa: Number(data.visa_sar_rate || 0),
-    transport: Number(data.transport_sar_rate || 0),
-    ziyarat: Number(data.ziyarat_sar_rate || 0),
-  };
-
-  const flightPKR = flightTotal * rate.flight;
-  const hotelsPKR = hotelsTotal * rate.hotels;
-  const visaPKR = visaTotal * rate.visa;
-  const transportPKR = transportTotal * rate.transport;
-  const ziyaratPKR = ziyaratTotal * rate.ziyarat;
-
-  const grandPKR = flightPKR + hotelsPKR + visaPKR + transportPKR + ziyaratPKR;
-
-  const personQty = Number(data.per_person_qty || 0);
-  const perPerson = grandPKR / personQty;
-
-  return (
-    <div className="container mt-3 mb-5">
 
       {/* ============ TOP ACTIONS ============ */}
       <div className="d-flex justify-content-start mb-3 gap-2 flex-wrap">
@@ -141,7 +111,7 @@ export default function PackagesView({ id, onNavigate }) {
         className="bg-white p-4 rounded-4 shadow-lg"
         style={{ maxWidth: "800px", margin: "auto", fontFamily: "Arial, sans-serif" }}
       >
-        {/* ===== HEADER ===== */}
+              {/* ===== HEADER ===== */}
         <div
           className="rounded-4 p-3 mb-4 text-white shadow"
           style={{
@@ -158,6 +128,37 @@ export default function PackagesView({ id, onNavigate }) {
           </div>
           <hr style={{ margin: "8px 0", borderTop: "2px solid #fff" }} />
         </div>
+        
+
+  // ================= CALCULATE TOTALS =================
+  const flightTotal = Number(data.flight_sar_total || 0);
+  const hotelsTotal = Number(data.hotel_sar_total || 0);
+  const visaTotal = Number(data.visa_sar_total || 0);
+  const transportTotal = Number(data.transport_sar_total || 0);
+  const ziyaratTotal = Number(data.ziyarat_sar_total || 0);
+
+  const rate = {
+    flight: Number(data.flight_sar_rate || 0),
+    hotels: Number(data.hotel_sar_rate || 0),
+    visa: Number(data.visa_sar_rate || 0),
+    transport: Number(data.transport_sar_rate || 0),
+    ziyarat: Number(data.ziyarat_sar_rate || 0),
+  };
+
+  const flightPKR = flightTotal * rate.flight;
+  const hotelsPKR = hotelsTotal * rate.hotels;
+  const visaPKR = visaTotal * rate.visa;
+  const transportPKR = transportTotal * rate.transport;
+  const ziyaratPKR = ziyaratTotal * rate.ziyarat;
+
+  const grandPKR = flightPKR + hotelsPKR + visaPKR + transportPKR + ziyaratPKR;
+
+  const personQty = Number(data.per_person_qty || 0);
+  const perPerson = grandPKR / personQty;
+
+  return (
+    <div className="container mt-3 mb-5">
+
 
         {/* ===== PACKAGE INFO ===== */}
         <div className="mb-3">
@@ -339,5 +340,6 @@ export default function PackagesView({ id, onNavigate }) {
     </div>
   );
 }
+
 
 
