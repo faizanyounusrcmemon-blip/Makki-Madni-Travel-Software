@@ -78,7 +78,7 @@ export default function Login({ onLogin }) {
             onClick={submit}
             disabled={loading}
           >
-            {loading ? "Logging in..." : "Login"}
+            {loading ? "🔑 Logging in..." : "🔑 Login"}
           </button>
 
           <button className="btn cancel-btn" onClick={cancel}>
@@ -186,3 +186,4 @@ export default function Login({ onLogin }) {
     </div>
   );
 }
+
