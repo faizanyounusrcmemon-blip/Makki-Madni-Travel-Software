@@ -80,13 +80,18 @@ export default function PackagesView({ id, onNavigate }) {
   if (!data) return <div className="p-4">Loading...</div>;
 
   return (
-    <div className="container mt-3">
-      <button
-        className="btn btn-secondary btn-sm mb-2"
-        onClick={() => onNavigate("allreports")}
-      >
-        ⬅ Back
-      </button>
+    <button
+      className="btn btn-sm fw-semibold text-white shadow"
+      style={{
+        background: "linear-gradient(135deg,#000,#434343)",
+        border: "none",
+        borderRadius: 10,
+        padding: "6px 16px"
+      }}
+      onClick={() => onNavigate("purchaseList")}
+    >
+      ← Back
+    </button>
 
       <button
         className="btn btn-success btn-sm mb-2 ms-2"
@@ -256,3 +261,4 @@ export default function PackagesView({ id, onNavigate }) {
     </div>
   );
 }
+
