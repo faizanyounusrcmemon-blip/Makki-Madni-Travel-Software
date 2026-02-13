@@ -34,14 +34,9 @@ export default function BalanceSheet({ onNavigate }) {
     );
   if (!data) return null;
 
-  /* ================= FILTER ================= */
-  const customerRows = data.customers
-    .filter((r) => r.balance > 0)
-    .sort((a, b) => b.balance - a.balance);
-
-  const supplierRows = data.suppliers
-    .filter((r) => r.balance > 0)
-    .sort((a, b) => b.balance - a.balance);
+  /* ================= ALL RECORDS SHOW ================= */
+  const customerRows = data.customers || [];
+  const supplierRows = data.suppliers || [];
 
   /* ================= TOTALS ================= */
   const customerTotals = customerRows.reduce(
@@ -66,14 +61,25 @@ export default function BalanceSheet({ onNavigate }) {
 
   const netPosition = customerTotals.balance - supplierTotals.balance;
 
-  /* ================= STATUS LOGIC ================= */
+  /* ================= STATUS BADGE ================= */
   const getStatusBadge = (status) => {
     if (!status) return <span className="badge bg-secondary">UNKNOWN</span>;
+
     const s = status.toUpperCase();
+
     if (s === "PENDING") return <span className="badge bg-danger">{s}</span>;
     if (s === "PARTIAL") return <span className="badge bg-warning text-dark">{s}</span>;
     if (s === "PAID") return <span className="badge bg-success">{s}</span>;
+    if (s === "EXTRA PAID") return <span className="badge bg-primary">{s}</span>;
+
     return <span className="badge bg-secondary">{s}</span>;
+  };
+
+  /* ================= BALANCE COLOR ================= */
+  const balanceColor = (bal, type) => {
+    if (bal < 0) return "text-primary"; // extra paid
+    if (type === "customer") return "text-success";
+    return "text-danger";
   };
 
   return (
@@ -108,7 +114,7 @@ export default function BalanceSheet({ onNavigate }) {
         </div>
       </div>
 
-      {/* ================= CUSTOMER RECEIVABLE ================= */}
+      {/* ================= CUSTOMER ================= */}
       <div className="card shadow-sm mb-4">
         <div className="card-header bg-white fw-bold text-success">
           💰 Customer Receivable
@@ -134,25 +140,18 @@ export default function BalanceSheet({ onNavigate }) {
                   <td className="fw-semibold">{r.customer_name || "-"}</td>
                   <td className="text-end">{fmt(r.sale_total)}</td>
                   <td className="text-end">{fmt(r.received)}</td>
-                  <td className="text-end text-success fw-bold">{fmt(r.balance)}</td>
+                  <td className={`text-end fw-bold ${balanceColor(r.balance, "customer")}`}>
+                    {fmt(r.balance)}
+                  </td>
                   <td className="text-center">{getStatusBadge(r.status)}</td>
                 </tr>
               ))}
-              {customerRows.length > 0 && (
-                <tr className="table-secondary fw-bold">
-                  <td colSpan="3" className="text-end">TOTAL</td>
-                  <td className="text-end">{fmt(customerTotals.sale)}</td>
-                  <td className="text-end">{fmt(customerTotals.received)}</td>
-                  <td className="text-end text-success">{fmt(customerTotals.balance)}</td>
-                  <td></td>
-                </tr>
-              )}
             </tbody>
           </table>
         </div>
       </div>
 
-      {/* ================= SUPPLIER PAYABLE ================= */}
+      {/* ================= SUPPLIER ================= */}
       <div className="card shadow-sm mb-4">
         <div className="card-header bg-white fw-bold text-danger">
           📦 Supplier Payable / Ledger
@@ -178,19 +177,12 @@ export default function BalanceSheet({ onNavigate }) {
                   <td className="fw-semibold">{r.supplier_name || "-"}</td>
                   <td className="text-end">{fmt(r.purchase_total)}</td>
                   <td className="text-end">{fmt(r.paid)}</td>
-                  <td className="text-end text-danger fw-bold">{fmt(r.balance)}</td>
+                  <td className={`text-end fw-bold ${balanceColor(r.balance, "supplier")}`}>
+                    {fmt(r.balance)}
+                  </td>
                   <td className="text-center">{getStatusBadge(r.status)}</td>
                 </tr>
               ))}
-              {supplierRows.length > 0 && (
-                <tr className="table-secondary fw-bold">
-                  <td colSpan="3" className="text-end">TOTAL</td>
-                  <td className="text-end">{fmt(supplierTotals.purchase)}</td>
-                  <td className="text-end">{fmt(supplierTotals.paid)}</td>
-                  <td className="text-end text-danger">{fmt(supplierTotals.balance)}</td>
-                  <td></td>
-                </tr>
-              )}
             </tbody>
           </table>
         </div>
@@ -205,12 +197,32 @@ export default function BalanceSheet({ onNavigate }) {
           <tbody>
             <tr>
               <td>💰 Customer Receivable</td>
-              <td className="text-end fw-bold text-success">{fmt(customerTotals.balance)}</td>
+              <td className="text-end fw-bold text-success">
+                {fmt(data.summary?.total_receivable)}
+              </td>
             </tr>
+
             <tr>
               <td>📦 Supplier Payable</td>
-              <td className="text-end fw-bold text-danger">{fmt(supplierTotals.balance)}</td>
+              <td className="text-end fw-bold text-danger">
+                {fmt(data.summary?.total_payable)}
+              </td>
             </tr>
+
+            <tr>
+              <td>💎 Extra Received (Customers)</td>
+              <td className="text-end fw-bold text-primary">
+                {fmt(data.summary?.total_extra_received)}
+              </td>
+            </tr>
+
+            <tr>
+              <td>💸 Extra Paid (Suppliers)</td>
+              <td className="text-end fw-bold text-primary">
+                {fmt(data.summary?.total_extra_paid)}
+              </td>
+            </tr>
+
             <tr className="table-light fw-bold">
               <td>
                 🔄 Net Position
