@@ -68,13 +68,18 @@ export default function PurchaseDetail({ refNo, onNavigate }) {
   /* ================= ERROR ================= */
   if (error) {
     return (
-      <div className="container py-4">
-        <button
-          className="btn btn-outline-secondary btn-sm mb-3"
-          onClick={() => onNavigate("purchaseList")}
-        >
-          ← Back
-        </button>
+      <button
+        className="btn btn-sm fw-semibold text-white shadow"
+        style={{
+          background: "linear-gradient(135deg,#000,#434343)",
+          border: "none",
+          borderRadius: 10,
+          padding: "6px 16px"
+        }}
+        onClick={() => onNavigate("purchaseList")}
+      >
+        ← Back
+      </button>
         <div className="alert alert-danger shadow-sm">{error}</div>
       </div>
     );
@@ -217,3 +222,4 @@ export default function PurchaseDetail({ refNo, onNavigate }) {
     </div>
   );
 }
+
