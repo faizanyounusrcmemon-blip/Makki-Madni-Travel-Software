@@ -86,7 +86,7 @@ export default function Dashboard({ onNavigate }) {
       {/* HEADER */}
       <div className="dashboard-header">
         <h2>✈️ Makki Madni Travel</h2>
-        <i>Travel Management Dashboard</i>
+        <i>🌏 Travel Management Dashboard 🌏</i>
       </div>
 
       {/* TOP BAR */}
@@ -144,4 +144,5 @@ export default function Dashboard({ onNavigate }) {
     </div>
   );
 }
+
 
