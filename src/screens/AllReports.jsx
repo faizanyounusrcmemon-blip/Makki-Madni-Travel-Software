@@ -241,7 +241,7 @@ export default function AllReports({ onNavigate }) {
                       className="btn btn-outline-info btn-sm"
                       onClick={() => handleView(r.type, r.ref_no)}
                     >
-                      VIEW
+                      👁️ VIEW
                     </button>
                   </td>
 
@@ -250,7 +250,7 @@ export default function AllReports({ onNavigate }) {
                       className="btn btn-outline-danger btn-sm"
                       onClick={() => handleDelete(r.type, r.ref_no, r.customer_name)}
                     >
-                      DELETE
+                      🗑 DELETE
                     </button>
                   </td>
                 </tr>
@@ -280,6 +280,7 @@ export default function AllReports({ onNavigate }) {
     </div>
   );
 }
+
 
 
 
