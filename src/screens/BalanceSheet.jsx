@@ -4,6 +4,15 @@ import React, { useEffect, useState } from "react";
 const fmt = (v) =>
   Number(v || 0).toLocaleString("en-US", { maximumFractionDigits: 0 });
 
+/* ================= ROUNDING TOLERANCE ================= */
+const EPS = 1; // 1 rupee ignore
+
+/* normalize balance */
+const cleanBalance = (v) => {
+  const n = Number(v || 0);
+  return Math.abs(n) <= EPS ? 0 : n;
+};
+
 export default function BalanceSheet({ onNavigate }) {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -34,9 +43,16 @@ export default function BalanceSheet({ onNavigate }) {
     );
   if (!data) return null;
 
-  /* ================= ALL RECORDS SHOW ================= */
-  const customerRows = data.customers || [];
-  const supplierRows = data.suppliers || [];
+  /* ================= CLEAN + FILTER ================= */
+  const customerRows = (data.customers || [])
+    .map(r => ({ ...r, balance: cleanBalance(r.balance) }))
+    .filter(r => r.balance !== 0) // PAID hide
+    .sort((a, b) => b.balance - a.balance);
+
+  const supplierRows = (data.suppliers || [])
+    .map(r => ({ ...r, balance: cleanBalance(r.balance) }))
+    .filter(r => r.balance !== 0)
+    .sort((a, b) => b.balance - a.balance);
 
   /* ================= TOTALS ================= */
   const customerTotals = customerRows.reduce(
@@ -61,18 +77,16 @@ export default function BalanceSheet({ onNavigate }) {
 
   const netPosition = customerTotals.balance - supplierTotals.balance;
 
-  /* ================= STATUS BADGE ================= */
+  /* ================= STATUS ================= */
   const getStatusBadge = (status) => {
-    if (!status) return <span className="badge bg-secondary">UNKNOWN</span>;
+    if (!status) return null;
 
     const s = status.toUpperCase();
-
-    if (s === "PENDING") return <span className="badge bg-danger">{s}</span>;
-    if (s === "PARTIAL") return <span className="badge bg-warning text-dark">{s}</span>;
-    if (s === "PAID") return <span className="badge bg-success">{s}</span>;
     if (s === "EXTRA PAID") return <span className="badge bg-primary">{s}</span>;
+    if (s === "PARTIAL") return <span className="badge bg-warning text-dark">{s}</span>;
+    if (s === "PENDING") return <span className="badge bg-danger">{s}</span>;
 
-    return <span className="badge bg-secondary">{s}</span>;
+    return null; // PAID hide
   };
 
   /* ================= BALANCE COLOR ================= */
@@ -91,20 +105,7 @@ export default function BalanceSheet({ onNavigate }) {
         style={{ background: "linear-gradient(90deg, #2563eb, #06b6d4)" }}
       >
         <div className="d-flex justify-content-between align-items-center">
-          <div className="d-flex align-items-center gap-3">
-            <div
-              className="d-flex align-items-center justify-content-center rounded-circle"
-              style={{ width: 48, height: 48, background: "rgba(255,255,255,0.2)", fontSize: 22 }}
-            >
-              📊
-            </div>
-            <div>
-              <h4 className="mb-1 fw-bold">Balance Sheet</h4>
-              <small className="opacity-75">
-                Receivable, Payable & Supplier Ledger Summary
-              </small>
-            </div>
-          </div>
+          <h4 className="mb-0 fw-bold">Balance Sheet</h4>
           <button
             className="btn btn-light btn-sm fw-semibold"
             onClick={() => onNavigate("dashboard")}
@@ -129,7 +130,7 @@ export default function BalanceSheet({ onNavigate }) {
                 <th className="text-end">Total Sale</th>
                 <th className="text-end">Received</th>
                 <th className="text-end">Balance</th>
-                <th className="text-center">Status</th>
+                <th>Status</th>
               </tr>
             </thead>
             <tbody>
@@ -140,10 +141,10 @@ export default function BalanceSheet({ onNavigate }) {
                   <td className="fw-semibold">{r.customer_name || "-"}</td>
                   <td className="text-end">{fmt(r.sale_total)}</td>
                   <td className="text-end">{fmt(r.received)}</td>
-                  <td className={`text-end fw-bold ${balanceColor(r.balance, "customer")}`}>
+                  <td className={`text-end fw-bold ${balanceColor(r.balance,"customer")}`}>
                     {fmt(r.balance)}
                   </td>
-                  <td className="text-center">{getStatusBadge(r.status)}</td>
+                  <td>{getStatusBadge(r.status)}</td>
                 </tr>
               ))}
             </tbody>
@@ -154,7 +155,7 @@ export default function BalanceSheet({ onNavigate }) {
       {/* ================= SUPPLIER ================= */}
       <div className="card shadow-sm mb-4">
         <div className="card-header bg-white fw-bold text-danger">
-          📦 Supplier Payable / Ledger
+          📦 Supplier Payable
         </div>
         <div className="table-responsive">
           <table className="table table-hover mb-0">
@@ -166,7 +167,7 @@ export default function BalanceSheet({ onNavigate }) {
                 <th className="text-end">Total Purchase</th>
                 <th className="text-end">Paid</th>
                 <th className="text-end">Balance</th>
-                <th className="text-center">Status</th>
+                <th>Status</th>
               </tr>
             </thead>
             <tbody>
@@ -177,10 +178,10 @@ export default function BalanceSheet({ onNavigate }) {
                   <td className="fw-semibold">{r.supplier_name || "-"}</td>
                   <td className="text-end">{fmt(r.purchase_total)}</td>
                   <td className="text-end">{fmt(r.paid)}</td>
-                  <td className={`text-end fw-bold ${balanceColor(r.balance, "supplier")}`}>
+                  <td className={`text-end fw-bold ${balanceColor(r.balance,"supplier")}`}>
                     {fmt(r.balance)}
                   </td>
-                  <td className="text-center">{getStatusBadge(r.status)}</td>
+                  <td>{getStatusBadge(r.status)}</td>
                 </tr>
               ))}
             </tbody>
@@ -196,41 +197,19 @@ export default function BalanceSheet({ onNavigate }) {
         <table className="table mb-0">
           <tbody>
             <tr>
-              <td>💰 Customer Receivable</td>
+              <td>Customer Receivable</td>
               <td className="text-end fw-bold text-success">
-                {fmt(data.summary?.total_receivable)}
+                {fmt(customerTotals.balance)}
               </td>
             </tr>
-
             <tr>
-              <td>📦 Supplier Payable</td>
+              <td>Supplier Payable</td>
               <td className="text-end fw-bold text-danger">
-                {fmt(data.summary?.total_payable)}
+                {fmt(supplierTotals.balance)}
               </td>
             </tr>
-
-            <tr>
-              <td>💎 Extra Received (Customers)</td>
-              <td className="text-end fw-bold text-primary">
-                {fmt(data.summary?.total_extra_received)}
-              </td>
-            </tr>
-
-            <tr>
-              <td>💸 Extra Paid (Suppliers)</td>
-              <td className="text-end fw-bold text-primary">
-                {fmt(data.summary?.total_extra_paid)}
-              </td>
-            </tr>
-
             <tr className="table-light fw-bold">
-              <td>
-                🔄 Net Position
-                <br />
-                <small className="text-muted">
-                  {netPosition >= 0 ? "Aap lene wale ho" : "Aap dene wale ho"}
-                </small>
-              </td>
+              <td>Net Position</td>
               <td className={`text-end ${netPosition >= 0 ? "text-success" : "text-danger"}`}>
                 {fmt(Math.abs(netPosition))}
               </td>
