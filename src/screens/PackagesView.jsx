@@ -46,12 +46,13 @@ export default function PackagesView({ id, onNavigate }) {
     const element = ref.current;
 
     const canvas = await html2canvas(element, {
-      scale: 3,
+      scale: 2,
       useCORS: true,
-      scrollY: -window.scrollY,
-      windowWidth: element.scrollWidth,
-      windowHeight: element.scrollHeight,
+      allowTaint: true,
+      scrollY: -window.scrollY
     });
+
+    const imgData = canvas.toDataURL("image/jpeg", 1);
 
     const pdf = new jsPDF("p", "mm", "a4");
 
@@ -59,48 +60,24 @@ export default function PackagesView({ id, onNavigate }) {
     const pageHeight = pdf.internal.pageSize.getHeight();
 
     const imgWidth = pageWidth;
-    const imgHeight = (canvas.height * imgWidth) / canvas.width;
+    const imgHeight = canvas.height * imgWidth / canvas.width;
 
-    const totalPages = Math.ceil(imgHeight / pageHeight);
+    let position = 0;
+    let remainingHeight = imgHeight;
 
-    const pageCanvas = document.createElement("canvas");
-    const pageCtx = pageCanvas.getContext("2d");
+    // FIRST PAGE
+    pdf.addImage(imgData, "JPEG", 0, position, imgWidth, imgHeight);
+    remainingHeight -= pageHeight;
 
-    const pageHeightPx = (canvas.width * pageHeight) / pageWidth;
-
-    pageCanvas.width = canvas.width;
-    pageCanvas.height = pageHeightPx;
-
-    let renderedHeight = 0;
-
-    for (let page = 0; page < totalPages; page++) {
-      pageCtx.clearRect(0, 0, pageCanvas.width, pageCanvas.height);
-
-      pageCtx.drawImage(
-        canvas,
-        0,
-        renderedHeight,
-        canvas.width,
-        pageHeightPx,
-        0,
-        0,
-        canvas.width,
-        pageHeightPx
-      );
-
-      const imgData = pageCanvas.toDataURL("image/jpeg", 1.0);
-
-      if (page > 0) pdf.addPage();
-      pdf.addImage(imgData, "JPEG", 0, 0, imgWidth, pageHeight);
-
-      renderedHeight += pageHeightPx;
+    // MORE PAGES
+    while (remainingHeight > 0) {
+      position = -(imgHeight - remainingHeight);
+      pdf.addPage();
+      pdf.addImage(imgData, "JPEG", 0, position, imgWidth, imgHeight);
+      remainingHeight -= pageHeight;
     }
 
-    const fileName = `${cleanName(data?.customer_name)}_${formatDateForFile(
-      data?.booking_date
-    )}.pdf`;
-
-    pdf.save(fileName);
+    pdf.save("package.pdf");
   };
 
   if (!data) return <div className="p-4">Loading...</div>;
@@ -222,9 +199,7 @@ export default function PackagesView({ id, onNavigate }) {
         <h5 className="fw-bold text-success mb-2">🏨 Hotels</h5>
         {Array.isArray(data.hotels) && data.hotels.length > 0 ? (
           data.hotels.map((h, i) => (
-            <div
-              key={i}
-              className="border p-2 rounded mb-2 shadow-sm"
+            <div key={i} className="pdf-no-break border p-2 rounded mb-2 shadow-sm">
               style={{ pageBreakInside: "avoid" }}
             >
               <b>{h.hotel}</b> — {h.location}<br />
@@ -246,9 +221,7 @@ export default function PackagesView({ id, onNavigate }) {
         <h5 className="fw-bold text-warning mb-2">🛂 Visa</h5>
         {Array.isArray(data.visa) && data.visa.length > 0 ? (
           data.visa.map((v, i) => (
-            <div
-              key={i}
-              className="border p-2 rounded mb-1 shadow-sm"
+            <div key={i} className="pdf-no-break border p-2 rounded mb-1 shadow-sm">
               style={{ pageBreakInside: "avoid" }}
             >
               {v.type || "Visa"} — {v.persons} × {v.rate} = {v.total}
@@ -267,9 +240,7 @@ export default function PackagesView({ id, onNavigate }) {
         <h5 className="fw-bold text-danger mb-2">🚐 Transport</h5>
         {Array.isArray(data.transport) && data.transport.length > 0 ? (
           data.transport.map((t, i) => (
-            <div
-              key={i}
-              className="border p-2 rounded mb-1 shadow-sm"
+            <div key={i} className="pdf-no-break border p-2 rounded mb-1 shadow-sm">
               style={{ pageBreakInside: "avoid" }}
             >
               {t.text} — {Number(t.amount || 0).toLocaleString()}
@@ -288,9 +259,7 @@ export default function PackagesView({ id, onNavigate }) {
         <h5 className="fw-bold text-purple mb-2">🕌 Ziyarat</h5>
         {Array.isArray(data.ziyarat) && data.ziyarat.length > 0 ? (
           data.ziyarat.map((z, i) => (
-            <div
-              key={i}
-              className="border p-2 rounded mb-1 shadow-sm"
+            <div key={i} className="pdf-no-break border p-2 rounded mb-1 shadow-sm">
               style={{ pageBreakInside: "avoid" }}
             >
               {z.text || z.route || z.description} — {Number(z.amount || 0).toLocaleString()}
@@ -384,4 +353,5 @@ export default function PackagesView({ id, onNavigate }) {
     </div>
   );
 }
+
 
