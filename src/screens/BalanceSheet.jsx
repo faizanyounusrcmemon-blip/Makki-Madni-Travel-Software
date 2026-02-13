@@ -74,6 +74,14 @@ export default function BalanceSheet({ onNavigate }) {
     },
     { purchase: 0, paid: 0, balance: 0 }
   );
+  /* ================= ROUNDING IGNORE ================= */
+  const EPS = 1; // 1 rupee ignore
+
+  const clean = (v) => {
+    const n = Number(v || 0);
+    return Math.abs(n) <= EPS ? 0 : n;
+  };
+
 
   const netPosition = customerTotals.balance - supplierTotals.balance;
 
@@ -190,56 +198,55 @@ export default function BalanceSheet({ onNavigate }) {
       </div>
 
       {/* ================= SUMMARY ================= */}
-      <div className="card shadow-sm">
-        <div className="card-header bg-white fw-bold text-primary">
-          📌 Summary
-        </div>
-        <table className="table mb-0">
-          <tbody>
-            <tr>
-              <td>💰 Customer Receivable</td>
-              <td className="text-end fw-bold text-success">
-                {fmt(data.summary?.total_receivable)}
-              </td>
-            </tr>
+     <div className="card shadow-sm">
+       <div className="card-header bg-white fw-bold text-primary">
+         📌 Summary
+       </div>
+       <table className="table mb-0">
+         <tbody>
+           <tr>
+             <td>💰 Customer Receivable</td>
+             <td className="text-end fw-bold text-success">
+               {fmt(clean(data.summary?.total_receivable))}
+             </td>
+           </tr>
 
-            <tr>
-              <td>📦 Supplier Payable</td>
-              <td className="text-end fw-bold text-danger">
-                {fmt(data.summary?.total_payable)}
-              </td>
-            </tr>
+           <tr>
+             <td>📦 Supplier Payable</td>
+             <td className="text-end fw-bold text-danger">
+               {fmt(clean(data.summary?.total_payable))}
+             </td>
+           </tr>
 
-            <tr>
-              <td>💎 Extra Received (Customers)</td>
-              <td className="text-end fw-bold text-primary">
-                {fmt(data.summary?.total_extra_received)}
-              </td>
-            </tr>
+           <tr>
+             <td>💎 Extra Received (Customers)</td>
+             <td className="text-end fw-bold text-primary">
+               {fmt(clean(data.summary?.total_extra_received))}
+             </td>
+           </tr>
 
-            <tr>
-              <td>💸 Extra Paid (Suppliers)</td>
-              <td className="text-end fw-bold text-primary">
-                {fmt(data.summary?.total_extra_paid)}
-              </td>
-            </tr>
+           <tr>
+             <td>💸 Extra Paid (Suppliers)</td>
+             <td className="text-end fw-bold text-primary">
+               {fmt(clean(data.summary?.total_extra_paid))}
+             </td>
+           </tr>
 
-            <tr className="table-light fw-bold">
-              <td>
-                🔄 Net Position
-                <br />
-                <small className="text-muted">
-                  {netPosition >= 0 ? "Aap lene wale ho" : "Aap dene wale ho"}
-                </small>
-              </td>
-              <td className={`text-end ${netPosition >= 0 ? "text-success" : "text-danger"}`}>
-                {fmt(Math.abs(netPosition))}
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-
-    </div>
+           <tr className="table-light fw-bold">
+             <td>
+               🔄 Net Position
+               <br />
+               <small className="text-muted">
+                 {netPosition >= 0 ? "Aap lene wale ho" : "Aap dene wale ho"}
+               </small>
+             </td>
+             <td className={`text-end ${netPosition >= 0 ? "text-success" : "text-danger"}`}>
+               {fmt(Math.abs(clean(netPosition)))}
+             </td>
+           </tr>
+         </tbody>
+       </table>
+     </div>
+   </div>
   );
 }
