@@ -82,7 +82,7 @@ export default function Login({ onLogin }) {
           </button>
 
           <button className="btn cancel-btn" onClick={cancel}>
-            Cancel
+            ❌ Cancel
           </button>
         </div>
       </div>
@@ -186,4 +186,5 @@ export default function Login({ onLogin }) {
     </div>
   );
 }
+
 
