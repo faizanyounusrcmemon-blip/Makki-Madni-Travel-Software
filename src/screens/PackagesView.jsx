@@ -90,7 +90,7 @@ export default function PackagesView({ id, onNavigate }) {
   const flightRate = Number(data.flight_sar_rate || 0);
 
 
-  const rate = {
+  const sarrate = {
     flight: Number(data.flight_sar_rate || 0),
     hotels: Number(data.hotel_sar_rate || 0),
     visa: Number(data.visa_sar_rate || 0),
@@ -340,6 +340,7 @@ export default function PackagesView({ id, onNavigate }) {
     </div>
   );
 }
+
 
 
 
