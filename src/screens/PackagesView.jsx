@@ -87,7 +87,7 @@ export default function PackagesView({ id, onNavigate }) {
   const ziyaratTotal = Number(data.ziyarat_sar_total || 0);
 
   
-  const flightTotal = Number(data.flight_sar_rate || 0);
+  const flightRate = Number(data.flight_sar_rate || 0);
 
 
   const rate = {
@@ -340,6 +340,7 @@ export default function PackagesView({ id, onNavigate }) {
     </div>
   );
 }
+
 
 
 
