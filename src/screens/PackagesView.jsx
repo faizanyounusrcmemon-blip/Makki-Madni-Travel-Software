@@ -324,19 +324,9 @@ export default function PackagesView({ id, onNavigate }) {
         <hr />
 
                 {/* TOTAL */}
-        <div className="text-end">
-          <div
-            className="d-inline-block px-4 py-2 rounded-3 shadow-sm"
-            style={{
-              background: "linear-gradient(135deg,#0d6efd,#00c6ff)",
-              color: "#fff",
-              fontSize: 18,
-              fontWeight: 700,
-            }}
-          >
-            NET PKR TOTAL: {Number(data.net_pkr_total || 0).toLocaleString()}
-
-
+        <h4 className="fw-bold text-end text-success">
+          NET PKR TOTAL: {grandPKR.toLocaleString()}
+        </h4>
 
 
         {/* FOOTER NOTE */}
@@ -351,6 +341,7 @@ export default function PackagesView({ id, onNavigate }) {
     </div>
   );
 }
+
 
 
 
