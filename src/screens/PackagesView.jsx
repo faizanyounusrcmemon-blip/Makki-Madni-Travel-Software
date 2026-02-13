@@ -196,7 +196,7 @@ export default function PackagesView({ id, onNavigate }) {
           data.hotels.map((h, i) => (
             <div key={i} className="border p-2 rounded mb-2 shadow-sm">
               <b>{h.hotel}</b> — {h.location}<br />
-              {fmtDate(h.checkIn)} → {fmtDate(h.checkOut)}<br />
+              Check In: {fmtDate(h.checkIn)} → Check Out: {fmtDate(h.checkOut)}<br />
               Nights: {h.nights}, Rooms: {h.rooms}, Type: {h.type}<br />
               Rate: {h.rate} — Total: {h.total}
             </div>
@@ -340,6 +340,7 @@ export default function PackagesView({ id, onNavigate }) {
     </div>
   );
 }
+
 
 
 
