@@ -167,7 +167,7 @@ export default function PackagesView({ id, onNavigate }) {
 
         {/* ===== SUMMARY TABLE ===== */}
         <h6 className="section-title">📊 Summary</h6>
-        <table className="table table-sm">
+        <table className="table table-sm mb-4">
           <thead>
             <tr>
               <th>Item</th>
@@ -221,6 +221,111 @@ export default function PackagesView({ id, onNavigate }) {
             </tr>
           </tbody>
         </table>
+
+        <hr />
+
+        {/* ===== FLIGHTS ===== */}
+        <h5 className="fw-bold text-primary mb-2">✈️ Flight</h5>
+        <div className="border p-2 rounded mb-2">
+          {Array.isArray(data.flights) && data.flights.length > 0 ? (
+            data.flights.map((f, i) => (
+              <div key={i} className="mb-1">
+                {fmtDate(f.date)} — {f.from} → {f.to}{" "}
+                {f.airline && <b>({f.airline})</b>}
+              </div>
+            ))
+          ) : (
+            <p>No flights</p>
+          )}
+        </div>
+        <p>
+          Adults: {data.adult_count} × {data.adult_rate} <br />
+          Child: {data.child_count} × {data.child_rate} <br />
+          Infant: {data.infant_count} × {data.infant_rate} <br />
+          <b>Flight SAR:</b> {flightTotal.toLocaleString()} <br />
+          <b>Flight PKR:</b> {flightPKR.toLocaleString()}
+        </p>
+
+        <hr />
+
+        {/* ===== HOTELS ===== */}
+        <h5 className="fw-bold text-success mb-2">🏨 Hotels</h5>
+        {Array.isArray(data.hotels) && data.hotels.length > 0 ? (
+          data.hotels.map((h, i) => (
+            <div key={i} className="border p-2 rounded mb-2 shadow-sm">
+              <b>{h.hotel}</b> — {h.location}<br />
+              {fmtDate(h.checkIn)} → {fmtDate(h.checkOut)}<br />
+              Nights: {h.nights}, Rooms: {h.rooms}, Type: {h.type}<br />
+              Rate: {h.rate} — Total: {h.total}
+            </div>
+          ))
+        ) : (
+          <p>No hotels</p>
+        )}
+        <p>
+          <b>Hotel SAR:</b> {hotelsTotal.toLocaleString()} <br />
+          <b>Hotel PKR:</b> {hotelsPKR.toLocaleString()}
+        </p>
+
+        <hr />
+
+        {/* ===== VISA ===== */}
+        <h5 className="fw-bold text-warning mb-2">🛂 Visa</h5>
+        {Array.isArray(data.visa) && data.visa.length > 0 ? (
+          data.visa.map((v, i) => (
+            <div key={i} className="border p-2 rounded mb-1 shadow-sm">
+              {v.type || "Visa"} — {v.persons} × {v.rate} = {v.total}
+            </div>
+          ))
+        ) : (
+          <p>No visa</p>
+        )}
+        <p>
+          <b>Visa SAR:</b> {visaTotal.toLocaleString()} <br />
+          <b>Visa PKR:</b> {visaPKR.toLocaleString()}
+        </p>
+
+        <hr />
+
+        {/* ===== TRANSPORT ===== */}
+        <h5 className="fw-bold text-danger mb-2">🚐 Transport</h5>
+        {Array.isArray(data.transport) && data.transport.length > 0 ? (
+          data.transport.map((t, i) => (
+            <div key={i} className="border p-2 rounded mb-1 shadow-sm">
+              {t.text} — {Number(t.amount || 0).toLocaleString()}
+            </div>
+          ))
+        ) : (
+          <p>No transport</p>
+        )}
+        <p>
+          <b>Transport SAR:</b> {transportTotal.toLocaleString()} <br />
+          <b>Transport PKR:</b> {transportPKR.toLocaleString()}
+        </p>
+
+        <hr />
+
+        {/* ===== ZIYARAT ===== */}
+        <h5 className="fw-bold text-purple mb-2">🕌 Ziyarat</h5>
+        {Array.isArray(data.ziyarat) && data.ziyarat.length > 0 ? (
+          data.ziyarat.map((z, i) => (
+            <div key={i} className="border p-2 rounded mb-1 shadow-sm">
+              {z.text || z.route || z.description} — {Number(z.amount || 0).toLocaleString()}
+            </div>
+          ))
+        ) : (
+          <p>No ziyarat</p>
+        )}
+        <p>
+          <b>Ziyarat SAR:</b> {ziyaratTotal.toLocaleString()} <br />
+          <b>Ziyarat PKR:</b> {ziyaratPKR.toLocaleString()}
+        </p>
+
+        <hr />
+
+        <h4 className="fw-bold text-end text-success">
+          NET PKR TOTAL: {grandPKR.toLocaleString()}
+        </h4>
 
         {/* FOOTER NOTE */}
         <div
