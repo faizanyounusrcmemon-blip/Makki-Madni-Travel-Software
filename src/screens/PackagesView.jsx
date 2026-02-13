@@ -87,7 +87,12 @@ export default function PackagesView({ id, onNavigate }) {
   const ziyaratTotal = Number(data.ziyarat_sar_total || 0);
 
   
-  const flightRate = Number(data.flight_sar_rate || 0);
+  const flightSarRate = Number(data.flight_sar_rate || 0);
+  const hotelsSarRate = Number(data.hotel_sar_rate || 0);
+  const visaSarRate = Number(data.visa_sar_rate || 0);
+  const transportSarRate = Number(data.transport_sar_rate || 0);
+  const ziyaratSarRate = Number(data.ziyarat_sar_rate || 0);
+
 
 
   const sarrate = {
@@ -211,6 +216,7 @@ export default function PackagesView({ id, onNavigate }) {
         )}
         <p>
           <b>Hotel SAR:</b> {hotelsTotal.toLocaleString()} <br />
+          <b>Hotel ROE:</b> {hotelsRate.toLocaleString()} <br />
           <b>Hotel PKR:</b> {hotelsPKR.toLocaleString()}
         </p>
 
@@ -229,6 +235,7 @@ export default function PackagesView({ id, onNavigate }) {
         )}
         <p>
           <b>Visa SAR:</b> {visaTotal.toLocaleString()} <br />
+          <b>Visa ROE:</b> {visaRate.toLocaleString()} <br />
           <b>Visa PKR:</b> {visaPKR.toLocaleString()}
         </p>
 
@@ -247,6 +254,7 @@ export default function PackagesView({ id, onNavigate }) {
         )}
         <p>
           <b>Transport SAR:</b> {transportTotal.toLocaleString()} <br />
+          <b>Transport ROE:</b> {transportRate.toLocaleString()} <br />
           <b>Transport PKR:</b> {transportPKR.toLocaleString()}
         </p>
 
@@ -265,6 +273,7 @@ export default function PackagesView({ id, onNavigate }) {
         )}
         <p>
           <b>Ziyarat SAR:</b> {ziyaratTotal.toLocaleString()} <br />
+          <b>Ziyarat ROE:</b> {ziyaratRate.toLocaleString()} <br />
           <b>Ziyarat PKR:</b> {ziyaratPKR.toLocaleString()}
         </p>
 
@@ -275,8 +284,8 @@ export default function PackagesView({ id, onNavigate }) {
           <thead>
             <tr>
               <th>Item</th>
-              <th>SAR</th>
-              <th>Rate</th>
+              <th>SarTotal</th>
+              <th>SarRate</th>
               <th>PKR</th>
             </tr>
           </thead>
@@ -340,6 +349,7 @@ export default function PackagesView({ id, onNavigate }) {
     </div>
   );
 }
+
 
 
 
