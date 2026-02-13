@@ -79,6 +79,32 @@ export default function PackagesView({ id, onNavigate }) {
 
   if (!data) return <div className="p-4">Loading...</div>;
 
+  // ================= CALCULATE TOTALS =================
+  const flightTotal = Number(data.flight_sar_total || 0);
+  const hotelsTotal = Number(data.hotel_sar_total || 0);
+  const visaTotal = Number(data.visa_sar_total || 0);
+  const transportTotal = Number(data.transport_sar_total || 0);
+  const ziyaratTotal = Number(data.ziyarat_sar_total || 0);
+
+  const rate = {
+    flight: Number(data.flight_rate || 1),
+    hotels: Number(data.hotel_rate || 1),
+    visa: Number(data.visa_rate || 1),
+    transport: Number(data.transport_rate || 1),
+    ziyarat: Number(data.ziyarat_rate || 1),
+  };
+
+  const flightPKR = flightTotal * rate.flight;
+  const hotelsPKR = hotelsTotal * rate.hotels;
+  const visaPKR = visaTotal * rate.visa;
+  const transportPKR = transportTotal * rate.transport;
+  const ziyaratPKR = ziyaratTotal * rate.ziyarat;
+
+  const grandPKR = flightPKR + hotelsPKR + visaPKR + transportPKR + ziyaratPKR;
+
+  const personQty = Number(data.total_persons || 1);
+  const perPerson = grandPKR / personQty;
+
   return (
     <div className="container mt-3 mb-5">
 
@@ -139,109 +165,71 @@ export default function PackagesView({ id, onNavigate }) {
 
         <hr />
 
-        {/* ===== FLIGHTS ===== */}
-        <h5 className="fw-bold text-primary mb-2">✈️ Flight</h5>
-        <div className="border p-2 rounded mb-2">
-          {Array.isArray(data.flights) && data.flights.length > 0 ? (
-            data.flights.map((f, i) => (
-              <div key={i} className="mb-1">
-                {fmtDate(f.date)} — {f.from} → {f.to}{" "}
-                {f.airline && <b>({f.airline})</b>}
-              </div>
-            ))
-          ) : (
-            <p>No flights</p>
-          )}
+        {/* ===== SUMMARY TABLE ===== */}
+        <h6 className="section-title">📊 Summary</h6>
+        <table className="table table-sm">
+          <thead>
+            <tr>
+              <th>Item</th>
+              <th>SAR</th>
+              <th>Rate</th>
+              <th>PKR</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Flight</td>
+              <td>{flightTotal.toLocaleString()}</td>
+              <td>{rate.flight}</td>
+              <td className="fw-bold">{flightPKR.toLocaleString()}</td>
+            </tr>
+            <tr>
+              <td>Hotels</td>
+              <td>{hotelsTotal.toLocaleString()}</td>
+              <td>{rate.hotels}</td>
+              <td className="fw-bold">{hotelsPKR.toLocaleString()}</td>
+            </tr>
+            <tr>
+              <td>Visa</td>
+              <td>{visaTotal.toLocaleString()}</td>
+              <td>{rate.visa}</td>
+              <td className="fw-bold">{visaPKR.toLocaleString()}</td>
+            </tr>
+            <tr>
+              <td>Transport</td>
+              <td>{transportTotal.toLocaleString()}</td>
+              <td>{rate.transport}</td>
+              <td className="fw-bold">{transportPKR.toLocaleString()}</td>
+            </tr>
+            <tr>
+              <td>Ziyarat</td>
+              <td>{ziyaratTotal.toLocaleString()}</td>
+              <td>{rate.ziyarat}</td>
+              <td className="fw-bold">{ziyaratPKR.toLocaleString()}</td>
+            </tr>
+            <tr className="table-info">
+              <td className="fw-bold">Grand Total PKR</td>
+              <td></td>
+              <td></td>
+              <td className="fw-bold">{grandPKR.toLocaleString()}</td>
+            </tr>
+            <tr style={{ background: "#f1f1f1" }}>
+              <td className="fw-bold">Per Person</td>
+              <td>{personQty}</td>
+              <td></td>
+              <td className="fw-bold">{perPerson.toLocaleString()}</td>
+            </tr>
+          </tbody>
+        </table>
+
+        {/* FOOTER NOTE */}
+        <div
+          className="mt-2 p-2 text-center small"
+          style={{ background: "#12c1d8", color: "white" }}
+        >
+          THESE ARE TENTATIVE RATES AND CAN CHANGE WITHOUT NOTICE.
+          PACKAGE CAN BE FINALIZED AFTER BOOKING PAYMENTS AND MAY VARY WITH ROE.
         </div>
-        <p>
-          Adults: {data.adult_count} × {data.adult_rate} <br />
-          Child: {data.child_count} × {data.child_rate} <br />
-          Infant: {data.infant_count} × {data.infant_rate} <br />
-          <b>Flight SAR:</b> {Number(data.flight_sar_total || 0).toLocaleString()} <br />
-          <b>Flight PKR:</b> {Number(data.flight_pkr_total || 0).toLocaleString()}
-        </p>
-
-        <hr />
-
-        {/* ===== HOTELS ===== */}
-        <h5 className="fw-bold text-success mb-2">🏨 Hotels</h5>
-        {Array.isArray(data.hotels) && data.hotels.length > 0 ? (
-          data.hotels.map((h, i) => (
-            <div key={i} className="border p-2 rounded mb-2 shadow-sm">
-              <b>{h.hotel}</b> — {h.location}<br />
-              {fmtDate(h.checkIn)} → {fmtDate(h.checkOut)}<br />
-              Nights: {h.nights}, Rooms: {h.rooms}, Type: {h.type}<br />
-              Rate: {h.rate} — Total: {h.total}
-            </div>
-          ))
-        ) : (
-          <p>No hotels</p>
-        )}
-        <p>
-          <b>Hotel SAR:</b> {Number(data.hotel_sar_total || 0).toLocaleString()} <br />
-          <b>Hotel PKR:</b> {Number(data.hotel_pkr_total || 0).toLocaleString()}
-        </p>
-
-        <hr />
-
-        {/* ===== VISA ===== */}
-        <h5 className="fw-bold text-warning mb-2">🛂 Visa</h5>
-        {Array.isArray(data.visa) && data.visa.length > 0 ? (
-          data.visa.map((v, i) => (
-            <div key={i} className="border p-2 rounded mb-1 shadow-sm">
-              {v.type || "Visa"} — {v.persons} × {v.rate} = {v.total}
-            </div>
-          ))
-        ) : (
-          <p>No visa</p>
-        )}
-        <p>
-          <b>Visa SAR:</b> {Number(data.visa_sar_total || 0).toLocaleString()} <br />
-          <b>Visa PKR:</b> {Number(data.visa_pkr_total || 0).toLocaleString()}
-        </p>
-
-        <hr />
-
-        {/* ===== TRANSPORT ===== */}
-        <h5 className="fw-bold text-danger mb-2">🚐 Transport</h5>
-        {Array.isArray(data.transport) && data.transport.length > 0 ? (
-          data.transport.map((t, i) => (
-            <div key={i} className="border p-2 rounded mb-1 shadow-sm">
-              {t.text} — {Number(t.amount || 0).toLocaleString()}
-            </div>
-          ))
-        ) : (
-          <p>No transport</p>
-        )}
-        <p>
-          <b>Transport SAR:</b> {Number(data.transport_sar_total || 0).toLocaleString()} <br />
-          <b>Transport PKR:</b> {Number(data.transport_pkr_total || 0).toLocaleString()}
-        </p>
-
-        <hr />
-
-        {/* ===== ZIYARAT ===== */}
-        <h5 className="fw-bold text-purple mb-2">🕌 Ziyarat</h5>
-        {Array.isArray(data.ziyarat) && data.ziyarat.length > 0 ? (
-          data.ziyarat.map((z, i) => (
-            <div key={i} className="border p-2 rounded mb-1 shadow-sm">
-              {z.text || z.route || z.description} — {Number(z.amount || 0).toLocaleString()}
-            </div>
-          ))
-        ) : (
-          <p>No ziyarat</p>
-        )}
-        <p>
-          <b>Ziyarat SAR:</b> {Number(data.ziyarat_sar_total || 0).toLocaleString()} <br />
-          <b>Ziyarat PKR:</b> {Number(data.ziyarat_pkr_total || 0).toLocaleString()}
-        </p>
-
-        <hr />
-
-        {/* ===== SUMMARY ===== */}
-        <h4 className="fw-bold text-end text-success">
-          NET PKR TOTAL: {Number(data.net_pkr_total || 0).toLocaleString()}
-        </h4>
       </div>
     </div>
   );
