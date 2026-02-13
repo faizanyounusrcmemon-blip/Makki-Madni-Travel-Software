@@ -86,6 +86,7 @@ export default function PackagesView({ id, onNavigate }) {
   const transportTotal = Number(data.transport_sar_total || 0);
   const ziyaratTotal = Number(data.ziyarat_sar_total || 0);
 
+
   const rate = {
     flight: Number(data.flight_sar_rate || 0),
     hotels: Number(data.hotel_sar_rate || 0),
@@ -185,6 +186,7 @@ export default function PackagesView({ id, onNavigate }) {
           Child: {data.child_count} × {data.child_rate} <br />
           Infant: {data.infant_count} × {data.infant_rate} <br />
           <b>Flight SAR:</b> {flightTotal.toLocaleString()} <br />
+          <b>Flight ROE:</b> {flightRate.toLocaleString()} <br />
           <b>Flight PKR:</b> {flightPKR.toLocaleString()}
         </p>
 
@@ -335,6 +337,7 @@ export default function PackagesView({ id, onNavigate }) {
     </div>
   );
 }
+
 
 
 
