@@ -167,6 +167,23 @@ export default function PackagesView({ id, onNavigate }) {
           pageBreakInside: "avoid"
         }}
       >
+                {/* ===== HEADER ===== */}
+        <div
+          className="rounded-4 p-3 mb-4 text-white shadow"
+          style={{
+            background: "linear-gradient(135deg,#0d6efd,#00c6ff)",
+          }}
+        >
+          <h2 className="text-center fw-bold mb-1" style={{ letterSpacing: "1px" }}>
+            ✈️ MAKKI MADNI TRAVEL
+          </h2>
+          <div className="text-center" style={{ fontSize: 13, lineHeight: 1.4 }}>
+            Shop #4 Diamond City Building, Near Zeenat-ul-Islam Masjid<br />
+            Garden West, Karachi<br />
+            ✉️ makkimadnitravel@gmail.com | ☎️ 0335-7476744
+          </div>
+          <hr style={{ margin: "8px 0", borderTop: "2px solid #fff" }} />
+        </div>
 
         {/* ===== PACKAGE INFO ===== */}
         <div className="mb-3" style={{ pageBreakInside: "avoid" }}>
@@ -367,3 +384,4 @@ export default function PackagesView({ id, onNavigate }) {
     </div>
   );
 }
+
