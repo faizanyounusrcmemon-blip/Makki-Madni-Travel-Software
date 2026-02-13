@@ -41,76 +41,48 @@ export default function PackagesView({ id, onNavigate }) {
       });
   }, [id]);
 
-  /* ================= PERFECT MULTI PAGE PDF ================= */
+  /* ================= EXPORT PDF ================= */
   const exportPDF = async () => {
-    const element = ref.current;
-
-    const canvas = await html2canvas(element, {
+    const canvas = await html2canvas(ref.current, {
       scale: 2,
       useCORS: true,
-      allowTaint: true,
-      scrollY: -window.scrollY
     });
 
-    const imgData = canvas.toDataURL("image/jpeg", 1);
-
+    const imgData = canvas.toDataURL("image/jpeg", 1.0);
     const pdf = new jsPDF("p", "mm", "a4");
 
-    const pageWidth = pdf.internal.pageSize.getWidth();
-    const pageHeight = pdf.internal.pageSize.getHeight();
+    const pdfWidth = pdf.internal.pageSize.getWidth();
+    const pdfHeight = pdf.internal.pageSize.getHeight();
 
-    const imgWidth = pageWidth;
-    const imgHeight = canvas.height * imgWidth / canvas.width;
+    const imgWidth = pdfWidth;
+    const imgHeight = (canvas.height * imgWidth) / canvas.width;
 
-    let position = 0;
-    let remainingHeight = imgHeight;
+    let heightLeft = imgHeight;
+    let position = 10;
 
-    // FIRST PAGE
     pdf.addImage(imgData, "JPEG", 0, position, imgWidth, imgHeight);
-    remainingHeight -= pageHeight;
+    heightLeft -= pdfHeight;
 
-    // MORE PAGES
-    while (remainingHeight > 0) {
-      position = -(imgHeight - remainingHeight);
+    while (heightLeft > 0) {
+      position = heightLeft - imgHeight + 10;
       pdf.addPage();
       pdf.addImage(imgData, "JPEG", 0, position, imgWidth, imgHeight);
-      remainingHeight -= pageHeight;
+      heightLeft -= pdfHeight;
     }
 
-    pdf.save("package.pdf");
+    const fileName = `${cleanName(data?.customer_name)}_${formatDateForFile(
+      data?.booking_date
+    )}.pdf`;
+
+    pdf.save(fileName);
   };
 
   if (!data) return <div className="p-4">Loading...</div>;
 
-  /* ================= TOTALS ================= */
-  const flightTotal = Number(data.flight_sar_total || 0);
-  const hotelsTotal = Number(data.hotel_sar_total || 0);
-  const visaTotal = Number(data.visa_sar_total || 0);
-  const transportTotal = Number(data.transport_sar_total || 0);
-  const ziyaratTotal = Number(data.ziyarat_sar_total || 0);
-
-  const rate = {
-    flight: Number(data.flight_sar_rate || 0),
-    hotels: Number(data.hotel_sar_rate || 0),
-    visa: Number(data.visa_sar_rate || 0),
-    transport: Number(data.transport_sar_rate || 0),
-    ziyarat: Number(data.ziyarat_sar_rate || 0),
-  };
-
-  const flightPKR = flightTotal * rate.flight;
-  const hotelsPKR = hotelsTotal * rate.hotels;
-  const visaPKR = visaTotal * rate.visa;
-  const transportPKR = transportTotal * rate.transport;
-  const ziyaratPKR = ziyaratTotal * rate.ziyarat;
-
-  const grandPKR = flightPKR + hotelsPKR + visaPKR + transportPKR + ziyaratPKR;
-  const personQty = Number(data.per_person_qty || 0);
-  const perPerson = grandPKR / personQty;
-
   return (
     <div className="container mt-3 mb-5">
 
-      {/* TOP ACTIONS */}
+      {/* ============ TOP ACTIONS ============ */}
       <div className="d-flex justify-content-start mb-3 gap-2 flex-wrap">
         <button
           className="btn btn-sm text-white fw-bold shadow"
@@ -133,18 +105,13 @@ export default function PackagesView({ id, onNavigate }) {
         </button>
       </div>
 
-      {/* ================= PDF CONTENT ================= */}
+      {/* ============ PDF CONTENT ============ */}
       <div
         ref={ref}
         className="bg-white p-4 rounded-4 shadow-lg"
-        style={{
-          maxWidth: "800px",
-          margin: "auto",
-          fontFamily: "Arial, sans-serif",
-          pageBreakInside: "avoid"
-        }}
+        style={{ maxWidth: "800px", margin: "auto", fontFamily: "Arial, sans-serif" }}
       >
-                {/* ===== HEADER ===== */}
+        {/* ===== HEADER ===== */}
         <div
           className="rounded-4 p-3 mb-4 text-white shadow"
           style={{
@@ -163,7 +130,7 @@ export default function PackagesView({ id, onNavigate }) {
         </div>
 
         {/* ===== PACKAGE INFO ===== */}
-        <div className="mb-3" style={{ pageBreakInside: "avoid" }}>
+        <div className="mb-3">
           <h4 className="fw-bold">PACKAGE — {data.ref_no}</h4>
           <p><b>Customer:</b> {data.customer_name}</p>
           <p><b>Contact No:</b> {data.contact_no || "-"}</p>
@@ -174,7 +141,7 @@ export default function PackagesView({ id, onNavigate }) {
 
         {/* ===== FLIGHTS ===== */}
         <h5 className="fw-bold text-primary mb-2">✈️ Flight</h5>
-        <div className="border p-2 rounded mb-2" style={{ pageBreakInside: "avoid" }}>
+        <div className="border p-2 rounded mb-2">
           {Array.isArray(data.flights) && data.flights.length > 0 ? (
             data.flights.map((f, i) => (
               <div key={i} className="mb-1">
@@ -182,15 +149,16 @@ export default function PackagesView({ id, onNavigate }) {
                 {f.airline && <b>({f.airline})</b>}
               </div>
             ))
-          ) : <p>No flights</p>}
+          ) : (
+            <p>No flights</p>
+          )}
         </div>
-
-        <p style={{ pageBreakInside: "avoid" }}>
+        <p>
           Adults: {data.adult_count} × {data.adult_rate} <br />
           Child: {data.child_count} × {data.child_rate} <br />
           Infant: {data.infant_count} × {data.infant_rate} <br />
-          <b>Flight SAR:</b> {flightTotal.toLocaleString()} <br />
-          <b>Flight PKR:</b> {flightPKR.toLocaleString()}
+          <b>Flight SAR:</b> {Number(data.flight_sar_total || 0).toLocaleString()} <br />
+          <b>Flight PKR:</b> {Number(data.flight_pkr_total || 0).toLocaleString()}
         </p>
 
         <hr />
@@ -199,20 +167,19 @@ export default function PackagesView({ id, onNavigate }) {
         <h5 className="fw-bold text-success mb-2">🏨 Hotels</h5>
         {Array.isArray(data.hotels) && data.hotels.length > 0 ? (
           data.hotels.map((h, i) => (
-            <div key={i} className="pdf-no-break border p-2 rounded mb-2 shadow-sm">
-              style={{ pageBreakInside: "avoid" }}
-            >
+            <div key={i} className="border p-2 rounded mb-2 shadow-sm">
               <b>{h.hotel}</b> — {h.location}<br />
-              Check In: {fmtDate(h.checkIn)} → Check Out: {fmtDate(h.checkOut)}<br />
+              {fmtDate(h.checkIn)} → {fmtDate(h.checkOut)}<br />
               Nights: {h.nights}, Rooms: {h.rooms}, Type: {h.type}<br />
               Rate: {h.rate} — Total: {h.total}
             </div>
           ))
-        ) : <p>No hotels</p>}
-
-        <p style={{ pageBreakInside: "avoid" }}>
-          <b>Hotel SAR:</b> {hotelsTotal.toLocaleString()} <br />
-          <b>Hotel PKR:</b> {hotelsPKR.toLocaleString()}
+        ) : (
+          <p>No hotels</p>
+        )}
+        <p>
+          <b>Hotel SAR:</b> {Number(data.hotel_sar_total || 0).toLocaleString()} <br />
+          <b>Hotel PKR:</b> {Number(data.hotel_pkr_total || 0).toLocaleString()}
         </p>
 
         <hr />
@@ -221,17 +188,16 @@ export default function PackagesView({ id, onNavigate }) {
         <h5 className="fw-bold text-warning mb-2">🛂 Visa</h5>
         {Array.isArray(data.visa) && data.visa.length > 0 ? (
           data.visa.map((v, i) => (
-            <div key={i} className="pdf-no-break border p-2 rounded mb-1 shadow-sm">
-              style={{ pageBreakInside: "avoid" }}
-            >
+            <div key={i} className="border p-2 rounded mb-1 shadow-sm">
               {v.type || "Visa"} — {v.persons} × {v.rate} = {v.total}
             </div>
           ))
-        ) : <p>No visa</p>}
-
-        <p style={{ pageBreakInside: "avoid" }}>
-          <b>Visa SAR:</b> {visaTotal.toLocaleString()} <br />
-          <b>Visa PKR:</b> {visaPKR.toLocaleString()}
+        ) : (
+          <p>No visa</p>
+        )}
+        <p>
+          <b>Visa SAR:</b> {Number(data.visa_sar_total || 0).toLocaleString()} <br />
+          <b>Visa PKR:</b> {Number(data.visa_pkr_total || 0).toLocaleString()}
         </p>
 
         <hr />
@@ -240,17 +206,16 @@ export default function PackagesView({ id, onNavigate }) {
         <h5 className="fw-bold text-danger mb-2">🚐 Transport</h5>
         {Array.isArray(data.transport) && data.transport.length > 0 ? (
           data.transport.map((t, i) => (
-            <div key={i} className="pdf-no-break border p-2 rounded mb-1 shadow-sm">
-              style={{ pageBreakInside: "avoid" }}
-            >
+            <div key={i} className="border p-2 rounded mb-1 shadow-sm">
               {t.text} — {Number(t.amount || 0).toLocaleString()}
             </div>
           ))
-        ) : <p>No transport</p>}
-
-        <p style={{ pageBreakInside: "avoid" }}>
-          <b>Transport SAR:</b> {transportTotal.toLocaleString()} <br />
-          <b>Transport PKR:</b> {transportPKR.toLocaleString()}
+        ) : (
+          <p>No transport</p>
+        )}
+        <p>
+          <b>Transport SAR:</b> {Number(data.transport_sar_total || 0).toLocaleString()} <br />
+          <b>Transport PKR:</b> {Number(data.transport_pkr_total || 0).toLocaleString()}
         </p>
 
         <hr />
@@ -259,99 +224,25 @@ export default function PackagesView({ id, onNavigate }) {
         <h5 className="fw-bold text-purple mb-2">🕌 Ziyarat</h5>
         {Array.isArray(data.ziyarat) && data.ziyarat.length > 0 ? (
           data.ziyarat.map((z, i) => (
-            <div key={i} className="pdf-no-break border p-2 rounded mb-1 shadow-sm">
-              style={{ pageBreakInside: "avoid" }}
-            >
+            <div key={i} className="border p-2 rounded mb-1 shadow-sm">
               {z.text || z.route || z.description} — {Number(z.amount || 0).toLocaleString()}
             </div>
           ))
-        ) : <p>No ziyarat</p>}
-
-        <p style={{ pageBreakInside: "avoid" }}>
-          <b>Ziyarat SAR:</b> {ziyaratTotal.toLocaleString()} <br />
-          <b>Ziyarat PKR:</b> {ziyaratPKR.toLocaleString()}
+        ) : (
+          <p>No ziyarat</p>
+        )}
+        <p>
+          <b>Ziyarat SAR:</b> {Number(data.ziyarat_sar_total || 0).toLocaleString()} <br />
+          <b>Ziyarat PKR:</b> {Number(data.ziyarat_pkr_total || 0).toLocaleString()}
         </p>
 
         <hr />
 
-        {/* ===== SUMMARY TABLE ===== */}
-        <h6 className="section-title">📊 Summary</h6>
-        <table
-          className="table table-sm mb-4"
-          style={{ pageBreakInside: "avoid" }}
-        >
-          <thead>
-            <tr>
-              <th>Item</th>
-              <th>SAR</th>
-              <th>Rate</th>
-              <th>PKR</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>Flight</td>
-              <td>{flightTotal.toLocaleString()}</td>
-              <td>{rate.flight}</td>
-              <td className="fw-bold">{flightPKR.toLocaleString()}</td>
-            </tr>
-            <tr>
-              <td>Hotels</td>
-              <td>{hotelsTotal.toLocaleString()}</td>
-              <td>{rate.hotels}</td>
-              <td className="fw-bold">{hotelsPKR.toLocaleString()}</td>
-            </tr>
-            <tr>
-              <td>Visa</td>
-              <td>{visaTotal.toLocaleString()}</td>
-              <td>{rate.visa}</td>
-              <td className="fw-bold">{visaPKR.toLocaleString()}</td>
-            </tr>
-            <tr>
-              <td>Transport</td>
-              <td>{transportTotal.toLocaleString()}</td>
-              <td>{rate.transport}</td>
-              <td className="fw-bold">{transportPKR.toLocaleString()}</td>
-            </tr>
-            <tr>
-              <td>Ziyarat</td>
-              <td>{ziyaratTotal.toLocaleString()}</td>
-              <td>{rate.ziyarat}</td>
-              <td className="fw-bold">{ziyaratPKR.toLocaleString()}</td>
-            </tr>
-            <tr className="table-info">
-              <td className="fw-bold">Grand Total PKR</td>
-              <td></td>
-              <td></td>
-              <td className="fw-bold">{grandPKR.toLocaleString()}</td>
-            </tr>
-            <tr style={{ background: "#f1f1f1" }}>
-              <td className="fw-bold">Per Person</td>
-              <td>{personQty}</td>
-              <td></td>
-              <td className="fw-bold">{perPerson.toLocaleString()}</td>
-            </tr>
-          </tbody>
-        </table>
-
-        <hr />
-
-        {/* FOOTER NOTE */}
-        <div
-          className="mt-2 p-2 text-center small"
-          style={{
-            background: "#12c1d8",
-            color: "white",
-            pageBreakInside: "avoid"
-          }}
-        >
-          THESE ARE TENTATIVE RATES AND CAN CHANGE WITHOUT NOTICE.
-          PACKAGE CAN BE FINALIZED AFTER BOOKING PAYMENTS AND MAY VARY WITH ROE.
-        </div>
-
+        {/* ===== SUMMARY ===== */}
+        <h4 className="fw-bold text-end text-success">
+          NET PKR TOTAL: {Number(data.net_pkr_total || 0).toLocaleString()}
+        </h4>
       </div>
     </div>
   );
 }
-
-
