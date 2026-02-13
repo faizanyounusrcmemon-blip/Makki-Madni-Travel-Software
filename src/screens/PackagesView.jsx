@@ -42,7 +42,6 @@ export default function PackagesView({ id, onNavigate }) {
   }, [id]);
 
   /* ================= EXPORT PDF ================= */
-  /* ================= EXPORT PDF ================= */
   const exportPDF = async () => {
     const canvas = await html2canvas(ref.current, {
       scale: 2,
@@ -79,6 +78,10 @@ export default function PackagesView({ id, onNavigate }) {
   };
 
   if (!data) return <div className="p-4">Loading...</div>;
+
+  return (
+    <div className="container mt-3 mb-5">
+      
 
   // ================= CALCULATE TOTALS =================
   const flightTotal = Number(data.flight_sar_total || 0);
@@ -137,7 +140,7 @@ export default function PackagesView({ id, onNavigate }) {
         ref={ref}
         className="bg-white p-4 rounded-4 shadow-lg"
         style={{ maxWidth: "800px", margin: "auto", fontFamily: "Arial, sans-serif" }}
-        
+      >
         {/* ===== HEADER ===== */}
         <div
           className="rounded-4 p-3 mb-4 text-white shadow"
