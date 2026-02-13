@@ -112,7 +112,7 @@ export default function DeletedReports({ onNavigate }) {
             borderRadius: 12,
           }}
         >
-          <h5 className="fw-bold mb-0">Deleted Reports</h5>
+          <h5 className="fw-bold mb-0">🗑 Deleted Reports</h5>
           <button
             className="btn btn-light btn-sm"
             onClick={() => onNavigate("dashboard")}
@@ -190,14 +190,14 @@ export default function DeletedReports({ onNavigate }) {
                       className="btn btn-outline-success btn-sm me-1"
                       onClick={() => restore(r.type, r.ref_no)}
                     >
-                      Restore
+                      ♻ Restore
                     </button>
 
                     <button
                       className="btn btn-outline-danger btn-sm"
                       onClick={() => permanentDelete(r.type, r.ref_no)}
                     >
-                      Delete
+                      🗑 Delete
                     </button>
                   </td>
                 </tr>
@@ -209,4 +209,5 @@ export default function DeletedReports({ onNavigate }) {
     </div>
   );
 }
+
 
