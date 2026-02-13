@@ -43,31 +43,40 @@ export default function PackagesView({ id, onNavigate }) {
 
   /* ================= EXPORT PDF ================= */
   const exportPDF = async () => {
-    const canvas = await html2canvas(ref.current, {
-      scale: 2,
+    const element = ref.current;
+
+    const canvas = await html2canvas(element, {
+      scale: 3,
       useCORS: true,
+      allowTaint: true,
+      scrollY: -window.scrollY,
+      windowWidth: element.scrollWidth,
+      windowHeight: element.scrollHeight,
     });
 
     const imgData = canvas.toDataURL("image/jpeg", 1.0);
+
     const pdf = new jsPDF("p", "mm", "a4");
 
-    const pdfWidth = pdf.internal.pageSize.getWidth();
-    const pdfHeight = pdf.internal.pageSize.getHeight();
+    const pageWidth = pdf.internal.pageSize.getWidth();
+    const pageHeight = pdf.internal.pageSize.getHeight();
 
-    const imgWidth = pdfWidth;
+    const imgWidth = pageWidth;
     const imgHeight = (canvas.height * imgWidth) / canvas.width;
 
     let heightLeft = imgHeight;
-    let position = 10;
+    let position = 0;
 
+    // FIRST PAGE
     pdf.addImage(imgData, "JPEG", 0, position, imgWidth, imgHeight);
-    heightLeft -= pdfHeight;
+    heightLeft -= pageHeight;
 
+    // EXTRA PAGES
     while (heightLeft > 0) {
-      position = heightLeft - imgHeight + 10;
+      position = heightLeft - imgHeight;
       pdf.addPage();
       pdf.addImage(imgData, "JPEG", 0, position, imgWidth, imgHeight);
-      heightLeft -= pdfHeight;
+      heightLeft -= pageHeight;
     }
 
     const fileName = `${cleanName(data?.customer_name)}_${formatDateForFile(
@@ -335,3 +344,4 @@ export default function PackagesView({ id, onNavigate }) {
     </div>
   );
 }
+
