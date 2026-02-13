@@ -43,8 +43,11 @@ export default function PackagesView({ id, onNavigate }) {
 
   /* ================= EXPORT PDF ================= */
   const exportPDF = async () => {
+    if (!ref.current) return;
+
+    // 🔹 High quality canvas
     const canvas = await html2canvas(ref.current, {
-      scale: 2,
+      scale: 3,
       useCORS: true,
     });
 
@@ -54,19 +57,24 @@ export default function PackagesView({ id, onNavigate }) {
     const pdfWidth = pdf.internal.pageSize.getWidth();
     const pdfHeight = pdf.internal.pageSize.getHeight();
 
-    const imgWidth = pdfWidth;
-    const imgHeight = (canvas.height * imgWidth) / canvas.width;
+    // canvas dimensions in mm
+    const imgProps = {
+      width: pdfWidth,
+      height: (canvas.height * pdfWidth) / canvas.width,
+    };
 
-    let heightLeft = imgHeight;
-    let position = 10;
+    let heightLeft = imgProps.height;
+    let position = 0;
 
-    pdf.addImage(imgData, "JPEG", 0, position, imgWidth, imgHeight);
+    // 🔹 Add first page
+    pdf.addImage(imgData, "JPEG", 0, position, imgProps.width, imgProps.height);
     heightLeft -= pdfHeight;
 
+    // 🔹 Loop for multiple pages
     while (heightLeft > 0) {
-      position = heightLeft - imgHeight + 10;
+      position = -heightLeft + pdfHeight; // position of remaining part
       pdf.addPage();
-      pdf.addImage(imgData, "JPEG", 0, position, imgWidth, imgHeight);
+      pdf.addImage(imgData, "JPEG", 0, position, imgProps.width, imgProps.height);
       heightLeft -= pdfHeight;
     }
 
@@ -81,7 +89,6 @@ export default function PackagesView({ id, onNavigate }) {
 
   return (
     <div className="container mt-3 mb-5">
-
       {/* ============ TOP ACTIONS ============ */}
       <div className="d-flex justify-content-start mb-3 gap-2 flex-wrap">
         <button
@@ -153,6 +160,7 @@ export default function PackagesView({ id, onNavigate }) {
             <p>No flights</p>
           )}
         </div>
+
         <p>
           Adults: {data.adult_count} × {data.adult_rate} <br />
           Child: {data.child_count} × {data.child_rate} <br />
