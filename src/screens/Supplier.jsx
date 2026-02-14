@@ -223,13 +223,13 @@ export default function Supplier({ onNavigate }) {
                         setEditId(r.id);
                       }}
                     >
-                      Edit
+                      ✏ Edit
                     </button>
                     <button
                       className="btn btn-sm btn-outline-danger"
                       onClick={() => del(r.id)}
                     >
-                      Delete
+                      🗑 Delete
                     </button>
                   </td>
                 </tr>
@@ -241,3 +241,4 @@ export default function Supplier({ onNavigate }) {
     </div>
   );
 }
+
