@@ -195,7 +195,7 @@ export default function Supplier({ onNavigate }) {
                 <th>Name</th>
                 <th>Category</th>
                 <th>Contact</th>
-                <th width="160">Action</th>
+                <th width="180">Action</th>
               </tr>
             </thead>
             <tbody>
@@ -241,5 +241,6 @@ export default function Supplier({ onNavigate }) {
     </div>
   );
 }
+
 
 
