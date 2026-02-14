@@ -215,7 +215,9 @@ export default function PurchaseList({ onNavigate }) {
             {!loading &&
               filteredRows.map((r, i) => (
                 <tr key={i}>
-                  <td className="fw-bold text-muted">{i + 1}</td>
+                  <td className="fw-bold text-muted" style={{ fontSize: "12px" }}>
+                    {i + 1}
+                  </td>
                   <td className="fw-bold" style={{ fontSize: "12px" }}>
                     {r.ref_no}
                   </td>
