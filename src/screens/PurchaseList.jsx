@@ -241,13 +241,13 @@ export default function PurchaseList({ onNavigate }) {
                       className="btn btn-sm btn-outline-info me-1"
                       onClick={() => onNavigate("purchase_detail", r.ref_no)}
                     >
-                      Detail
+                      👁️ Detail
                     </button>
                     <button
                       className="btn btn-sm btn-outline-danger"
                       onClick={() => deletePurchase(r.ref_no, r.customer_name)}
                     >
-                      Delete
+                      🗑 Delete
                     </button>
                   </td>
                 </tr>
