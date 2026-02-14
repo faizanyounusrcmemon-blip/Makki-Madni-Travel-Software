@@ -201,12 +201,12 @@ export default function AllReports({ onNavigate }) {
           <table className="table table-hover table-sm mb-0 align-middle">
             <thead className="table-light">
               <tr>
-                <th>SR#</th>
-                <th>Type</th>
-                <th>Ref</th>
-                <th>Customer</th>
-                <th>Date</th>
-                <th>PKR</th>
+                <th className="text-center">SR#</th>
+                <th className="text-center">Type</th>
+                <th className="text-center">Ref</th>
+                <th className="text-center">Customer</th>
+                <th className="text-center">Date</th>
+                <th className="text-center">PKR</th>
                 <th className="text-center">Summary</th>
                 <th className="text-center">View</th>
                 <th className="text-center">Delete</th>
@@ -216,7 +216,7 @@ export default function AllReports({ onNavigate }) {
 <tbody>
   {filtered.map((r, i) => (
     <tr key={i}>
-      <td className="fw-bold text-muted">{i + 1}</td>
+      <td className="fw-bold text-muted" style={{ fontSize: "12px" }}>{i + 1}</td>
 
       <td>
         <span className="badge bg-info text-dark">
