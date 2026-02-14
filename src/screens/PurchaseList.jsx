@@ -216,7 +216,9 @@ export default function PurchaseList({ onNavigate }) {
               filteredRows.map((r, i) => (
                 <tr key={i}>
                   <td className="fw-bold text-muted">{i + 1}</td>
-                  <td className="fw-bold">{r.ref_no}</td>
+                  <td className="fw-bold" style={{ fontSize: "12px" }}>
+                    {r.ref_no}
+                  </td>
                   <td className="fw-semibold text-primary small">
                     {r.customer_name || "-"}
                   </td>
