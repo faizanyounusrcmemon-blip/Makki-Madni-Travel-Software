@@ -224,3 +224,25 @@
 .pdf-mode * {
   box-sizing: border-box !important;
 }
+
+.small-cell{
+  font-size:12px;
+  white-space:nowrap;   /* ek line */
+}
+
+/* ===== ULTRA COMPACT TABLE ===== */
+.compact-table{
+  font-size:13px;
+}
+
+.compact-table th,
+.compact-table td{
+  padding:3px 6px !important;
+  white-space:nowrap;
+  vertical-align:middle;
+}
+
+.compact-table thead th{
+  font-size:10px;
+}
+

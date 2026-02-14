@@ -220,35 +220,131 @@ export default function Hotels({ onNavigate }) {
           <div><label>Booking Date</label><input type="date" className="form-control form-control-sm" value={bookingDate} onChange={(e) => setBookingDate(e.target.value)} /><small className="text-muted">{showDate(bookingDate)}</small></div>
         </div>
 
-        {/* Hotels Table */}
-        <h6 style={styles.sectionHeader}>Hotels</h6>
-        <button className="btn btn-outline-primary btn-sm mb-2" onClick={addRow} style={styles.button}>➕ Add Row</button>
+{/* Hotels Table */}
+<h6 style={styles.sectionHeader}>Hotels</h6>
+<button className="btn btn-outline-primary btn-sm mb-2" onClick={addRow} style={styles.button}>➕ Add Row</button>
 
-        <table className="table table-sm">
-          <thead>
-            <tr>
-              <th>Check-in</th><th>Check-out</th><th>Nights</th><th>Location</th><th>Rooms</th><th>Type</th><th>Rate</th><th>Total</th><th></th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((r, i) => (
-              <React.Fragment key={i}>
-                <tr><td colSpan={9}><input className="form-control form-control-sm fw-bold" placeholder="HOTEL NAME (Full Row)" value={r.hotel} onChange={(e) => updateRow(i, "hotel", e.target.value)} /></td></tr>
-                <tr>
-                  <td><input type="date" className="form-control form-control-sm" value={r.checkIn} onChange={(e) => updateRow(i, "checkIn", e.target.value)} /><small className="text-muted">{showDate(r.checkIn)}</small></td>
-                  <td><input type="date" className="form-control form-control-sm" value={r.checkOut} onChange={(e) => updateRow(i, "checkOut", e.target.value)} /><small className="text-muted">{showDate(r.checkOut)}</small></td>
-                  <td><input type="number" className="form-control form-control-sm" value={r.nights} readOnly /></td>
-                  <td><input className="form-control form-control-sm" value={r.location} onChange={(e) => updateRow(i, "location", e.target.value)} /></td>
-                  <td><input type="number" className="form-control form-control-sm" value={r.rooms} onChange={(e) => updateRow(i, "rooms", e.target.value)} /></td>
-                  <td><input className="form-control form-control-sm" value={r.type} onChange={(e) => updateRow(i, "type", e.target.value)} /></td>
-                  <td><input type="number" className="form-control form-control-sm" value={r.rate} onChange={(e) => updateRow(i, "rate", e.target.value)} /></td>
-                  <td className="fw-bold">{r.total}</td>
-                  <td><button className="btn btn-link text-danger" onClick={() => removeRow(i)}>✖</button></td>
-                </tr>
-              </React.Fragment>
-            ))}
-          </tbody>
-        </table>
+<table className="table table-sm">
+  <tbody>
+{rows.map((r, i) => (
+  <React.Fragment key={i}>
+    {/* HOTEL NAME HEADER */}
+    <tr>
+      <td colSpan={9} style={{ fontWeight: "700", textAlign: "left", padding: "5px 10px", background: "#cce5ff" }}>
+        HOTEL NAME
+      </td>
+    </tr>
+
+    {/* HOTEL NAME INPUT */}
+    <tr>
+      <td colSpan={9}>
+        <input
+          className="form-control form-control-sm"
+          placeholder="Enter Hotel Name"
+          value={r.hotel}
+          onChange={(e) => updateRow(i, "hotel", e.target.value)}
+        />
+      </td>
+    </tr>
+
+    {/* FIELD NAMES */}
+    <tr style={{ background: "#20c997", color: "#fff", fontWeight: "600", textAlign: "center" }}>
+      <td>Check-in</td>
+      <td>Check-out</td>
+      <td>Nights</td>
+      <td>Location</td>
+      <td>Rooms</td>
+      <td>Type</td>
+      <td>Rate</td>
+      <td>Total</td>
+      <td></td>
+    </tr>
+
+    {/* FIELD INPUTS */}
+    <tr>
+      <td>
+        <input
+          type="date"
+          className="form-control form-control-sm"
+          value={r.checkIn}
+          onChange={(e) => updateRow(i, "checkIn", e.target.value)}
+        />
+        <small className="text-muted">{showDate(r.checkIn)}</small>
+      </td>
+
+      <td>
+        <input
+          type="date"
+          className="form-control form-control-sm"
+          value={r.checkOut}
+          onChange={(e) => updateRow(i, "checkOut", e.target.value)}
+        />
+        <small className="text-muted">{showDate(r.checkOut)}</small>
+      </td>
+
+      <td style={{ width: "70px" }}>
+        <input
+          type="number"
+          className="form-control form-control-sm text-center"
+          value={r.nights}
+          readOnly
+        />
+      </td>
+
+      <td style={{ minWidth: "220px" }}>
+        <input
+          className="form-control form-control-sm"
+          value={r.location}
+          onChange={(e) => updateRow(i, "location", e.target.value)}
+          placeholder="City / Area"
+        />
+      </td>
+
+      <td style={{ width: "80px" }}>
+        <input
+          type="number"
+          className="form-control form-control-sm text-center"
+          value={r.rooms}
+          onChange={(e) => updateRow(i, "rooms", e.target.value)}
+        />
+      </td>
+
+      <td>
+        <input
+          className="form-control form-control-sm"
+          value={r.type}
+          onChange={(e) => updateRow(i, "type", e.target.value)}
+        />
+      </td>
+
+      <td>
+        <input
+          type="number"
+          className="form-control form-control-sm"
+          value={r.rate}
+          onChange={(e) => updateRow(i, "rate", e.target.value)}
+        />
+      </td>
+
+      <td className="fw-bold">{r.total}</td>
+
+      <td>
+        <button
+          className="btn btn-link text-danger"
+          onClick={() => removeRow(i)}
+        >
+          ✖
+        </button>
+      </td>
+    </tr>
+  </React.Fragment>
+))}
+
+  </tbody>
+</table>
+
+
+
 
         {/* Summary */}
         <h6 style={styles.sectionHeader}>Summary</h6>

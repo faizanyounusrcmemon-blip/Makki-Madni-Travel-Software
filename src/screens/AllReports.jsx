@@ -36,20 +36,18 @@ export default function AllReports({ onNavigate }) {
       return;
     }
 
-    if (
-      !window.confirm(
-        `Confirm delete?\nTYPE: ${type}\nREF NO: ${ref_no}\nCustomer: ${customer_name}\n\nThis will move to deleted list`
-      )
-    )
-      return;
+    if (!window.confirm(`Confirm delete?\nREF NO: ${ref_no}`)) return;
 
-    let endpoint = "";
-    if (type === "Packages") endpoint = "bookings";
-    if (type === "Hotels") endpoint = "hotels";
-    if (type === "Ticketing") endpoint = "ticketing";
-    if (type === "Transport") endpoint = "transport";
-    if (type === "Ziyarat") endpoint = "ziyarat";
-    if (type === "Visa") endpoint = "visa";
+    const map = {
+      Packages: "bookings",
+      Hotels: "hotels",
+      Ticketing: "ticketing",
+      Transport: "transport",
+      Ziyarat: "ziyarat",
+      Visa: "visa",
+    };
+
+    const endpoint = map[type];
 
     try {
       const res = await fetch(
@@ -67,27 +65,29 @@ export default function AllReports({ onNavigate }) {
       alert(`✅ Record Deleted\nREF NO: ${ref_no}`);
       loadData();
     } catch (err) {
-      console.error("Delete Error:", err);
+      console.error(err);
       alert("Delete failed");
     }
   };
 
   /* ================= VIEW ================= */
   const handleView = (type, ref_no) => {
-    const page =
-      type === "Packages"
-        ? "packages_view"
-        : type === "Hotels"
-        ? "hotels_view"
-        : type === "Ticketing"
-        ? "ticket_view"
-        : type === "Transport"
-        ? "transport_view"
-        : type === "Ziyarat"
-        ? "ziyarat_view"
-        : "visa_view";
+    const map = {
+      Packages: "packages_view",
+      Hotels: "hotels_view",
+      Ticketing: "ticket_view",
+      Transport: "transport_view",
+      Ziyarat: "ziyarat_view",
+      Visa: "visa_view",
+    };
 
-    onNavigate(page, ref_no);
+    onNavigate(map[type], ref_no);
+  };
+
+  /* ================= SUMMARY (ONLY PACKAGES) ================= */
+  const handleSumry = (type, ref_no) => {
+    if (type !== "Packages") return;
+    onNavigate("packages_summary_view", ref_no);
   };
 
   /* ================= FILTER ================= */
@@ -125,19 +125,18 @@ export default function AllReports({ onNavigate }) {
     });
   };
 
-  const fmtPKR = (v) => {
-    if (!v) return "0";
-    return Number(v).toLocaleString("en-PK");
-  };
+  const fmtPKR = (v) => Number(v || 0).toLocaleString("en-PK");
 
   const typeIcon = (type) => {
-    if (type === "Packages") return "📦";
-    if (type === "Hotels") return "🏨";
-    if (type === "Ticketing") return "✈️";
-    if (type === "Transport") return "🚐";
-    if (type === "Ziyarat") return "🕌";
-    if (type === "Visa") return "🛂";
-    return "📄";
+    const map = {
+      Packages: "📦",
+      Hotels: "🏨",
+      Ticketing: "✈️",
+      Transport: "🚐",
+      Ziyarat: "🕌",
+      Visa: "🛂",
+    };
+    return map[type] || "📄";
   };
 
   return (
@@ -145,7 +144,7 @@ export default function AllReports({ onNavigate }) {
       {/* HEADER */}
       <div className="card shadow-sm border-0 mb-3">
         <div
-          className="card-body d-flex justify-content-between align-items-center flex-wrap"
+          className="card-body d-flex justify-content-between align-items-center"
           style={{
             background: "linear-gradient(135deg, #0d6efd, #6610f2)",
             color: "#fff",
@@ -208,81 +207,98 @@ export default function AllReports({ onNavigate }) {
                 <th>Customer</th>
                 <th>Date</th>
                 <th>PKR</th>
+                <th className="text-center">Summary</th>
                 <th className="text-center">View</th>
                 <th className="text-center">Delete</th>
               </tr>
             </thead>
 
-            <tbody>
-              {filtered.map((r, i) => (
-                <tr key={i}>
-                  <td className="fw-bold text-muted">{i + 1}</td>
+<tbody>
+  {filtered.map((r, i) => (
+    <tr key={i}>
+      <td className="fw-bold text-muted">{i + 1}</td>
 
-                  <td>
-                    <span className="badge bg-info text-dark">
-                      {typeIcon(r.type)} {r.type}
-                    </span>
-                  </td>
+      <td>
+        <span className="badge bg-info text-dark">
+          {typeIcon(r.type)} {r.type}
+        </span>
+      </td>
 
-                  <td className="fw-bold">{r.ref_no}</td>
+      <td className="fw-bold text-nowrap small-cell">
+        {r.ref_no}
+      </td>
 
-                  <td className="fw-semibold text-primary">
-                    {r.customer_name || "-"}
-                  </td>
+      <td
+        className="fw-semibold text-primary text-nowrap small-cell"
+        title={r.customer_name}
+      >
+        {r.customer_name || "-"}
+      </td>
 
-                  <td className="text-muted">{formatDate(r.booking_date)}</td>
+      <td className="text-muted text-nowrap small-cell">
+        {formatDate(r.booking_date)}
+      </td>
 
-                  <td>
-                    <span className="badge bg-success">💰 {fmtPKR(r.total_pkr)}</span>
-                  </td>
 
-                  <td className="text-center">
-                    <button
-                      className="btn btn-outline-info btn-sm"
-                      onClick={() => handleView(r.type, r.ref_no)}
-                    >
-                      👁️ VIEW
-                    </button>
-                  </td>
+      <td>
+        <span className="badge bg-success">
+          💰 {fmtPKR(r.total_pkr)}
+        </span>
+      </td>
 
-                  <td className="text-center">
-                    <button
-                      className="btn btn-outline-danger btn-sm"
-                      onClick={() => handleDelete(r.type, r.ref_no, r.customer_name)}
-                    >
-                      🗑 DELETE
-                    </button>
-                  </td>
-                </tr>
-              ))}
+      <td className="text-center">
+        {r.type === "Packages" ? (
+          <button
+            className="btn btn-outline-warning btn-sm"
+            onClick={() => handleSumry(r.type, r.ref_no)}
+          >
+            📊 SUMMARY
+          </button>
+        ) : null}
+      </td>
 
-              {filtered.length > 0 && (
-                <tr className="table-dark">
-                  <td colSpan={5} className="text-end fw-bold">
-                    TOTAL
-                  </td>
-                  <td className="fw-bold">{fmtPKR(totalPKR)}</td>
-                  <td colSpan={2}></td>
-                </tr>
-              )}
+      <td className="text-center">
+        <button
+          className="btn btn-outline-info btn-sm"
+          onClick={() => handleView(r.type, r.ref_no)}
+        >
+          👁️ VIEW
+        </button>
+      </td>
 
-              {filtered.length === 0 && (
-                <tr>
-                  <td colSpan={8} className="text-center text-muted py-3">
-                    No Records Found
-                  </td>
-                </tr>
-              )}
-            </tbody>
+      <td className="text-center">
+        <button
+          className="btn btn-outline-danger btn-sm"
+          onClick={() =>
+            handleDelete(r.type, r.ref_no, r.customer_name)
+          }
+        >
+          🗑 DELETE
+        </button>
+      </td>
+    </tr>
+  ))}
+
+  {filtered.length === 0 && (
+    <tr>
+      <td colSpan={9} className="text-center py-3 text-muted">
+        No Records Found
+      </td>
+    </tr>
+  )}
+
+  {filtered.length > 0 && (
+    <tr className="table-dark">
+      <td colSpan={5} className="text-end fw-bold">TOTAL</td>
+      <td className="fw-bold">{fmtPKR(totalPKR)}</td>
+      <td colSpan={3}></td>
+    </tr>
+  )}
+</tbody>
+
           </table>
         </div>
       </div>
     </div>
   );
 }
-
-
-
-
-
-

@@ -446,151 +446,138 @@ export default function Packages({ onNavigate }) {
           </tbody>
         </table>
 
-        {/* =============================
-            HOTELS SECTION
-        ============================= */}
-        <h6 className="section-title">🏨 Hotels</h6>
+{/* HOTELS SECTION */}
+<h6 className="section-title">🏨 Hotels</h6>
 
-        <button className="btn btn-outline-primary btn-sm mb-2" onClick={addHotelRow}>
-          ➕ Add Hotel Row
-        </button>
+<button className="btn btn-outline-primary btn-sm mb-2" onClick={addHotelRow}>
+  ➕ Add Hotel Row
+</button>
 
-        <table className="table table-sm">
-          <thead>
-            <tr>
-              <th style={{ width: "140px" }}>Check-in</th>
-              <th style={{ width: "140px" }}>Check-out</th>
-              <th style={{ width: "80px" }}>Nights</th>
-              <th style={{ width: "500px" }}>Location</th>
+<table className="table table-sm">
+  <tbody>
+    {hotels.map((h, i) => (
+      <React.Fragment key={i}>
+        {/* HOTEL NAME HEADER */}
+        <tr>
+          <td colSpan={10} style={{ fontWeight: "700", textAlign: "left", padding: "5px 10px", background: "#cce5ff" }}>
+            HOTEL NAME
+          </td>
+        </tr>
 
-              <th style={{ width: "380px" }}>Hotel (Full Row)</th>
+        {/* HOTEL NAME INPUT */}
+        <tr>
+          <td colSpan={10}>
+            <input
+              type="text"
+              className="form-control form-control-sm"
+              placeholder="Enter Hotel Name"
+              value={h.hotel}
+              onChange={(e) => handleHotelChange(i, "hotel", e.target.value)}
+            />
+          </td>
+        </tr>
 
-              <th style={{ width: "80px" }}>Rooms</th>
-              <th style={{ width: "160px" }}>Type</th>
-              <th style={{ width: "140px" }}>Rate</th>
-              <th style={{ width: "140px" }}>Total</th>
-              <th></th>
-            </tr>
-          </thead>
+        {/* FIELD NAMES ROW */}
+        <tr style={{ background: "#20c997", color: "#fff", fontWeight: "600", textAlign: "center" }}>
+          <td>Check-in</td>
+          <td>Check-out</td>
+          <td>Nights</td>
+          <td>Location</td>
+          <td>Rooms</td>
+          <td>Type</td>
+          <td>Rate</td>
+          <td>Total</td>
+          <td colSpan={2}></td>
+        </tr>
 
-          <tbody>
-            {hotels.map((h, i) => (
-              <>
-                {/* HOTEL NAME FULL WIDTH */}
-                <tr key={i + "-hotelname"}>
-                  <td colSpan={10}>
-                    <input
-                      type="text"
-                      className="form-control form-control-sm fw-bold"
-                      placeholder="HOTEL NAME"
-                      value={h.hotel}
-                      onChange={(e) =>
-                        handleHotelChange(i, "hotel", e.target.value)
-                      }
-                    />
-                  </td>
-                </tr>
+        {/* FIELD INPUTS ROW */}
+        <tr>
+          <td>
+            <input
+              type="date"
+              className="form-control form-control-sm"
+              value={h.checkIn}
+              onChange={(e) => handleHotelChange(i, "checkIn", e.target.value)}
+            />
+            <small className="text-muted">{showDate(h.checkIn)}</small>
+          </td>
 
-                {/* DETAIL ROW */}
-                <tr key={i}>
-                  <td>
-                    <input
-                      type="date"
-                      className="form-control form-control-sm"
-                      value={h.checkIn}
-                      onChange={(e) =>
-                        handleHotelChange(i, "checkIn", e.target.value)
-                      }
-                    />
-                    <small className="text-muted">{showDate(h.checkIn)}</small>
-                  </td>
+          <td>
+            <input
+              type="date"
+              className="form-control form-control-sm"
+              value={h.checkOut}
+              onChange={(e) => handleHotelChange(i, "checkOut", e.target.value)}
+            />
+            <small className="text-muted">{showDate(h.checkOut)}</small>
+          </td>
 
-                  <td>
-                    <input
-                      type="date"
-                      className="form-control form-control-sm"
-                      value={h.checkOut}
-                      onChange={(e) =>
-                        handleHotelChange(i, "checkOut", e.target.value)
-                      }
-                    />
-                    <small className="text-muted">{showDate(h.checkOut)}</small>
-                  </td>
+          <td>
+            <input
+              type="number"
+              className="form-control form-control-sm text-center"
+              value={h.nights}
+              readOnly
+            />
+          </td>
 
-                  <td>
-                    <input
-                      type="number"
-                      className="form-control form-control-sm"
-                      value={h.nights}
-                      readOnly
-                    />
-                  </td>
+          <td style={{ minWidth: "220px" }}>
+            <input
+              type="text"
+              className="form-control form-control-sm"
+              value={h.location}
+              onChange={(e) => handleHotelChange(i, "location", e.target.value)}
+            />
+          </td>
 
-                  <td>
-                    <input
-                      type="text"
-                      className="form-control form-control-sm"
-                      value={h.location}
-                      onChange={(e) =>
-                        handleHotelChange(i, "location", e.target.value)
-                      }
-                    />
-                  </td>
+          <td style={{ width: "80px" }}>
+            <input
+              type="number"
+              className="form-control form-control-sm text-center"
+              value={h.rooms}
+              onChange={(e) => handleHotelChange(i, "rooms", e.target.value)}
+            />
+          </td>
 
-                  <td className="text-muted text-center">—</td>
+          <td>
+            <input
+              type="text"
+              className="form-control form-control-sm"
+              value={h.type}
+              onChange={(e) => handleHotelChange(i, "type", e.target.value)}
+            />
+          </td>
 
-                  <td>
-                    <input
-                      type="number"
-                      className="form-control form-control-sm"
-                      value={h.rooms}
-                      onChange={(e) =>
-                        handleHotelChange(i, "rooms", e.target.value)
-                      }
-                    />
-                  </td>
+          <td>
+            <input
+              type="number"
+              className="form-control form-control-sm"
+              value={h.rate}
+              onChange={(e) => handleHotelChange(i, "rate", e.target.value)}
+            />
+          </td>
 
-                  <td>
-                    <input
-                      type="text"
-                      className="form-control form-control-sm"
-                      value={h.type}
-                      onChange={(e) =>
-                        handleHotelChange(i, "type", e.target.value)
-                      }
-                    />
-                  </td>
+          <td className="fw-bold">{h.total}</td>
 
-                  <td>
-                    <input
-                      type="number"
-                      className="form-control form-control-sm"
-                      value={h.rate}
-                      onChange={(e) =>
-                        handleHotelChange(i, "rate", e.target.value)
-                      }
-                    />
-                  </td>
+          <td>
+            <button
+              className="btn btn-link text-danger"
+              onClick={() => removeHotelRow(i)}
+            >
+              ✖
+            </button>
+          </td>
+        </tr>
+      </React.Fragment>
+    ))}
+  </tbody>
+</table>
 
-                  <td className="fw-bold">{h.total}</td>
+<div className="fw-bold text-end mb-3">
+  Hotels Total: {hotelsTotal.toLocaleString()}
+</div>
 
-                  <td>
-                    <button
-                      className="btn btn-link text-danger"
-                      onClick={() => removeHotelRow(i)}
-                    >
-                      ✖
-                    </button>
-                  </td>
-                </tr>
-              </>
-            ))}
-          </tbody>
-        </table>
 
-        <div className="fw-bold text-end mb-3">
-          Hotels Total: {hotelsTotal.toLocaleString()}
-        </div>
 
         {/* =============================
             VISA SECTION
