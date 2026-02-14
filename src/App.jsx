@@ -49,6 +49,7 @@ import ManageUsers from "./screens/ManageUsers";
 
 // VIEWS
 import PackagesView from "./screens/PackagesView";
+import PackagesSummaryView from "./screens/PackagesSummaryView";
 import HotelsView from "./screens/HotelsView";
 import TicketingView from "./screens/TicketingView";
 import VisaView from "./screens/VisaView";
@@ -133,6 +134,9 @@ export default function App() {
       {/* ================= DETAIL VIEWS ================= */}
       {page === "packages_view" && (
         <PackagesView id={detail} onNavigate={navigate} />
+      )}
+      {page === "packages_summary_view" && (
+        <PackagesSummaryView id={detail} onNavigate={navigate} />
       )}
       {page === "hotels_view" && (
         <HotelsView id={detail} onNavigate={navigate} />
