@@ -168,8 +168,9 @@ export default function PackagesView({ id, onNavigate }) {
         {Array.isArray(data.hotels) && data.hotels.length > 0 ? (
           data.hotels.map((h, i) => (
             <div key={i} className="border p-2 rounded mb-2 shadow-sm">
-              <b>{h.hotel}</b> — {h.location}<br />
-              {fmtDate(h.checkIn)} → {fmtDate(h.checkOut)}<br />
+              <b>🛏️ {h.hotel}</b> — 📍 {h.location}<br />
+              Check In Date: <span style={{ color: "#0d6efd", fontWeight: "bold" }}>{fmtDate(h.checkIn)}</span> → 
+              Check Out Date: <span style={{ color: "#dc3545", fontWeight: "bold" }}>{fmtDate(h.checkOut)}</span><br />
               Nights: {h.nights}, Rooms: {h.rooms}, Type: {h.type}<br />
               Rate: {h.rate} — Total: {h.total}
             </div>

@@ -190,26 +190,29 @@ export default function PackagesView({ id, onNavigate }) {
 
         <hr />
 
-        {/* ===== HOTELS ===== */}
-        <h5 className="fw-bold text-success mb-2">🏨 Hotels</h5>
-        {Array.isArray(data.hotels) && data.hotels.length > 0 ? (
-          data.hotels.map((h, i) => (
-            <div key={i} className="border p-2 rounded mb-2 shadow-sm">
-              <b>{h.hotel}</b> — {h.location}<br />
-              Check In: {fmtDate(h.checkIn)} → Check Out: {fmtDate(h.checkOut)}<br />
-              Nights: {h.nights}, Rooms: {h.rooms}, Type: {h.type}<br />
-              Rate: {h.rate} — Total: {h.total}
-            </div>
-          ))
-        ) : (
-          <p>No hotels</p>
-        )}
-        <p>
-          <b>Hotel SAR:</b> {hotelsTotal.toLocaleString()} <br />
-          <b>Hotel PKR:</b> {hotelsPKR.toLocaleString()}
-        </p>
+{/* ===== HOTELS ===== */}
+<h5 className="fw-bold text-success mb-2">🏨 Hotels</h5>
+{Array.isArray(data.hotels) && data.hotels.length > 0 ? (
+  data.hotels.map((h, i) => (
+    <div key={i} className="border p-2 rounded mb-2 shadow-sm">
+      <b>🛏️ {h.hotel}</b> — 📍 {h.location}<br />
+      Check In Date: <span style={{ color: "#0d6efd", fontWeight: "bold" }}>{fmtDate(h.checkIn)}</span> → 
+      Check Out Date: <span style={{ color: "#dc3545", fontWeight: "bold" }}>{fmtDate(h.checkOut)}</span><br />
+      Nights: <b>{h.nights}</b>, Rooms: <b>{h.rooms}</b>, Type: <b>{h.type}</b><br />
+      Rate: {h.rate}   — Total: {h.total}
+    </div>
+  ))
+) : (
+  <p>No hotels</p>
+)}
 
-        <hr />
+<p>
+  <b>Hotel SAR:</b> {hotelsTotal.toLocaleString()} <br />
+  <b>Hotel PKR:</b> {hotelsPKR.toLocaleString()}
+</p>
+
+<hr />
+
 
         {/* ===== VISA ===== */}
         <h5 className="fw-bold text-warning mb-2">🛂 Visa</h5>
