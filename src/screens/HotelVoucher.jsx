@@ -77,62 +77,61 @@ export default function HotelVoucher({ onNavigate }) {
   };
 
   /* ================= PDF ================= */
-  const exportPDF = async () => {
-    if (!voucherRef.current || !data) return;
+const exportPDF = async () => {
+  if (!voucherRef.current || !data) return;
 
-    const pdf = new jsPDF("p", "mm", "a4");
-    const pageWidth = 210;
-    const pageHeight = 297;
-    const margin = 10;
-    const usableWidth = pageWidth - margin * 2;
-    let y = margin;
+  const pdf = new jsPDF("p", "mm", "a4");
+  const pageWidth = 210;
+  const pageHeight = 297;
+  const margin = 10;
+  const usableWidth = pageWidth - margin * 2;
+  let y = margin;
 
-    const addBlock = async (selector) => {
-      const el = voucherRef.current.querySelector(selector);
-      if (!el) return;
+  const addCanvas = async (el) => {
+    if (!el) return;
+    const canvas = await html2canvas(el, { scale: 3 });
+    const img = canvas.toDataURL("image/png");
+    const height = (canvas.height * usableWidth) / canvas.width * 0.95;
 
-      const canvas = await html2canvas(el, { scale: 3 }); // scale increased for better quality
-      const img = canvas.toDataURL("image/png");
-      const height = (canvas.height * usableWidth) / canvas.width * 0.95; // slight reduction to avoid cut
-
-      if (y + height > pageHeight - margin) {
-        pdf.addPage();
-        y = margin;
-      }
-
-      pdf.addImage(img, "PNG", margin, y, usableWidth, height);
-      y += height + 4;
-    };
-
-    // PDF blocks
-    await addBlock(".text-center.mb-3");
-    await addBlock(".pdf-ref-row");
-    await addBlock(".pdf-agent");
-    await addBlock(".pdf-customer");
-    await addBlock(".pdf-hotel-title");
-
-
-    // hotels
-    const hotels = voucherRef.current.querySelectorAll(".pdf-hotel-block");
-    for (let h of hotels) {
-      const canvas = await html2canvas(h, { scale: 3 });
-      const img = canvas.toDataURL("image/png");
-      const height = (canvas.height * usableWidth) / canvas.width * 0.95;
-
-      if (y + height > pageHeight - margin) {
-        pdf.addPage();
-        y = margin;
-      }
-
-      pdf.addImage(img, "PNG", margin, y, usableWidth, height);
-      y += height + 4;
+    if (y + height > pageHeight - margin) {
+      pdf.addPage();
+      y = margin;
     }
 
-    await addBlock(".pdf-timing");
-    await addBlock(".pdf-footer");
-
-    pdf.save(`Hotel-Voucher-${data.ref_no}.pdf`);
+    pdf.addImage(img, "PNG", margin, y, usableWidth, height);
+    y += height + 4;
   };
+
+  // HEADER, REF, AGENT, CUSTOMER
+  await addCanvas(voucherRef.current.querySelector(".text-center.mb-3"));
+  await addCanvas(voucherRef.current.querySelector(".pdf-ref-row"));
+  await addCanvas(voucherRef.current.querySelector(".pdf-agent"));
+  await addCanvas(voucherRef.current.querySelector(".pdf-customer"));
+
+const hotels = voucherRef.current.querySelectorAll(".pdf-hotel-block");
+for (let h of hotels) {
+  const canvasBlock = await html2canvas(h, { scale: 3 });
+  const imgBlock = canvasBlock.toDataURL("image/png");
+  const heightBlock = (canvasBlock.height * usableWidth) / canvasBlock.width * 0.95;
+
+  if (y + heightBlock > pageHeight - margin) {
+    pdf.addPage();
+    y = margin;
+  }
+
+  pdf.addImage(imgBlock, "PNG", margin, y, usableWidth, heightBlock);
+  y += heightBlock + 4;
+}
+
+
+
+  // TIMING AND FOOTER
+  await addCanvas(voucherRef.current.querySelector(".pdf-timing"));
+  await addCanvas(voucherRef.current.querySelector(".pdf-footer"));
+
+  pdf.save(`Hotel-Voucher-${data.ref_no}.pdf`);
+};
+
 
   const handleHotelChange = (i, field, val) => {
     const hotels = [...data.hotels];
@@ -228,73 +227,72 @@ export default function HotelVoucher({ onNavigate }) {
             <b>Customer Name:</b> {data.customer_name}
           </div>
 
-          {/* HOTEL DETAILS */}
-          <h6 className="bg-primary text-white p-2 rounded pdf-hotel-title">🏨 Hotel Details</h6>
+{data.hotels.map((h, i) => (
+  <div key={i} className="pdf-hotel-block mb-3 p-2 bg-light rounded">
+    {/* Heading inside the hotel block */}
+    <h6 className="bg-primary text-white p-2 rounded mb-2">
+      {i + 1 } 🏨 Hotel Details
+    </h6>
 
-          {/* HOTELS */}
-          {data.hotels.map((h, i) => (
-            <div key={i} className="bg-light p-2 rounded mb-2 pdf-hotel-block">
-              <label className="fw-bold">Confirm No</label>
-              <input
-                className="form-control form-control-sm mb-2"
-                placeholder="Confirmation No"
-                value={h.confirmNo}
-                onChange={(e) =>
-                  handleHotelChange(i, "confirmNo", e.target.value)
-                }
-              />
+    {/* Hotel details */}
+    <label className="fw-bold">Confirm No</label>
+    <input
+      className="form-control form-control-sm mb-2"
+      placeholder="Confirmation No"
+      value={h.confirmNo}
+      onChange={(e) => handleHotelChange(i, "confirmNo", e.target.value)}
+    />
+    <b>🏨 Hotel:</b> {h.hotel}
+    <br />
+    <b>📍 Address:</b> {h.location}
 
-              <b>🏨 Hotel:</b> {h.hotel}
-              <br />
-              <b>📍 Address:</b> {h.location}
+    <div className="row mt-2">
+      <div className="col">
+        <b>🚪 Room:</b> {h.room}
+      </div>
+      <div className="col">
+        <b>🛏️ Room Type:</b> {h.room_type}
+      </div>
+    </div>
 
-              <div className="row mt-2">
-                <div className="col">
-                  <b>Room:</b> {h.room}
-                </div>
-                <div className="col">
-                  <b>Room Type:</b> {h.room_type}
-                </div>
-              </div>
+    <div className="row mt-2">
+      <div className="col bg-warning p-2">
+        <b>Check-In:</b> {showDate(h.checkIn)}
+      </div>
+      <div className="col bg-success text-white p-2">
+        <b>Check-Out:</b> {showDate(h.checkOut)}
+      </div>
+      <div className="col">
+        <b>Nights:</b> {h.nights}
+      </div>
+    </div>
 
-              <div className="row mt-2">
-                <div className="col bg-warning p-2">
-                  <b>Check-In:</b> {showDate(h.checkIn)}
-                </div>
-                <div className="col bg-success text-white p-2">
-                  <b>Check-Out:</b> {showDate(h.checkOut)}
-                </div>
-                <div className="col">
-                  <b>Nights:</b> {h.nights}
-                </div>
-              </div>
+    <div className="row mt-2">
+      <div className="col">
+        <label className="fw-bold">CONTACT 1</label>
+        <input
+          className="form-control form-control-sm"
+          placeholder="Contact No 1"
+          value={h.contact1}
+          onChange={(e) => handleHotelChange(i, "contact1", e.target.value)}
+        />
+      </div>
+      <div className="col">
+        <label className="fw-bold">CONTACT 2</label>
+        <input
+          className="form-control form-control-sm"
+          placeholder="Contact No 2"
+          value={h.contact2}
+          onChange={(e) => handleHotelChange(i, "contact2", e.target.value)}
+        />
+      </div>
+    </div>
+  </div>
+))}
 
-              <div className="row mt-2">
-                <div className="col">
-                  <label className="fw-bold">CONTACT 1</label>
-                  <input
-                    className="form-control form-control-sm"
-                    placeholder="Contact No 1"
-                    value={h.contact1}
-                    onChange={(e) =>
-                      handleHotelChange(i, "contact1", e.target.value)
-                    }
-                  />
-                </div>
-                <div className="col">
-                  <label className="fw-bold">CONTACT 2</label>
-                  <input
-                    className="form-control form-control-sm"
-                    placeholder="Contact No 2"
-                    value={h.contact2}
-                    onChange={(e) =>
-                      handleHotelChange(i, "contact2", e.target.value)
-                    }
-                  />
-                </div>
-              </div>
-            </div>
-          ))}
+
+
+
 
           {/* CHECK IN / OUT TIME */}
           <div
