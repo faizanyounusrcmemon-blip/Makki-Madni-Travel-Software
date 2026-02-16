@@ -238,7 +238,7 @@ for (let h of hotels) {
     <label className="fw-bold">Confirm No</label>
     <input
       className="form-control form-control-sm mb-2 fw-bold"
-      placeholder="Confirmation No"
+      placeholder=""
       value={h.confirmNo}
       onChange={(e) => handleHotelChange(i, "confirmNo", e.target.value)}
     />
@@ -272,7 +272,7 @@ for (let h of hotels) {
         <label className="fw-bold">CONTACT 1</label>
         <input
           className="form-control form-control-sm fw-bold"
-          placeholder="Contact No 1"
+          placeholder=""
           value={h.contact1}
           onChange={(e) => handleHotelChange(i, "contact1", e.target.value)}
         />
@@ -281,7 +281,7 @@ for (let h of hotels) {
         <label className="fw-bold">CONTACT 2</label>
         <input
           className="form-control form-control-sm fw-bold"
-          placeholder="Contact No 2"
+          placeholder=""
           value={h.contact2}
           onChange={(e) => handleHotelChange(i, "contact2", e.target.value)}
         />
@@ -318,3 +318,4 @@ for (let h of hotels) {
     </div>
   );
 }
+
