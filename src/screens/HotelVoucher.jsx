@@ -61,18 +61,14 @@ export default function HotelVoucher({ onNavigate }) {
       const d = await res.json();
       if (!d.success) return alert("Voucher not found");
 
-      const rawHotels = isPkg ? d.hotels : d.row.hotels;
+      const row = isPkg ? d : d.row;
+      const rawHotels = row.hotels;
 
       setData({
-        ref_no: isPkg ? d.ref_no : d.row.ref_no,
-        customer_name: isPkg ? d.customer_name : d.row.customer_name,
-
-        // ✅ FIXED HERE (PKG + HOTEL dono safe)
-        agent_name: isPkg
-          ? d.agent_name || ""
-          : d.row.agent_name || "",
-
-        booking_date: isPkg ? d.booking_date : d.row.booking_date,
+        ref_no: row.ref_no,
+        customer_name: row.customer_name,
+        agent_name: row.agent_name || "",
+        booking_date: row.booking_date,
         hotels: (rawHotels || []).map(normalizeHotel),
       });
     } catch (e) {
@@ -82,15 +78,57 @@ export default function HotelVoucher({ onNavigate }) {
 
   /* ================= PDF ================= */
   const exportPDF = async () => {
-    const canvas = await html2canvas(voucherRef.current, {
-      scale: 2,
-      backgroundColor: "#fff",
-    });
-    const img = canvas.toDataURL("image/png");
+    if (!voucherRef.current || !data) return;
+
     const pdf = new jsPDF("p", "mm", "a4");
-    const w = pdf.internal.pageSize.getWidth();
-    const h = (canvas.height * w) / canvas.width;
-    pdf.addImage(img, "PNG", 0, 0, w, h);
+    const pageWidth = 210;
+    const pageHeight = 297;
+    const margin = 10;
+    const usableWidth = pageWidth - margin * 2;
+    let y = margin;
+
+    const addBlock = async (selector) => {
+      const el = voucherRef.current.querySelector(selector);
+      if (!el) return;
+
+      const canvas = await html2canvas(el, { scale: 3 }); // scale increased for better quality
+      const img = canvas.toDataURL("image/png");
+      const height = (canvas.height * usableWidth) / canvas.width * 0.95; // slight reduction to avoid cut
+
+      if (y + height > pageHeight - margin) {
+        pdf.addPage();
+        y = margin;
+      }
+
+      pdf.addImage(img, "PNG", margin, y, usableWidth, height);
+      y += height + 4;
+    };
+
+    // PDF blocks
+    await addBlock(".text-center.mb-3");
+    await addBlock(".pdf-ref-row");
+    await addBlock(".pdf-agent");
+    await addBlock(".pdf-customer");
+
+    // hotels
+    const hotels = voucherRef.current.querySelectorAll(".pdf-hotel-block");
+    for (let h of hotels) {
+      const canvas = await html2canvas(h, { scale: 3 });
+      const img = canvas.toDataURL("image/png");
+      const height = (canvas.height * usableWidth) / canvas.width * 0.95;
+
+      if (y + height > pageHeight - margin) {
+        pdf.addPage();
+        y = margin;
+      }
+
+      pdf.addImage(img, "PNG", margin, y, usableWidth, height);
+      y += height + 4;
+    }
+
+    await addBlock(".pdf-timing");
+    await addBlock(".pdf-footer");
+
     pdf.save(`Hotel-Voucher-${data.ref_no}.pdf`);
   };
 
@@ -159,18 +197,19 @@ export default function HotelVoucher({ onNavigate }) {
             <hr />
             <div className="fw-bold">HOTEL VOUCHER</div>
           </div>
+
           {/* INFO */}
-          <div className="row mb-2">
+          <div className="row mb-2 pdf-ref-row">
             <div className="col">
               <b>Ref No:</b> {data.ref_no}
             </div>
-            <div className="col text-end">
+            <div className="col mb-2 pdf-date-row">
               <b>Date:</b> {showDate(data.booking_date)}
             </div>
           </div>
 
-          {/* AGENT NAME (Editable) */}
-          <div className="mb-2">
+          {/* AGENT NAME */}
+          <div className="mb-2 pdf-agent">
             <label className="fw-bold">Agent Name</label>
             <input
               type="text"
@@ -182,19 +221,17 @@ export default function HotelVoucher({ onNavigate }) {
               placeholder="Enter Agent Name"
             />
           </div>
-          
-          <div className="mb-2">
+
+          <div className="mb-2 pdf-customer">
             <b>Customer Name:</b> {data.customer_name}
           </div>
 
           {/* HOTEL DETAILS */}
-          <h6 className="bg-primary text-white p-2 rounded">
-            🏨 Hotel Details
-          </h6>
+          <h6 className="bg-primary text-white p-2 rounded">🏨 Hotel Details</h6>
 
           {/* HOTELS */}
           {data.hotels.map((h, i) => (
-            <div key={i} className="border p-2 mb-2 rounded">
+            <div key={i} className="bg-light p-2 rounded mb-2 pdf-hotel-block">
               <label className="fw-bold">Confirm No</label>
               <input
                 className="form-control form-control-sm mb-2"
@@ -217,7 +254,6 @@ export default function HotelVoucher({ onNavigate }) {
                   <b>Room Type:</b> {h.room_type}
                 </div>
               </div>
-              
 
               <div className="row mt-2">
                 <div className="col bg-warning p-2">
@@ -260,7 +296,7 @@ export default function HotelVoucher({ onNavigate }) {
 
           {/* CHECK IN / OUT TIME */}
           <div
-            className="mt-3 p-2 text-center fw-bold"
+            className="mt-3 p-2 text-center fw-bold pdf-timing"
             style={{
               background: "#e7f1ff",
               border: "1px dashed #0d6efd",
@@ -272,7 +308,7 @@ export default function HotelVoucher({ onNavigate }) {
           </div>
 
           {/* FOOTER */}
-          <div className="text-center small mt-3" style={{ color: "#555" }}>
+          <div className="text-center small mt-3 pdf-footer" style={{ color: "#555" }}>
             Please check your hotel details carefully.
             <br />
             This voucher is valid only for the mentioned booking.
@@ -282,8 +318,3 @@ export default function HotelVoucher({ onNavigate }) {
     </div>
   );
 }
-
-
-
-
-
