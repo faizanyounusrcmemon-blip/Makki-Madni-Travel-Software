@@ -109,6 +109,8 @@ export default function HotelVoucher({ onNavigate }) {
     await addBlock(".pdf-ref-row");
     await addBlock(".pdf-agent");
     await addBlock(".pdf-customer");
+    await addBlock(".pdf-hotel-title");
+
 
     // hotels
     const hotels = voucherRef.current.querySelectorAll(".pdf-hotel-block");
@@ -227,7 +229,7 @@ export default function HotelVoucher({ onNavigate }) {
           </div>
 
           {/* HOTEL DETAILS */}
-          <h6 className="bg-primary text-white p-2 rounded">🏨 Hotel Details</h6>
+          <h6 className="bg-primary text-white p-2 rounded pdf-hotel-title">🏨 Hotel Details</h6>
 
           {/* HOTELS */}
           {data.hotels.map((h, i) => (
