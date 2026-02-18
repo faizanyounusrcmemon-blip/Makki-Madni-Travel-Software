@@ -319,7 +319,7 @@ export default function PackagesView({ id, onNavigate }) {
               <td className="fw-bold">Per Person</td>
               <td>{personQty}</td>
               <td></td>
-              <td className="fw-bold">{perPerson.toLocaleString()}</td>
+              <td className="fw-bold">{Math.round(perPerson).toLocaleString()}</td>
             </tr>
           </tbody>
         </table>
@@ -338,5 +338,6 @@ export default function PackagesView({ id, onNavigate }) {
     </div>
   );
 }
+
 
 
