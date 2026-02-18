@@ -103,7 +103,7 @@ export default function PackagesView({ id, onNavigate }) {
   const grandPKR = flightPKR + hotelsPKR + visaPKR + transportPKR + ziyaratPKR;
 
   const personQty = Number(data.per_person_qty || 0);
-  const perPerson = grandPKR / personQty;
+  const perPerson = Math.round(normalizeZero(grandPKR / personQty));
 
   return (
     <div className="container mt-3 mb-5">
@@ -338,3 +338,4 @@ export default function PackagesView({ id, onNavigate }) {
     </div>
   );
 }
+
