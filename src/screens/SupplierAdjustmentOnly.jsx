@@ -4,6 +4,9 @@ import React, { useEffect, useState, useMemo } from "react";
 const fmt = (v) =>
   Number(v || 0).toLocaleString("en-US");
 
+const fmtDate = (d) =>
+  d ? new Date(d).toLocaleDateString() : "-";
+
 export default function SupplierAdjustmentOnly({ onNavigate }) {
 
   const [rows, setRows] = useState([]);
@@ -32,16 +35,18 @@ export default function SupplierAdjustmentOnly({ onNavigate }) {
     loadData();
   }, []);
 
-  /* ================= FILTER ================= */
+  /* ================= SEARCH FILTER ================= */
   const view = useMemo(() => {
     if (!search) return rows;
     const s = search.toLowerCase();
+
     return rows.filter(r =>
       (r.supplier_name || "").toLowerCase().includes(s) ||
       (r.supplier_code || "").toLowerCase().includes(s)
     );
   }, [rows, search]);
 
+  /* ================= TOTAL ================= */
   const totalAdjustment = view.reduce(
     (a, r) => a + Number(r.adjustment_amount || 0),
     0
@@ -51,7 +56,7 @@ export default function SupplierAdjustmentOnly({ onNavigate }) {
     <div className="container py-4">
       <div className="card shadow-lg border-0 rounded-4">
 
-        {/* HEADER */}
+        {/* ================= HEADER ================= */}
         <div
           className="card-header text-white d-flex justify-content-between"
           style={{ background: "linear-gradient(135deg,#6f42c1,#0d6efd)" }}
@@ -73,9 +78,10 @@ export default function SupplierAdjustmentOnly({ onNavigate }) {
           </button>
         </div>
 
+        {/* ================= BODY ================= */}
         <div className="card-body">
 
-          {/* DATE FILTER */}
+          {/* ===== DATE FILTER ===== */}
           <div className="row mb-3">
             <div className="col-md-3">
               <label className="fw-semibold">From Date</label>
@@ -120,7 +126,7 @@ export default function SupplierAdjustmentOnly({ onNavigate }) {
             </div>
           </div>
 
-          {/* SEARCH */}
+          {/* ===== SEARCH ===== */}
           <input
             className="form-control form-control-sm mb-3"
             placeholder="🔍 Search supplier / code"
@@ -128,12 +134,14 @@ export default function SupplierAdjustmentOnly({ onNavigate }) {
             onChange={(e) => setSearch(e.target.value)}
           />
 
-          {/* TABLE */}
+          {/* ===== TABLE ===== */}
           <div className="table-responsive">
             <table className="table table-bordered table-hover table-sm">
+
               <thead className="table-light">
                 <tr>
                   <th>#</th>
+                  <th>Date</th>
                   <th>Supplier Code</th>
                   <th>Supplier</th>
                   <th className="text-end">Adjustment Amount</th>
@@ -144,6 +152,7 @@ export default function SupplierAdjustmentOnly({ onNavigate }) {
                 {view.map((r, i) => (
                   <tr key={i}>
                     <td>{i + 1}</td>
+                    <td>{fmtDate(r.payment_date)}</td>
                     <td>{r.supplier_code}</td>
                     <td className="fw-semibold">{r.supplier_name}</td>
                     <td className="text-end text-danger fw-bold">
@@ -154,7 +163,7 @@ export default function SupplierAdjustmentOnly({ onNavigate }) {
 
                 {view.length === 0 && (
                   <tr>
-                    <td colSpan="4" className="text-center text-muted">
+                    <td colSpan="5" className="text-center text-muted">
                       No adjustment record found
                     </td>
                   </tr>
@@ -163,12 +172,13 @@ export default function SupplierAdjustmentOnly({ onNavigate }) {
 
               <tfoot>
                 <tr className="table-secondary fw-bold">
-                  <td colSpan="3" className="text-end">TOTAL</td>
+                  <td colSpan="4" className="text-end">TOTAL</td>
                   <td className="text-end text-danger">
                     {fmt(totalAdjustment)}
                   </td>
                 </tr>
               </tfoot>
+
             </table>
           </div>
 
