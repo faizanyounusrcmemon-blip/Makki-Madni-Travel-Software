@@ -5,18 +5,34 @@ const fmt = (v) =>
   Number(v || 0).toLocaleString("en-US");
 
 export default function SupplierAdjustmentOnly({ onNavigate }) {
+
   const [rows, setRows] = useState([]);
   const [search, setSearch] = useState("");
 
+  const [fromDate, setFromDate] = useState("");
+  const [toDate, setToDate] = useState("");
+
   const URL = import.meta.env.VITE_BACKEND_URL;
 
-  useEffect(() => {
-    fetch(`${URL}/api/reports/supplier-adjustment-only`)
+  /* ================= FETCH ================= */
+  const loadData = () => {
+    let url = `${URL}/api/reports/supplier-adjustment-only`;
+
+    if (fromDate && toDate) {
+      url += `?from=${fromDate}&to=${toDate}`;
+    }
+
+    fetch(url)
       .then(res => res.json())
       .then(d => setRows(d.rows || []))
       .catch(() => setRows([]));
+  };
+
+  useEffect(() => {
+    loadData();
   }, []);
 
+  /* ================= FILTER ================= */
   const view = useMemo(() => {
     if (!search) return rows;
     const s = search.toLowerCase();
@@ -48,6 +64,7 @@ export default function SupplierAdjustmentOnly({ onNavigate }) {
               Payment Method: Adjustment Only
             </small>
           </div>
+
           <button
             className="btn btn-light btn-sm"
             onClick={() => onNavigate("dashboard")}
@@ -57,6 +74,51 @@ export default function SupplierAdjustmentOnly({ onNavigate }) {
         </div>
 
         <div className="card-body">
+
+          {/* DATE FILTER */}
+          <div className="row mb-3">
+            <div className="col-md-3">
+              <label className="fw-semibold">From Date</label>
+              <input
+                type="date"
+                className="form-control form-control-sm"
+                value={fromDate}
+                onChange={(e)=>setFromDate(e.target.value)}
+              />
+            </div>
+
+            <div className="col-md-3">
+              <label className="fw-semibold">To Date</label>
+              <input
+                type="date"
+                className="form-control form-control-sm"
+                value={toDate}
+                onChange={(e)=>setToDate(e.target.value)}
+              />
+            </div>
+
+            <div className="col-md-3 d-flex align-items-end">
+              <button
+                className="btn btn-primary btn-sm w-100"
+                onClick={loadData}
+              >
+                Apply Filter
+              </button>
+            </div>
+
+            <div className="col-md-3 d-flex align-items-end">
+              <button
+                className="btn btn-secondary btn-sm w-100"
+                onClick={()=>{
+                  setFromDate("");
+                  setToDate("");
+                  loadData();
+                }}
+              >
+                Reset
+              </button>
+            </div>
+          </div>
 
           {/* SEARCH */}
           <input
