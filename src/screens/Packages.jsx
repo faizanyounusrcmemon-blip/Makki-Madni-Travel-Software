@@ -1,3 +1,4 @@
+
 import "./packages.css";
 import React, { useState, useRef } from "react";
 import jsPDF from "jspdf";
@@ -95,8 +96,39 @@ export default function Packages({ onNavigate }) {
   const ziyaratPKR = ziyaratTotal * ziyaratRate;
   const grandPKR = flightPKR + hotelsPKR + visaPKR + transportPKR + ziyaratPKR;
 
-  const [personQty, setPersonQty] = useState(1);
-  const perPerson = personQty > 0 ? Math.round(grandPKR / personQty) : 0;
+// ================= PER PERSON LOGIC =================
+
+// Total flight in PKR per category
+const adultFlightPKRTotal = adultCount * adultRate * flightRate;
+const childFlightPKRTotal = childCount * childRate * flightRate;
+const infantFlightPKRTotal = infantCount * infantRate * flightRate;
+
+// Visa total per person
+const visaPersons = visaRows.reduce((s, v) => s + Number(v.persons || 0), 0);
+const visaPerPerson = visaPersons > 0 ? visaPKR / visaPersons : 0;
+
+// Shared expenses only for adults (hotels + transport + ziyarat)
+const sharedPKR = hotelsPKR + transportPKR + ziyaratPKR;
+const sharedPerAdult = adultCount > 0 ? sharedPKR / adultCount : 0;
+
+// ======== FINAL PER PERSON CALCULATION ========
+const adultPerPerson = Math.round(
+  (adultCount > 0 ? adultFlightPKRTotal / adultCount : 0) + visaPerPerson + sharedPerAdult
+);
+
+const childPerPerson = Math.round(
+  (childCount > 0 ? childFlightPKRTotal / childCount : 0) + visaPerPerson
+);
+
+const infantPerPerson = Math.round(
+  (infantCount > 0 ? infantFlightPKRTotal / infantCount : 0) + visaPerPerson
+);
+
+const totalPassengers = Number(adultCount || 0) + Number(childCount || 0) + Number(infantCount || 0);
+
+// ===================================================
+
+// ===================================================
 
   const quoteRef = useRef(null);
 
@@ -194,7 +226,6 @@ export default function Packages({ onNavigate }) {
     setHotelsRate(d.hotel_sar_rate);
     setVisaRatePKR(d.visa_sar_rate);
     setTransportRate(d.transport_sar_rate);
-    setPersonQty(d.per_person_qty || 1);
     setIsEdit(true);
 
     alert("✅ Package Edit Mode load successfully!");
@@ -240,8 +271,12 @@ export default function Packages({ onNavigate }) {
       net_pkr_total: grandPKR,
       total_sar: flightTotal + hotelsTotal + visaTotal + transportTotal + ziyaratTotal,
       total_pkr: grandPKR,
-      per_person_qty: personQty,
-      per_person_final: perPerson
+      per_person_qty: totalPassengers,
+      per_person_final: adultPerPerson,
+      adult_per_person: adultPerPerson,
+      child_per_person: childPerPerson,
+      infant_per_person: infantPerPerson
+
     };
     const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/bookings/save`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
     const data = await res.json();
@@ -885,18 +920,25 @@ export default function Packages({ onNavigate }) {
             </tr>
 
             {/* PER PERSON */}
-            <tr style={{ background: "#f1f1f1" }}>
-              <td className="fw-bold">Per Person</td>
-              <td>
-                <input
-                  type="number"
-                  className="form-control form-control-sm"
-                  value={personQty}
-                  onChange={(e) => setPersonQty(+e.target.value)}
-                />
-              </td>
+            <tr style={{ background: "#d4edda" }}>
+              <td className="fw-bold">Adult Per Person</td>
+              <td>{adultCount}</td>
               <td></td>
-              <td className="fw-bold">{perPerson.toLocaleString()}</td>
+              <td className="fw-bold">{adultPerPerson.toLocaleString()}</td>
+            </tr>
+
+            <tr style={{ background: "#fff3cd" }}>
+              <td className="fw-bold">Child Per Person</td>
+              <td>{childCount}</td>
+              <td></td>
+              <td className="fw-bold">{childPerPerson.toLocaleString()}</td>
+            </tr>
+
+            <tr style={{ background: "#f8d7da" }}>
+              <td className="fw-bold">Infant Per Person</td>
+              <td>{infantCount}</td>
+              <td></td>
+              <td className="fw-bold">{infantPerPerson.toLocaleString()}</td>
             </tr>
           </tbody>
         </table>
