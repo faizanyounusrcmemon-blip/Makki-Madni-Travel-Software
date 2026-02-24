@@ -27,9 +27,9 @@ const formatDateForFile = (date) => {
 
 export default function PackagesView({ id, onNavigate }) {
   const [data, setData] = useState(null);
+  const [hideAmounts, setHideAmounts] = useState(false);
   const ref = useRef(null);
 
-  /* ================= LOAD DATA ================= */
   useEffect(() => {
     if (!id) return;
 
@@ -41,7 +41,6 @@ export default function PackagesView({ id, onNavigate }) {
       });
   }, [id]);
 
-  /* ================= EXPORT PDF ================= */
   const exportPDF = async () => {
     const canvas = await html2canvas(ref.current, {
       scale: 2,
@@ -81,8 +80,6 @@ export default function PackagesView({ id, onNavigate }) {
 
   return (
     <div className="container mt-3 mb-5">
-
-      {/* ============ TOP ACTIONS ============ */}
       <div className="d-flex justify-content-start mb-3 gap-2 flex-wrap">
         <button
           className="btn btn-sm text-white fw-bold shadow"
@@ -103,9 +100,24 @@ export default function PackagesView({ id, onNavigate }) {
         >
           📄 Export PDF
         </button>
+
+        <div
+          className="d-flex align-items-center gap-3 px-3 py-2 rounded shadow-sm"
+          style={{ background: "#ffffff" }}
+        >
+          <input
+            className="form-check-input"
+            type="checkbox"
+            id="toggleAmounts"
+            checked={hideAmounts}
+            onChange={() => setHideAmounts(!hideAmounts)}
+          />
+          <label className="form-check-label fw-bold text-dark" htmlFor="toggleAmounts">
+            Hide All Amounts
+          </label>
+        </div>
       </div>
 
-      {/* ============ PDF CONTENT ============ */}
       <div
         ref={ref}
         className="bg-white p-4 rounded-4 shadow-lg"
@@ -114,9 +126,7 @@ export default function PackagesView({ id, onNavigate }) {
         {/* ===== HEADER ===== */}
         <div
           className="rounded-4 p-3 mb-4 text-white shadow"
-          style={{
-            background: "linear-gradient(135deg,#0d6efd,#00c6ff)",
-          }}
+          style={{ background: "linear-gradient(135deg,#0d6efd,#00c6ff)" }}
         >
           <h2 className="text-center fw-bold mb-1" style={{ letterSpacing: "1px" }}>
             ✈️ MAKKI MADNI TRAVEL
@@ -153,93 +163,97 @@ export default function PackagesView({ id, onNavigate }) {
             <p>No flights</p>
           )}
         </div>
-        <p>
-          Adults: {data.adult_count} × {data.adult_rate} <br />
-          Child: {data.child_count} × {data.child_rate} <br />
-          Infant: {data.infant_count} × {data.infant_rate} <br />
-          <b>Flight SAR:</b> {Number(data.flight_sar_total || 0).toLocaleString()} <br />
-          <b>Flight PKR:</b> {Number(data.flight_pkr_total || 0).toLocaleString()}
-        </p>
+        {!hideAmounts && (
+          <p>
+            Adults: {data.adult_count} × {data.adult_rate} <br />
+            Child: {data.child_count} × {data.child_rate} <br />
+            Infant: {data.infant_count} × {data.infant_rate} <br />
+            <b>Flight SAR:</b> {Number(data.flight_sar_total || 0).toLocaleString()} <br />
+            <b>Flight PKR:</b> {Number(data.flight_pkr_total || 0).toLocaleString()}
+          </p>
+        )}
 
         <hr />
 
         {/* ===== HOTELS ===== */}
         <h5 className="fw-bold text-success mb-2">🏨 Hotels</h5>
-        {Array.isArray(data.hotels) && data.hotels.length > 0 ? (
-          data.hotels.map((h, i) => (
-            <div key={i} className="border p-2 rounded mb-2 shadow-sm">
-              <b>🛏️ {h.hotel}</b> — 📍 {h.location}<br />
-              Check In Date: <span style={{ color: "#0d6efd", fontWeight: "bold" }}>{fmtDate(h.checkIn)}</span> → 
-              Check Out Date: <span style={{ color: "#dc3545", fontWeight: "bold" }}>{fmtDate(h.checkOut)}</span><br />
-              Nights: {h.nights}, Rooms: {h.rooms}, Type: {h.type}<br />
-              Rate: {h.rate} — Total: {h.total}
-            </div>
-          ))
-        ) : (
-          <p>No hotels</p>
+        {Array.isArray(data.hotels) && data.hotels.length > 0
+          ? data.hotels.map((h, i) => (
+              <div key={i} className="border p-2 rounded mb-2 shadow-sm">
+                <b>🛏️ {h.hotel}</b> — 📍 {h.location}<br />
+                Check In: <span style={{ color: "#0d6efd", fontWeight: "bold" }}>{fmtDate(h.checkIn)}</span> → 
+                Check Out: <span style={{ color: "#dc3545", fontWeight: "bold" }}>{fmtDate(h.checkOut)}</span><br />
+                Nights: {h.nights}, Rooms: {h.rooms}, Type: {h.type}<br />
+                {!hideAmounts && <>Rate: {h.rate} — Total: {h.total}</>}
+              </div>
+            ))
+          : <p>No hotels</p>}
+        {!hideAmounts && (
+          <p>
+            <b>Hotel SAR:</b> {Number(data.hotel_sar_total || 0).toLocaleString()} <br />
+            <b>Hotel PKR:</b> {Number(data.hotel_pkr_total || 0).toLocaleString()}
+          </p>
         )}
-        <p>
-          <b>Hotel SAR:</b> {Number(data.hotel_sar_total || 0).toLocaleString()} <br />
-          <b>Hotel PKR:</b> {Number(data.hotel_pkr_total || 0).toLocaleString()}
-        </p>
 
         <hr />
 
         {/* ===== VISA ===== */}
         <h5 className="fw-bold text-warning mb-2">🛂 Visa</h5>
-        {Array.isArray(data.visa) && data.visa.length > 0 ? (
-          data.visa.map((v, i) => (
-            <div key={i} className="border p-2 rounded mb-1 shadow-sm">
-              {v.type || "Visa"} — {v.persons} × {v.rate} = {v.total}
-            </div>
-          ))
-        ) : (
-          <p>No visa</p>
+        {Array.isArray(data.visa) && data.visa.length > 0
+          ? data.visa.map((v, i) => (
+              <div key={i} className="border p-2 rounded mb-1 shadow-sm">
+                {v.type || "Visa"} — {v.persons}
+                {!hideAmounts && <> × {v.rate} = {v.total}</>}
+              </div>
+            ))
+          : <p>No visa</p>}
+        {!hideAmounts && (
+          <p>
+            <b>Visa SAR:</b> {Number(data.visa_sar_total || 0).toLocaleString()} <br />
+            <b>Visa PKR:</b> {Number(data.visa_pkr_total || 0).toLocaleString()}
+          </p>
         )}
-        <p>
-          <b>Visa SAR:</b> {Number(data.visa_sar_total || 0).toLocaleString()} <br />
-          <b>Visa PKR:</b> {Number(data.visa_pkr_total || 0).toLocaleString()}
-        </p>
 
         <hr />
 
         {/* ===== TRANSPORT ===== */}
         <h5 className="fw-bold text-danger mb-2">🚐 Transport</h5>
-        {Array.isArray(data.transport) && data.transport.length > 0 ? (
-          data.transport.map((t, i) => (
-            <div key={i} className="border p-2 rounded mb-1 shadow-sm">
-              {t.text} — {Number(t.amount || 0).toLocaleString()}
-            </div>
-          ))
-        ) : (
-          <p>No transport</p>
+        {Array.isArray(data.transport) && data.transport.length > 0
+          ? data.transport.map((t, i) => (
+              <div key={i} className="border p-2 rounded mb-1 shadow-sm">
+                {t.text} {!hideAmounts && <>— {Number(t.amount || 0).toLocaleString()}</>}
+              </div>
+            ))
+          : <p>No transport</p>}
+        {!hideAmounts && (
+          <p>
+            <b>Transport SAR:</b> {Number(data.transport_sar_total || 0).toLocaleString()} <br />
+            <b>Transport PKR:</b> {Number(data.transport_pkr_total || 0).toLocaleString()}
+          </p>
         )}
-        <p>
-          <b>Transport SAR:</b> {Number(data.transport_sar_total || 0).toLocaleString()} <br />
-          <b>Transport PKR:</b> {Number(data.transport_pkr_total || 0).toLocaleString()}
-        </p>
 
         <hr />
 
         {/* ===== ZIYARAT ===== */}
         <h5 className="fw-bold text-purple mb-2">🕌 Ziyarat</h5>
-        {Array.isArray(data.ziyarat) && data.ziyarat.length > 0 ? (
-          data.ziyarat.map((z, i) => (
-            <div key={i} className="border p-2 rounded mb-1 shadow-sm">
-              {z.text || z.route || z.description} — {Number(z.amount || 0).toLocaleString()}
-            </div>
-          ))
-        ) : (
-          <p>No ziyarat</p>
+        {Array.isArray(data.ziyarat) && data.ziyarat.length > 0
+          ? data.ziyarat.map((z, i) => (
+              <div key={i} className="border p-2 rounded mb-1 shadow-sm">
+                {z.text || z.route || z.description}
+                {!hideAmounts && <> — {Number(z.amount || 0).toLocaleString()}</>}
+              </div>
+            ))
+          : <p>No ziyarat</p>}
+        {!hideAmounts && (
+          <p>
+            <b>Ziyarat SAR:</b> {Number(data.ziyarat_sar_total || 0).toLocaleString()} <br />
+            <b>Ziyarat PKR:</b> {Number(data.ziyarat_pkr_total || 0).toLocaleString()}
+          </p>
         )}
-        <p>
-          <b>Ziyarat SAR:</b> {Number(data.ziyarat_sar_total || 0).toLocaleString()} <br />
-          <b>Ziyarat PKR:</b> {Number(data.ziyarat_pkr_total || 0).toLocaleString()}
-        </p>
 
         <hr />
 
-        {/* ===== SUMMARY ===== */}
+        {/* ===== NET TOTAL ===== */}
         <h4 className="fw-bold text-end text-success">
           NET PKR TOTAL: {Number(data.net_pkr_total || 0).toLocaleString()}
         </h4>
