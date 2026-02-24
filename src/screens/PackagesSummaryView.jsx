@@ -105,6 +105,42 @@ export default function PackagesView({ id, onNavigate }) {
   const personQty = Number(data.per_person_qty || 0);
   const perPerson = grandPKR / personQty;
 
+let adultCount = 0, childCount = 0, infantCount = 0;
+let adultPerPerson = 0, childPerPerson = 0, infantPerPerson = 0;
+
+if (data) {
+  const rate = {
+    flight: Number(data.flight_sar_rate || 0),
+    hotels: Number(data.hotel_sar_rate || 0),
+    visa: Number(data.visa_sar_rate || 0),
+    transport: Number(data.transport_sar_rate || 0),
+    ziyarat: Number(data.ziyarat_sar_rate || 0),
+  };
+
+  adultCount = Number(data.adult_count || 0);
+  childCount = Number(data.child_count || 0);
+  infantCount = Number(data.infant_count || 0);
+
+  const adultFlightPKR = adultCount * Number(data.adult_rate || 0) * rate.flight;
+  const childFlightPKR = childCount * Number(data.child_rate || 0) * rate.flight;
+  const infantFlightPKR = infantCount * Number(data.infant_rate || 0) * rate.flight;
+
+  const visaPersons = data.visa?.reduce((sum, v) => sum + Number(v.persons || 0), 0) || 0;
+  const visaPKR = Number(data.visa_sar_total || 0) * rate.visa;
+  const visaPerPerson = visaPersons > 0 ? visaPKR / visaPersons : 0;
+
+  const hotelsPKR = Number(data.hotel_sar_total || 0) * rate.hotels;
+  const transportPKR = Number(data.transport_sar_total || 0) * rate.transport;
+  const ziyaratPKR = Number(data.ziyarat_sar_total || 0) * rate.ziyarat;
+
+  const sharedPKR = hotelsPKR + transportPKR + ziyaratPKR;
+  const sharedPerAdult = adultCount > 0 ? sharedPKR / adultCount : 0;
+
+  adultPerPerson = Math.round(adultCount > 0 ? adultFlightPKR / adultCount + visaPerPerson + sharedPerAdult : 0);
+  childPerPerson = Math.round(childCount > 0 ? childFlightPKR / childCount + visaPerPerson : 0);
+  infantPerPerson = Math.round(infantCount > 0 ? infantFlightPKR / infantCount + visaPerPerson : 0);
+}
+
   return (
     <div className="container mt-3 mb-5">
 
@@ -315,12 +351,24 @@ export default function PackagesView({ id, onNavigate }) {
               <td></td>
               <td className="fw-bold">{grandPKR.toLocaleString()}</td>
             </tr>
-            <tr style={{ background: "#f1f1f1" }}>
-              <td className="fw-bold">Per Person</td>
-              <td>{personQty}</td>
-              <td></td>
-              <td className="fw-bold">{Math.round(perPerson).toLocaleString()}</td>
-            </tr>
+<tr style={{ background: "#f1f1f1" }}>
+  <td className="fw-bold">Per Person (Adults)</td>
+  <td>{adultCount}</td>
+  <td></td>
+  <td className="fw-bold">{adultPerPerson.toLocaleString()}</td>
+</tr>
+<tr style={{ background: "#f1f1f1" }}>
+  <td className="fw-bold">Per Person (Children)</td>
+  <td>{childCount}</td>
+  <td></td>
+  <td className="fw-bold">{childPerPerson.toLocaleString()}</td>
+</tr>
+<tr style={{ background: "#f1f1f1" }}>
+  <td className="fw-bold">Per Person (Infants)</td>
+  <td>{infantCount}</td>
+  <td></td>
+  <td className="fw-bold">{infantPerPerson.toLocaleString()}</td>
+</tr>
           </tbody>
         </table>
 
@@ -338,6 +386,5 @@ export default function PackagesView({ id, onNavigate }) {
     </div>
   );
 }
-
 
 
