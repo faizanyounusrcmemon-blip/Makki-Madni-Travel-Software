@@ -116,13 +116,13 @@ const adultPerPerson = Math.round(
   (adultCount > 0 ? adultFlightPKRTotal / adultCount : 0) + visaPerPerson + sharedPerAdult
 );
 
-const childPerPerson = Math.round(
-  (childCount > 0 ? childFlightPKRTotal / childCount : 0) + visaPerPerson
-);
+const childPerPerson = childCount > 0
+  ? Math.round((childFlightPKRTotal / childCount) + visaPerPerson)
+  : 0;
 
-const infantPerPerson = Math.round(
-  (infantCount > 0 ? infantFlightPKRTotal / infantCount : 0) + visaPerPerson
-);
+const infantPerPerson = infantCount > 0
+  ? Math.round((infantFlightPKRTotal / infantCount) + visaPerPerson)
+  : 0;
 
 const totalPassengers = Number(adultCount || 0) + Number(childCount || 0) + Number(infantCount || 0);
 
