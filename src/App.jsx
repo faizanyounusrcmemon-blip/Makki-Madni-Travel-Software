@@ -12,6 +12,7 @@ import Ticketing from "./screens/Ticketing";
 import Transport from "./screens/Transport";
 import Ziyarat from "./screens/Ziyarat";
 import Visa from "./screens/Visa";
+import Card from "./screens/Card";
 
 // PURCHASE
 import Purchase from "./screens/Purchase";
@@ -53,6 +54,7 @@ import PackagesSummaryView from "./screens/PackagesSummaryView";
 import HotelsView from "./screens/HotelsView";
 import TicketingView from "./screens/TicketingView";
 import VisaView from "./screens/VisaView";
+import CardView from "./screens/CardView";
 import TransportView from "./screens/TransportView";
 import ZiyaratView from "./screens/ZiyaratView";
 
@@ -89,6 +91,7 @@ export default function App() {
       {page === "ziyarat" && <Ziyarat onNavigate={navigate} />}
       {page === "manageUsers" && <ManageUsers onNavigate={navigate} />}
       {page === "visa" && <Visa onNavigate={navigate} />}
+      {page === "card" && <Card onNavigate={navigate} />}
       {page === "systemStorage" && <SystemStorage onNavigate={navigate} />}
 
       {/* ================= PURCHASE ================= */}
@@ -146,6 +149,9 @@ export default function App() {
       )}
       {page === "visa_view" && (
         <VisaView id={detail} onNavigate={navigate} />
+      )}
+      {page === "card_view" && (
+        <CardView id={detail} onNavigate={navigate} />
       )}
       {page === "transport_view" && (
         <TransportView id={detail} onNavigate={navigate} />
