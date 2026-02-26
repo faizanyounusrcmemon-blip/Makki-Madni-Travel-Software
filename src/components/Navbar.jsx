@@ -40,6 +40,7 @@ export default function Navbar({ onNavigate }) {
               {can("ziyarat") && <a onClick={() => go("ziyarat")}>🕌 Ziyarat</a>}
               {can("visa") && <a onClick={() => go("visa")}>🛂 Visa</a>}
               {can("hotels") && <a onClick={() => go("hotels")}>🏨 Hotels</a>}
+              {can("card") && <a onClick={() => go("card")}>🃏 Vaccination Card</a>}
             </div>
           )}
         </div>
