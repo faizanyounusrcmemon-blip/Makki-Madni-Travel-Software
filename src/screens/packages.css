@@ -282,3 +282,9 @@
 
 }
 
+@media (min-width: 992px) {
+  .table td,
+  .table th {
+    white-space: normal;
+  }
+}
