@@ -300,9 +300,9 @@ const totalPassengers = Number(adultCount || 0) + Number(childCount || 0) + Numb
   return (
     <div style={styles.container}>
       {/* TOP BAR */}
-      <div className=“d-flex justify-content-between mb-3 flex-wrap gap-2”>
+      <div className="d-flex justify-content-between mb-3 flex-wrap gap-2">
         <button className="btn btn-secondary btn-sm" onClick={() => onNavigate("dashboard")}>⬅ Back</button>
-        <div className=“d-flex gap-2 flex-wrap”>
+        <div className="d-flex gap-2 flex-wrap">
           <button
             className={`btn btn-sm ${
               isEdit ? "btn-warning text-dark" : "btn-primary"
