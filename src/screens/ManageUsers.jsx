@@ -9,7 +9,7 @@ export default function ManageUsers({ onNavigate }) {
 
   const permissions = [
     // SALES
-    "packages", "ticketing", "transport", "ziyarat", "visa", "hotels",
+    "packages", "ticketing", "transport", "ziyarat", "visa", "hotels", "card",
 
     // PURCHASE
     "purchase_entry", "purchase_list", "pending_purchase",

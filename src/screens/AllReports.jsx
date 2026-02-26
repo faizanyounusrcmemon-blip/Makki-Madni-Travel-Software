@@ -45,6 +45,7 @@ export default function AllReports({ onNavigate }) {
       Transport: "transport",
       Ziyarat: "ziyarat",
       Visa: "visa",
+      Card: "card",
     };
 
     const endpoint = map[type];
@@ -79,6 +80,7 @@ export default function AllReports({ onNavigate }) {
       Transport: "transport_view",
       Ziyarat: "ziyarat_view",
       Visa: "visa_view",
+      Card: "card_view",
     };
 
     onNavigate(map[type], ref_no);
@@ -135,6 +137,7 @@ export default function AllReports({ onNavigate }) {
       Transport: "🚐",
       Ziyarat: "🕌",
       Visa: "🛂",
+      Card: "🃏",
     };
     return map[type] || "📄";
   };

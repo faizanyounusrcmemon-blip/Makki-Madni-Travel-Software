@@ -188,6 +188,7 @@ export default function SupplierPurchasedetailreport({ onNavigate }) {
                 <option value="Ticket">Ticket</option>
                 <option value="Hotel">Hotel</option>
                 <option value="Visa">Visa</option>
+                <option value="Card">Visa</option>
                 <option value="Transport">Transport</option>
                 <option value="Ziyarat">Ziyarat</option>
               </select>
