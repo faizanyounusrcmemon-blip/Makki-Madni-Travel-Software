@@ -14,6 +14,7 @@ export default function Restore({ onNavigate }) {
     "hotels",
     "ticketing",
     "visa",
+    "card",
     "transport",
     "purchase_entries",
     "users",
