@@ -168,7 +168,7 @@
 }
 .online-indicator {
   position: fixed;   /* absolute ki jagah */
-  top: 15px;
+  top: 60px;
   right: 20px;
   display: flex;
   align-items: center;
@@ -193,3 +193,4 @@
   50% { opacity: 1; transform: scale(1.2); }
   100% { opacity: 0.3; transform: scale(0.8); }
 }
+
