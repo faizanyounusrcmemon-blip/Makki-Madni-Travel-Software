@@ -166,9 +166,8 @@
   color: #fff;
   background: linear-gradient(135deg, #00b09b, #96c93d);
 }
-/* ONLINE INDICATOR POSITION */
 .online-indicator {
-  position: absolute;
+  position: fixed;   /* absolute ki jagah */
   top: 15px;
   right: 20px;
   display: flex;
@@ -177,9 +176,9 @@
   font-size: 13px;
   font-weight: 600;
   color: #00c853;
+  z-index: 9999;     /* sab se upar show ho */
 }
 
-/* GREEN DOT */
 .online-dot {
   width: 10px;
   height: 10px;
@@ -189,21 +188,8 @@
   animation: pulse 1.5s infinite;
 }
 
-/* BLINK ANIMATION */
 @keyframes pulse {
-  0% {
-    opacity: 0.3;
-    transform: scale(0.8);
-    box-shadow: 0 0 2px #00e676;
-  }
-  50% {
-    opacity: 1;
-    transform: scale(1.2);
-    box-shadow: 0 0 12px #00e676;
-  }
-  100% {
-    opacity: 0.3;
-    transform: scale(0.8);
-    box-shadow: 0 0 2px #00e676;
-  }
+  0% { opacity: 0.3; transform: scale(0.8); }
+  50% { opacity: 1; transform: scale(1.2); }
+  100% { opacity: 0.3; transform: scale(0.8); }
 }
