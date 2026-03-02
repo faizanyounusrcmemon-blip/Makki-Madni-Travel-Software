@@ -137,7 +137,7 @@ export default function AllReports({ onNavigate }) {
       Transport: "🚐",
       Ziyarat: "🕌",
       Visa: "🛂",
-      Card: "🃏",
+      Card: "💳",
     };
     return map[type] || "📄";
   };
@@ -305,3 +305,4 @@ export default function AllReports({ onNavigate }) {
     </div>
   );
 }
+
