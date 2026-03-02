@@ -100,7 +100,7 @@ export default function CardView({ id, onNavigate }) {
         </div>
 
         {/* ===== TITLE ===== */}
-        <h4 className="fw-bold text-center mb-3">🃏 VACCINATION CARD DETAILS</h4>
+        <h4 className="fw-bold text-center mb-3">💳 VACCINATION CARD DETAILS</h4>
 
         {/* ===== BASIC INFO ===== */}
         <div className="row mb-3">
@@ -134,3 +134,4 @@ export default function CardView({ id, onNavigate }) {
     </div>
   );
 }
+
