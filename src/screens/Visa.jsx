@@ -122,7 +122,7 @@ export default function Visa({ onNavigate }) {
     setRows(d.rows || []);
     setPkrRate(d.pkr_rate || 0);
     setIsEdit(true);
-    alert("✅ Visa loaded for edit!");
+    alert("✅ Visa loaded for edit successfully!");
   };
 
   // -------------------- Save / Update --------------------
