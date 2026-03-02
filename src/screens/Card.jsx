@@ -142,7 +142,7 @@ export default function Card({ onNavigate }) {
     setRows(d.rows || []);
     setPkrRate(d.pkr_rate || 0);
     setIsEdit(true);
-    alert("✅ Card loaded for edit!");
+    alert("✅ Card loaded for edit successfully");
   };
 
   // -------------------- Save / Update --------------------
@@ -224,7 +224,7 @@ export default function Card({ onNavigate }) {
           </div>
         </div>
 
-        <h5 style={styles.sectionHeader}>🃏 VACCINATION CARD Details</h5>
+        <h5 style={styles.sectionHeader}>💳 VACCINATION CARD Details</h5>
         <button className="btn btn-outline-primary btn-sm mb-2" style={styles.button} onClick={addRow}>➕ Add Card Row</button>
 
         <table style={styles.table}>
