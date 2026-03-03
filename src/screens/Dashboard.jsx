@@ -7,7 +7,6 @@ export default function Dashboard({ onNavigate }) {
   const [progress, setProgress] = useState(0);
   const [message, setMessage] = useState(null);
 
-  /* LOAD LAST BACKUP */
   const loadLastBackup = async () => {
     try {
       const res = await fetch(
@@ -24,7 +23,6 @@ export default function Dashboard({ onNavigate }) {
     loadLastBackup();
   }, []);
 
-  /* DATE FORMAT AM / PM */
   const formatDate = (d) =>
     d
       ? new Date(d).toLocaleString("en-GB", {
@@ -38,7 +36,6 @@ export default function Dashboard({ onNavigate }) {
         })
       : "-";
 
-  /* RUN BACKUP */
   const runBackup = async () => {
     const pass = prompt("Enter Backup Password");
     if (pass !== "8515") {
@@ -66,7 +63,10 @@ export default function Dashboard({ onNavigate }) {
       setProgress(100);
 
       if (data.success) {
-        setMessage({ type: "success", text: "✅ Backup completed successfully" });
+        setMessage({
+          type: "success",
+          text: "✅ Backup completed successfully",
+        });
         loadLastBackup();
       } else {
         setMessage({ type: "danger", text: "❌ Backup failed" });
@@ -82,21 +82,36 @@ export default function Dashboard({ onNavigate }) {
   };
 
   return (
-    <div className="dashboard-container">
-      {/* HEADER */}
-      <div className="dashboard-header">
-        <h2>✈️ Makki Madni Travel</h2>
-        <i>🌏 Travel Management Dashboard 🌏</i>
+    <div
+      className="dashboard-container"
+      style={{
+        position: "relative",
+        minHeight: "100vh",
+        overflow: "hidden",
+        background:
+          "linear-gradient(to top, #1e3c72, #2a5298)",
+        color: "white",
+      }}
+    >
+      {/* ☁ CLOUD LAYERS */}
+      <div className="cloud cloud1"></div>
+      <div className="cloud cloud2"></div>
+      <div className="cloud cloud3"></div>
+      {/* ✈ FLYING AIRPLANE */}
+      <div className="airplane">
+        🛫
       </div>
 
-
+      {/* HEADER */}
+      <div className="dashboard-header" style={{ textAlign: "center", paddingTop: 40 }}>
+        <h2 style={{ fontSize: 32, margin: 0 }}>
+          ✈ Makki Madni Travel
+        </h2>
+        <i>🌏 Live Travel Management Dashboard 🌏</i>
+      </div>
 
       {/* TOP BAR */}
-      <div className="dashboard-topbar">
-        {/* LEFT EMPTY / TITLE SPACE */}
-        <div />
-
-        {/* RIGHT BACKUP BOX */}
+      <div className="dashboard-topbar" style={{ display: "flex", justifyContent: "flex-end", padding: 20 }}>
         <div className="backup-side-box">
           <button
             className="vip-backup-btn"
@@ -110,7 +125,9 @@ export default function Dashboard({ onNavigate }) {
             <span>🕙 Last Backup</span>
             <b>
               {lastBackup
-                ? `${lastBackup.name} · ${formatDate(lastBackup.created_at)}`
+                ? `${lastBackup.name} · ${formatDate(
+                    lastBackup.created_at
+                  )}`
                 : "Not yet"}
             </b>
           </div>
@@ -135,16 +152,60 @@ export default function Dashboard({ onNavigate }) {
       </div>
 
       {/* CONTENT */}
-      <div className="dashboard-content">
+      <div className="dashboard-content" style={{ padding: 40 }}>
         <div className="dash-card green small">
           <div className="dash-icon">📦</div>
           <h4>Packages</h4>
           <p>Create & manage travel packages</p>
-          <button onClick={() => onNavigate("packages")}>Open</button>
+          <button onClick={() => onNavigate("packages")}>
+            Open
+          </button>
         </div>
       </div>
+
+      {/* CLOUD CSS */}
+      <style>
+        {`
+        .cloud {
+          position: absolute;
+          background: rgba(255,255,255,0.8);
+          border-radius: 50%;
+          opacity: 0.6;
+          filter: blur(8px);
+        }
+
+        .cloud1 {
+          width: 300px;
+          height: 80px;
+          top: 20%;
+          left: -300px;
+          animation: moveClouds 60s linear infinite;
+        }
+
+        .cloud2 {
+          width: 400px;
+          height: 100px;
+          top: 40%;
+          left: -400px;
+          animation: moveClouds 90s linear infinite;
+          opacity: 0.4;
+        }
+
+        .cloud3 {
+          width: 250px;
+          height: 70px;
+          top: 65%;
+          left: -250px;
+          animation: moveClouds 75s linear infinite;
+          opacity: 0.5;
+        }
+
+        @keyframes moveClouds {
+          from { transform: translateX(0); }
+          to { transform: translateX(160vw); }
+        }
+      `}
+      </style>
     </div>
   );
 }
-
-
