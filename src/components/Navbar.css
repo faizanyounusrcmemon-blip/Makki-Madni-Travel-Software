@@ -16,7 +16,7 @@
 
 /* LOGO */
 .nav-logo {
-  font-size: 20px;
+  font-size: 15px;
   font-weight: 700;
   color: #ffd700;
   cursor: pointer;
@@ -30,7 +30,7 @@
 /* LINKS */
 .nav-links {
   display: flex;
-  gap: 26px;
+  gap: 20px;
 }
 
 .nav-item {
@@ -171,4 +171,38 @@
   .nav-title {
     font-size: 14px;
   }
+}
+
+/* NAV USER RIGHT SIDE ALIGN */
+.nav-user {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+/* ONLINE TEXT */
+.online-indicator-nav {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #00c853;
+}
+
+/* GREEN DOT */
+.online-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #00e676;
+  box-shadow: 0 0 6px #00e676;
+  animation: pulse 1.5s infinite;
+}
+
+/* ANIMATION */
+@keyframes pulse {
+  0% { opacity: 0.3; transform: scale(0.8); }
+  50% { opacity: 1; transform: scale(1.2); }
+  100% { opacity: 0.3; transform: scale(0.8); }
 }

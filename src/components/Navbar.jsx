@@ -126,12 +126,18 @@ export default function Navbar({ onNavigate }) {
 
       </div>
 
-      <div className="nav-user">
-        <span className="user-name">👤 {user?.name || "User"}</span>
-        <button className="logout-btn" onClick={logout}>
-          🏃🚪 Logout
-        </button>
-      </div>
+<div className="nav-user">
+  <div className="online-indicator-nav">
+    <span className="online-dot"></span>
+    Online
+  </div>
+
+  <span className="user-name">👤 {user?.name || "User"}</span>
+
+  <button className="logout-btn" onClick={logout}>
+   🏃🚪 Logout
+  </button>
+</div>
     </nav>
   );
 }
