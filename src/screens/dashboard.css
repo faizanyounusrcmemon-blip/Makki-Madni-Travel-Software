@@ -166,37 +166,3 @@
   color: #fff;
   background: linear-gradient(135deg, #00b09b, #96c93d);
 }
-.online-indicator {
-  position: fixed;   /* absolute ki jagah */
-  top: 80px;
-  right: 50px;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 13px;
-  font-weight: 600;
-  color: #00c853;
-  z-index: 9999;     /* sab se upar show ho */
-}
-
-.online-dot {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  background: #00e676;
-  box-shadow: 0 0 6px #00e676;
-  animation: pulse 1.5s infinite;
-}
-
-@keyframes pulse {
-  0% { opacity: 0.3; transform: scale(0.8); }
-  50% { opacity: 1; transform: scale(1.2); }
-  100% { opacity: 0.3; transform: scale(0.8); }
-}
-
-
-
-
-
-
-

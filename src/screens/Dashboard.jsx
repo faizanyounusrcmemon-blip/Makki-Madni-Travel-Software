@@ -89,11 +89,7 @@ export default function Dashboard({ onNavigate }) {
         <i>🌏 Travel Management Dashboard 🌏</i>
       </div>
 
-      {/* ONLINE STATUS */}
-        <div className="online-indicator">
-          <span className="online-dot"></span>
-          Online
-        </div>
+
 
       {/* TOP BAR */}
       <div className="dashboard-topbar">
@@ -150,6 +146,5 @@ export default function Dashboard({ onNavigate }) {
     </div>
   );
 }
-
 
 
