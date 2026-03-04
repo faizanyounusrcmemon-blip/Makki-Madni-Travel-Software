@@ -131,29 +131,41 @@ export default function CustomerLedger({ onNavigate }) {
     else alert(d.error);
   };
 
-  /* =========================
-     EXPORT PDF
-  ========================== */
-  const exportPDF = async () => {
-    const canvas = await html2canvas(pdfRef.current, { scale: 3 });
-    const img = canvas.toDataURL("image/png");
+/* =========================
+   EXPORT PDF
+========================= */
+const exportPDF = async () => {
+  const canvas = await html2canvas(pdfRef.current, { scale: 3 });
+  const img = canvas.toDataURL("image/png");
 
-    const pdf = new jsPDF("p", "mm", "a4");
-    const w = pdf.internal.pageSize.getWidth();
+  const pdf = new jsPDF("p", "mm", "a4");
+  const w = pdf.internal.pageSize.getWidth();
 
-    pdf.setFillColor(18, 97, 160);
-    pdf.rect(0, 0, w, 25, "F");
+  pdf.setFillColor(18, 97, 160);
+  pdf.rect(0, 0, w, 25, "F");
 
-    pdf.setTextColor(255, 255, 255);
-    pdf.setFontSize(16);
-    pdf.text("MAKKI MADNI TRAVEL", w / 2, 15, { align: "center" });
-    pdf.setFontSize(10);
-    pdf.text("Customer Ledger Statement", w / 2, 22, { align: "center" });
+  pdf.setTextColor(255, 255, 255);
+  pdf.setFontSize(16);
+  pdf.text("MAKKI MADNI TRAVEL", w / 2, 15, { align: "center" });
+  pdf.setFontSize(10);
+  pdf.text("Customer Ledger Statement", w / 2, 22, { align: "center" });
 
-    pdf.addImage(img, "PNG", 10, 30, 190, (canvas.height * 190) / canvas.width);
-    pdf.save(`${refNo}-ledger.pdf`);
-  };
+  pdf.addImage(img, "PNG", 10, 30, 190, (canvas.height * 190) / canvas.width);
 
+  // ✅ Get Customer Name
+  let customerName = "Customer";
+  const customerRow = rows.find(r => r.id === "CUSTOMER");
+
+  if (customerRow && customerRow.description) {
+    customerName = customerRow.description
+      .replace(/[^a-zA-Z0-9 ]/g, "")   // remove special chars
+      .replace(/\s+/g, "_");          // space to underscore
+  }
+
+  // ✅ Save as Ref + CustomerName
+  pdf.save(`${refNo}-${customerName}-Ledger.pdf`);
+};
+   
   return (
     <div className="container p-3">
 
@@ -278,6 +290,7 @@ export default function CustomerLedger({ onNavigate }) {
     </div>
   );
 }
+
 
 
 
