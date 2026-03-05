@@ -213,7 +213,7 @@ export default function SupplierLedger({ onNavigate }) {
   };
 
 /* =========================
-   EXPORT PDF (MULTI PAGE)
+   EXPORT PDF (PRO VERSION)
 ========================= */
 const exportPDF = async () => {
   if (!pdfRef.current) return;
@@ -230,31 +230,88 @@ const exportPDF = async () => {
   const imgHeight = (canvas.height * imgWidth) / canvas.width;
 
   let heightLeft = imgHeight;
-  let position = 10;
+  let position = 35;
+
+  /* ================= HEADER ================= */
+
+  const supplierRow = ledger.find(r => r.supplier_name);
+  const supplierName = supplierRow?.supplier_name || "Supplier";
+
+  const rangeText =
+    fromDate || toDate
+      ? `Date Range: ${formatDate(fromDate)}  →  ${formatDate(toDate)}`
+      : "Date Range: All";
+
+  const addHeader = () => {
+    pdf.setFillColor(18, 97, 160);
+    pdf.rect(0, 0, pageWidth, 22, "F");
+
+    pdf.setTextColor(255, 255, 255);
+    pdf.setFontSize(16);
+    pdf.text("MAKKI MADNI TRAVEL", pageWidth / 2, 10, { align: "center" });
+
+    pdf.setFontSize(10);
+    pdf.text("Supplier Ledger Statement", pageWidth / 2, 16, { align: "center" });
+
+    pdf.setTextColor(0, 0, 0);
+    pdf.setFontSize(11);
+
+    pdf.text(`Supplier: ${supplierName}`, 10, 28);
+    pdf.text(`Code: ${supplierCode}`, pageWidth - 10, 28, { align: "right" });
+
+    pdf.setFontSize(9);
+    pdf.text(rangeText, pageWidth / 2, 33, { align: "center" });
+  };
+
+  addHeader();
 
   pdf.addImage(imgData, "PNG", 10, position, imgWidth, imgHeight);
+
   heightLeft -= pageHeight;
 
+  let page = 1;
+
   while (heightLeft > 0) {
-    position = heightLeft - imgHeight + 10;
+    position = heightLeft - imgHeight + 35;
+
     pdf.addPage();
+    page++;
+
+    addHeader();
+
     pdf.addImage(imgData, "PNG", 10, position, imgWidth, imgHeight);
+
     heightLeft -= pageHeight;
   }
 
-  // supplier name
-  let supplierName = "Supplier";
-  const row = ledger.find(r => r.supplier_name);
+  /* ================= FOOTER (PAGE NUMBERS) ================= */
 
-  if (row && row.supplier_name) {
-    supplierName = row.supplier_name
-      .replace(/[^a-zA-Z0-9 ]/g, "")
-      .replace(/\s+/g, "_");
+  const pageCount = pdf.internal.getNumberOfPages();
+
+  for (let i = 1; i <= pageCount; i++) {
+    pdf.setPage(i);
+
+    pdf.setFontSize(9);
+    pdf.setTextColor(120);
+
+    pdf.text(
+      `Page ${i} / ${pageCount}`,
+      pageWidth - 10,
+      pageHeight - 5,
+      { align: "right" }
+    );
   }
 
-  pdf.save(`${supplierCode}-${supplierName}-ledger.pdf`);
-};   
-/* =========================
+  /* ================= FILE NAME ================= */
+
+  const safeName = supplierName
+    .replace(/[^a-zA-Z0-9 ]/g, "")
+    .replace(/\s+/g, "_");
+
+  pdf.save(`${supplierCode}-${safeName}-ledger.pdf`);
+};
+   
+   /* =========================
    UI
 ========================= */
 return (
@@ -411,6 +468,7 @@ return (
   </div>
  );
 }
+
 
 
 
