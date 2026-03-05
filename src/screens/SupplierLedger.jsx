@@ -218,95 +218,91 @@ export default function SupplierLedger({ onNavigate }) {
 const exportPDF = async () => {
   if (!pdfRef.current) return;
 
-  const canvas = await html2canvas(pdfRef.current, { scale: 3 });
+  const canvas = await html2canvas(pdfRef.current, {
+    scale: 2,
+    useCORS: true
+  });
+
   const imgData = canvas.toDataURL("image/png");
 
   const pdf = new jsPDF("p", "mm", "a4");
 
-  const pageWidth = pdf.internal.pageSize.getWidth();
-  const pageHeight = pdf.internal.pageSize.getHeight();
+  const pageWidth = 210;
+  const pageHeight = 297;
 
-  const imgWidth = pageWidth - 20;
+  const margin = 10;
+  const headerHeight = 30;
+
+  const usableWidth = pageWidth - margin * 2;
+  const usableHeight = pageHeight - headerHeight - margin;
+
+  const imgWidth = usableWidth;
   const imgHeight = (canvas.height * imgWidth) / canvas.width;
 
-  let heightLeft = imgHeight;
-  let position = 35;
-
-  /* ================= HEADER ================= */
+  const totalPages = Math.ceil(imgHeight / usableHeight);
 
   const supplierRow = ledger.find(r => r.supplier_name);
   const supplierName = supplierRow?.supplier_name || "Supplier";
 
   const rangeText =
     fromDate || toDate
-      ? `Date Range: ${formatDate(fromDate)}  →  ${formatDate(toDate)}`
-      : "Date Range: All";
+      ? `${formatDate(fromDate)} → ${formatDate(toDate)}`
+      : "All Dates";
 
-  const addHeader = () => {
-    pdf.setFillColor(18, 97, 160);
-    pdf.rect(0, 0, pageWidth, 22, "F");
+  const safeName = supplierName
+    .replace(/[^a-zA-Z0-9 ]/g, "")
+    .replace(/\s+/g, "_");
 
-    pdf.setTextColor(255, 255, 255);
+  for (let page = 0; page < totalPages; page++) {
+
+    if (page > 0) pdf.addPage();
+
+    /* HEADER */
+
+    pdf.setFillColor(18,97,160);
+    pdf.rect(0,0,pageWidth,20,"F");
+
+    pdf.setTextColor(255,255,255);
     pdf.setFontSize(16);
-    pdf.text("MAKKI MADNI TRAVEL", pageWidth / 2, 10, { align: "center" });
+    pdf.text("MAKKI MADNI TRAVEL", pageWidth/2,10,{align:"center"});
 
     pdf.setFontSize(10);
-    pdf.text("Supplier Ledger Statement", pageWidth / 2, 16, { align: "center" });
+    pdf.text("Supplier Ledger Statement", pageWidth/2,16,{align:"center"});
 
-    pdf.setTextColor(0, 0, 0);
+    pdf.setTextColor(0,0,0);
     pdf.setFontSize(11);
 
-    pdf.text(`Supplier: ${supplierName}`, 10, 28);
-    pdf.text(`Code: ${supplierCode}`, pageWidth - 10, 28, { align: "right" });
+    pdf.text(`Supplier: ${supplierName}`,margin,26);
+    pdf.text(`Code: ${supplierCode}`,pageWidth-margin,26,{align:"right"});
 
     pdf.setFontSize(9);
-    pdf.text(rangeText, pageWidth / 2, 33, { align: "center" });
-  };
+    pdf.text(`Date Range: ${rangeText}`,pageWidth/2,31,{align:"center"});
 
-  addHeader();
+    /* IMAGE POSITION */
 
-  pdf.addImage(imgData, "PNG", 10, position, imgWidth, imgHeight);
+    const yOffset = -(usableHeight * page);
 
-  heightLeft -= pageHeight;
+    pdf.addImage(
+      imgData,
+      "PNG",
+      margin,
+      headerHeight + yOffset,
+      imgWidth,
+      imgHeight
+    );
 
-  let page = 1;
-
-  while (heightLeft > 0) {
-    position = heightLeft - imgHeight + 35;
-
-    pdf.addPage();
-    page++;
-
-    addHeader();
-
-    pdf.addImage(imgData, "PNG", 10, position, imgWidth, imgHeight);
-
-    heightLeft -= pageHeight;
-  }
-
-  /* ================= FOOTER (PAGE NUMBERS) ================= */
-
-  const pageCount = pdf.internal.getNumberOfPages();
-
-  for (let i = 1; i <= pageCount; i++) {
-    pdf.setPage(i);
+    /* FOOTER */
 
     pdf.setFontSize(9);
     pdf.setTextColor(120);
 
     pdf.text(
-      `Page ${i} / ${pageCount}`,
-      pageWidth - 10,
+      `Page ${page + 1} / ${totalPages}`,
+      pageWidth - margin,
       pageHeight - 5,
       { align: "right" }
     );
   }
-
-  /* ================= FILE NAME ================= */
-
-  const safeName = supplierName
-    .replace(/[^a-zA-Z0-9 ]/g, "")
-    .replace(/\s+/g, "_");
 
   pdf.save(`${supplierCode}-${safeName}-ledger.pdf`);
 };
@@ -468,6 +464,7 @@ return (
   </div>
  );
 }
+
 
 
 
