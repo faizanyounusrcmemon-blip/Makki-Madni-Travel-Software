@@ -213,37 +213,47 @@ export default function SupplierLedger({ onNavigate }) {
   };
 
 /* =========================
-   EXPORT PDF
+   EXPORT PDF (MULTI PAGE)
 ========================= */
 const exportPDF = async () => {
   if (!pdfRef.current) return;
 
   const canvas = await html2canvas(pdfRef.current, { scale: 3 });
+  const imgData = canvas.toDataURL("image/png");
+
   const pdf = new jsPDF("p", "mm", "a4");
 
-  pdf.addImage(
-    canvas.toDataURL("image/png"),
-    "PNG",
-    10,
-    10,
-    190,
-    (canvas.height * 190) / canvas.width
-  );
+  const pageWidth = pdf.internal.pageSize.getWidth();
+  const pageHeight = pdf.internal.pageSize.getHeight();
 
-  // ✅ Supplier Name find
-  let supplierName = "Supplier";
+  const imgWidth = pageWidth - 20;
+  const imgHeight = (canvas.height * imgWidth) / canvas.width;
 
-  const row = ledger.find(r => r.supplier_name);
-  if (row && row.supplier_name) {
-    supplierName = row.supplier_name
-      .replace(/[^a-zA-Z0-9 ]/g, "") // special char remove
-      .replace(/\s+/g, "_"); // space -> _
+  let heightLeft = imgHeight;
+  let position = 10;
+
+  pdf.addImage(imgData, "PNG", 10, position, imgWidth, imgHeight);
+  heightLeft -= pageHeight;
+
+  while (heightLeft > 0) {
+    position = heightLeft - imgHeight + 10;
+    pdf.addPage();
+    pdf.addImage(imgData, "PNG", 10, position, imgWidth, imgHeight);
+    heightLeft -= pageHeight;
   }
 
-  // ✅ Save with Code + Name
+  // supplier name
+  let supplierName = "Supplier";
+  const row = ledger.find(r => r.supplier_name);
+
+  if (row && row.supplier_name) {
+    supplierName = row.supplier_name
+      .replace(/[^a-zA-Z0-9 ]/g, "")
+      .replace(/\s+/g, "_");
+  }
+
   pdf.save(`${supplierCode}-${supplierName}-ledger.pdf`);
-};
-   
+};   
 /* =========================
    UI
 ========================= */
@@ -401,6 +411,7 @@ return (
   </div>
  );
 }
+
 
 
 
