@@ -212,17 +212,38 @@ export default function SupplierLedger({ onNavigate }) {
     alert("✅ Entry deleted");
   };
 
-  /* =========================
-     EXPORT PDF
-  ========================== */
-  const exportPDF = async () => {
-    if (!pdfRef.current) return;
-    const canvas = await html2canvas(pdfRef.current, { scale: 3 });
-    const pdf = new jsPDF("p", "mm", "a4");
-    pdf.addImage(canvas.toDataURL("image/png"), "PNG", 10, 10, 190, (canvas.height * 190) / canvas.width);
-    pdf.save(`${supplierCode}-ledger.pdf`);
-  };
+/* =========================
+   EXPORT PDF
+========================= */
+const exportPDF = async () => {
+  if (!pdfRef.current) return;
 
+  const canvas = await html2canvas(pdfRef.current, { scale: 3 });
+  const pdf = new jsPDF("p", "mm", "a4");
+
+  pdf.addImage(
+    canvas.toDataURL("image/png"),
+    "PNG",
+    10,
+    10,
+    190,
+    (canvas.height * 190) / canvas.width
+  );
+
+  // ✅ Supplier Name find
+  let supplierName = "Supplier";
+
+  const row = ledger.find(r => r.supplier_name);
+  if (row && row.supplier_name) {
+    supplierName = row.supplier_name
+      .replace(/[^a-zA-Z0-9 ]/g, "") // special char remove
+      .replace(/\s+/g, "_"); // space -> _
+  }
+
+  // ✅ Save with Code + Name
+  pdf.save(`${supplierCode}-${supplierName}-ledger.pdf`);
+};
+   
 /* =========================
    UI
 ========================= */
@@ -381,6 +402,7 @@ return (
  );
 }
    
+
 
 
 
