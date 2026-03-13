@@ -82,6 +82,7 @@ export default function Transport({ onNavigate }) {
   const [rows, setRows] = useState([]);
   const [pkrRate, setPkrRate] = useState(0);
   const [isEdit, setIsEdit] = useState(false);
+  const [saving, setSaving] = useState(false);
 
 
   const quoteRef = useRef(null);
@@ -127,20 +128,56 @@ export default function Transport({ onNavigate }) {
     alert("✅ Transport Edit Mode load successfully!");
   };
 
-  const saveData = async () => {
-    if (!customerName || !bookingDate) {
-      alert("Customer name & booking date required");
-      return;
-    }
-    const payload = { ref_no: refNo || null, customer_name: customerName, booking_date: bookingDate, rows, total_sar: totalSar, pkr_rate: pkrRate, total_pkr: totalPkr };
-    const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/transport/save`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
+const saveData = async () => {
+
+  if (saving) return; // double click stop
+
+  if (!customerName || !bookingDate) {
+    alert("Customer name & booking date required");
+    return;
+  }
+
+  setSaving(true);
+
+  const payload = {
+    ref_no: refNo || null,
+    customer_name: customerName,
+    booking_date: bookingDate,
+    rows,
+    total_sar: totalSar,
+    pkr_rate: pkrRate,
+    total_pkr: totalPkr
+  };
+
+  try {
+
+    const res = await fetch(
+      `${import.meta.env.VITE_BACKEND_URL}/api/transport/save`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      }
+    );
+
     const data = await res.json();
+
     if (data.success) {
       setRefNo(data.ref_no);
       alert("✅ Transport Saved Successfully! Ref#: " + data.ref_no);
       onNavigate("dashboard");
-    } else alert(data.error || "Save failed");
-  };
+    } else {
+      alert(data.error || "Save failed");
+    }
+
+  } catch (err) {
+    console.error("SAVE ERROR:", err);
+    alert("❌ Something went wrong while saving.");
+  }
+
+  setSaving(false);
+};
+
 
   const exportPDF = async () => {
     const canvas = await html2canvas(quoteRef.current, { scale: 3 });
@@ -157,15 +194,16 @@ export default function Transport({ onNavigate }) {
       <div className="d-flex justify-content-between mb-4">
         <button className="btn btn-outline-success fw-bold" style={styles.button} onClick={() => onNavigate("dashboard")}>🚌 Back</button>
         <div className="d-flex gap-2">
-          <button
-            className={`btn btn-sm ${
-              isEdit ? "btn-warning text-dark" : "btn-primary"
-            }`}
-            style={styles.button}
-            onClick={saveData}
-          >
-            {isEdit ? "✏ Update Save" : "💾 Save"}
-          </button>
+<button
+  className={`btn btn-sm ${
+    isEdit ? "btn-warning text-dark" : "btn-primary"
+  }`}
+  style={styles.button}
+  onClick={saveData}
+  disabled={saving}
+>
+  {saving ? "Saving..." : isEdit ? "✏ Update Save" : "💾 Save"}
+</button>
 
           <input className="form-control" style={{ width: 150, borderRadius: 50 }} placeholder="Search Ref" value={searchRef} onChange={(e) => setSearchRef(e.target.value)} />
           <button className="btn btn-info fw-bold" style={styles.button} onClick={loadTransport}>🔄 Load / Edit</button>

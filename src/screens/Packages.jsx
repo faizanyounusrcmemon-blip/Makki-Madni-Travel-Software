@@ -17,6 +17,7 @@ export default function Packages({ onNavigate }) {
   const [contactNo, setContactNo] = useState("");
   const [searchRef, setSearchRef] = useState("");
   const [isEdit, setIsEdit] = useState(false);
+  const [saving, setSaving] = useState(false);
 
 
   const [adultCount, setAdultCount] = useState(0);
@@ -231,61 +232,86 @@ const totalPassengers = Number(adultCount || 0) + Number(childCount || 0) + Numb
     alert("✅ Package Edit Mode load successfully!");
   };
 
-  const handleSavePackage = async () => {
-    const payload = {
-      ref_no: refNo || null,
-      customer_name: customerName,
-      contact_no: contactNo,
-      booking_date: bookingDate,
-      adult_count: adultCount,
-      adult_rate: adultRate,
-      child_count: childCount,
-      child_rate: childRate,
-      infant_count: infantCount,
-      infant_rate: infantRate,
-      flight_total: flightTotal,
-      flights,
-      hotels,
-      hotels_total: hotelsTotal,
-      transport: transportRows,
-      transport_total: transportTotal,
-      ziyarat: ziyaratRows,
-      ziyarat_total: ziyaratTotal,
-      flight_sar_total: flightTotal,
-      hotel_sar_total: hotelsTotal,
-      visa: visaRows,
-      visa_total: visaTotal,
-      visa_sar_total: visaTotal,
-      transport_sar_total: transportTotal,
-      ziyarat_sar_total: ziyaratTotal,
-      flight_sar_rate: flightRate,
-      hotel_sar_rate: hotelsRate,
-      visa_sar_rate: visaRatePKR,
-      transport_sar_rate: transportRate,
-      ziyarat_sar_rate: ziyaratRate,
-      flight_pkr_total: flightPKR,
-      hotel_pkr_total: hotelsPKR,
-      visa_pkr_total: visaPKR,
-      transport_pkr_total: transportPKR,
-      ziyarat_pkr_total: ziyaratPKR,
-      net_pkr_total: grandPKR,
-      total_sar: flightTotal + hotelsTotal + visaTotal + transportTotal + ziyaratTotal,
-      total_pkr: grandPKR,
-      per_person_qty: totalPassengers,
-      per_person_final: adultPerPerson,
-      adult_per_person: adultPerPerson,
-      child_per_person: childPerPerson,
-      infant_per_person: infantPerPerson
+const handleSavePackage = async () => {
 
-    };
-    const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/bookings/save`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
+  if (saving) return;   // double click stop
+
+  setSaving(true);
+
+  const payload = {
+    ref_no: refNo || null,
+    customer_name: customerName,
+    contact_no: contactNo,
+    booking_date: bookingDate,
+    adult_count: adultCount,
+    adult_rate: adultRate,
+    child_count: childCount,
+    child_rate: childRate,
+    infant_count: infantCount,
+    infant_rate: infantRate,
+    flight_total: flightTotal,
+    flights,
+    hotels,
+    hotels_total: hotelsTotal,
+    transport: transportRows,
+    transport_total: transportTotal,
+    ziyarat: ziyaratRows,
+    ziyarat_total: ziyaratTotal,
+    flight_sar_total: flightTotal,
+    hotel_sar_total: hotelsTotal,
+    visa: visaRows,
+    visa_total: visaTotal,
+    visa_sar_total: visaTotal,
+    transport_sar_total: transportTotal,
+    ziyarat_sar_total: ziyaratTotal,
+    flight_sar_rate: flightRate,
+    hotel_sar_rate: hotelsRate,
+    visa_sar_rate: visaRatePKR,
+    transport_sar_rate: transportRate,
+    ziyarat_sar_rate: ziyaratRate,
+    flight_pkr_total: flightPKR,
+    hotel_pkr_total: hotelsPKR,
+    visa_pkr_total: visaPKR,
+    transport_pkr_total: transportPKR,
+    ziyarat_pkr_total: ziyaratPKR,
+    net_pkr_total: grandPKR,
+    total_sar: flightTotal + hotelsTotal + visaTotal + transportTotal + ziyaratTotal,
+    total_pkr: grandPKR,
+    per_person_qty: totalPassengers,
+    per_person_final: adultPerPerson,
+    adult_per_person: adultPerPerson,
+    child_per_person: childPerPerson,
+    infant_per_person: infantPerPerson
+  };
+
+  try {
+
+    const res = await fetch(
+      `${import.meta.env.VITE_BACKEND_URL}/api/bookings/save`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      }
+    );
+
     const data = await res.json();
+
     if (data.success) {
       setRefNo(data.ref_no);
       alert("✅ Saved Successfully! Ref#: " + data.ref_no);
       onNavigate("bookings");
-    } else alert("Error: " + data.error);
-  };
+    } else {
+      alert("Error: " + data.error);
+    }
+
+  } catch (err) {
+    console.log(err);
+  }
+
+  setSaving(false);
+};
+
 
   // ==============================
   // STYLES
@@ -303,15 +329,16 @@ const totalPassengers = Number(adultCount || 0) + Number(childCount || 0) + Numb
       <div className="d-flex justify-content-between mb-3">
         <button className="btn btn-secondary btn-sm" onClick={() => onNavigate("dashboard")}>⬅ Back</button>
         <div className="d-flex gap-2">
-          <button
-            className={`btn btn-sm ${
-              isEdit ? "btn-warning text-dark" : "btn-primary"
-            }`}
-            style={styles.button}
-            onClick={handleSavePackage}
-          >
-            {isEdit ? "✏ Update Save" : "💾 Save"}
-          </button>
+<button
+  className={`btn btn-sm ${
+    isEdit ? "btn-warning text-dark" : "btn-primary"
+  }`}
+  style={styles.button}
+  onClick={handleSavePackage}
+  disabled={saving}
+>
+  {saving ? "Saving..." : isEdit ? "✏ Update Save" : "💾 Save"}
+</button>
 
           <input className="form-control form-control-sm" style={{ width: "150px" }} placeholder="Search Ref No" value={searchRef} onChange={(e) => setSearchRef(e.target.value)} />
           <button className="btn btn-warning btn-sm" onClick={loadPackage}>🔄 Load / Edit</button>

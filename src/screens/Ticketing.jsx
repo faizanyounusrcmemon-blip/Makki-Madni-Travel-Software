@@ -60,6 +60,7 @@ export default function Ticketing({ onNavigate }) {
   const [refNo, setRefNo] = useState("");
   const [bookingDate, setBookingDate] = useState("");
   const [isEdit, setIsEdit] = useState(false);
+  const [saving, setSaving] = useState(false);
 
 
   // ===== FLIGHTS =====
@@ -124,38 +125,61 @@ export default function Ticketing({ onNavigate }) {
   };
 
   // ===== SAVE DATA =====
-  const saveData = async () => {
-    const payload = {
-      ref_no: refNo || null,
-      customer_name: customerName,
-      booking_date: bookingDate,
-      flights,
-      adultQty,
-      adultRate,
-      childQty,
-      childRate,
-      infantQty,
-      infantRate,
-      total_sar: totalSAR,
-      pkr_rate: ticketRate,
-      total_pkr: totalPKR,
-    };
-    try {
-      const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/ticketing/save`, {
+const saveData = async () => {
+
+  if (saving) return; // 🚫 double click stop
+
+  if (!customerName || !bookingDate) {
+    alert("Customer name & booking date required");
+    return;
+  }
+
+  setSaving(true);
+
+  const payload = {
+    ref_no: refNo || null,
+    customer_name: customerName,
+    booking_date: bookingDate,
+    flights,
+    adultQty,
+    adultRate,
+    childQty,
+    childRate,
+    infantQty,
+    infantRate,
+    total_sar: totalSAR,
+    pkr_rate: ticketRate,
+    total_pkr: totalPKR,
+  };
+
+  try {
+
+    const res = await fetch(
+      `${import.meta.env.VITE_BACKEND_URL}/api/ticketing/save`,
+      {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
-      });
-      const data = await res.json();
-      if (data.success) {
-        setRefNo(data.ref_no);
-        alert("✅ Ticketing Saved Successfully! Ref#: " + data.ref_no);
-        onNavigate("dashboard");
-      } else alert("Error: " + data.error);
-    } catch (err) {
-      alert("Network Error: " + err.message);
+      }
+    );
+
+    const data = await res.json();
+
+    if (data.success) {
+      setRefNo(data.ref_no);
+      alert("✅ Ticketing Saved Successfully! Ref#: " + data.ref_no);
+      onNavigate("dashboard");
+    } else {
+      alert("Error: " + data.error);
     }
-  };
+
+  } catch (err) {
+    alert("Network Error: " + err.message);
+  }
+
+  setSaving(false);
+};
+
 
   // ===== EXPORT PDF =====
   const exportPDF = async () => {
@@ -172,15 +196,16 @@ export default function Ticketing({ onNavigate }) {
       <div className="d-flex justify-content-between mb-3">
         <button className="btn btn-dark btn-sm" onClick={() => onNavigate("dashboard")}>← Back</button>
         <div className="d-flex gap-2">
-          <button
-            className={`btn btn-sm ${
-              isEdit ? "btn-warning text-dark" : "btn-primary"
-            }`}
-            style={styles.button}
-            onClick={saveData}
-          >
-            {isEdit ? "✏ Update Save" : "💾 Save"}
-          </button>
+<button
+  className={`btn btn-sm ${
+    isEdit ? "btn-warning text-dark" : "btn-primary"
+  }`}
+  style={styles.button}
+  onClick={saveData}
+  disabled={saving}
+>
+  {saving ? "Saving..." : isEdit ? "✏ Update Save" : "💾 Save"}
+</button>
 
           <input className="form-control form-control-sm" style={{ width: 140 }} placeholder="Search Ref" value={searchRef} onChange={(e) => setSearchRef(e.target.value)} />
           <button className="btn btn-warning btn-sm" onClick={loadTicketing}>🔄 Load / Edit</button>
@@ -226,15 +251,91 @@ export default function Ticketing({ onNavigate }) {
         </table>
 
         {/* Passenger Fares */}
-        <h6 style={styles.sectionHeader}>Passenger Fares</h6>
-        <table className="table table-sm">
-          <tbody>
-            <tr><td>Adult</td><td><input type="number" className="form-control form-control-sm" value={adultQty} onChange={(e) => setAdultQty(+e.target.value)} /></td><td><input type="number" className="form-control form-control-sm" value={adultRate} onChange={(e) => setAdultRate(+e.target.value)} /></td><td className="fw-bold">{adultQty*adultRate}</td></tr>
-            <tr><td>Child</td><td><input type="number" className="form-control form-control-sm" value={childQty} onChange={(e) => setChildQty(+e.target.value)} /></td><td><input type="number" className="form-control form-control-sm" value={childRate} onChange={(e) => setChildRate(+e.target.value)} /></td><td className="fw-bold">{childQty*childRate}</td></tr>
-            <tr><td>Infant</td><td><input type="number" className="form-control form-control-sm" value={infantQty} onChange={(e) => setInfantQty(+e.target.value)} /></td><td><input type="number" className="form-control form-control-sm" value={infantRate} onChange={(e) => setInfantRate(+e.target.value)} /></td><td className="fw-bold">{infantQty*infantRate}</td></tr>
-            <tr className="table-info"><td className="fw-bold">Total SAR</td><td></td><td></td><td className="fw-bold">{totalSAR}</td></tr>
-          </tbody>
-        </table>
+<h6 style={styles.sectionHeader}>Passenger Fares</h6>
+
+<table className="table table-sm table-bordered">
+  <thead className="table-light">
+    <tr>
+      <th>Passenger Type</th>
+      <th style={{width:120}}>Qty</th>
+      <th style={{width:150}}>Rate (SAR)</th>
+      <th style={{width:150}}>Total (SAR)</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    <tr>
+      <td>Adult</td>
+      <td>
+        <input
+          type="number"
+          className="form-control form-control-sm"
+          value={adultQty}
+          onChange={(e) => setAdultQty(+e.target.value)}
+        />
+      </td>
+      <td>
+        <input
+          type="number"
+          className="form-control form-control-sm"
+          value={adultRate}
+          onChange={(e) => setAdultRate(+e.target.value)}
+        />
+      </td>
+      <td className="fw-bold">{adultQty * adultRate}</td>
+    </tr>
+
+    <tr>
+      <td>Child</td>
+      <td>
+        <input
+          type="number"
+          className="form-control form-control-sm"
+          value={childQty}
+          onChange={(e) => setChildQty(+e.target.value)}
+        />
+      </td>
+      <td>
+        <input
+          type="number"
+          className="form-control form-control-sm"
+          value={childRate}
+          onChange={(e) => setChildRate(+e.target.value)}
+        />
+      </td>
+      <td className="fw-bold">{childQty * childRate}</td>
+    </tr>
+
+    <tr>
+      <td>Infant</td>
+      <td>
+        <input
+          type="number"
+          className="form-control form-control-sm"
+          value={infantQty}
+          onChange={(e) => setInfantQty(+e.target.value)}
+        />
+      </td>
+      <td>
+        <input
+          type="number"
+          className="form-control form-control-sm"
+          value={infantRate}
+          onChange={(e) => setInfantRate(+e.target.value)}
+        />
+      </td>
+      <td className="fw-bold">{infantQty * infantRate}</td>
+    </tr>
+
+    <tr className="table-info">
+      <td className="fw-bold">Total SAR</td>
+      <td></td>
+      <td></td>
+      <td className="fw-bold">{totalSAR}</td>
+    </tr>
+  </tbody>
+</table>
+
 
         {/* Summary */}
         <h6 style={styles.sectionHeader}>Summary</h6>

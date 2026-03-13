@@ -93,6 +93,7 @@ export default function Hotels({ onNavigate }) {
   const [sarRate, setSarRate] = useState(0);
   const pdfRef = useRef(null);
   const [isEdit, setIsEdit] = useState(false);
+  const [saving, setSaving] = useState(false);
 
 
   const showDate = (val) => {
@@ -163,13 +164,54 @@ export default function Hotels({ onNavigate }) {
     alert("✅ Hotel Edit Mode load successfully!");
   };
 
-  const saveData = async () => {
-    const payload = { ref_no: refNo || null, customer_name: customerName, agent_name: agentName, booking_date: bookingDate, hotels: rows, hotels_total: hotelsTotal, sar_rate: sarRate, total_pkr: hotelPKR };
-    const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/hotels/save`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
-    const data = await res.json();
-    if (data.success) { setRefNo(data.ref_no); alert("✅ Hotels Saved Successfully! Ref#: " + data.ref_no); onNavigate("dashboard"); }
-    else alert("ERROR: " + data.error);
+const saveData = async () => {
+
+  if (saving) return; // double click protection
+
+  if (!customerName) return alert("Customer name required");
+  if (!bookingDate) return alert("Booking date required");
+
+  setSaving(true);
+
+  const payload = {
+    ref_no: refNo || null,
+    customer_name: customerName,
+    agent_name: agentName,
+    booking_date: bookingDate,
+    hotels: rows,
+    hotels_total: hotelsTotal,
+    sar_rate: sarRate,
+    total_pkr: hotelPKR
   };
+
+  try {
+
+    const res = await fetch(
+      `${import.meta.env.VITE_BACKEND_URL}/api/hotels/save`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      }
+    );
+
+    const data = await res.json();
+
+    if (data.success) {
+      setRefNo(data.ref_no);
+      alert("✅ Hotels Saved Successfully! Ref#: " + data.ref_no);
+      onNavigate("dashboard");
+    } else {
+      alert("ERROR: " + data.error);
+    }
+
+  } catch (err) {
+    console.log(err);
+    alert("Server Error");
+  }
+
+  setSaving(false);
+};
 
   const exportPDF = async () => {
     const canvas = await html2canvas(pdfRef.current, { scale: 3 });
@@ -185,15 +227,16 @@ export default function Hotels({ onNavigate }) {
       <div className="d-flex justify-content-between mb-3">
         <button className="btn btn-dark btn-sm" onClick={() => onNavigate("dashboard")}>← Back</button>
         <div className="d-flex gap-2">
-          <button
-            className={`btn btn-sm ${
-              isEdit ? "btn-warning text-dark" : "btn-primary"
-            }`}
-            style={styles.button}
-            onClick={saveData}
-          >
-            {isEdit ? "✏ Update Save" : "💾 Save"}
-          </button>
+<button
+  className={`btn btn-sm ${
+    isEdit ? "btn-warning text-dark" : "btn-primary"
+  }`}
+  style={styles.button}
+  onClick={saveData}
+  disabled={saving}
+>
+  {saving ? "Saving..." : isEdit ? "✏ Update Save" : "💾 Save"}
+</button>
 
           <input className="form-control form-control-sm" style={{ width: "140px" }} placeholder="Search Ref" value={searchRef} onChange={(e) => setSearchRef(e.target.value)} />
           <button className="btn btn-warning btn-sm" onClick={loadHotel}>🔄 Load / Edit</button>

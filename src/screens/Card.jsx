@@ -104,6 +104,7 @@ export default function Card({ onNavigate }) {
   const [rows, setRows] = useState([]);
   const [pkrRate, setPkrRate] = useState(0);
   const [isEdit, setIsEdit] = useState(false);
+  const [saving, setSaving] = useState(false);
   const pdfRef = useRef(null);
 
   // -------------------- Row Management --------------------
@@ -142,26 +143,42 @@ export default function Card({ onNavigate }) {
     setRows(d.rows || []);
     setPkrRate(d.pkr_rate || 0);
     setIsEdit(true);
-    alert("✅ Card loaded for edit successfully");
+    alert("✅ Card loaded for edit!");
   };
 
   // -------------------- Save / Update --------------------
-  const saveData = async () => {
-    const payload = {
-      ref_no: refNo || null,
-      customer_name: customerName,
-      booking_date: bookingDate,
-      rows,
-      pkr_rate: pkrRate,
-    };
+const saveData = async () => {
 
-    const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/card/save`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
+  if (saving) return; // 🚫 double click stop
+
+  if (!customerName || !bookingDate) {
+    alert("Customer name & booking date required");
+    return;
+  }
+
+  setSaving(true);
+
+  const payload = {
+    ref_no: refNo || null,
+    customer_name: customerName,
+    booking_date: bookingDate,
+    rows,
+    pkr_rate: pkrRate,
+  };
+
+  try {
+
+    const res = await fetch(
+      `${import.meta.env.VITE_BACKEND_URL}/api/card/save`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      }
+    );
 
     const data = await res.json();
+
     if (data.success) {
       setRefNo(data.ref_no);
       alert("✅ Card saved successfully! Ref#: " + data.ref_no);
@@ -169,7 +186,13 @@ export default function Card({ onNavigate }) {
     } else {
       alert("ERROR: " + data.error);
     }
-  };
+
+  } catch (err) {
+    alert("Network Error: " + err.message);
+  }
+
+  setSaving(false);
+};
 
   // -------------------- Export PDF --------------------
   const exportPDF = async () => {
@@ -190,9 +213,14 @@ export default function Card({ onNavigate }) {
       <div className="d-flex justify-content-between mb-3">
         <button className="btn btn-dark btn-sm" style={styles.button} onClick={() => onNavigate("dashboard")}>← Back</button>
         <div className="d-flex gap-2">
-          <button className={`btn btn-sm ${isEdit ? "btn-warning text-dark" : "btn-primary"}`} style={styles.button} onClick={saveData}>
-            {isEdit ? "✏ Update Save" : "💾 Save"}
-          </button>
+<button
+  className={`btn btn-sm ${isEdit ? "btn-warning text-dark" : "btn-primary"}`}
+  style={styles.button}
+  onClick={saveData}
+  disabled={saving}
+>
+  {saving ? "Saving..." : isEdit ? "✏ Update Save" : "💾 Save"}
+</button>
           <input className="form-control form-control-sm" style={{ width: 140, borderRadius: 50 }} placeholder="Search Ref" value={searchRef} onChange={(e) => setSearchRef(e.target.value)} />
           <button className="btn btn-warning btn-sm" style={styles.button} onClick={loadCard}>🔄 Load / Edit</button>
           <button className="btn btn-success btn-sm" style={styles.button} onClick={exportPDF}>📄 Export PDF</button>
@@ -224,7 +252,7 @@ export default function Card({ onNavigate }) {
           </div>
         </div>
 
-        <h5 style={styles.sectionHeader}>💳 VACCINATION CARD Details</h5>
+        <h5 style={styles.sectionHeader}>🃏 VACCINATION CARD Details</h5>
         <button className="btn btn-outline-primary btn-sm mb-2" style={styles.button} onClick={addRow}>➕ Add Card Row</button>
 
         <table style={styles.table}>
