@@ -40,32 +40,47 @@ export default function Supplier({ onNavigate }) {
       }
     );
 
-    const d = await r.json();
+   const d = await r.json();
+
     if (d.success) {
+      alert(editId ? "Supplier Updated Successfully ✅" : "Supplier Saved Successfully ✅");
+
       setForm({ supplier_name: "", category: "", contact_no: "" });
       setEditId(null);
       load();
-    } else alert(d.error);
-  };
+    } else {
+      alert("Error: " + d.error);
+    }
+
+    };
 
   /* ================= DELETE ================= */
-  const del = async (id) => {
-    const pass = prompt("Delete password?");
-    if (!pass) return;
+const del = async (id) => {
 
-    const r = await fetch(
-      `${import.meta.env.VITE_BACKEND_URL}/api/supplier/delete/${id}`,
-      {
-        method: "DELETE",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ password: pass }),
-      }
-    );
+  const confirmDelete = window.confirm("⚠ Are you sure you want to delete this supplier?");
+  if (!confirmDelete) return;
 
-    const d = await r.json();
-    if (d.success) load();
-    else alert(d.error);
-  };
+  const pass = prompt("Enter delete password:");
+  if (!pass) return;
+
+  const r = await fetch(
+    `${import.meta.env.VITE_BACKEND_URL}/api/supplier/delete/${id}`,
+    {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ password: pass }),
+    }
+  );
+
+  const d = await r.json();
+
+  if (d.success) {
+    alert("Supplier Deleted Successfully 🗑");
+    load();
+  } else {
+    alert("Error: " + d.error);
+  }
+};
 
   /* ================= SEARCH FILTER ================= */
   const handleSearch = (value) => {
@@ -241,6 +256,5 @@ export default function Supplier({ onNavigate }) {
     </div>
   );
 }
-
 
 
