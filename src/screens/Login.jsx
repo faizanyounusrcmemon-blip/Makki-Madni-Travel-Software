@@ -6,40 +6,41 @@ export default function Login({ onLogin }) {
   const [show, setShow] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  const submit = async () => {
-    if (!username || !password) {
-      alert("Username & Password required");
+const submit = async () => {
+  if (!username || !password) {
+    alert("Username & Password required");
+    return;
+  }
+
+  setLoading(true);
+
+  try {
+    const res = await fetch(
+      `${import.meta.env.VITE_BACKEND_URL}/api/auth/login`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username, password }),
+      }
+    );
+
+    const data = await res.json();
+    setLoading(false);
+
+    if (!data.success) {
+      alert("❌ Invalid login");
       return;
     }
 
-    setLoading(true);
+    // ✅ store updated user
+    sessionStorage.setItem("user", JSON.stringify(data.user));
+    onLogin();
 
-    try {
-      const res = await fetch(
-        `${import.meta.env.VITE_BACKEND_URL}/api/auth/login`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ username, password }),
-        }
-      );
-
-      const data = await res.json();
-      setLoading(false);
-
-      if (!data.success) {
-        alert("❌ Invalid login");
-        return;
-      }
-
-      sessionStorage.setItem("user", JSON.stringify(data.user));
-      onLogin();
-
-    } catch (err) {
-      setLoading(false);
-      alert("Server error");
-    }
-  };
+  } catch (err) {
+    setLoading(false);
+    alert("Server error");
+  }
+};
 
   const cancel = () => {
     setUsername("");
@@ -186,5 +187,4 @@ export default function Login({ onLogin }) {
     </div>
   );
 }
-
 
