@@ -88,123 +88,154 @@ export default function Dashboard({ onNavigate }) {
         position: "relative",
         minHeight: "100vh",
         overflow: "hidden",
-        background:
-          "linear-gradient(to top, #1e3c72, #2a5298)",
         color: "white",
+        // ✅ Image from public folder
+        backgroundImage: "url('/images/haram.jpg')",
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+        backgroundRepeat: "no-repeat",
       }}
     >
-      {/* ☁ CLOUD LAYERS */}
-      <div className="cloud cloud1"></div>
-      <div className="cloud cloud2"></div>
-      <div className="cloud cloud3"></div>
-      {/* ✈ FLYING AIRPLANE */}
-      <div className="airplane">
-        🛫
-      </div>
+      {/* Light overlay so image is visible */}
+      <div
+        style={{
+          position: "absolute",
+          top: 0,
+          left: 0,
+          width: "100%",
+          height: "100%",
+          backgroundColor: "rgba(0,0,0,0.25)",
+          zIndex: 0,
+        }}
+      ></div>
 
-      {/* HEADER */}
-      <div className="dashboard-header" style={{ textAlign: "center", paddingTop: 40 }}>
-        <h2 style={{ fontSize: 32, margin: 0 }}>
-          ✈ Makki Madni Travel
-        </h2>
-        <i>🌏 Live Travel Management Dashboard 🌏</i>
-      </div>
+      {/* Content wrapper */}
+      <div style={{ position: "relative", zIndex: 2 }}>
+        {/* ☁ CLOUDS */}
+        <div className="cloud cloud1"></div>
+        <div className="cloud cloud2"></div>
+        <div className="cloud cloud3"></div>
 
-      {/* TOP BAR */}
-      <div className="dashboard-topbar" style={{ display: "flex", justifyContent: "flex-end", padding: 20 }}>
-        <div className="backup-side-box">
-          <button
-            className="vip-backup-btn"
-            onClick={runBackup}
-            disabled={loading}
-          >
-            {loading ? "⏳ Backup Running..." : "💾 Backup Now"}
-          </button>
+        {/* ✈ AIRPLANE */}
+        <div className="airplane">🛫</div>
 
-          <div className="last-backup-box">
-            <span>🕙 Last Backup</span>
-            <b>
-              {lastBackup
-                ? `${lastBackup.name} · ${formatDate(
-                    lastBackup.created_at
-                  )}`
-                : "Not yet"}
-            </b>
-          </div>
+        {/* HEADER */}
+        <div style={{ textAlign: "center", paddingTop: 40 }}>
+          <h2 style={{ fontSize: 32, margin: 0 }}>Makki Madni Travel</h2>
+          <i>Live Travel Management Dashboard</i>
+        </div>
 
-          {loading && (
-            <div className="vip-progress">
-              <div
-                className="vip-progress-bar"
-                style={{ width: `${progress}%` }}
-              >
-                {progress}%
+        {/* TOP BAR */}
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "flex-end",
+            padding: 20,
+          }}
+        >
+          <div className="backup-side-box">
+            <button
+              className="vip-backup-btn"
+              onClick={runBackup}
+              disabled={loading}
+            >
+              {loading ? "Backup Running..." : "Backup Now"}
+            </button>
+
+            <div className="last-backup-box">
+              <span>Last Backup</span>
+              <b>
+                {lastBackup
+                  ? `${lastBackup.name} · ${formatDate(
+                      lastBackup.created_at
+                    )}`
+                  : "Not yet"}
+              </b>
+            </div>
+
+            {loading && (
+              <div className="vip-progress">
+                <div
+                  className="vip-progress-bar"
+                  style={{ width: `${progress}%` }}
+                >
+                  {progress}%
+                </div>
               </div>
-            </div>
-          )}
+            )}
 
-          {message && (
-            <div className={`vip-alert ${message.type}`}>
-              {message.text}
-            </div>
-          )}
+            {message && (
+              <div className={`vip-alert ${message.type}`}>{message.text}</div>
+            )}
+          </div>
         </div>
+
+        {/* BOTTOM SHADOW */}
+        <div className="ground"></div>
       </div>
 
-      {/* CONTENT */}
-      <div className="dashboard-content" style={{ padding: 40 }}>
-        <div className="dash-card green small">
-          <div className="dash-icon">📦</div>
-          <h4>Packages</h4>
-          <p>Create & manage travel packages</p>
-          <button onClick={() => onNavigate("packages")}>
-            Open
-          </button>
-        </div>
-      </div>
-
-      {/* CLOUD CSS */}
+      {/* CSS */}
       <style>
         {`
-        .cloud {
-          position: absolute;
-          background: rgba(255,255,255,0.8);
-          border-radius: 50%;
-          opacity: 0.6;
-          filter: blur(8px);
-        }
+          .cloud {
+            position: absolute;
+            background: rgba(255,255,255,0.7);
+            border-radius: 50%;
+            opacity: 0.5;
+            filter: blur(10px);
+          }
 
-        .cloud1 {
-          width: 300px;
-          height: 80px;
-          top: 20%;
-          left: -300px;
-          animation: moveClouds 60s linear infinite;
-        }
+          .cloud1 {
+            width: 300px;
+            height: 80px;
+            top: 20%;
+            left: -300px;
+            animation: moveClouds 60s linear infinite;
+          }
 
-        .cloud2 {
-          width: 400px;
-          height: 100px;
-          top: 40%;
-          left: -400px;
-          animation: moveClouds 90s linear infinite;
-          opacity: 0.4;
-        }
+          .cloud2 {
+            width: 400px;
+            height: 100px;
+            top: 40%;
+            left: -400px;
+            animation: moveClouds 90s linear infinite;
+          }
 
-        .cloud3 {
-          width: 250px;
-          height: 70px;
-          top: 65%;
-          left: -250px;
-          animation: moveClouds 75s linear infinite;
-          opacity: 0.5;
-        }
+          .cloud3 {
+            width: 250px;
+            height: 70px;
+            top: 65%;
+            left: -250px;
+            animation: moveClouds 75s linear infinite;
+          }
 
-        @keyframes moveClouds {
-          from { transform: translateX(0); }
-          to { transform: translateX(160vw); }
-        }
-      `}
+          @keyframes moveClouds {
+            from { transform: translateX(0); }
+            to { transform: translateX(160vw); }
+          }
+
+          .airplane {
+            position: absolute;
+            top: 30%;
+            left: -50px;
+            font-size: 38px;
+            animation: fly 25s linear infinite;
+            z-index: 2;
+          }
+
+          @keyframes fly {
+            from { transform: translateX(0) translateY(0); }
+            to { transform: translateX(120vw) translateY(-60px); }
+          }
+
+          .ground {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            height: 100px;
+            background: linear-gradient(to top, rgba(0,0,0,0.7), transparent);
+          }
+        `}
       </style>
     </div>
   );
