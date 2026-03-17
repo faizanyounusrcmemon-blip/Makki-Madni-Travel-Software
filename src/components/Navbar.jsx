@@ -14,11 +14,37 @@ export default function Navbar({ onNavigate }) {
     onNavigate(page);
   };
 
-  const logout = () => {
-    if (!window.confirm("Do you want to logout?")) return;
-    sessionStorage.removeItem("user");
-    window.location.reload();
-  };
+const logout = async () => {
+  const confirmLogout = window.confirm("⚠️ Do you want to logout?");
+  
+  if (!confirmLogout) return; // ❌ cancel → کچھ نہیں ہوگا
+
+  const user = JSON.parse(sessionStorage.getItem("user"));
+  if (!user) return;
+
+  try {
+    const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/auth/logout`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: user.id })
+    });
+
+    const data = await res.json();
+
+    if (data.success) {
+      sessionStorage.removeItem("user");
+
+      // ✅ redirect to login
+      onNavigate("login");
+
+    } else {
+      alert(data.error || "Logout failed");
+    }
+
+  } catch (err) {
+    alert("Server error");
+  }
+};
 
   return (
     <nav className="vip-navbar">
