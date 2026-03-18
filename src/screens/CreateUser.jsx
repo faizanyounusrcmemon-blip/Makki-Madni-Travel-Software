@@ -328,14 +328,14 @@ export default function CreateUser({ onNavigate }) {
 
 <td>
   {u.last_login
-    ? new Date(new Date(u.last_login).getTime() + (5 * 60 * 60 * 1000))
+    ? new Date(new Date(u.last_login).getTime() + (19 * 60 * 60 * 1000))
         .toLocaleString()
     : "Never"}
 </td>
 
 <td>
   {u.last_logout
-    ? new Date(new Date(u.last_logout).getTime() + (5 * 60 * 60 * 1000))
+    ? new Date(new Date(u.last_logout).getTime() + (19 * 60 * 60 * 1000))
         .toLocaleString()
     : "Never"}
 </td>
