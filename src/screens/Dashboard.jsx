@@ -150,6 +150,7 @@ export default function Dashboard({ onNavigate }) {
         {/* ✈ AIRPLANE */}
         <div className="airplane">
            <img src="/images/plane.png" alt="plane" />
+           <div className="trail"></div>
         </div>
 
         {/* HEADER */}
