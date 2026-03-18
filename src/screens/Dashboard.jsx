@@ -7,6 +7,33 @@ export default function Dashboard({ onNavigate }) {
   const [progress, setProgress] = useState(0);
   const [message, setMessage] = useState(null);
 
+  // ✅ BACKGROUND IMAGES
+  const images = [
+    "/images/haram1.jpg",
+    "/images/haram2.jpg",
+    "/images/haram3.jpg",
+    "/images/haram4.jpg",
+    "/images/haram5.jpg",
+    "/images/haram6.jpg",
+    "/images/haram7.jpg",
+    "/images/haram8.jpg",
+    "/images/haram9.jpg",
+    "/images/haram10.jpg",
+    "/images/haram11.jpg",
+    "/images/haram12.jpg",
+  ];
+
+  const [bgIndex, setBgIndex] = useState(0);
+
+  // ✅ AUTO SLIDER
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setBgIndex((prev) => (prev + 1) % images.length);
+    }, 4000); // every 4 sec
+
+    return () => clearInterval(interval);
+  }, []);
+
   const loadLastBackup = async () => {
     try {
       const res = await fetch(
@@ -89,14 +116,18 @@ export default function Dashboard({ onNavigate }) {
         minHeight: "100vh",
         overflow: "hidden",
         color: "white",
-        // ✅ Image from public folder
-        backgroundImage: "url('/images/haram.jpg')",
+
+        // ✅ SLIDER IMAGE
+        backgroundImage: `url(${images[bgIndex]})`,
         backgroundSize: "cover",
         backgroundPosition: "center",
         backgroundRepeat: "no-repeat",
+
+        // ✅ SMOOTH FADE EFFECT
+        transition: "background-image 1s ease-in-out",
       }}
     >
-      {/* Light overlay so image is visible */}
+      {/* LIGHT OVERLAY */}
       <div
         style={{
           position: "absolute",
@@ -109,7 +140,7 @@ export default function Dashboard({ onNavigate }) {
         }}
       ></div>
 
-      {/* Content wrapper */}
+      {/* CONTENT */}
       <div style={{ position: "relative", zIndex: 2 }}>
         {/* ☁ CLOUDS */}
         <div className="cloud cloud1"></div>
@@ -126,13 +157,7 @@ export default function Dashboard({ onNavigate }) {
         </div>
 
         {/* TOP BAR */}
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "flex-end",
-            padding: 20,
-          }}
-        >
+        <div style={{ display: "flex", justifyContent: "flex-end", padding: 20 }}>
           <div className="backup-side-box">
             <button
               className="vip-backup-btn"
@@ -165,7 +190,9 @@ export default function Dashboard({ onNavigate }) {
             )}
 
             {message && (
-              <div className={`vip-alert ${message.type}`}>{message.text}</div>
+              <div className={`vip-alert ${message.type}`}>
+                {message.text}
+              </div>
             )}
           </div>
         </div>
