@@ -148,7 +148,9 @@ export default function Dashboard({ onNavigate }) {
         <div className="cloud cloud3"></div>
 
         {/* ✈ AIRPLANE */}
-        <div className="airplane">🛫</div>
+        <div className="airplane">
+           <img src="/images/plane.png" alt="plane" />
+        </div>
 
         {/* HEADER */}
         <div style={{ textAlign: "center", paddingTop: 40 }}>

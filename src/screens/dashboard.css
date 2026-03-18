@@ -193,3 +193,24 @@
     transform: translateX(160vw) translateY(0) rotate(0deg);
   }
 }
+
+.airplane {
+  position: absolute;
+  top: 50%;
+  left: -150px;
+  animation: fly 25s linear infinite;
+  z-index: 2;
+}
+
+.airplane img {
+  width: 120px;
+  height: auto;
+  transform: rotate(-15deg);
+  filter: drop-shadow(0 5px 10px rgba(0,0,0,0.6));
+  animation: tilt 3s ease-in-out infinite alternate;
+}
+
+@keyframes tilt {
+  from { transform: rotate(-10deg); }
+  to { transform: rotate(-20deg); }
+}
