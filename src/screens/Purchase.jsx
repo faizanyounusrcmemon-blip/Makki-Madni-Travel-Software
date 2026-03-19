@@ -120,45 +120,66 @@ export default function Purchase({ onNavigate }) {
   };
 
   /* ================= SAVE ================= */
-  const savePurchase = async () => {
-    if (!rows.length) return alert("No data");
+const savePurchase = async () => {
+  if (!rows.length) return alert("No data");
 
-    const cleanRows = rows.map((r) => ({
+  // ❌ REMOVE ZERO SALE ROWS + CLEAN DATA
+  const cleanRows = rows
+    .filter(
+      (r) =>
+        parseNumber(r.sale_sar) !== 0 ||
+        parseNumber(r.sale_rate) !== 0 ||
+        parseNumber(r.sale_pkr) !== 0
+    )
+    .map((r) => ({
       ...r,
       purchase_sar: parseNumber(r.purchase_sar),
       purchase_rate: parseNumber(r.purchase_rate),
     }));
 
-    const res = await fetch(
-      `${import.meta.env.VITE_BACKEND_URL}/api/purchase/save`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ref_no: refNo, items: cleanRows }),
-      }
-    );
+  // ❌ AGAR SAB ZERO THE → STOP SAVE
+  if (!cleanRows.length) {
+    return alert("No valid rows to save");
+  }
 
-    const data = await res.json();
-
-    if (data.success) {
-      alert(isEdit ? "✅ Purchase Updated" : "✅ Purchase Saved");
-      setRows([]);
-      setRefNo("");
-      setIsEdit(false);
-      loadPending();
-      onNavigate("dashboard");
-    } else {
-      alert(data.error || "Save failed");
+  const res = await fetch(
+    `${import.meta.env.VITE_BACKEND_URL}/api/purchase/save`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ref_no: refNo, items: cleanRows }),
     }
-  };
+  );
 
-  const isPartial =
-    rows.length > 0 &&
-    rows.some(
+  const data = await res.json();
+
+  if (data.success) {
+    alert(isEdit ? "✅ Purchase Updated" : "✅ Purchase Saved");
+    setRows([]);
+    setRefNo("");
+    setIsEdit(false);
+    loadPending();
+    onNavigate("dashboard");
+  } else {
+    alert(data.error || "Save failed");
+  }
+};
+
+/* ================= PARTIAL CHECK (UPDATED) ================= */
+const isPartial =
+  rows
+    .filter(
+      (r) =>
+        parseNumber(r.sale_sar) !== 0 ||
+        parseNumber(r.sale_rate) !== 0 ||
+        parseNumber(r.sale_pkr) !== 0
+    )
+    .some(
       (r) =>
         !parseNumber(r.purchase_sar) ||
         !parseNumber(r.purchase_rate)
     );
+
 
   /* ================= UI ================= */
   return (
@@ -308,8 +329,27 @@ export default function Purchase({ onNavigate }) {
               </tr>
             </thead>
             <tbody>
-              {rows.map((r, i) => (
-                <tr key={i}>
+              {rows
+                .map((r, i) => ({ ...r, originalIndex: i }))
+                .filter(
+                  (r) =>
+                    parseNumber(r.sale_sar) !== 0 ||
+                    parseNumber(r.sale_rate) !== 0 ||
+                    parseNumber(r.sale_pkr) !== 0
+                )
+                .map((r, i) => (
+<tr
+  key={i}
+  className={
+    (parseNumber(r.sale_sar) !== 0 ||
+      parseNumber(r.sale_rate) !== 0 ||
+      parseNumber(r.sale_pkr) !== 0) &&
+    (!parseNumber(r.purchase_sar) ||
+      !parseNumber(r.purchase_rate))
+      ? "table-danger"
+      : ""
+  }
+>
                   <td
                     className="fw-bold"
                     style={{ fontSize: "13px", color: itemCategoryColor(r.item_label || r.item) }}
@@ -323,14 +363,18 @@ export default function Purchase({ onNavigate }) {
                     <input
                       className="form-control form-control-sm"
                       value={r.purchase_sar}
-                      onChange={(e) => updateRow(i, "purchase_sar", e.target.value)}
+                      onChange={(e) =>
+  updateRow(r.originalIndex, "purchase_sar", e.target.value)
+}
                     />
                   </td>
                   <td>
                     <input
                       className="form-control form-control-sm"
                       value={r.purchase_rate}
-                      onChange={(e) => updateRow(i, "purchase_rate", e.target.value)}
+                      onChange={(e) =>
+  updateRow(r.originalIndex, "purchase_rate", e.target.value)
+}
                     />
                   </td>
                   <td>{r.purchase_pkr.toLocaleString()}</td>
@@ -341,7 +385,9 @@ export default function Purchase({ onNavigate }) {
                     <select
                       className="form-select form-select-sm"
                       value={r.supplier_code}
-                      onChange={(e) => updateRow(i, "supplier_code", e.target.value)}
+                      onChange={(e) =>
+  updateRow(r.originalIndex, "supplier_code", e.target.value)
+}
                     >
                       <option value="">Select Supplier</option>
                       {suppliers.map((s) => (
