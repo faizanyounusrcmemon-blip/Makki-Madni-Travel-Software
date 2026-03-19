@@ -240,8 +240,8 @@ const exportPDF = async () => {
 
           <div className="col-md-3">
             <select className="form-control" value={method} onChange={(e) => setMethod(e.target.value)}>
-              <option>Cash</option>
               <option>Bank</option>
+              <option>Cash</option>
             </select>
           </div>
         </div>
