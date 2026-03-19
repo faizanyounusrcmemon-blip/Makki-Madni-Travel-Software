@@ -52,7 +52,7 @@ export default function CustomerLedger({ onNavigate }) {
   const [amountDisp, setAmountDisp] = useState("");
   const [date, setDate] = useState(today); // ✅ Default to today
   const [type, setType] = useState("payment");
-  const [method, setMethod] = useState("Cash");
+  const [method, setMethod] = useState("Bank");
   const [saving, setSaving] = useState(false);
   const pdfRef = useRef(null);
 
