@@ -56,7 +56,7 @@ export default function SupplierLedger({ onNavigate }) {
   const [amountRaw, setAmountRaw] = useState(0);
   const [amountDisp, setAmountDisp] = useState("");
   const [payDate, setPayDate] = useState(today);
-  const [method, setMethod] = useState("Cash");
+  const [method, setMethod] = useState("Bank");
   const [type, setType] = useState("Payment");
   const [saving, setSaving] = useState(false);
   const [fromDate, setFromDate] = useState("");
