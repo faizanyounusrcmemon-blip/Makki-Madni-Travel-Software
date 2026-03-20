@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import Select from "react-select";
 
 /* ===============================
    HELPERS (DECIMAL SAFE)
@@ -179,6 +180,12 @@ const isPartial =
         !parseNumber(r.purchase_sar) ||
         !parseNumber(r.purchase_rate)
     );
+
+
+const supplierOptions = suppliers.map((s) => ({
+  value: s.supplier_code,
+  label: s.supplier_name,
+}));
 
 
   /* ================= UI ================= */
@@ -382,20 +389,44 @@ const isPartial =
                     {r.profit.toLocaleString()}
                   </td>
                   <td>
-                    <select
-                      className="form-select form-select-sm"
-                      value={r.supplier_code}
-                      onChange={(e) =>
-  updateRow(r.originalIndex, "supplier_code", e.target.value)
-}
-                    >
-                      <option value="">Select Supplier</option>
-                      {suppliers.map((s) => (
-                        <option key={s.supplier_code} value={s.supplier_code}>
-                          {s.supplier_name}
-                        </option>
-                      ))}
-                    </select>
+<div style={{ minWidth: "220px" }}>
+  <Select
+    options={supplierOptions}
+    value={
+      supplierOptions.find(
+        (opt) => opt.value === r.supplier_code
+      ) || null
+    }
+    onChange={(selected) =>
+      updateRow(
+        r.originalIndex,
+        "supplier_code",
+        selected ? selected.value : ""
+      )
+    }
+    placeholder="Select Supplier..."
+    isClearable
+    isSearchable
+    menuPortalTarget={document.body} // dropdown overflow fix
+    styles={{
+      control: (base) => ({
+        ...base,
+        minHeight: "30px",
+        height: "30px",
+        fontSize: "12px",
+      }),
+      valueContainer: (base) => ({
+        ...base,
+        padding: "0 6px",
+      }),
+      indicatorsContainer: (base) => ({
+        ...base,
+        height: "30px",
+      }),
+      menuPortal: (base) => ({ ...base, zIndex: 9999 }),
+    }}
+  />
+</div>
                   </td>
                 </tr>
               ))}
