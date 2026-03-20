@@ -392,7 +392,7 @@ return (
         <div className="col-md-2">
           <select className="form-control" value={method} onChange={e=>setMethod(e.target.value)}>
             <option>Bank</option>
-            <option>Cash<option>
+            <option>Cash</option>
           </select>
         </div>
         <div className="col-md-3">
