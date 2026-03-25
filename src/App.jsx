@@ -58,6 +58,15 @@ import CardView from "./screens/CardView";
 import TransportView from "./screens/TransportView";
 import ZiyaratView from "./screens/ZiyaratView";
 
+import PackagesViewDeleted from "./screens/PackagesViewDeleted";
+import HotelsViewDeleted from "./screens/HotelsViewDeleted";
+import TicketingViewDeleted from "./screens/TicketingViewDeleted";
+import VisaViewDeleted from "./screens/VisaViewDeleted";
+import CardViewDeleted from "./screens/CardViewDeleted";
+import TransportViewDeleted from "./screens/TransportViewDeleted";
+import ZiyaratViewDeleted from "./screens/ZiyaratViewDeleted";
+import PurchaseDetailDeleted from "./screens/PurchaseDetailDeleted";
+
 export default function App() {
   const [page, setPage] = useState("dashboard");
   const [detail, setDetail] = useState(null);
@@ -158,6 +167,34 @@ export default function App() {
       )}
       {page === "ziyarat_view" && (
         <ZiyaratView id={detail} onNavigate={navigate} />
+      )}
+
+      {page === "packages_view_deleted" && (
+        <PackagesViewDeleted id={detail} onNavigate={navigate} />
+      )}
+
+      {page === "hotels_view_deleted" && (
+        <HotelsViewDeleted id={detail} onNavigate={navigate} />
+      )}
+
+      {page === "ticket_view_deleted" && (
+        <TicketingViewDeleted id={detail} onNavigate={navigate} />
+      )}
+      {page === "visa_view_deleted" && (
+        <VisaViewDeleted id={detail} onNavigate={navigate} />
+      )}
+      {page === "card_view_deleted" && (
+        <CardViewDeleted id={detail} onNavigate={navigate} />
+      )}
+      {page === "transport_view_deleted" && (
+        <TransportViewDeleted id={detail} onNavigate={navigate} />
+      )}
+      {page === "ziyarat_view_deleted" && (
+        <ZiyaratViewDeleted id={detail} onNavigate={navigate} />
+      )}
+
+      {page === "purchase_view_deleted" && (
+        <PurchaseDetailDeleted id={detail} onNavigate={navigate} />
       )}
     </div>
   );
