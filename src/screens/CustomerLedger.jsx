@@ -7,9 +7,15 @@ import jsPDF from "jspdf";
 ========================= */
 const getRowDate = (r) => {
   if (!r?.date) return "-";
+
   const d = new Date(r.date);
   if (isNaN(d.getTime())) return "-";
-  return d.toLocaleDateString("en-GB");
+
+  const day = String(d.getDate()).padStart(2, "0");
+  const month = d.toLocaleString("en-US", { month: "short" });
+  const year = d.getFullYear();
+
+  return `${day}/${month}/${year}`;
 };
 
 const fmtAmt = (v) =>
@@ -290,7 +296,6 @@ const exportPDF = async () => {
     </div>
   );
 }
-
 
 
 
