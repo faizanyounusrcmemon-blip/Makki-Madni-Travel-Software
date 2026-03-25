@@ -1,5 +1,18 @@
 import React, { useEffect, useState } from "react";
 
+const fmtDate = (val) => {
+  if (!val) return "-";
+
+  const d = new Date(val);
+  if (isNaN(d.getTime())) return "-";
+
+  const day = String(d.getDate()).padStart(2, "0");
+  const month = d.toLocaleString("en-US", { month: "short" });
+  const year = d.getFullYear();
+
+  return `${day}/${month}/${year}`; // 👉 01/Feb/2026
+};
+
 export default function ExpenseLedger({ onNavigate }) {
   const today = new Date().toISOString().slice(0, 10);
 
@@ -205,7 +218,7 @@ export default function ExpenseLedger({ onNavigate }) {
           <tbody className="small fw-bold">
             {filteredRows.map((r) => (
               <tr key={r.id}>
-                <td>{new Date(r.expense_date).toLocaleDateString()}</td>
+                <td>{fmtDate(r.expense_date)}</td>
                 <td>{r.title}</td>
                 <td className="text-end text-success">
                   {Number(r.amount).toLocaleString()}
