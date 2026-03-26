@@ -6,6 +6,7 @@ export default function AllReports({ onNavigate }) {
   const [search, setSearch] = useState("");
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
+  const [typeFilter, setTypeFilter] = useState("");
 
   /* ================= LOAD ================= */
   const loadData = async () => {
@@ -24,6 +25,38 @@ export default function AllReports({ onNavigate }) {
   useEffect(() => {
     loadData();
   }, []);
+
+  /* ================= DATE PRESETS ================= */
+  const setToday = () => {
+    const t = new Date().toISOString().slice(0, 10);
+    setFromDate(t);
+    setToDate(t);
+  };
+
+  const setWeek = () => {
+    const now = new Date();
+    const first = new Date(now.setDate(now.getDate() - now.getDay()));
+    const last = new Date(now.setDate(first.getDate() + 6));
+
+    setFromDate(first.toISOString().slice(0, 10));
+    setToDate(last.toISOString().slice(0, 10));
+  };
+
+  const setMonth = () => {
+    const now = new Date();
+    const first = new Date(now.getFullYear(), now.getMonth(), 1);
+    const last = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+
+    setFromDate(first.toISOString().slice(0, 10));
+    setToDate(last.toISOString().slice(0, 10));
+  };
+
+  const resetFilters = () => {
+    setSearch("");
+    setFromDate("");
+    setToDate("");
+    setTypeFilter("");
+  };
 
   /* ================= DELETE ================= */
   const handleDelete = async (type, ref_no, customer_name) => {
@@ -86,7 +119,7 @@ export default function AllReports({ onNavigate }) {
     onNavigate(map[type], ref_no);
   };
 
-  /* ================= SUMMARY (ONLY PACKAGES) ================= */
+  /* ================= SUMMARY ================= */
   const handleSumry = (type, ref_no) => {
     if (type !== "Packages") return;
     onNavigate("packages_summary_view", ref_no);
@@ -109,8 +142,11 @@ export default function AllReports({ onNavigate }) {
     if (toDate)
       temp = temp.filter((r) => new Date(r.booking_date) <= new Date(toDate));
 
+    if (typeFilter)
+      temp = temp.filter((r) => r.type === typeFilter);
+
     setFiltered(temp);
-  }, [search, fromDate, toDate, rows]);
+  }, [search, fromDate, toDate, typeFilter, rows]);
 
   /* ================= TOTAL ================= */
   const totalPKR = useMemo(() => {
@@ -144,31 +180,27 @@ export default function AllReports({ onNavigate }) {
 
   return (
     <div className="container py-4">
+
       {/* HEADER */}
       <div className="card shadow-sm border-0 mb-3">
-        <div
-          className="card-body d-flex justify-content-between align-items-center"
+        <div className="card-body d-flex justify-content-between align-items-center"
           style={{
             background: "linear-gradient(135deg, #0d6efd, #6610f2)",
             color: "#fff",
             borderRadius: "12px",
-          }}
-        >
+          }}>
           <h5 className="fw-bold mb-0">📊 All Reports</h5>
-          <button
-            className="btn btn-light btn-sm"
-            onClick={() => onNavigate("dashboard")}
-          >
+          <button className="btn btn-light btn-sm" onClick={() => onNavigate("dashboard")}>
             ← Back
           </button>
         </div>
       </div>
 
       {/* FILTER */}
-      <div className="card shadow-sm mb-3">
+      <div className="card shadow-sm mb-2">
         <div className="card-body">
           <div className="row g-2">
-            <div className="col-md-6">
+            <div className="col-md-4">
               <input
                 className="form-control form-control-sm"
                 placeholder="🔍 Search Ref / Customer"
@@ -177,126 +209,138 @@ export default function AllReports({ onNavigate }) {
               />
             </div>
 
-            <div className="col-md-3">
-              <input
-                type="date"
-                className="form-control form-control-sm"
-                value={fromDate}
-                onChange={(e) => setFromDate(e.target.value)}
-              />
+            <div className="col-md-2">
+              <input type="date" className="form-control form-control-sm"
+                value={fromDate} onChange={(e) => setFromDate(e.target.value)} />
             </div>
 
-            <div className="col-md-3">
-              <input
-                type="date"
+            <div className="col-md-2">
+              <input type="date" className="form-control form-control-sm"
+                value={toDate} onChange={(e) => setToDate(e.target.value)} />
+            </div>
+
+            <div className="col-md-4">
+              <select
                 className="form-control form-control-sm"
-                value={toDate}
-                onChange={(e) => setToDate(e.target.value)}
-              />
+                value={typeFilter}
+                onChange={(e) => setTypeFilter(e.target.value)}
+              >
+                <option value="">All Types</option>
+                <option>Packages</option>
+                <option>Hotels</option>
+                <option>Ticketing</option>
+                <option>Transport</option>
+                <option>Ziyarat</option>
+                <option>Visa</option>
+                <option>Card</option>
+              </select>
             </div>
           </div>
         </div>
       </div>
 
-      {/* TABLE */}
+      {/* 🔥 DATE BUTTONS ROW */}
+      <div className="d-flex gap-2 mb-3 flex-wrap">
+        <button className="btn btn-outline-primary btn-sm" onClick={setToday}>📅 Today</button>
+        <button className="btn btn-outline-success btn-sm" onClick={setWeek}>📆 This Week</button>
+        <button className="btn btn-outline-warning btn-sm" onClick={setMonth}>🗓 This Month</button>
+        <button className="btn btn-outline-danger btn-sm" onClick={resetFilters}>♻ Reset</button>
+      </div>
+
+      {/* TABLE (UNCHANGED) */}
       <div className="card shadow-sm">
         <div className="table-responsive">
           <table className="table table-hover table-sm mb-0 align-middle">
-            <thead className="table-light">
-              <tr>
-                <th className="text-center">SR#</th>
-                <th className="text-center">Type</th>
-                <th className="text-center">Ref</th>
-                <th className="text-center">Customer</th>
-                <th className="text-center">Date</th>
-                <th className="text-center">PKR</th>
-                <th className="text-center">Summary</th>
-                <th className="text-center">View</th>
-                <th className="text-center">Delete</th>
-              </tr>
-            </thead>
+
+<thead className="table-light">
+<tr>
+<th className="text-center">SR#</th>
+<th className="text-center">Type</th>
+<th className="text-center">Ref</th>
+<th className="text-center">Customer</th>
+<th className="text-center">Date</th>
+<th className="text-center">PKR</th>
+<th className="text-center">Summary</th>
+<th className="text-center">View</th>
+<th className="text-center">Delete</th>
+</tr>
+</thead>
 
 <tbody>
-  {filtered.map((r, i) => (
-    <tr key={i}>
-      <td className="fw-bold text-muted" style={{ fontSize: "12px" }}>{i + 1}</td>
+{filtered.map((r, i) => (
+<tr key={i}>
+<td className="fw-bold text-muted" style={{ fontSize: "12px" }}>{i + 1}</td>
 
-      <td>
-        <span className="badge bg-info text-dark">
-          {typeIcon(r.type)} {r.type}
-        </span>
-      </td>
+<td>
+<span className="badge bg-info text-dark">
+{typeIcon(r.type)} {r.type}
+</span>
+</td>
 
-      <td className="fw-bold text-nowrap small-cell">
-        {r.ref_no}
-      </td>
+<td className="fw-bold text-nowrap small-cell">{r.ref_no}</td>
 
-      <td
-        className="fw-semibold text-primary text-nowrap small-cell"
-        title={r.customer_name}
-      >
-        {r.customer_name || "-"}
-      </td>
+<td className="fw-semibold text-primary text-nowrap small-cell">
+{r.customer_name || "-"}
+</td>
 
-      <td className="text-muted text-nowrap small-cell">
-        {formatDate(r.booking_date)}
-      </td>
+<td className="text-muted text-nowrap small-cell">
+{formatDate(r.booking_date)}
+</td>
 
+<td>
+<span className="badge bg-success">
+💰 {fmtPKR(r.total_pkr)}
+</span>
+</td>
 
-      <td>
-        <span className="badge bg-success">
-          💰 {fmtPKR(r.total_pkr)}
-        </span>
-      </td>
+<td className="text-center">
+{r.type === "Packages" && (
+<button
+className="btn btn-outline-warning btn-sm"
+onClick={() => handleSumry(r.type, r.ref_no)}
+>
+📊 SUMMARY
+</button>
+)}
+</td>
 
-      <td className="text-center">
-        {r.type === "Packages" ? (
-          <button
-            className="btn btn-outline-warning btn-sm"
-            onClick={() => handleSumry(r.type, r.ref_no)}
-          >
-            📊 SUMMARY
-          </button>
-        ) : null}
-      </td>
+<td className="text-center">
+<button
+className="btn btn-outline-info btn-sm"
+onClick={() => handleView(r.type, r.ref_no)}
+>
+👁️ VIEW
+</button>
+</td>
 
-      <td className="text-center">
-        <button
-          className="btn btn-outline-info btn-sm"
-          onClick={() => handleView(r.type, r.ref_no)}
-        >
-          👁️ VIEW
-        </button>
-      </td>
+<td className="text-center">
+<button
+className="btn btn-outline-danger btn-sm"
+onClick={() =>
+handleDelete(r.type, r.ref_no, r.customer_name)
+}
+>
+🗑 DELETE
+</button>
+</td>
+</tr>
+))}
 
-      <td className="text-center">
-        <button
-          className="btn btn-outline-danger btn-sm"
-          onClick={() =>
-            handleDelete(r.type, r.ref_no, r.customer_name)
-          }
-        >
-          🗑 DELETE
-        </button>
-      </td>
-    </tr>
-  ))}
+{filtered.length === 0 && (
+<tr>
+<td colSpan={9} className="text-center py-3 text-muted">
+No Records Found
+</td>
+</tr>
+)}
 
-  {filtered.length === 0 && (
-    <tr>
-      <td colSpan={9} className="text-center py-3 text-muted">
-        No Records Found
-      </td>
-    </tr>
-  )}
-
-  {filtered.length > 0 && (
-    <tr className="table-dark">
-      <td colSpan={5} className="text-end fw-bold">TOTAL</td>
-      <td className="fw-bold">{fmtPKR(totalPKR)}</td>
-      <td colSpan={3}></td>
-    </tr>
-  )}
+{filtered.length > 0 && (
+<tr className="table-dark">
+<td colSpan={5} className="text-end fw-bold">TOTAL</td>
+<td className="fw-bold">{fmtPKR(totalPKR)}</td>
+<td colSpan={3}></td>
+</tr>
+)}
 </tbody>
 
           </table>
@@ -305,4 +349,3 @@ export default function AllReports({ onNavigate }) {
     </div>
   );
 }
-

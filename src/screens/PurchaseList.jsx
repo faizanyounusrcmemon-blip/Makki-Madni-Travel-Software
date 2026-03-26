@@ -36,6 +36,37 @@ export default function PurchaseList({ onNavigate }) {
     setLoading(false);
   };
 
+  /* ================= DATE BUTTONS ================= */
+  const setToday = () => {
+    const t = new Date().toISOString().slice(0, 10);
+    setFrom(t);
+    setTo(t);
+  };
+
+  const setWeek = () => {
+    const now = new Date();
+    const first = new Date(now.setDate(now.getDate() - now.getDay()));
+    const last = new Date(now.setDate(first.getDate() + 6));
+
+    setFrom(first.toISOString().slice(0, 10));
+    setTo(last.toISOString().slice(0, 10));
+  };
+
+  const setMonth = () => {
+    const now = new Date();
+    const first = new Date(now.getFullYear(), now.getMonth(), 1);
+    const last = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+
+    setFrom(first.toISOString().slice(0, 10));
+    setTo(last.toISOString().slice(0, 10));
+  };
+
+  const resetFilters = () => {
+    setFrom("");
+    setTo("");
+    setSearch("");
+  };
+
   /* ================= DELETE ================= */
   const deletePurchase = async (refNo, customer_name) => {
     const password = prompt(
@@ -177,6 +208,22 @@ export default function PurchaseList({ onNavigate }) {
             </div>
           </div>
         </div>
+      </div>
+
+      {/* 🔥 DATE BUTTONS ROW */}
+      <div className="d-flex gap-2 mb-3 flex-wrap">
+        <button className="btn btn-outline-primary btn-sm" onClick={setToday}>
+          📅 Today
+        </button>
+        <button className="btn btn-outline-success btn-sm" onClick={setWeek}>
+          📆 This Week
+        </button>
+        <button className="btn btn-outline-warning btn-sm" onClick={setMonth}>
+          🗓 This Month
+        </button>
+        <button className="btn btn-outline-danger btn-sm" onClick={resetFilters}>
+          ♻ Reset
+        </button>
       </div>
 
       {/* TABLE */}
