@@ -130,7 +130,6 @@ const logout = async () => {
               )}
 
               {can("sale_change_check_report") && <a onClick={() => go("saleChangeCheckReport")}>📊 Sale vs Purchase Sale Check Report</a>}
-              {can("system_storage") && <a onClick={() => go("systemStorage")}>💾 System Storage</a>}
             </div>
           )}
         </div>
@@ -145,6 +144,7 @@ const logout = async () => {
               {can("manage_users") && <a onClick={() => go("manageUsers")}>🛠 Manage Users</a>}
               {can("supplier") && <a onClick={() => go("supplier")}>🏷 Supplier Profile</a>}
               {can("deleted_reports") && <a onClick={() => go("deletedReports")}>🗑 Deleted Reports</a>}
+              {can("system_storage") && <a onClick={() => go("systemStorage")}>💾 System Storage</a>}
               {can("restore") && <a onClick={() => go("restore")}>♻ Restore</a>}
             </div>
           )}
