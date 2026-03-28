@@ -162,13 +162,20 @@ export default function Dashboard({ onNavigate }) {
         {/* TOP BAR */}
         <div style={{ display: "flex", justifyContent: "flex-end", padding: 20 }}>
           <div className="backup-side-box">
-            <button
-              className="vip-backup-btn"
-              onClick={runBackup}
-              disabled={loading}
-            >
-              {loading ? "Backup Running..." : "Backup Now"}
-            </button>
+<button
+  className="vip-backup-btn"
+  onClick={runBackup}
+  disabled={loading}
+>
+{loading ? (
+  <>
+    <span className="btn-loader"></span>
+    Backing up...
+  </>
+) : (
+  "Backup Now"
+)}
+</button>
 
             <div className="last-backup-box">
               <span>Last Backup</span>
