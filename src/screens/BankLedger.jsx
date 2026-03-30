@@ -40,26 +40,22 @@ export default function BankLedger({ onNavigate }) {
   const [toDate, setToDate] = useState("");
 
   /* ================= COLOR MAP REF ================= */
-  const supplierColorMap = useRef({}); // persist across renders
+  const supplierColorMap = useRef({});
 
   /* ================= NAME EXTRACTION ================= */
   const extractName = (str) => {
     if (!str) return "";
-    // Match "Supplier Payment - NAME (Ref: ...)" or "Customer Payment - NAME (Ref: ...)"
     const match = str.match(/- (.+?) \(/);
     if (match) return match[1].trim();
     return str.trim();
   };
 
-  const isCustomerPayment = (str) => {
-    if (!str) return false;
-    return str.toLowerCase().includes("customer");
-  };
+  const isCustomerPayment = (str) => str?.toLowerCase().includes("customer") || false;
 
   const getSupplierColor = (str) => {
     const name = extractName(str);
-    if (!name) return "#000"; // default black
-    if (isCustomerPayment(str)) return "#007BFF"; // all customers same blue
+    if (!name) return "#000";
+    if (isCustomerPayment(str)) return "#007BFF";
     if (!supplierColorMap.current[name]) {
       const index = Object.keys(supplierColorMap.current).length % colorPalette.length;
       supplierColorMap.current[name] = colorPalette[index];
@@ -68,10 +64,7 @@ export default function BankLedger({ onNavigate }) {
   };
 
   /* ================= LOAD DATA ================= */
-  useEffect(() => {
-    load();
-  }, []);
-
+  useEffect(() => { load(); }, []);
   const load = async () => {
     const r = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/bank-ledger`);
     const d = await r.json();
@@ -85,8 +78,14 @@ export default function BankLedger({ onNavigate }) {
   /* ================= FILTER / SEARCH ================= */
   useEffect(() => {
     let temp = [...rows];
-    if (fromDate) temp = temp.filter((r) => new Date(r.txn_date) >= new Date(fromDate));
-    if (toDate) temp = temp.filter((r) => new Date(r.txn_date) <= new Date(toDate));
+    if (fromDate) {
+      const from = new Date(fromDate + "T00:00:00");
+      temp = temp.filter((r) => new Date(r.txn_date) >= from);
+    }
+    if (toDate) {
+      const to = new Date(toDate + "T23:59:59");
+      temp = temp.filter((r) => new Date(r.txn_date) <= to);
+    }
     if (search) {
       const s = search.toLowerCase();
       temp = temp.filter(
@@ -99,6 +98,7 @@ export default function BankLedger({ onNavigate }) {
       );
     }
     setFiltered(temp);
+    setCurrentPage(1);
   }, [fromDate, toDate, rows, search]);
 
   /* ================= SAVE ================= */
@@ -112,9 +112,7 @@ export default function BankLedger({ onNavigate }) {
     const d = await r.json();
     if (d.success) {
       setMsg({ type: "success", text: d.message });
-      setAmount("");
-      setComment("");
-      load();
+      setAmount(""); setComment(""); load();
     } else setMsg({ type: "danger", text: d.error });
   };
 
@@ -128,13 +126,41 @@ export default function BankLedger({ onNavigate }) {
       body: JSON.stringify({ password: pass }),
     });
     const d = await r.json();
-    if (d.success) {
-      setMsg({ type: "success", text: d.message });
-      load();
-    } else setMsg({ type: "danger", text: d.error });
+    if (d.success) { setMsg({ type: "success", text: d.message }); load(); }
+    else setMsg({ type: "danger", text: d.error });
   };
 
-  const currentBalance = filtered.length > 0 ? filtered[0].balance : 0;
+  /* ================= PAGINATION ================= */
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
+  const totalPages = Math.ceil(filtered.length / pageSize);
+  const paginatedRows = filtered.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+
+  const getPagination = () => {
+    const delta = 2;
+    const range = [];
+    const rangeWithDots = [];
+    let l;
+
+    for (let i = 1; i <= totalPages; i++) {
+      if (i === 1 || i === totalPages || (i >= currentPage - delta && i <= currentPage + delta)) {
+        range.push(i);
+      }
+    }
+
+    for (let i of range) {
+      if (l) {
+        if (i - l === 2) rangeWithDots.push(l + 1);
+        else if (i - l > 2) rangeWithDots.push("…");
+      }
+      rangeWithDots.push(i);
+      l = i;
+    }
+    return rangeWithDots;
+  };
+
+  /* ================= CURRENT BALANCE ================= */
+  const currentBalance = rows.length ? rows[0].balance : 0;
 
   /* ================= RENDER ================= */
   return (
@@ -226,7 +252,7 @@ export default function BankLedger({ onNavigate }) {
               </tr>
             </thead>
             <tbody>
-              {filtered.map((r, i) => (
+              {paginatedRows.map((r, i) => (
                 <tr key={i}>
                   <td style={{ fontSize: "0.85rem" }}><span className="text-muted fw-bold">{formatDate(r.txn_date)}</span></td>
                   <td
@@ -246,7 +272,7 @@ export default function BankLedger({ onNavigate }) {
                   </td>
                 </tr>
               ))}
-              {filtered.length === 0 && (
+              {paginatedRows.length === 0 && (
                 <tr>
                   <td colSpan="6" className="text-center text-muted py-3">No entries</td>
                 </tr>
@@ -254,6 +280,57 @@ export default function BankLedger({ onNavigate }) {
             </tbody>
           </table>
         </div>
+
+{/* PAGINATION CONTROLS */}
+<div className="d-flex justify-content-between align-items-center mt-2 flex-wrap gap-2">
+
+  {/* Rows per page */}
+  <select
+    className="form-select form-select-sm"
+    style={{ width: "100px" }}
+    value={pageSize}
+    onChange={(e) => { setPageSize(Number(e.target.value)); setCurrentPage(1); }}
+  >
+    <option value={25}>25</option>
+    <option value={50}>50</option>
+    <option value={75}>75</option>
+    <option value={100}>100</option>
+    <option value={1000}>1000</option>
+  </select>
+
+  {/* Prev / Next + Page numbers */}
+  <div className="d-flex gap-1 align-items-center flex-wrap">
+    <button className="btn btn-sm btn-outline-primary" disabled={currentPage === 1} onClick={() => setCurrentPage(currentPage - 1)}>⬅ Prev</button>
+    {getPagination().map((p, idx) => (
+      <button
+        key={idx}
+        className={`btn btn-sm ${p === currentPage ? "btn-primary" : "btn-outline-primary"}`}
+        disabled={p === "…"}
+        onClick={() => typeof p === "number" && setCurrentPage(p)}
+      >
+        {p}
+      </button>
+    ))}
+    <button className="btn btn-sm btn-outline-primary" disabled={currentPage === totalPages || totalPages === 0} onClick={() => setCurrentPage(currentPage + 1)}>Next ➡</button>
+  </div>
+
+  {/* Jump */}
+  <input
+    type="number"
+    min={1}
+    max={totalPages}
+    placeholder="Go"
+    className="form-control form-control-sm"
+    style={{ width: "70px" }}
+    onKeyDown={(e) => {
+      if (e.key === "Enter") {
+        let val = Number(e.target.value);
+        if (val >= 1 && val <= totalPages) setCurrentPage(val);
+      }
+    }}
+  />
+</div>
+
       </div>
     </div>
   );

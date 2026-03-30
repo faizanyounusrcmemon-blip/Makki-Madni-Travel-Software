@@ -343,10 +343,10 @@ export default function PurchaseList({ onNavigate }) {
             }}
           >
             <option value={25}>25</option>
-            <option value={30}>30</option>
             <option value={50}>50</option>
-            <option value={70}>70</option>
+            <option value={75}>75</option>
             <option value={100}>100</option>
+            <option value={1000}>1000</option>
           </select>
 
           <div className="d-flex flex-wrap gap-1">
