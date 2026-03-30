@@ -8,6 +8,10 @@ export default function PurchaseList({ onNavigate }) {
   const [loading, setLoading] = useState(false);
   const [showProfit, setShowProfit] = useState(false);
 
+  // ✅ PAGINATION
+  const [currentPage, setCurrentPage] = useState(1);
+  const [rowsPerPage, setRowsPerPage] = useState(25);
+
   useEffect(() => {
     loadList();
   }, []);
@@ -112,6 +116,51 @@ export default function PurchaseList({ onNavigate }) {
     );
   }, [rows, search]);
 
+  /* ================= PAGINATION ================= */
+  const indexOfLast = currentPage * rowsPerPage;
+  const indexOfFirst = indexOfLast - rowsPerPage;
+  const currentRows = filteredRows.slice(indexOfFirst, indexOfLast);
+  const totalPages = Math.ceil(filteredRows.length / rowsPerPage);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search, from, to]);
+
+  // ✅ SMART PAGINATION
+  const getPageNumbers = () => {
+    const pages = [];
+    const maxVisible = 5;
+
+    if (totalPages <= 7) {
+      for (let i = 1; i <= totalPages; i++) pages.push(i);
+    } else {
+      pages.push(1);
+
+      let start = Math.max(2, currentPage - Math.floor(maxVisible / 2));
+      let end = Math.min(totalPages - 1, currentPage + Math.floor(maxVisible / 2));
+
+      if (currentPage <= 3) {
+        start = 2;
+        end = 6;
+      }
+
+      if (currentPage >= totalPages - 2) {
+        start = totalPages - 5;
+        end = totalPages - 1;
+      }
+
+      if (start > 2) pages.push("...");
+
+      for (let i = start; i <= end; i++) pages.push(i);
+
+      if (end < totalPages - 1) pages.push("...");
+
+      pages.push(totalPages);
+    }
+
+    return pages;
+  };
+
   /* ================= TOTALS ================= */
   const totals = useMemo(() => {
     return filteredRows.reduce(
@@ -142,16 +191,13 @@ export default function PurchaseList({ onNavigate }) {
 
   return (
     <div className="container py-3">
+
       {/* HEADER */}
-      <div
-        className="p-3 rounded text-white mb-3"
-        style={{ background: "linear-gradient(90deg,#0d6efd,#6610f2)" }}
-      >
+      <div className="p-3 rounded text-white mb-3"
+        style={{ background: "linear-gradient(90deg,#0d6efd,#6610f2)" }}>
         <div className="d-flex justify-content-between align-items-center">
-          <button
-            className="btn btn-light btn-sm"
-            onClick={() => onNavigate("dashboard")}
-          >
+          <button className="btn btn-light btn-sm"
+            onClick={() => onNavigate("dashboard")}>
             ⬅ Back
           </button>
           <h4 className="fw-bold mb-0">🛒 Purchase List</h4>
@@ -163,45 +209,26 @@ export default function PurchaseList({ onNavigate }) {
         <div className="card-body py-2">
           <div className="row g-2 align-items-end">
             <div className="col-md-3">
-              <input
-                type="date"
-                className="form-control form-control-sm"
-                value={from}
-                onChange={(e) => setFrom(e.target.value)}
-              />
+              <input type="date" className="form-control form-control-sm"
+                value={from} onChange={(e) => setFrom(e.target.value)} />
             </div>
-
             <div className="col-md-3">
-              <input
-                type="date"
-                className="form-control form-control-sm"
-                value={to}
-                onChange={(e) => setTo(e.target.value)}
-              />
+              <input type="date" className="form-control form-control-sm"
+                value={to} onChange={(e) => setTo(e.target.value)} />
             </div>
-
             <div className="col-md-4">
-              <input
-                className="form-control form-control-sm"
+              <input className="form-control form-control-sm"
                 placeholder="🔍 Search anything..."
                 value={search}
-                onChange={(e) => setSearch(e.target.value)}
-              />
+                onChange={(e) => setSearch(e.target.value)} />
             </div>
-
             <div className="col-md-2">
               <div className="form-check mt-1">
-                <input
-                  className="form-check-input"
+                <input className="form-check-input"
                   type="checkbox"
-                  id="showProfit"
                   checked={showProfit}
-                  onChange={(e) => setShowProfit(e.target.checked)}
-                />
-                <label
-                  className="form-check-label fw-semibold"
-                  htmlFor="showProfit"
-                >
+                  onChange={(e) => setShowProfit(e.target.checked)} />
+                <label className="form-check-label fw-semibold">
                   Show Profit
                 </label>
               </div>
@@ -210,20 +237,12 @@ export default function PurchaseList({ onNavigate }) {
         </div>
       </div>
 
-      {/* 🔥 DATE BUTTONS ROW */}
+      {/* DATE BUTTONS */}
       <div className="d-flex gap-2 mb-3 flex-wrap">
-        <button className="btn btn-outline-primary btn-sm" onClick={setToday}>
-          📅 Today
-        </button>
-        <button className="btn btn-outline-success btn-sm" onClick={setWeek}>
-          📆 This Week
-        </button>
-        <button className="btn btn-outline-warning btn-sm" onClick={setMonth}>
-          🗓 This Month
-        </button>
-        <button className="btn btn-outline-danger btn-sm" onClick={resetFilters}>
-          ♻ Reset
-        </button>
+        <button className="btn btn-outline-primary btn-sm" onClick={setToday}>📅 Today</button>
+        <button className="btn btn-outline-success btn-sm" onClick={setWeek}>📆 This Week</button>
+        <button className="btn btn-outline-warning btn-sm" onClick={setMonth}>🗓 This Month</button>
+        <button className="btn btn-outline-danger btn-sm" onClick={resetFilters}>♻ Reset</button>
       </div>
 
       {/* TABLE */}
@@ -251,7 +270,7 @@ export default function PurchaseList({ onNavigate }) {
               </tr>
             )}
 
-            {!loading && filteredRows.length === 0 && (
+            {!loading && currentRows.length === 0 && (
               <tr>
                 <td colSpan={showProfit ? 8 : 7} className="text-center text-muted py-3">
                   No records found
@@ -260,44 +279,33 @@ export default function PurchaseList({ onNavigate }) {
             )}
 
             {!loading &&
-              filteredRows.map((r, i) => (
+              currentRows.map((r, i) => (
                 <tr key={i}>
                   <td className="fw-bold text-muted" style={{ fontSize: "12px" }}>
-                    {i + 1}
+                    {i + 1 + indexOfFirst}
                   </td>
-                  <td className="fw-bold" style={{ fontSize: "12px" }}>
-                    {r.ref_no}
-                  </td>
-                  <td className="fw-semibold text-primary small">
-                    {r.customer_name || "-"}
-                  </td>
-                  <td>
-                    <span className="badge bg-success">💰 {fmtPKR(r.sale_pkr)}</span>
-                  </td>
-                  <td>
-                    <span className="badge bg-secondary">🛒 {fmtPKR(r.purchase_pkr)}</span>
-                  </td>
+                  <td className="fw-bold text-nowrap small-cell">{r.ref_no}</td>
+                  <td className="fw-semibold text-primary text-nowrap small-cell">{r.customer_name || "-"}</td>
+                  <td><span className="badge bg-success">💰 {fmtPKR(r.sale_pkr)}</span></td>
+                  <td><span className="badge bg-secondary">🛒 {fmtPKR(r.purchase_pkr)}</span></td>
+
                   {showProfit && (
                     <td>
-                      <span
-                        className={`badge ${+r.profit >= 0 ? "bg-primary" : "bg-danger"}`}
-                      >
+                      <span className={`badge ${+r.profit >= 0 ? "bg-primary" : "bg-danger"}`}>
                         {fmtPKR(r.profit)}
                       </span>
                     </td>
                   )}
+
                   <td className="small text-muted">{fmtDate(r.created_at)}</td>
+
                   <td className="text-center">
-                    <button
-                      className="btn btn-sm btn-outline-info me-1"
-                      onClick={() => onNavigate("purchase_detail", r.ref_no)}
-                    >
+                    <button className="btn btn-sm btn-outline-info me-1"
+                      onClick={() => onNavigate("purchase_detail", r.ref_no)}>
                       👁️ Detail
                     </button>
-                    <button
-                      className="btn btn-sm btn-outline-danger"
-                      onClick={() => deletePurchase(r.ref_no, r.customer_name)}
-                    >
+                    <button className="btn btn-sm btn-outline-danger"
+                      onClick={() => deletePurchase(r.ref_no, r.customer_name)}>
                       🗑 Delete
                     </button>
                   </td>
@@ -306,9 +314,7 @@ export default function PurchaseList({ onNavigate }) {
 
             {!loading && filteredRows.length > 0 && (
               <tr className="table-dark fw-bold">
-                <td colSpan={3} className="text-end">
-                  TOTAL
-                </td>
+                <td colSpan={3} className="text-end">TOTAL</td>
                 <td>{fmtPKR(totals.sale)}</td>
                 <td>{fmtPKR(totals.purchase)}</td>
                 {showProfit && (
@@ -316,12 +322,88 @@ export default function PurchaseList({ onNavigate }) {
                     {fmtPKR(totals.profit)}
                   </td>
                 )}
-                <td colSpan={showProfit ? 2 : 2}></td>
+                <td colSpan={2}></td>
               </tr>
             )}
           </tbody>
         </table>
       </div>
+
+      {/* PAGINATION */}
+      {!loading && filteredRows.length > 0 && (
+        <div className="d-flex justify-content-between align-items-center mt-3 flex-wrap gap-2">
+
+          <select
+            className="form-select form-select-sm"
+            style={{ width: "100px" }}
+            value={rowsPerPage}
+            onChange={(e) => {
+              setRowsPerPage(Number(e.target.value));
+              setCurrentPage(1);
+            }}
+          >
+            <option value={25}>25</option>
+            <option value={30}>30</option>
+            <option value={50}>50</option>
+            <option value={70}>70</option>
+            <option value={100}>100</option>
+          </select>
+
+          <div className="d-flex flex-wrap gap-1">
+
+            <button
+              className="btn btn-sm btn-outline-secondary"
+              disabled={currentPage === 1}
+              onClick={() => setCurrentPage((p) => p - 1)}
+            >
+              ⬅ Prev
+            </button>
+
+            {getPageNumbers().map((num, i) =>
+              num === "..." ? (
+                <span key={i} className="px-2 align-self-center">...</span>
+              ) : (
+                <button
+                  key={num}
+                  className={`btn btn-sm ${
+                    currentPage === num ? "btn-primary" : "btn-outline-primary"
+                  }`}
+                  onClick={() => setCurrentPage(num)}
+                >
+                  {num}
+                </button>
+              )
+            )}
+
+            <button
+              className="btn btn-sm btn-outline-secondary"
+              disabled={currentPage === totalPages}
+              onClick={() => setCurrentPage((p) => p + 1)}
+            >
+              Next ➡
+            </button>
+
+          </div>
+
+          <input
+            type="number"
+            min={1}
+            max={totalPages}
+            placeholder="Go"
+            className="form-control form-control-sm"
+            style={{ width: "70px" }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                let val = Number(e.target.value);
+                if (val >= 1 && val <= totalPages) {
+                  setCurrentPage(val);
+                }
+              }
+            }}
+          />
+
+        </div>
+      )}
     </div>
   );
 }

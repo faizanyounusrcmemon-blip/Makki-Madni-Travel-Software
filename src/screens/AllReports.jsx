@@ -8,17 +8,22 @@ export default function AllReports({ onNavigate }) {
   const [toDate, setToDate] = useState("");
   const [typeFilter, setTypeFilter] = useState("");
 
+  const [loading, setLoading] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [rowsPerPage, setRowsPerPage] = useState(25);
+
   /* ================= LOAD ================= */
   const loadData = async () => {
     try {
-      const res = await fetch(
-        `${import.meta.env.VITE_BACKEND_URL}/api/reports/all`
-      );
+      setLoading(true);
+      const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/reports/all`);
       const data = await res.json();
       setRows(data || []);
       setFiltered(data || []);
     } catch {
       alert("Server error");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -36,8 +41,8 @@ export default function AllReports({ onNavigate }) {
   const setWeek = () => {
     const now = new Date();
     const first = new Date(now.setDate(now.getDate() - now.getDay()));
-    const last = new Date(now.setDate(first.getDate() + 6));
-
+    const last = new Date(first);
+    last.setDate(first.getDate() + 6);
     setFromDate(first.toISOString().slice(0, 10));
     setToDate(last.toISOString().slice(0, 10));
   };
@@ -46,7 +51,6 @@ export default function AllReports({ onNavigate }) {
     const now = new Date();
     const first = new Date(now.getFullYear(), now.getMonth(), 1);
     const last = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-
     setFromDate(first.toISOString().slice(0, 10));
     setToDate(last.toISOString().slice(0, 10));
   };
@@ -63,12 +67,10 @@ export default function AllReports({ onNavigate }) {
     const pass = prompt(
       `DELETE RECORD\nTYPE: ${type}\nREF NO: ${ref_no}\nCustomer: ${customer_name}\n\nEnter password`
     );
-
     if (pass !== "786") {
       alert("❌ Wrong Password");
       return;
     }
-
     if (!window.confirm(`Confirm delete?\nREF NO: ${ref_no}`)) return;
 
     const map = {
@@ -80,7 +82,6 @@ export default function AllReports({ onNavigate }) {
       Visa: "visa",
       Card: "card",
     };
-
     const endpoint = map[type];
 
     try {
@@ -88,14 +89,11 @@ export default function AllReports({ onNavigate }) {
         `${import.meta.env.VITE_BACKEND_URL}/api/${endpoint}/delete/${ref_no}`,
         { method: "DELETE" }
       );
-
       const data = await res.json();
-
       if (!data.success) {
         alert(data.message || data.error || "Delete failed");
         return;
       }
-
       alert(`✅ Record Deleted\nREF NO: ${ref_no}`);
       loadData();
     } catch (err) {
@@ -115,7 +113,6 @@ export default function AllReports({ onNavigate }) {
       Visa: "visa_view",
       Card: "card_view",
     };
-
     onNavigate(map[type], ref_no);
   };
 
@@ -128,25 +125,52 @@ export default function AllReports({ onNavigate }) {
   /* ================= FILTER ================= */
   useEffect(() => {
     let temp = [...rows];
-
     if (search)
       temp = temp.filter(
         (r) =>
           (r.ref_no || "").toLowerCase().includes(search.toLowerCase()) ||
           (r.customer_name || "").toLowerCase().includes(search.toLowerCase())
       );
-
     if (fromDate)
       temp = temp.filter((r) => new Date(r.booking_date) >= new Date(fromDate));
-
     if (toDate)
       temp = temp.filter((r) => new Date(r.booking_date) <= new Date(toDate));
-
     if (typeFilter)
       temp = temp.filter((r) => r.type === typeFilter);
 
     setFiltered(temp);
+    setCurrentPage(1);
   }, [search, fromDate, toDate, typeFilter, rows]);
+
+  /* ================= PAGINATION ================= */
+  const totalPages = Math.ceil(filtered.length / rowsPerPage);
+  const indexOfLast = currentPage * rowsPerPage;
+  const indexOfFirst = indexOfLast - rowsPerPage;
+  const currentRows = filtered.slice(indexOfFirst, indexOfLast);
+
+  // Smart Pagination
+  const getPagination = () => {
+    const delta = 2;
+    const range = [];
+    const rangeWithDots = [];
+    let l;
+
+    for (let i = 1; i <= totalPages; i++) {
+      if (i === 1 || i === totalPages || (i >= currentPage - delta && i <= currentPage + delta)) {
+        range.push(i);
+      }
+    }
+
+    for (let i of range) {
+      if (l) {
+        if (i - l === 2) rangeWithDots.push(l + 1);
+        else if (i - l > 2) rangeWithDots.push("…");
+      }
+      rangeWithDots.push(i);
+      l = i;
+    }
+    return rangeWithDots;
+  };
 
   /* ================= TOTAL ================= */
   const totalPKR = useMemo(() => {
@@ -183,12 +207,14 @@ export default function AllReports({ onNavigate }) {
 
       {/* HEADER */}
       <div className="card shadow-sm border-0 mb-3">
-        <div className="card-body d-flex justify-content-between align-items-center"
+        <div
+          className="card-body d-flex justify-content-between align-items-center"
           style={{
             background: "linear-gradient(135deg, #0d6efd, #6610f2)",
             color: "#fff",
             borderRadius: "12px",
-          }}>
+          }}
+        >
           <h5 className="fw-bold mb-0">📊 All Reports</h5>
           <button className="btn btn-light btn-sm" onClick={() => onNavigate("dashboard")}>
             ← Back
@@ -208,17 +234,12 @@ export default function AllReports({ onNavigate }) {
                 onChange={(e) => setSearch(e.target.value)}
               />
             </div>
-
             <div className="col-md-2">
-              <input type="date" className="form-control form-control-sm"
-                value={fromDate} onChange={(e) => setFromDate(e.target.value)} />
+              <input type="date" className="form-control form-control-sm" value={fromDate} onChange={(e) => setFromDate(e.target.value)} />
             </div>
-
             <div className="col-md-2">
-              <input type="date" className="form-control form-control-sm"
-                value={toDate} onChange={(e) => setToDate(e.target.value)} />
+              <input type="date" className="form-control form-control-sm" value={toDate} onChange={(e) => setToDate(e.target.value)} />
             </div>
-
             <div className="col-md-4">
               <select
                 className="form-control form-control-sm"
@@ -239,7 +260,7 @@ export default function AllReports({ onNavigate }) {
         </div>
       </div>
 
-      {/* 🔥 DATE BUTTONS ROW */}
+      {/* DATE BUTTONS */}
       <div className="d-flex gap-2 mb-3 flex-wrap">
         <button className="btn btn-outline-primary btn-sm" onClick={setToday}>📅 Today</button>
         <button className="btn btn-outline-success btn-sm" onClick={setWeek}>📆 This Week</button>
@@ -247,105 +268,112 @@ export default function AllReports({ onNavigate }) {
         <button className="btn btn-outline-danger btn-sm" onClick={resetFilters}>♻ Reset</button>
       </div>
 
-      {/* TABLE (UNCHANGED) */}
+      {/* TABLE */}
       <div className="card shadow-sm">
         <div className="table-responsive">
           <table className="table table-hover table-sm mb-0 align-middle">
+            <thead className="table-light">
+              <tr>
+                <th className="text-center">SR#</th>
+                <th className="text-center">Type</th>
+                <th className="text-center">Ref</th>
+                <th className="text-center">Customer</th>
+                <th className="text-center">Date</th>
+                <th className="text-center">PKR</th>
+                <th className="text-center">Summary</th>
+                <th className="text-center">View</th>
+                <th className="text-center">Delete</th>
+              </tr>
+            </thead>
 
-<thead className="table-light">
-<tr>
-<th className="text-center">SR#</th>
-<th className="text-center">Type</th>
-<th className="text-center">Ref</th>
-<th className="text-center">Customer</th>
-<th className="text-center">Date</th>
-<th className="text-center">PKR</th>
-<th className="text-center">Summary</th>
-<th className="text-center">View</th>
-<th className="text-center">Delete</th>
-</tr>
-</thead>
+            <tbody>
+              {loading && (
+                <tr>
+                  <td colSpan={9} className="text-center py-3">Loading...</td>
+                </tr>
+              )}
 
-<tbody>
-{filtered.map((r, i) => (
-<tr key={i}>
-<td className="fw-bold text-muted" style={{ fontSize: "12px" }}>{i + 1}</td>
+              {!loading && currentRows.map((r, i) => (
+                <tr key={i}>
+                  <td className="fw-bold text-muted" style={{ fontSize: "12px" }}>{i + 1 + indexOfFirst}</td>
+                  <td><span className="badge bg-info text-dark">{typeIcon(r.type)} {r.type}</span></td>
+                  <td className="fw-bold text-nowrap small-cell">{r.ref_no}</td>
+                  <td className="fw-semibold text-primary text-nowrap small-cell">{r.customer_name || "-"}</td>
+                  <td className="text-muted text-nowrap small-cell">{formatDate(r.booking_date)}</td>
+                  <td><span className="badge bg-success">💰 {fmtPKR(r.total_pkr)}</span></td>
+                  <td className="text-center">{r.type === "Packages" && (<button className="btn btn-outline-warning btn-sm" onClick={() => handleSumry(r.type, r.ref_no)}>📊 SUMMARY</button>)}</td>
+                  <td className="text-center"><button className="btn btn-outline-info btn-sm" onClick={() => handleView(r.type, r.ref_no)}>👁️ VIEW</button></td>
+                  <td className="text-center"><button className="btn btn-outline-danger btn-sm" onClick={() => handleDelete(r.type, r.ref_no, r.customer_name)}>🗑 DELETE</button></td>
+                </tr>
+              ))}
 
-<td>
-<span className="badge bg-info text-dark">
-{typeIcon(r.type)} {r.type}
-</span>
-</td>
+              {!loading && filtered.length === 0 && (
+                <tr>
+                  <td colSpan={9} className="text-center py-3 text-muted">No Records Found</td>
+                </tr>
+              )}
 
-<td className="fw-bold text-nowrap small-cell">{r.ref_no}</td>
-
-<td className="fw-semibold text-primary text-nowrap small-cell">
-{r.customer_name || "-"}
-</td>
-
-<td className="text-muted text-nowrap small-cell">
-{formatDate(r.booking_date)}
-</td>
-
-<td>
-<span className="badge bg-success">
-💰 {fmtPKR(r.total_pkr)}
-</span>
-</td>
-
-<td className="text-center">
-{r.type === "Packages" && (
-<button
-className="btn btn-outline-warning btn-sm"
-onClick={() => handleSumry(r.type, r.ref_no)}
->
-📊 SUMMARY
-</button>
-)}
-</td>
-
-<td className="text-center">
-<button
-className="btn btn-outline-info btn-sm"
-onClick={() => handleView(r.type, r.ref_no)}
->
-👁️ VIEW
-</button>
-</td>
-
-<td className="text-center">
-<button
-className="btn btn-outline-danger btn-sm"
-onClick={() =>
-handleDelete(r.type, r.ref_no, r.customer_name)
-}
->
-🗑 DELETE
-</button>
-</td>
-</tr>
-))}
-
-{filtered.length === 0 && (
-<tr>
-<td colSpan={9} className="text-center py-3 text-muted">
-No Records Found
-</td>
-</tr>
-)}
-
-{filtered.length > 0 && (
-<tr className="table-dark">
-<td colSpan={5} className="text-end fw-bold">TOTAL</td>
-<td className="fw-bold">{fmtPKR(totalPKR)}</td>
-<td colSpan={3}></td>
-</tr>
-)}
-</tbody>
-
+              {!loading && filtered.length > 0 && (
+                <tr className="table-dark">
+                  <td colSpan={5} className="text-end fw-bold">TOTAL</td>
+                  <td className="fw-bold">{fmtPKR(totalPKR)}</td>
+                  <td colSpan={3}></td>
+                </tr>
+              )}
+            </tbody>
           </table>
         </div>
       </div>
+
+      {/* SMART PAGINATION */}
+      <div className="d-flex justify-content-between align-items-center mt-3 flex-wrap gap-2">
+        {/* Rows per page */}
+        <select
+          className="form-select form-select-sm"
+          style={{ width: "100px" }}
+          value={rowsPerPage}
+          onChange={(e) => { setRowsPerPage(Number(e.target.value)); setCurrentPage(1); }}
+        >
+          <option value={25}>25</option>
+          <option value={30}>30</option>
+          <option value={50}>50</option>
+          <option value={70}>70</option>
+          <option value={100}>100</option>
+        </select>
+
+        {/* Prev / Next + Page numbers */}
+        <div className="d-flex gap-1 align-items-center flex-wrap">
+          <button className="btn btn-sm btn-outline-primary" disabled={currentPage === 1} onClick={() => setCurrentPage(currentPage - 1)}>⬅ Prev</button>
+          {getPagination().map((p, idx) => (
+            <button
+              key={idx}
+              className={`btn btn-sm ${p === currentPage ? "btn-primary" : "btn-outline-primary"}`}
+              disabled={p === "…"}
+              onClick={() => typeof p === "number" && setCurrentPage(p)}
+            >
+              {p}
+            </button>
+          ))}
+          <button className="btn btn-sm btn-outline-primary" disabled={currentPage === totalPages || totalPages === 0} onClick={() => setCurrentPage(currentPage + 1)}>Next ➡</button>
+        </div>
+
+        {/* Jump */}
+        <input
+          type="number"
+          min={1}
+          max={totalPages}
+          placeholder="Go"
+          className="form-control form-control-sm"
+          style={{ width: "70px" }}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              let val = Number(e.target.value);
+              if (val >= 1 && val <= totalPages) setCurrentPage(val);
+            }
+          }}
+        />
+      </div>
+
     </div>
   );
 }
