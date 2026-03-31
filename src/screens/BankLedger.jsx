@@ -295,7 +295,7 @@ export default function BankLedger({ onNavigate }) {
     <option value={50}>50</option>
     <option value={75}>75</option>
     <option value={100}>100</option>
-    <option value={1000}>1000</option>
+    <option value={1000000}>Full View</option>
   </select>
 
   {/* Prev / Next + Page numbers */}
