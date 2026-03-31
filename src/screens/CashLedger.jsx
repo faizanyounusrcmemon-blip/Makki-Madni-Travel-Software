@@ -1,4 +1,7 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
+
+/* ================= COLOR PALETTE ================= */
+const colorPalette = ["#FF6B6B", "#4ECDC4", "#FFD93D", "#6A4C93", "#FF8C42", "#00A6ED", "#FF5D8F"];
 
 /* ================= HELPERS ================= */
 const fmtAmount = (v) => (v !== null && v !== undefined ? Number(v).toLocaleString("en-US") : "-");
@@ -21,7 +24,8 @@ const formatDate = (dateStr) => {
   return date.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }).toUpperCase();
 };
 
-export default function cashLedger({ onNavigate }) {
+/* ================= MAIN COMPONENT ================= */
+export default function CashLedger({ onNavigate }) {
   const [rows, setRows] = useState([]);
   const [filtered, setFiltered] = useState([]);
   const [search, setSearch] = useState("");
@@ -35,10 +39,32 @@ export default function cashLedger({ onNavigate }) {
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
 
-  useEffect(() => {
-    load();
-  }, []);
+  /* ================= COLOR MAP REF ================= */
+  const supplierColorMap = useRef({});
 
+  /* ================= NAME EXTRACTION ================= */
+  const extractName = (str) => {
+    if (!str) return "";
+    const match = str.match(/- (.+?) \(/);
+    if (match) return match[1].trim();
+    return str.trim();
+  };
+
+  const isCustomerPayment = (str) => str?.toLowerCase().includes("customer") || false;
+
+  const getSupplierColor = (str) => {
+    const name = extractName(str);
+    if (!name) return "#000";
+    if (isCustomerPayment(str)) return "#007BFF";
+    if (!supplierColorMap.current[name]) {
+      const index = Object.keys(supplierColorMap.current).length % colorPalette.length;
+      supplierColorMap.current[name] = colorPalette[index];
+    }
+    return supplierColorMap.current[name];
+  };
+
+  /* ================= LOAD DATA ================= */
+  useEffect(() => { load(); }, []);
   const load = async () => {
     const r = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/cash-ledger`);
     const d = await r.json();
@@ -49,11 +75,17 @@ export default function cashLedger({ onNavigate }) {
     }
   };
 
-  // ================= FILTER / SEARCH =================
+  /* ================= FILTER / SEARCH ================= */
   useEffect(() => {
     let temp = [...rows];
-    if (fromDate) temp = temp.filter((r) => new Date(r.txn_date) >= new Date(fromDate));
-    if (toDate) temp = temp.filter((r) => new Date(r.txn_date) <= new Date(toDate));
+    if (fromDate) {
+      const from = new Date(fromDate + "T00:00:00");
+      temp = temp.filter((r) => new Date(r.txn_date) >= from);
+    }
+    if (toDate) {
+      const to = new Date(toDate + "T23:59:59");
+      temp = temp.filter((r) => new Date(r.txn_date) <= to);
+    }
     if (search) {
       const s = search.toLowerCase();
       temp = temp.filter(
@@ -66,8 +98,10 @@ export default function cashLedger({ onNavigate }) {
       );
     }
     setFiltered(temp);
+    setCurrentPage(1);
   }, [fromDate, toDate, rows, search]);
 
+  /* ================= SAVE ================= */
   const save = async () => {
     if (!date || !amount) return setMsg({ type: "danger", text: "Date & Amount required" });
     const r = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/cash-ledger/transaction`, {
@@ -78,12 +112,11 @@ export default function cashLedger({ onNavigate }) {
     const d = await r.json();
     if (d.success) {
       setMsg({ type: "success", text: d.message });
-      setAmount("");
-      setComment("");
-      load();
+      setAmount(""); setComment(""); load();
     } else setMsg({ type: "danger", text: d.error });
   };
 
+  /* ================= DELETE ================= */
   const del = async (id) => {
     const pass = prompt("Enter delete password");
     if (!pass) return;
@@ -93,21 +126,50 @@ export default function cashLedger({ onNavigate }) {
       body: JSON.stringify({ password: pass }),
     });
     const d = await r.json();
-    if (d.success) {
-      setMsg({ type: "success", text: d.message });
-      load();
-    } else setMsg({ type: "danger", text: d.error });
+    if (d.success) { setMsg({ type: "success", text: d.message }); load(); }
+    else setMsg({ type: "danger", text: d.error });
   };
 
-  const currentBalance = filtered.length > 0 ? filtered[0].balance : 0;
+  /* ================= PAGINATION ================= */
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
+  const totalPages = Math.ceil(filtered.length / pageSize);
+  const paginatedRows = filtered.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
+  const getPagination = () => {
+    const delta = 2;
+    const range = [];
+    const rangeWithDots = [];
+    let l;
+
+    for (let i = 1; i <= totalPages; i++) {
+      if (i === 1 || i === totalPages || (i >= currentPage - delta && i <= currentPage + delta)) {
+        range.push(i);
+      }
+    }
+
+    for (let i of range) {
+      if (l) {
+        if (i - l === 2) rangeWithDots.push(l + 1);
+        else if (i - l > 2) rangeWithDots.push("…");
+      }
+      rangeWithDots.push(i);
+      l = i;
+    }
+    return rangeWithDots;
+  };
+
+  /* ================= CURRENT BALANCE ================= */
+  const currentBalance = rows.length ? rows[0].balance : 0;
+
+  /* ================= RENDER ================= */
   return (
     <div className="container py-4">
       {/* HEADER */}
       <div className="d-flex justify-content-between align-items-center mb-3 flex-wrap">
         <div className="d-flex align-items-center mb-2 mb-md-0">
           <span className="fs-3 me-2">🏦</span>
-          <h4 className="fw-bold mb-0 text-primary">cash Ledger</h4>
+          <h4 className="fw-bold mb-0 text-primary">Cash Ledger</h4>
         </div>
         <button className="btn btn-outline-secondary btn-sm" onClick={() => onNavigate("dashboard")}>
           ⬅ Back
@@ -190,10 +252,18 @@ export default function cashLedger({ onNavigate }) {
               </tr>
             </thead>
             <tbody>
-              {filtered.map((r, i) => (
+              {paginatedRows.map((r, i) => (
                 <tr key={i}>
                   <td style={{ fontSize: "0.85rem" }}><span className="text-muted fw-bold">{formatDate(r.txn_date)}</span></td>
-                  <td className="fw-bold" style={{ fontSize: "0.85rem", color: r.type === "withdraw" ? "red" : "blue" }}>{r.description || "-"}</td>
+                  <td
+                    className="fw-bold"
+                    style={{
+                      fontSize: "0.85rem",
+                      color: r.type === "withdraw" ? "red" : getSupplierColor(r.description || r.supplier_name || "")
+                    }}
+                  >
+                    {r.description || "-"}
+                  </td>
                   <td className="text-danger fw-bold" style={{ fontSize: "0.85rem" }}>{fmtAmount(r.debit)}</td>
                   <td className="text-success fw-bold" style={{ fontSize: "0.85rem" }}>{fmtAmount(r.credit)}</td>
                   <td className="fw-bold" style={{ fontSize: "0.85rem" }}>{fmtAmount(r.balance)}</td>
@@ -202,7 +272,7 @@ export default function cashLedger({ onNavigate }) {
                   </td>
                 </tr>
               ))}
-              {filtered.length === 0 && (
+              {paginatedRows.length === 0 && (
                 <tr>
                   <td colSpan="6" className="text-center text-muted py-3">No entries</td>
                 </tr>
@@ -210,6 +280,57 @@ export default function cashLedger({ onNavigate }) {
             </tbody>
           </table>
         </div>
+
+{/* PAGINATION CONTROLS */}
+<div className="d-flex justify-content-between align-items-center mt-2 flex-wrap gap-2">
+
+  {/* Rows per page */}
+  <select
+    className="form-select form-select-sm"
+    style={{ width: "100px" }}
+    value={pageSize}
+    onChange={(e) => { setPageSize(Number(e.target.value)); setCurrentPage(1); }}
+  >
+    <option value={25}>25</option>
+    <option value={50}>50</option>
+    <option value={75}>75</option>
+    <option value={100}>100</option>
+    <option value={1000000}>Full View</option>
+  </select>
+
+  {/* Prev / Next + Page numbers */}
+  <div className="d-flex gap-1 align-items-center flex-wrap">
+    <button className="btn btn-sm btn-outline-primary" disabled={currentPage === 1} onClick={() => setCurrentPage(currentPage - 1)}>⬅ Prev</button>
+    {getPagination().map((p, idx) => (
+      <button
+        key={idx}
+        className={`btn btn-sm ${p === currentPage ? "btn-primary" : "btn-outline-primary"}`}
+        disabled={p === "…"}
+        onClick={() => typeof p === "number" && setCurrentPage(p)}
+      >
+        {p}
+      </button>
+    ))}
+    <button className="btn btn-sm btn-outline-primary" disabled={currentPage === totalPages || totalPages === 0} onClick={() => setCurrentPage(currentPage + 1)}>Next ➡</button>
+  </div>
+
+  {/* Jump */}
+  <input
+    type="number"
+    min={1}
+    max={totalPages}
+    placeholder="Go"
+    className="form-control form-control-sm"
+    style={{ width: "70px" }}
+    onKeyDown={(e) => {
+      if (e.key === "Enter") {
+        let val = Number(e.target.value);
+        if (val >= 1 && val <= totalPages) setCurrentPage(val);
+      }
+    }}
+  />
+</div>
+
       </div>
     </div>
   );
