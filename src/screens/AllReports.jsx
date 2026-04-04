@@ -68,7 +68,7 @@ export default function AllReports({ onNavigate }) {
     const { value: password } = await Swal.fire({
       html: `
         <div style="text-align:left;font-size:14px">
-          <b style="color:#dc3545">DELETE RECORD</b><br>
+          <b style="color:#dc3545">DELETE SALE RECORD</b><br>
           <b>TYPE:</b> ${type}<br>
           <b>REF NO:</b> ${ref_no}<br>
           <b>Customer:</b> ${customer_name}<br>

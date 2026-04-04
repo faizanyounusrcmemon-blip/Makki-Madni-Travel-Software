@@ -78,9 +78,9 @@ export default function PurchaseList({ onNavigate }) {
 
 const deletePurchase = async (refNo, customer_name, sale_pkr, purchase_pkr) => {
   const { value: password } = await Swal.fire({
-    title: 'DELETE PURCHASE',
-    html: `
-      <div style="text-align:left;font-size:14px">
+      html: `
+        <div style="text-align:left;font-size:14px">
+          <b style="color:#dc3545">DELETE PURCHASE RECORD</b><br>
         <b style="color:#dc3545">REF NO:</b> ${refNo}<br>
         <b>Customer:</b> ${customer_name}<br>
         <b>Sale Amount:</b> ${sale_pkr}<br>
