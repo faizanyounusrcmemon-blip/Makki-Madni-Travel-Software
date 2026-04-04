@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useMemo } from "react";
+import Swal from "sweetalert2";
 
 export default function PurchaseList({ onNavigate }) {
   const [rows, setRows] = useState([]);
@@ -72,41 +73,76 @@ export default function PurchaseList({ onNavigate }) {
   };
 
   /* ================= DELETE ================= */
-  const deletePurchase = async (refNo, customer_name) => {
-    const password = prompt(
-      `DELETE PURCHASE\nREF NO: ${refNo}\nCustomer: ${customer_name}\n\nEnter password`
-    );
-    if (!password) return;
+/* ================= DELETE ================= */
 
-    if (
-      !window.confirm(
-        `Confirm delete?\nREF NO: ${refNo}\nCustomer: ${customer_name}\n\nThis will move to deleted list`
-      )
-    )
-      return;
 
-    try {
-      const res = await fetch(
-        `${import.meta.env.VITE_BACKEND_URL}/api/purchase/delete/${refNo}`,
-        {
-          method: "DELETE",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ password, customer_name }),
-        }
-      );
-
-      const data = await res.json();
-
-      if (data.success) {
-        alert(`✅ Deleted\nREF NO: ${refNo}\nCustomer: ${customer_name}`);
-        loadList();
-      } else {
-        alert(data.error || "Delete failed");
+const deletePurchase = async (refNo, customer_name) => {
+  const { value: password } = await Swal.fire({
+    title: 'DELETE PURCHASE',
+    html: `
+      <div style="text-align:left;font-size:14px">
+        <b style="color:#dc3545">REF NO:</b> ${refNo}<br>
+        <b>Customer:</b> ${customer_name}<br><br>
+        <input type="password" id="swal-input1" class="swal2-input" placeholder="Enter password">
+        <input type="checkbox" id="swal-showpass" style="margin-top:5px;">
+        <label for="swal-showpass" style="font-size:12px;">Show Password</label>
+      </div>
+    `,
+    focusConfirm: false,
+    preConfirm: () => {
+      const passInput = document.getElementById('swal-input1');
+      if (!passInput.value) {
+        Swal.showValidationMessage('Password is required');
       }
-    } catch {
-      alert("Server error");
+      return passInput.value;
+    },
+    didOpen: () => {
+      const checkbox = document.getElementById('swal-showpass');
+      const passInput = document.getElementById('swal-input1');
+      checkbox.addEventListener('change', () => {
+        passInput.type = checkbox.checked ? 'text' : 'password';
+      });
+    },
+    showCancelButton: true,
+    confirmButtonText: 'Delete',
+    cancelButtonText: 'Cancel',
+  });
+
+  if (!password) return;
+
+  const confirmDelete = await Swal.fire({
+    title: 'Are you sure?',
+    html: `This will move REF NO: <b>${refNo}</b> of <b>${customer_name}</b> to deleted list.`,
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonText: 'Yes, Delete it!',
+    cancelButtonText: 'Cancel',
+  });
+
+  if (!confirmDelete.isConfirmed) return;
+
+  try {
+    const res = await fetch(
+      `${import.meta.env.VITE_BACKEND_URL}/api/purchase/delete/${refNo}`,
+      {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password, customer_name }),
+      }
+    );
+
+    const data = await res.json();
+
+    if (data.success) {
+      Swal.fire(`Deleted!`, `REF NO: ${refNo} has been deleted.`, 'success');
+      loadList();
+    } else {
+      Swal.fire('Error', data.error || 'Delete failed', 'error');
     }
-  };
+  } catch {
+    Swal.fire('Error', 'Server error', 'error');
+  }
+};
 
   /* ================= FILTER ================= */
   const filteredRows = useMemo(() => {

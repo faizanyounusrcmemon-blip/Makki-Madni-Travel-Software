@@ -1,30 +1,18 @@
 import React, { useEffect, useState } from "react";
 import "./restore.css";
+import Swal from "sweetalert2";
 
 export default function Restore({ onNavigate }) {
   const [files, setFiles] = useState([]);
   const [loading, setLoading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [tableMap, setTableMap] = useState({});
-  const [message, setMessage] = useState(null);
 
   const TABLES = [
-    "bookings",
-    "expense_ledger",
-    "hotels",
-    "ticketing",
-    "visa",
-    "card",
-    "transport",
-    "purchase_entries",
-    "users",
-    "bank_transactions",
-    "cash_transactions",
-    "customer_payments",
-    "purchase_payments",
-    "supplier_payments",
-    "suppliers",
-    "ziyarat",
+    "bookings","expense_ledger","hotels","ticketing","visa","card",
+    "transport","purchase_entries","users","bank_transactions",
+    "cash_transactions","customer_payments","purchase_payments",
+    "supplier_payments","suppliers","ziyarat",
   ];
 
   /* ================= HELPERS ================= */
@@ -32,12 +20,8 @@ export default function Restore({ onNavigate }) {
   const fmtDate = (d) => {
     if (!d) return "-";
     return new Date(d).toLocaleString("en-GB", {
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-      second: "2-digit",
+      day: "2-digit", month: "short", year: "numeric",
+      hour: "2-digit", minute: "2-digit", second: "2-digit",
       hour12: true,
     });
   };
@@ -45,9 +29,7 @@ export default function Restore({ onNavigate }) {
   const onlyDate = (d) => {
     if (!d) return "-";
     return new Date(d).toLocaleDateString("en-GB", {
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
+      day: "2-digit", month: "short", year: "numeric",
     });
   };
 
@@ -59,17 +41,15 @@ export default function Restore({ onNavigate }) {
     return (bytes / (1024 * 1024)).toFixed(2) + " MB";
   };
 
-  /* ================= LOAD BACKUPS ================= */
+  /* ================= LOAD ================= */
 
   const loadBackups = async () => {
     try {
-      const res = await fetch(
-        `${import.meta.env.VITE_BACKEND_URL}/api/backup/list`
-      );
+      const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/backup/list`);
       const data = await res.json();
       if (data.success) setFiles(data.files || []);
     } catch {
-      setMessage({ type: "danger", text: "❌ Backup list load failed" });
+      Swal.fire("Error", "Backup list load failed", "error");
     }
   };
 
@@ -81,83 +61,122 @@ export default function Restore({ onNavigate }) {
 
   const backupCount = files.length;
 
-  const sortedDates = files
-    .map((f) => new Date(f.created_at))
-    .sort((a, b) => a - b);
+  const sortedDates = files.map((f) => new Date(f.created_at)).sort((a, b) => a - b);
 
-  const fromDate =
-    sortedDates.length > 0 ? onlyDate(sortedDates[0]) : "-";
+  const fromDate = sortedDates.length ? onlyDate(sortedDates[0]) : "-";
+  const toDate = sortedDates.length ? onlyDate(sortedDates[sortedDates.length - 1]) : "-";
 
-  const toDate =
-    sortedDates.length > 0
-      ? onlyDate(sortedDates[sortedDates.length - 1])
-      : "-";
+  /* ================= PASSWORD POPUP (SHOW/HIDE) ================= */
+
+  const askPassword = async (title) => {
+    let show = false;
+
+    const { value: password } = await Swal.fire({
+      title,
+      html: `
+        <div style="position:relative">
+          <input id="swal-pass" type="password" class="swal2-input" placeholder="Enter password">
+          <span id="toggle-pass" style="
+            position:absolute;
+            right:20px;
+            top:50%;
+            transform:translateY(-50%);
+            cursor:pointer;
+            font-size:14px;
+            color:#555;">👁</span>
+        </div>
+      `,
+      focusConfirm: false,
+      showCancelButton: true,
+      preConfirm: () => {
+        return document.getElementById("swal-pass").value;
+      },
+      didOpen: () => {
+        const input = document.getElementById("swal-pass");
+        const toggle = document.getElementById("toggle-pass");
+
+        toggle.addEventListener("click", () => {
+          show = !show;
+          input.type = show ? "text" : "password";
+          toggle.textContent = show ? "🙈" : "👁";
+        });
+      }
+    });
+
+    return password;
+  };
+
+  /* ================= LOADING POPUP ================= */
+
+  const showLoader = (text = "Processing...") => {
+    Swal.fire({
+      title: text,
+      allowOutsideClick: false,
+      didOpen: () => {
+        Swal.showLoading();
+      },
+    });
+  };
 
   /* ================= RESTORE ================= */
 
   const restore = async (file, mode) => {
-    const password = prompt("Restore Password");
+    const password = await askPassword("Restore Password");
     if (!password) return;
 
     if (mode === "table" && !tableMap[file]) {
-      return alert("❌ Table select karo");
+      return Swal.fire("Error", "Table select karo", "error");
     }
 
-    setLoading(true);
-    setProgress(10);
-    setMessage(null);
-
-    const url =
-      mode === "full"
-        ? "/api/backup/restore/full"
-        : "/api/backup/restore/table";
+    showLoader("Restoring...");
 
     try {
-      setProgress(40);
-      const res = await fetch(
-        `${import.meta.env.VITE_BACKEND_URL}${url}`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            file,
-            table: tableMap[file],
-            password,
-          }),
-        }
-      );
+      const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}${
+        mode === "full"
+          ? "/api/backup/restore/full"
+          : "/api/backup/restore/table"
+      }`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ file, table: tableMap[file], password }),
+      });
 
-      setProgress(80);
       const data = await res.json();
-      setProgress(100);
-      setLoading(false);
+      Swal.close();
 
-      setMessage(
-        data.success
-          ? { type: "success", text: "✅ Restore completed successfully" }
-          : { type: "danger", text: "❌ Restore failed: " + data.error }
-      );
+      if (!res.ok || !data.success) {
+        return Swal.fire("Error", data.error || "Wrong password", "error");
+      }
+
+      Swal.fire("Success", "Restore completed successfully", "success");
     } catch {
-      setLoading(false);
-      setMessage({ type: "danger", text: "❌ Restore error" });
+      Swal.close();
+      Swal.fire("Error", "Restore failed", "error");
     }
   };
 
   /* ================= DOWNLOAD ================= */
 
   const downloadBackup = async (file) => {
-    const password = prompt("Download Password");
+    const password = await askPassword("Download Password");
     if (!password) return;
 
+    showLoader("Preparing Download...");
+
     try {
-      const res = await fetch(
-        `${import.meta.env.VITE_BACKEND_URL}/api/backup/download`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ file, password }),
-        }
-      );
+      const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/backup/download`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ file, password }),
+      });
+
+      const contentType = res.headers.get("content-type");
+
+      if (contentType && contentType.includes("application/json")) {
+        const data = await res.json();
+        Swal.close();
+        return Swal.fire("Error", data.error || "Wrong password", "error");
+      }
 
       const blob = await res.blob();
       const url = window.URL.createObjectURL(blob);
@@ -167,35 +186,50 @@ export default function Restore({ onNavigate }) {
       a.download = file;
       a.click();
 
-      setMessage({ type: "success", text: "⬇️ Download started" });
+      Swal.close();
+      Swal.fire("Success", "Download started", "success");
     } catch {
-      setMessage({ type: "danger", text: "❌ Download failed" });
+      Swal.close();
+      Swal.fire("Error", "Download failed", "error");
     }
   };
 
   /* ================= DELETE ================= */
 
   const deleteBackup = async (file) => {
-    const password = prompt("Delete Password");
+    const password = await askPassword("Delete Password");
     if (!password) return;
 
+    const confirm = await Swal.fire({
+      title: "Are you sure?",
+      text: "Delete backup?",
+      icon: "warning",
+      showCancelButton: true,
+    });
+
+    if (!confirm.isConfirmed) return;
+
+    showLoader("Deleting...");
+
     try {
-      const res = await fetch(
-        `${import.meta.env.VITE_BACKEND_URL}/api/backup/delete`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ file, password }),
-        }
-      );
+      const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/backup/delete`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ file, password }),
+      });
 
       const data = await res.json();
-      if (data.success) {
-        setMessage({ type: "success", text: "🗑 Backup deleted successfully" });
-        loadBackups();
+      Swal.close();
+
+      if (!res.ok || !data.success) {
+        return Swal.fire("Error", data.error || "Wrong password", "error");
       }
+
+      Swal.fire("Deleted", "Backup deleted successfully", "success");
+      loadBackups();
     } catch {
-      setMessage({ type: "danger", text: "❌ Delete error" });
+      Swal.close();
+      Swal.fire("Error", "Delete failed", "error");
     }
   };
 
@@ -212,7 +246,7 @@ export default function Restore({ onNavigate }) {
           </div>
 
           <div className="vip-summary text-end">
-            <div>📦 <strong>Total:</strong> {backupCount}</div>
+            <div>📦 <strong>Total:</strong> {files.length}</div>
             <div>📅 <strong>From:</strong> {fromDate}</div>
             <div>📅 <strong>To:</strong> {toDate}</div>
           </div>
@@ -224,20 +258,6 @@ export default function Restore({ onNavigate }) {
         >
           ⬅ Dashboard
         </button>
-
-        {message && (
-          <div className={`alert alert-${message.type} text-center`}>
-            {message.text}
-          </div>
-        )}
-
-        {loading && (
-          <div className="vip-progress">
-            <div className="vip-progress-bar" style={{ width: `${progress}%` }}>
-              {progress}%
-            </div>
-          </div>
-        )}
 
         <table className="table vip-table mt-3">
           <thead>
@@ -315,14 +335,6 @@ export default function Restore({ onNavigate }) {
                 </td>
               </tr>
             ))}
-
-            {files.length === 0 && (
-              <tr>
-                <td colSpan="6" className="text-center text-muted">
-                  No backups found
-                </td>
-              </tr>
-            )}
           </tbody>
         </table>
 

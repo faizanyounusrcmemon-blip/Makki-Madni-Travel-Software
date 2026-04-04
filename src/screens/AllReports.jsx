@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useMemo } from "react";
+import Swal from "sweetalert2";
 
 export default function AllReports({ onNavigate }) {
   const [rows, setRows] = useState([]);
@@ -62,16 +63,74 @@ export default function AllReports({ onNavigate }) {
     setTypeFilter("");
   };
 
+  /* ================= PASSWORD PROMPT ================= */
+  const askPassword = async (type, ref_no, customer_name) => {
+    const { value: password } = await Swal.fire({
+      html: `
+        <div style="text-align:left;font-size:14px">
+          <b style="color:#dc3545">DELETE RECORD</b><br>
+          <b>TYPE:</b> ${type}<br>
+          <b>REF NO:</b> ${ref_no}<br>
+          <b>Customer:</b> ${customer_name}<br><br>
+          Enter Password
+        </div>
+        <div style="position:relative">
+          <input id="swal-pass" type="password" class="swal2-input" placeholder="Enter password">
+          <span id="toggle-pass" style="
+            position:absolute;
+            right:20px;
+            top:50%;
+            transform:translateY(-50%);
+            cursor:pointer;
+          ">👁</span>
+        </div>
+      `,
+      showCancelButton: true,
+      focusConfirm: false,
+      preConfirm: () => document.getElementById("swal-pass").value,
+      didOpen: () => {
+        let show = false;
+        const input = document.getElementById("swal-pass");
+        const toggle = document.getElementById("toggle-pass");
+
+        toggle.addEventListener("click", () => {
+          show = !show;
+          input.type = show ? "text" : "password";
+          toggle.textContent = show ? "🙈" : "👁";
+        });
+      }
+    });
+
+    return password;
+  };
+
+  const showLoader = (text = "Processing...") => {
+    Swal.fire({
+      title: text,
+      allowOutsideClick: false,
+      didOpen: () => {
+        Swal.showLoading();
+      },
+    });
+  };
+
   /* ================= DELETE ================= */
   const handleDelete = async (type, ref_no, customer_name) => {
-    const pass = prompt(
-      `DELETE RECORD\nTYPE: ${type}\nREF NO: ${ref_no}\nCustomer: ${customer_name}\n\nEnter password`
-    );
-    if (pass !== "786") {
-      alert("❌ Wrong Password");
-      return;
+    const password = await askPassword(type, ref_no, customer_name);
+    if (!password) return;
+
+    if (password !== "786") {
+      return Swal.fire("Error", "Wrong Password", "error");
     }
-    if (!window.confirm(`Confirm delete?\nREF NO: ${ref_no}`)) return;
+
+    const confirm = await Swal.fire({
+      title: "Are you sure?",
+      text: `REF NO: ${ref_no}`,
+      icon: "warning",
+      showCancelButton: true,
+    });
+
+    if (!confirm.isConfirmed) return;
 
     const map = {
       Packages: "bookings",
@@ -82,23 +141,29 @@ export default function AllReports({ onNavigate }) {
       Visa: "visa",
       Card: "card",
     };
+
     const endpoint = map[type];
+
+    showLoader("Deleting...");
 
     try {
       const res = await fetch(
         `${import.meta.env.VITE_BACKEND_URL}/api/${endpoint}/delete/${ref_no}`,
         { method: "DELETE" }
       );
+
       const data = await res.json();
+      Swal.close();
+
       if (!data.success) {
-        alert(data.message || data.error || "Delete failed");
-        return;
+        return Swal.fire("Error", data.message || data.error || "Delete failed", "error");
       }
-      alert(`✅ Record Deleted\nREF NO: ${ref_no}`);
+
+      Swal.fire("Deleted", `REF NO: ${ref_no}`, "success");
       loadData();
     } catch (err) {
-      console.error(err);
-      alert("Delete failed");
+      Swal.close();
+      Swal.fire("Error", "Delete failed", "error");
     }
   };
 
@@ -148,7 +213,6 @@ export default function AllReports({ onNavigate }) {
   const indexOfFirst = indexOfLast - rowsPerPage;
   const currentRows = filtered.slice(indexOfFirst, indexOfLast);
 
-  // Smart Pagination
   const getPagination = () => {
     const delta = 2;
     const range = [];
@@ -177,7 +241,6 @@ export default function AllReports({ onNavigate }) {
     return filtered.reduce((sum, r) => sum + Number(r.total_pkr || 0), 0);
   }, [filtered]);
 
-  /* ================= FORMAT ================= */
   const formatDate = (dateStr) => {
     if (!dateStr) return "-";
     return new Date(dateStr).toLocaleDateString("en-GB", {
@@ -204,7 +267,6 @@ export default function AllReports({ onNavigate }) {
 
   return (
     <div className="container py-4">
-
       {/* HEADER */}
       <div className="card shadow-sm border-0 mb-3">
         <div
@@ -373,7 +435,6 @@ export default function AllReports({ onNavigate }) {
           }}
         />
       </div>
-
     </div>
   );
 }
