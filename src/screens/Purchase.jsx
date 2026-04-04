@@ -111,7 +111,6 @@ export default function Purchase({ onNavigate }) {
 
     const sar = parseNumber(r.purchase_sar);
     const rate = parseNumber(r.purchase_rate);
-
     const purchaseComplete = sar > 0 && rate > 0;
 
     r.purchase_pkr = purchaseComplete ? sar * rate : 0;
@@ -121,54 +120,49 @@ export default function Purchase({ onNavigate }) {
   };
 
   /* ================= SAVE ================= */
-const savePurchase = async () => {
-  if (!rows.length) return alert("No data");
+  const savePurchase = async () => {
+    if (!rows.length) return alert("No data");
 
-  // ❌ REMOVE ZERO SALE ROWS + CLEAN DATA
-  const cleanRows = rows
-    .filter(
-      (r) =>
-        parseNumber(r.sale_sar) !== 0 ||
-        parseNumber(r.sale_rate) !== 0 ||
-        parseNumber(r.sale_pkr) !== 0
-    )
-    .map((r) => ({
-      ...r,
-      purchase_sar: parseNumber(r.purchase_sar),
-      purchase_rate: parseNumber(r.purchase_rate),
-    }));
+    const cleanRows = rows
+      .filter(
+        (r) =>
+          parseNumber(r.sale_sar) !== 0 ||
+          parseNumber(r.sale_rate) !== 0 ||
+          parseNumber(r.sale_pkr) !== 0
+      )
+      .map((r) => ({
+        ...r,
+        purchase_sar: parseNumber(r.purchase_sar),
+        purchase_rate: parseNumber(r.purchase_rate),
+      }));
 
-  // ❌ AGAR SAB ZERO THE → STOP SAVE
-  if (!cleanRows.length) {
-    return alert("No valid rows to save");
-  }
+    if (!cleanRows.length) return alert("No valid rows to save");
 
-  const res = await fetch(
-    `${import.meta.env.VITE_BACKEND_URL}/api/purchase/save`,
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ref_no: refNo, items: cleanRows }),
+    const res = await fetch(
+      `${import.meta.env.VITE_BACKEND_URL}/api/purchase/save`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ref_no: refNo, items: cleanRows }),
+      }
+    );
+
+    const data = await res.json();
+
+    if (data.success) {
+      alert(isEdit ? "✅ Purchase Updated" : "✅ Purchase Saved");
+      setRows([]);
+      setRefNo("");
+      setIsEdit(false);
+      loadPending();
+      onNavigate("dashboard");
+    } else {
+      alert(data.error || "Save failed");
     }
-  );
+  };
 
-  const data = await res.json();
-
-  if (data.success) {
-    alert(isEdit ? "✅ Purchase Updated" : "✅ Purchase Saved");
-    setRows([]);
-    setRefNo("");
-    setIsEdit(false);
-    loadPending();
-    onNavigate("dashboard");
-  } else {
-    alert(data.error || "Save failed");
-  }
-};
-
-/* ================= PARTIAL CHECK (UPDATED) ================= */
-const isPartial =
-  rows
+  /* ================= PARTIAL CHECK ================= */
+  const isPartial = rows
     .filter(
       (r) =>
         parseNumber(r.sale_sar) !== 0 ||
@@ -177,56 +171,52 @@ const isPartial =
     )
     .some(
       (r) =>
-        !parseNumber(r.purchase_sar) ||
-        !parseNumber(r.purchase_rate)
+        !parseNumber(r.purchase_sar) || !parseNumber(r.purchase_rate)
     );
 
-
-const supplierOptions = suppliers.map((s) => ({
-  value: s.supplier_code,
-  label: s.supplier_name,
-}));
-
+  const supplierOptions = suppliers.map((s) => ({
+    value: s.supplier_code,
+    label: s.supplier_name,
+  }));
 
   /* ================= UI ================= */
   return (
-    <div className="container p-3">
-
+    <div className="container py-3" style={{ fontSize: "13px" }}>
       {/* HEADER */}
-      <div className="card shadow-sm mb-3">
-        <div className="card-body d-flex justify-content-between mb-2">
-          <h4 className="fw-bold mb-0">
+      <div
+        className="mb-3 p-3 rounded-4 text-white shadow"
+        style={{ background: "linear-gradient(135deg,#1e3c72,#2a5298)" }}
+      >
+        <div className="d-flex justify-content-between align-items-center">
+          <h5 className="fw-bold mb-0">
             🧾 Purchase Entry
             {isEdit && (
-              <span className="badge bg-warning text-dark ms-2">
-                EDIT MODE
-              </span>
+              <span className="badge bg-warning text-dark ms-2">EDIT MODE</span>
             )}
-          </h4>
+          </h5>
 
-          <div className="d-flex gap-2">
-            <button
-              className="btn btn-outline-secondary btn-sm"
-              onClick={() => onNavigate("dashboard")}
-            >
-              ⬅ Back
-            </button>
-          </div>
+          <button
+            className="btn btn-light btn-sm fw-bold"
+            onClick={() => onNavigate("dashboard")}
+          >
+            ⬅ Back
+          </button>
         </div>
       </div>
 
-
+      {/* PARTIAL ALERT */}
       {isPartial && (
-        <div className="alert alert-warning fw-bold">
+        <div className="alert alert-warning fw-bold shadow-sm rounded-3">
           ⚠️ Purchase PARTIAL hai
         </div>
       )}
 
-      {/* PENDING LIST */}
-      <div className="card shadow-sm mb-3">
-        <div className="card-header fw-bold text-danger">
+      {/* PENDING */}
+      <div className="card border-0 shadow-sm rounded-4 mb-3">
+        <div className="card-header bg-danger text-white fw-bold rounded-top-4">
           ⏳ Pending / Partial Purchases
         </div>
+
         <div className="card-body p-2">
           {pending.length === 0 ? (
             <p className="text-success mb-0">✅ No pending</p>
@@ -238,10 +228,19 @@ const supplierOptions = suppliers.map((s) => ({
                   className="list-group-item d-flex justify-content-between align-items-center"
                 >
                   <div className="fw-bold">
-                    <span className={`badge bg-secondary me-2`}>{p.ref_no}</span>
-                    <span className="text-primary ms-1">{p.customer_name}</span>
-                    <span className={`badge ms-2 ${p.status === "PENDING" ? "bg-danger" : "bg-warning text-dark"}`}>{p.status}</span>
+                    <span className="badge bg-dark me-2">{p.ref_no}</span>
+                    <span className="text-primary">{p.customer_name}</span>
+                    <span
+                      className={`badge ms-2 ${
+                        p.status === "PENDING"
+                          ? "bg-danger"
+                          : "bg-warning text-dark"
+                      }`}
+                    >
+                      {p.status}
+                    </span>
                   </div>
+
                   <button
                     className="btn btn-sm btn-outline-primary"
                     onClick={() => loadPackage(p.ref_no)}
@@ -255,47 +254,35 @@ const supplierOptions = suppliers.map((s) => ({
         </div>
       </div>
 
-      {/* MANUAL REF NO ENTRY */}
-      <div className="card shadow-sm mb-3">
-        <div className="card-header fw-bold text-info">
-          🔢 Enter Ref No Manually
+      {/* REF INPUT */}
+      <div className="card border-0 shadow-sm rounded-4 mb-3">
+        <div className="card-header bg-info text-white fw-bold rounded-top-4">
+          🔢 Enter Ref No
         </div>
+
         <div className="card-body d-flex gap-2">
           <input
             className="form-control form-control-sm"
-            placeholder="Ref No"
+            placeholder="Enter Ref No..."
             value={refNo}
             onChange={(e) => setRefNo(e.target.value)}
           />
-          <button
-            className="btn btn-primary btn-sm"
-            onClick={() => loadPackage()}
-            disabled={loading}
-          >
-            {loading ? "Loading..." : "Load"}
+          <button className="btn btn-primary btn-sm fw-bold" onClick={() => loadPackage()}>
+            Load
           </button>
         </div>
       </div>
 
-      {/* SAVE / UPDATE HEADER + BUTTON */}
-      <div className="card shadow-sm mb-3">
+      {/* SAVE */}
+      <div className="card border-0 shadow-sm rounded-4 mb-3">
         <div className="card-body d-flex justify-content-between align-items-center">
-
-          <h5 className="fw-bold mb-0">
+          <h6 className="fw-bold mb-0">
             💾 {isEdit ? "Update Purchase" : "Save Purchase"}
-            {isEdit && (
-              <span className="badge bg-warning text-dark ms-2">
-                EDIT MODE
-              </span>
-            )}
-          </h5>
+          </h6>
 
-          {/* RIGHT SIDE BUTTONS */}
           <div className="d-flex gap-2">
             <button
-              className={`btn btn-sm ${
-                isEdit ? "btn-warning text-dark" : "btn-success"
-              }`}
+              className={`btn btn-sm fw-bold ${isEdit ? "btn-warning text-dark" : "btn-success"}`}
               onClick={savePurchase}
             >
               {isEdit ? "✏ Update Purchase" : "💾 Save Purchase"}
@@ -310,19 +297,21 @@ const supplierOptions = suppliers.map((s) => ({
                   setIsEdit(false);
                 }}
               >
-                ❌ Cancel
+                Cancel
               </button>
             )}
           </div>
-
         </div>
       </div>
 
       {/* TABLE */}
-      <div className="card shadow">
+      <div className="card border-0 shadow rounded-4 overflow-hidden">
         <div className="table-responsive">
-          <table className="table table-sm table-hover mb-0">
-            <thead className="table-dark sticky-top">
+          <table className="table table-sm table-hover align-middle mb-0">
+            <thead
+              className="text-white"
+              style={{ background: "linear-gradient(135deg,#000,#434343)", fontSize: "12px" }}
+            >
               <tr>
                 <th>Item</th>
                 <th>Sale SAR</th>
@@ -335,6 +324,7 @@ const supplierOptions = suppliers.map((s) => ({
                 <th>Supplier</th>
               </tr>
             </thead>
+
             <tbody>
               {rows
                 .map((r, i) => ({ ...r, originalIndex: i }))
@@ -344,97 +334,70 @@ const supplierOptions = suppliers.map((s) => ({
                     parseNumber(r.sale_rate) !== 0 ||
                     parseNumber(r.sale_pkr) !== 0
                 )
-                .map((r, i) => (
-<tr
-  key={i}
-  className={
-    (parseNumber(r.sale_sar) !== 0 ||
-      parseNumber(r.sale_rate) !== 0 ||
-      parseNumber(r.sale_pkr) !== 0) &&
-    (!parseNumber(r.purchase_sar) ||
-      !parseNumber(r.purchase_rate))
-      ? "table-danger"
-      : ""
-  }
->
-                  <td
-                    className="fw-bold"
-                    style={{ fontSize: "13px", color: itemCategoryColor(r.item_label || r.item) }}
-                  >
-                    {r.item_label || r.item}
-                  </td>
-                  <td>{r.sale_sar}</td>
-                  <td>{r.sale_rate}</td>
-                  <td>{r.sale_pkr.toLocaleString()}</td>
-                  <td>
-                    <input
-                      className="form-control form-control-sm"
-                      value={r.purchase_sar}
-                      onChange={(e) =>
-  updateRow(r.originalIndex, "purchase_sar", e.target.value)
-}
-                    />
-                  </td>
-                  <td>
-                    <input
-                      className="form-control form-control-sm"
-                      value={r.purchase_rate}
-                      onChange={(e) =>
-  updateRow(r.originalIndex, "purchase_rate", e.target.value)
-}
-                    />
-                  </td>
-                  <td>{r.purchase_pkr.toLocaleString()}</td>
-                  <td className={`fw-bold ${r.profit >= 0 ? "text-success" : "text-danger"}`}>
-                    {r.profit.toLocaleString()}
-                  </td>
-                  <td>
-<div style={{ minWidth: "220px" }}>
-  <Select
-    options={supplierOptions}
-    value={
-      supplierOptions.find(
-        (opt) => opt.value === r.supplier_code
-      ) || null
-    }
-    onChange={(selected) =>
-      updateRow(
-        r.originalIndex,
-        "supplier_code",
-        selected ? selected.value : ""
-      )
-    }
-    placeholder="Select Supplier..."
-    isClearable
-    isSearchable
-    menuPortalTarget={document.body} // dropdown overflow fix
-    styles={{
-      control: (base) => ({
-        ...base,
-        minHeight: "30px",
-        height: "30px",
-        fontSize: "12px",
-      }),
-      valueContainer: (base) => ({
-        ...base,
-        padding: "0 6px",
-      }),
-      indicatorsContainer: (base) => ({
-        ...base,
-        height: "30px",
-      }),
-      menuPortal: (base) => ({ ...base, zIndex: 9999 }),
-    }}
-  />
-</div>
-                  </td>
-                </tr>
-              ))}
+                .map((r, i) => {
+                  const isIncomplete =
+                    (parseNumber(r.sale_sar) !== 0 ||
+                      parseNumber(r.sale_rate) !== 0 ||
+                      parseNumber(r.sale_pkr) !== 0) &&
+                    (!parseNumber(r.purchase_sar) || !parseNumber(r.purchase_rate));
+
+                  return (
+                    <tr
+                      key={i}
+                      className={isIncomplete ? "table-danger" : ""}
+                      style={{ transition: "0.2s", cursor: "pointer" }}
+                    >
+                      <td className="fw-bold" style={{ color: itemCategoryColor(r.item_label || r.item) }}>
+                        {r.item_label || r.item}
+                      </td>
+
+                      <td>{r.sale_sar}</td>
+                      <td>{r.sale_rate}</td>
+                      <td className="fw-bold text-primary">{r.sale_pkr.toLocaleString()}</td>
+
+                      <td>
+                        <input
+                          className="form-control form-control-sm"
+                          value={r.purchase_sar}
+                          onChange={(e) => updateRow(r.originalIndex, "purchase_sar", e.target.value)}
+                        />
+                      </td>
+
+                      <td>
+                        <input
+                          className="form-control form-control-sm"
+                          value={r.purchase_rate}
+                          onChange={(e) => updateRow(r.originalIndex, "purchase_rate", e.target.value)}
+                        />
+                      </td>
+
+                      <td className="fw-bold">{r.purchase_pkr.toLocaleString()}</td>
+
+                      <td className={`fw-bold ${r.profit >= 0 ? "text-success" : "text-danger"}`}>
+                        {r.profit.toLocaleString()}
+                      </td>
+
+                      <td style={{ minWidth: "220px" }}>
+                        <Select
+                          options={supplierOptions}
+                          value={supplierOptions.find((opt) => opt.value === r.supplier_code) || null}
+                          onChange={(selected) => updateRow(r.originalIndex, "supplier_code", selected ? selected.value : "")}
+                          placeholder="Select Supplier..."
+                          isClearable
+                          menuPortalTarget={document.body}
+                          styles={{
+                            control: (base) => ({ ...base, minHeight: "32px", fontSize: "12px", borderRadius: "6px" }),
+                            menuPortal: (base) => ({ ...base, zIndex: 9999 }),
+                          }}
+                        />
+                      </td>
+                    </tr>
+                  );
+                })}
             </tbody>
           </table>
         </div>
       </div>
-
     </div>
   );
 }
