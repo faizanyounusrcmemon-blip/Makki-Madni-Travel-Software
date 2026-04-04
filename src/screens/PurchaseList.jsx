@@ -76,13 +76,15 @@ export default function PurchaseList({ onNavigate }) {
 /* ================= DELETE ================= */
 
 
-const deletePurchase = async (refNo, customer_name) => {
+const deletePurchase = async (refNo, customer_name, sale_pkr, purchase_pkr) => {
   const { value: password } = await Swal.fire({
     title: 'DELETE PURCHASE',
     html: `
       <div style="text-align:left;font-size:14px">
         <b style="color:#dc3545">REF NO:</b> ${refNo}<br>
-        <b>Customer:</b> ${customer_name}<br><br>
+        <b>Customer:</b> ${customer_name}<br>
+        <b>Sale Amount:</b> ${sale_pkr}<br>
+        <b>Purchase Amount:</b> ${purchase_pkr}<br><br>
         <input type="password" id="swal-input1" class="swal2-input" placeholder="Enter password">
         <input type="checkbox" id="swal-showpass" style="margin-top:5px;">
         <label for="swal-showpass" style="font-size:12px;">Show Password</label>
@@ -341,7 +343,7 @@ const deletePurchase = async (refNo, customer_name) => {
                       👁️ Detail
                     </button>
                     <button className="btn btn-sm btn-outline-danger"
-                      onClick={() => deletePurchase(r.ref_no, r.customer_name)}>
+                      onClick={() => deletePurchase(r.ref_no, r.customer_name, r.sale_pkr, r.purchase_pkr)}>
                       🗑 Delete
                     </button>
                   </td>

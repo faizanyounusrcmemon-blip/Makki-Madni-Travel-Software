@@ -64,14 +64,15 @@ export default function AllReports({ onNavigate }) {
   };
 
   /* ================= PASSWORD PROMPT ================= */
-  const askPassword = async (type, ref_no, customer_name) => {
+  const askPassword = async (type, ref_no, customer_name, total_pkr) => {
     const { value: password } = await Swal.fire({
       html: `
         <div style="text-align:left;font-size:14px">
           <b style="color:#dc3545">DELETE RECORD</b><br>
           <b>TYPE:</b> ${type}<br>
           <b>REF NO:</b> ${ref_no}<br>
-          <b>Customer:</b> ${customer_name}<br><br>
+          <b>Customer:</b> ${customer_name}<br>
+          <b>Amount:</b> ${total_pkr}<br><br>
           Enter Password
         </div>
         <div style="position:relative">
@@ -115,8 +116,8 @@ export default function AllReports({ onNavigate }) {
   };
 
   /* ================= DELETE ================= */
-  const handleDelete = async (type, ref_no, customer_name) => {
-    const password = await askPassword(type, ref_no, customer_name);
+  const handleDelete = async (type, ref_no, customer_name, total_pkr) => {
+    const password = await askPassword(type, ref_no, customer_name, total_pkr);
     if (!password) return;
 
     if (password !== "786") {
@@ -365,7 +366,7 @@ export default function AllReports({ onNavigate }) {
                   <td><span className="badge bg-success">💰 {fmtPKR(r.total_pkr)}</span></td>
                   <td className="text-center">{r.type === "Packages" && (<button className="btn btn-outline-warning btn-sm" onClick={() => handleSumry(r.type, r.ref_no)}>📊 SUMMARY</button>)}</td>
                   <td className="text-center"><button className="btn btn-outline-info btn-sm" onClick={() => handleView(r.type, r.ref_no)}>👁️ VIEW</button></td>
-                  <td className="text-center"><button className="btn btn-outline-danger btn-sm" onClick={() => handleDelete(r.type, r.ref_no, r.customer_name)}>🗑 DELETE</button></td>
+                  <td className="text-center"><button className="btn btn-outline-danger btn-sm" onClick={() => handleDelete(r.type, r.ref_no, r.customer_name, r.total_pkr)}>🗑 DELETE</button></td>
                 </tr>
               ))}
 
