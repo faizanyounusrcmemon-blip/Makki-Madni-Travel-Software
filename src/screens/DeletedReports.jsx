@@ -27,13 +27,19 @@ export default function DeletedReports({ onNavigate }) {
   }, []);
 
 /* ================= RESTORE ================= */
-const restore = async (type, ref_no) => {
+const restore = async (type, ref_no, customer_name, amount) => {
   const { value: password } = await Swal.fire({
     title: `RESTORE (${ref_no})`,
     html: `
-      <input type="password" id="swal-input1" class="swal2-input" placeholder="Enter password">
-      <input type="checkbox" id="swal-showpass" style="margin-top:5px;">
-      <label for="swal-showpass" style="font-size:12px;">Show Password</label>
+      <div style="text-align:left;font-size:13px">
+        <b>Type:</b> ${type}<br>
+        <b>Ref:</b> ${ref_no}<br>
+        <b>Customer:</b> ${customer_name || "-"}<br>
+        <b>Amount:</b> ${amount ? Number(amount).toLocaleString() : "-"}<br><br>
+        <input type="password" id="swal-input1" class="swal2-input" placeholder="Enter password">
+        <input type="checkbox" id="swal-showpass" style="margin-top:5px;">
+        <label for="swal-showpass" style="font-size:12px;">Show Password</label>
+      </div>
     `,
     focusConfirm: false,
     preConfirm: () => {
@@ -51,11 +57,7 @@ const restore = async (type, ref_no) => {
     showCancelButton: true,
     confirmButtonText: 'Restore',
     cancelButtonText: 'Cancel',
-    // ✅ Green button
-    customClass: {
-      confirmButton: 'btn btn-success',
-      cancelButton: 'btn btn-secondary'
-    },
+    customClass: { confirmButton: 'btn btn-success', cancelButton: 'btn btn-secondary' },
     buttonsStyling: false,
   });
 
@@ -68,10 +70,7 @@ const restore = async (type, ref_no) => {
     showCancelButton: true,
     confirmButtonText: 'Yes, Restore',
     cancelButtonText: 'Cancel',
-    customClass: {
-      confirmButton: 'btn btn-success',
-      cancelButton: 'btn btn-secondary'
-    },
+    customClass: { confirmButton: 'btn btn-success', cancelButton: 'btn btn-secondary' },
     buttonsStyling: false,
   });
 
@@ -105,13 +104,19 @@ const restore = async (type, ref_no) => {
 };
 
 /* ================= DELETE ================= */
-const permanentDelete = async (type, ref_no) => {
+const permanentDelete = async (type, ref_no, customer_name, amount) => {
   const { value: password } = await Swal.fire({
     title: `DELETE (${ref_no})`,
     html: `
-      <input type="password" id="swal-input1" class="swal2-input" placeholder="Enter password">
-      <input type="checkbox" id="swal-showpass" style="margin-top:5px;">
-      <label for="swal-showpass" style="font-size:12px;">Show Password</label>
+      <div style="text-align:left;font-size:13px">
+        <b>Type:</b> ${type}<br>
+        <b>Ref:</b> ${ref_no}<br>
+        <b>Customer:</b> ${customer_name || "-"}<br>
+        <b>Amount:</b> ${amount ? Number(amount).toLocaleString() : "-"}<br><br>
+        <input type="password" id="swal-input1" class="swal2-input" placeholder="Enter password">
+        <input type="checkbox" id="swal-showpass" style="margin-top:5px;">
+        <label for="swal-showpass" style="font-size:12px;">Show Password</label>
+      </div>
     `,
     focusConfirm: false,
     preConfirm: () => {
@@ -129,11 +134,7 @@ const permanentDelete = async (type, ref_no) => {
     showCancelButton: true,
     confirmButtonText: 'Delete',
     cancelButtonText: 'Cancel',
-    // 🔴 Red button
-    customClass: {
-      confirmButton: 'btn btn-danger',
-      cancelButton: 'btn btn-secondary'
-    },
+    customClass: { confirmButton: 'btn btn-danger', cancelButton: 'btn btn-secondary' },
     buttonsStyling: false,
   });
 
@@ -146,10 +147,7 @@ const permanentDelete = async (type, ref_no) => {
     showCancelButton: true,
     confirmButtonText: 'Yes, Delete',
     cancelButtonText: 'Cancel',
-    customClass: {
-      confirmButton: 'btn btn-danger',
-      cancelButton: 'btn btn-secondary'
-    },
+    customClass: { confirmButton: 'btn btn-danger', cancelButton: 'btn btn-secondary' },
     buttonsStyling: false,
   });
 
@@ -294,20 +292,21 @@ const permanentDelete = async (type, ref_no) => {
                   </td>
                   {/* ACTIONS */}
                   <td className="text-center">
-                    <button
-                      className="btn btn-outline-success btn-sm me-1"
-                      style={{ fontSize: "11px", padding: "2px 6px" }}
-                      onClick={() => restore(r.type, r.ref_no)}
-                    >
-                      ♻ Restore
-                    </button>
-                    <button
-                      className="btn btn-outline-danger btn-sm"
-                      style={{ fontSize: "11px", padding: "2px 6px" }}
-                      onClick={() => permanentDelete(r.type, r.ref_no)}
-                    >
-                      🗑 Delete
-                    </button>
+<button
+  className="btn btn-outline-success btn-sm me-1"
+  style={{ fontSize: "11px", padding: "2px 6px" }}
+  onClick={() => restore(r.type, r.ref_no, r.customer_name, r.amount)}
+>
+  ♻ Restore
+</button>
+
+<button
+  className="btn btn-outline-danger btn-sm"
+  style={{ fontSize: "11px", padding: "2px 6px" }}
+  onClick={() => permanentDelete(r.type, r.ref_no, r.customer_name, r.amount)}
+>
+  🗑 Delete
+</button>
                   </td>
                 </tr>
               ))}
