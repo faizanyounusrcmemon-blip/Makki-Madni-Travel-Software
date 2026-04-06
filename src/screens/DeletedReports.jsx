@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from "react";
 import Swal from "sweetalert2";
 
+
+
 export default function DeletedReports({ onNavigate }) {
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -27,9 +29,32 @@ export default function DeletedReports({ onNavigate }) {
   }, []);
 
 /* ================= COMMON PASSWORD POPUP ================= */
-const askPasswordPopup = async (title, type, ref_no, customer_name, amount, btnColor = "#198754") => {
+const askPasswordPopup = async (
+  title,
+  type,
+  ref_no,
+  customer_name,
+  amount,
+  mode = "default" // restore | delete
+) => {
+
+  // 🎨 AUTO COLOR + TEXT
+  let btnColor = "#0d6efd";
+  let confirmText = "Submit";
+
+  if (mode === "restore") {
+    btnColor = "#198754";
+    confirmText = "Restore";
+  }
+
+  if (mode === "delete") {
+    btnColor = "#dc3545";
+    confirmText = "Delete";
+  }
+
   const { value: password } = await Swal.fire({
-    width: "380px", // ✅ compact width
+    width: "380px",
+    confirmButtonColor: btnColor,
     html: `
       <div style="text-align:left;font-size:13px;line-height:1.5">
         <b style="color:${btnColor}">${title}</b><br><br>
@@ -40,7 +65,9 @@ const askPasswordPopup = async (title, type, ref_no, customer_name, amount, btnC
         <b>Amount:</b> ${amount ? Number(amount).toLocaleString() : "-"}<br><br>
 
         <div style="position:relative">
-          <input id="swal-pass" type="password" class="swal2-input" placeholder="Enter password" style="margin:0">
+          <input id="swal-pass" type="password" class="swal2-input"
+            placeholder="Enter password" style="margin:0">
+
           <span id="toggle-pass" style="
             position:absolute;
             right:12px;
@@ -53,22 +80,48 @@ const askPasswordPopup = async (title, type, ref_no, customer_name, amount, btnC
       </div>
     `,
     showCancelButton: true,
-    confirmButtonText: "Submit",
+    confirmButtonText: confirmText,
     focusConfirm: false,
+
     preConfirm: () => {
       const val = document.getElementById("swal-pass").value;
-      if (!val) Swal.showValidationMessage("Password required");
+
+      if (!val) {
+        Swal.showValidationMessage("Password required");
+        return false;
+      }
+
+      // ❌ WRONG PASSWORD → SHAKE
+      if (val.trim() !== "786") {
+        const popup = Swal.getPopup();
+
+        popup.style.animation = "shake 0.3s";
+        setTimeout(() => {
+          popup.style.animation = "";
+        }, 300);
+
+        Swal.showValidationMessage("❌ Wrong Password");
+        return false;
+      }
+
       return val;
     },
+
     didOpen: () => {
       let show = false;
       const input = document.getElementById("swal-pass");
       const toggle = document.getElementById("toggle-pass");
 
+      // 👁 SHOW / HIDE
       toggle.addEventListener("click", () => {
         show = !show;
         input.type = show ? "text" : "password";
         toggle.textContent = show ? "🙈" : "👁";
+      });
+
+      // ⌨ ENTER PRESS
+      input.addEventListener("keypress", (e) => {
+        if (e.key === "Enter") Swal.clickConfirm();
       });
     }
   });
@@ -83,7 +136,7 @@ const restore = async (type, ref_no, customer_name, amount) => {
     ref_no,
     customer_name,
     amount,
-    "#198754"
+    "restore"
   );
 
   if (!password) return;
@@ -111,11 +164,7 @@ const restore = async (type, ref_no, customer_name, amount) => {
     const data = await res.json();
 
     if (data.success) {
-      Swal.fire({
-        title: "Restored",
-        text: `REF NO: ${ref_no}`,
-        icon: "success",
-      });
+      Swal.fire("Restored", `REF NO: ${ref_no}`, "success");
       load();
     } else {
       Swal.fire("Error", data.error || "Restore failed", "error");
@@ -132,7 +181,7 @@ const permanentDelete = async (type, ref_no, customer_name, amount) => {
     ref_no,
     customer_name,
     amount,
-    "#dc3545"
+    "delete"
   );
 
   if (!password) return;
@@ -160,11 +209,7 @@ const permanentDelete = async (type, ref_no, customer_name, amount) => {
     const data = await res.json();
 
     if (data.success) {
-      Swal.fire({
-        title: "Deleted",
-        text: `REF NO: ${ref_no}`,
-        icon: "success",
-      });
+      Swal.fire("Deleted", `REF NO: ${ref_no}`, "success");
       load();
     } else {
       Swal.fire("Error", data.error || "Delete failed", "error");
@@ -173,6 +218,8 @@ const permanentDelete = async (type, ref_no, customer_name, amount) => {
     Swal.fire("Error", "Server error", "error");
   }
 };
+
+
 
 
 
