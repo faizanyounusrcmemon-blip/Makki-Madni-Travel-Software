@@ -68,43 +68,67 @@ export default function Restore({ onNavigate }) {
 
   /* ================= PASSWORD POPUP (SHOW/HIDE) ================= */
 
-  const askPassword = async (title) => {
-    let show = false;
+const askPassword = async (title, fileObj) => {
+  let show = false;
 
-    const { value: password } = await Swal.fire({
-      title,
-      html: `
-        <div style="position:relative">
-          <input id="swal-pass" type="password" class="swal2-input" placeholder="Enter password">
+  const { value: password } = await Swal.fire({
+    width: "360px", // 👈 compact popup
+    title,
+    html: `
+      <div style="text-align:left;font-size:13px;line-height:1.6">
+        
+        <div style="margin-bottom:8px">
+          <b style="color:#0d6efd">📁 File:</b><br>
+          <span style="font-size:12px">${fileObj.name}</span>
+        </div>
+
+        <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:8px">
+          <span>🕒 ${fmtDate(fileObj.created_at)}</span>
+          <span>📦 ${fmtSize(fileObj.metadata?.size)}</span>
+        </div>
+
+        <div style="position:relative;margin-top:10px">
+          <input id="swal-pass" type="password" class="swal2-input"
+            style="height:34px;font-size:13px"
+            placeholder="Enter password">
+
           <span id="toggle-pass" style="
             position:absolute;
-            right:20px;
+            right:12px;
             top:50%;
             transform:translateY(-50%);
             cursor:pointer;
             font-size:14px;
-            color:#555;">👁</span>
+          ">👁</span>
         </div>
-      `,
-      focusConfirm: false,
-      showCancelButton: true,
-      preConfirm: () => {
-        return document.getElementById("swal-pass").value;
-      },
-      didOpen: () => {
-        const input = document.getElementById("swal-pass");
-        const toggle = document.getElementById("toggle-pass");
 
-        toggle.addEventListener("click", () => {
-          show = !show;
-          input.type = show ? "text" : "password";
-          toggle.textContent = show ? "🙈" : "👁";
-        });
+      </div>
+    `,
+    showCancelButton: true,
+    confirmButtonText: "OK",
+    focusConfirm: false,
+    preConfirm: () => {
+      const val = document.getElementById("swal-pass").value;
+      if (!val || val.trim() === "") {
+        Swal.showValidationMessage("Password required");
       }
-    });
+      return val ? val.trim() : "";
+    },
+    didOpen: () => {
+      const input = document.getElementById("swal-pass");
+      const toggle = document.getElementById("toggle-pass");
 
-    return password;
-  };
+      toggle.addEventListener("click", () => {
+        show = !show;
+        input.type = show ? "text" : "password";
+        toggle.textContent = show ? "🙈" : "👁";
+      });
+    }
+  });
+
+  return password;
+};
+
 
   /* ================= LOADING POPUP ================= */
 
@@ -121,7 +145,9 @@ export default function Restore({ onNavigate }) {
   /* ================= RESTORE ================= */
 
   const restore = async (file, mode) => {
-    const password = await askPassword("Restore Password");
+    const fileObj = files.find(f => f.name === file);
+
+    const password = await askPassword("Restore Backup", fileObj);
     if (!password) return;
 
     if (mode === "table" && !tableMap[file]) {
@@ -158,7 +184,9 @@ export default function Restore({ onNavigate }) {
   /* ================= DOWNLOAD ================= */
 
   const downloadBackup = async (file) => {
-    const password = await askPassword("Download Password");
+    const fileObj = files.find(f => f.name === file);
+
+    const password = await askPassword("Download Backup", fileObj);
     if (!password) return;
 
     showLoader("Preparing Download...");
@@ -197,7 +225,9 @@ export default function Restore({ onNavigate }) {
   /* ================= DELETE ================= */
 
   const deleteBackup = async (file) => {
-    const password = await askPassword("Delete Password");
+    const fileObj = files.find(f => f.name === file);
+
+    const password = await askPassword("Delete Backup", fileObj);
     if (!password) return;
 
     const confirm = await Swal.fire({
@@ -266,8 +296,8 @@ export default function Restore({ onNavigate }) {
               <th>🕒 Date & Time</th>
               <th>📦 Size</th>
               <th>♻ Restore</th>
-              <th className="text-center">⬇</th>
-              <th className="text-center">🗑</th>
+              <th className="text-center">⬇ Download</th>
+              <th className="text-center">🗑 Delete</th>
             </tr>
           </thead>
 
@@ -321,7 +351,7 @@ export default function Restore({ onNavigate }) {
                     className="vip-btn vip-outline"
                     onClick={() => downloadBackup(f.name)}
                   >
-                    ⬇
+                    ⬇ Download
                   </button>
                 </td>
 
@@ -330,7 +360,7 @@ export default function Restore({ onNavigate }) {
                     className="vip-btn vip-danger"
                     onClick={() => deleteBackup(f.name)}
                   >
-                    ❌
+                    ❌ Delete
                   </button>
                 </td>
               </tr>
