@@ -181,3 +181,125 @@
   from { opacity: 0.9; transform: scaleX(1); }
   to { opacity: 0; transform: scaleX(1.6); }
 }
+
+.swal-backup-popup.shake {
+  animation: shake 0.5s;
+}
+
+.swal-backup-popup.shake {
+  animation: shake 0.5s;
+}
+
+.swal-backup-popup {
+  border-radius: 10px;
+  font-family: 'Segoe UI', sans-serif;
+  padding: 15px 20px !important;
+}
+
+.swal-backup-popup.shake {
+  animation: shake 0.5s;
+}
+
+@keyframes shake {
+  0% { transform: translateX(0); }
+  25% { transform: translateX(-5px); }
+  50% { transform: translateX(5px); }
+  75% { transform: translateX(-5px); }
+  100% { transform: translateX(0); }
+}
+
+.swal-btn-confirm {
+  background-color: #198754;
+  color: white;
+  font-weight: bold;
+  padding: 6px 18px;
+  margin: 5px;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+}
+
+.swal-btn-cancel {
+  background-color: #dc3545;
+  color: white;
+  font-weight: bold;
+  padding: 6px 18px;
+  margin: 5px;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+}
+
+.vip-progress {
+  background: rgba(0,0,0,0.1);
+  border-radius: 5px;
+  width: 100%;
+  height: 20px;
+  margin-top: 10px;
+  overflow: hidden;
+}
+
+.vip-progress-bar {
+  background: #198754;
+  height: 100%;
+  text-align: center;
+  color: white;
+  font-weight: bold;
+  line-height: 20px;
+}
+
+.swal-backup-popup {
+  border-radius: 10px;
+  font-family: 'Segoe UI', sans-serif;
+  padding: 15px 20px !important;
+}
+
+.swal-backup-popup.shake {
+  animation: shake 0.5s;
+}
+
+@keyframes shake {
+  0% { transform: translateX(0); }
+  25% { transform: translateX(-5px); }
+  50% { transform: translateX(5px); }
+  75% { transform: translateX(-5px); }
+  100% { transform: translateX(0); }
+}
+
+.swal-btn-confirm {
+  background-color: #198754;
+  color: white;
+  font-weight: bold;
+  padding: 6px 18px;
+  margin: 5px;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+}
+
+.swal-btn-cancel {
+  background-color: #dc3545;
+  color: white;
+  font-weight: bold;
+  padding: 6px 18px;
+  margin: 5px;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+}
+
+/* Clouds and Airplane */
+.cloud { position: absolute; background: rgba(255,255,255,0.7); border-radius: 50%; opacity: 0.5; filter: blur(10px); }
+.cloud1 { width: 300px; height: 80px; top: 20%; left: -300px; animation: moveClouds 60s linear infinite; }
+.cloud2 { width: 400px; height: 100px; top: 40%; left: -400px; animation: moveClouds 90s linear infinite; }
+.cloud3 { width: 250px; height: 70px; top: 65%; left: -250px; animation: moveClouds 75s linear infinite; }
+@keyframes moveClouds { from { transform: translateX(0); } to { transform: translateX(160vw); } }
+
+.airplane { position: absolute; top: 30%; left: -50px; font-size: 38px; animation: fly 25s linear infinite; z-index: 2; }
+@keyframes fly { from { transform: translateX(0) translateY(0); } to { transform: translateX(120vw) translateY(-60px); } }
+
+.ground { position: absolute; bottom: 0; width: 100%; height: 100px; background: linear-gradient(to top, rgba(0,0,0,0.7), transparent); }
+
+/* VIP Progress Bar */
+.vip-progress { background: rgba(0,0,0,0.1); border-radius: 5px; width: 100%; height: 20px; margin-top: 10px; overflow: hidden; }
+.vip-progress-bar { background: #198754; height: 100%; text-align: center; color: white; font-weight: bold; line-height: 20px; }
