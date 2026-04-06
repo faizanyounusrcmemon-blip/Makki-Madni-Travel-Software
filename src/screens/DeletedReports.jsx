@@ -26,52 +26,74 @@ export default function DeletedReports({ onNavigate }) {
     load();
   }, []);
 
-/* ================= RESTORE ================= */
-const restore = async (type, ref_no, customer_name, amount) => {
+/* ================= COMMON PASSWORD POPUP ================= */
+const askPasswordPopup = async (title, type, ref_no, customer_name, amount, btnColor = "#198754") => {
   const { value: password } = await Swal.fire({
-    title: `RESTORE (${ref_no})`,
+    width: "380px", // ✅ compact width
     html: `
-      <div style="text-align:left;font-size:13px">
+      <div style="text-align:left;font-size:13px;line-height:1.5">
+        <b style="color:${btnColor}">${title}</b><br><br>
+
         <b>Type:</b> ${type}<br>
-        <b>Ref:</b> ${ref_no}<br>
+        <b>Ref No:</b> ${ref_no}<br>
         <b>Customer:</b> ${customer_name || "-"}<br>
         <b>Amount:</b> ${amount ? Number(amount).toLocaleString() : "-"}<br><br>
-        <input type="password" id="swal-input1" class="swal2-input" placeholder="Enter password">
-        <input type="checkbox" id="swal-showpass" style="margin-top:5px;">
-        <label for="swal-showpass" style="font-size:12px;">Show Password</label>
+
+        <div style="position:relative">
+          <input id="swal-pass" type="password" class="swal2-input" placeholder="Enter password" style="margin:0">
+          <span id="toggle-pass" style="
+            position:absolute;
+            right:12px;
+            top:50%;
+            transform:translateY(-50%);
+            cursor:pointer;
+            font-size:14px;
+          ">👁</span>
+        </div>
       </div>
     `,
+    showCancelButton: true,
+    confirmButtonText: "Submit",
     focusConfirm: false,
     preConfirm: () => {
-      const passInput = document.getElementById('swal-input1');
-      if (!passInput.value) Swal.showValidationMessage('Password is required');
-      return passInput.value;
+      const val = document.getElementById("swal-pass").value;
+      if (!val) Swal.showValidationMessage("Password required");
+      return val;
     },
     didOpen: () => {
-      const checkbox = document.getElementById('swal-showpass');
-      const passInput = document.getElementById('swal-input1');
-      checkbox.addEventListener('change', () => {
-        passInput.type = checkbox.checked ? 'text' : 'password';
+      let show = false;
+      const input = document.getElementById("swal-pass");
+      const toggle = document.getElementById("toggle-pass");
+
+      toggle.addEventListener("click", () => {
+        show = !show;
+        input.type = show ? "text" : "password";
+        toggle.textContent = show ? "🙈" : "👁";
       });
-    },
-    showCancelButton: true,
-    confirmButtonText: 'Restore',
-    cancelButtonText: 'Cancel',
-    customClass: { confirmButton: 'btn btn-success', cancelButton: 'btn btn-secondary' },
-    buttonsStyling: false,
+    }
   });
+
+  return password;
+};
+
+const restore = async (type, ref_no, customer_name, amount) => {
+  const password = await askPasswordPopup(
+    "RESTORE RECORD",
+    type,
+    ref_no,
+    customer_name,
+    amount,
+    "#198754"
+  );
 
   if (!password) return;
 
   const confirmRestore = await Swal.fire({
-    title: 'Confirm Restore',
-    html: `<span style="color:green;font-weight:bold;">Restore record ${ref_no}?</span>`,
-    icon: 'question',
+    title: "Confirm Restore",
+    text: `Restore REF NO: ${ref_no}?`,
+    icon: "question",
     showCancelButton: true,
-    confirmButtonText: 'Yes, Restore',
-    cancelButtonText: 'Cancel',
-    customClass: { confirmButton: 'btn btn-success', cancelButton: 'btn btn-secondary' },
-    buttonsStyling: false,
+    confirmButtonText: "Yes, Restore",
   });
 
   if (!confirmRestore.isConfirmed) return;
@@ -85,70 +107,42 @@ const restore = async (type, ref_no, customer_name, amount) => {
         body: JSON.stringify({ type, ref_no, password }),
       }
     );
+
     const data = await res.json();
+
     if (data.success) {
       Swal.fire({
-        html: `<span style="color:white;font-weight:bold;">RESTORED (${ref_no}) ✅</span>`,
-        icon: 'success',
-        background: 'green',
-        timer: 1500,
-        showConfirmButton: false,
+        title: "Restored",
+        text: `REF NO: ${ref_no}`,
+        icon: "success",
       });
       load();
     } else {
-      Swal.fire('Error', data.error || 'Restore failed', 'error');
+      Swal.fire("Error", data.error || "Restore failed", "error");
     }
   } catch {
-    Swal.fire('Error', 'Server error', 'error');
+    Swal.fire("Error", "Server error", "error");
   }
 };
 
-/* ================= DELETE ================= */
 const permanentDelete = async (type, ref_no, customer_name, amount) => {
-  const { value: password } = await Swal.fire({
-    title: `DELETE (${ref_no})`,
-    html: `
-      <div style="text-align:left;font-size:13px">
-        <b>Type:</b> ${type}<br>
-        <b>Ref:</b> ${ref_no}<br>
-        <b>Customer:</b> ${customer_name || "-"}<br>
-        <b>Amount:</b> ${amount ? Number(amount).toLocaleString() : "-"}<br><br>
-        <input type="password" id="swal-input1" class="swal2-input" placeholder="Enter password">
-        <input type="checkbox" id="swal-showpass" style="margin-top:5px;">
-        <label for="swal-showpass" style="font-size:12px;">Show Password</label>
-      </div>
-    `,
-    focusConfirm: false,
-    preConfirm: () => {
-      const passInput = document.getElementById('swal-input1');
-      if (!passInput.value) Swal.showValidationMessage('Password is required');
-      return passInput.value;
-    },
-    didOpen: () => {
-      const checkbox = document.getElementById('swal-showpass');
-      const passInput = document.getElementById('swal-input1');
-      checkbox.addEventListener('change', () => {
-        passInput.type = checkbox.checked ? 'text' : 'password';
-      });
-    },
-    showCancelButton: true,
-    confirmButtonText: 'Delete',
-    cancelButtonText: 'Cancel',
-    customClass: { confirmButton: 'btn btn-danger', cancelButton: 'btn btn-secondary' },
-    buttonsStyling: false,
-  });
+  const password = await askPasswordPopup(
+    "PERMANENT DELETE",
+    type,
+    ref_no,
+    customer_name,
+    amount,
+    "#dc3545"
+  );
 
   if (!password) return;
 
   const confirmDelete = await Swal.fire({
-    title: 'FINAL WARNING!',
-    html: `<span style="color:red;font-weight:bold;">Permanently delete record ${ref_no}?</span>`,
-    icon: 'warning',
+    title: "FINAL WARNING!",
+    text: `Delete REF NO: ${ref_no} permanently?`,
+    icon: "warning",
     showCancelButton: true,
-    confirmButtonText: 'Yes, Delete',
-    cancelButtonText: 'Cancel',
-    customClass: { confirmButton: 'btn btn-danger', cancelButton: 'btn btn-secondary' },
-    buttonsStyling: false,
+    confirmButtonText: "Yes, Delete",
   });
 
   if (!confirmDelete.isConfirmed) return;
@@ -162,23 +156,25 @@ const permanentDelete = async (type, ref_no, customer_name, amount) => {
         body: JSON.stringify({ type, ref_no, password }),
       }
     );
+
     const data = await res.json();
+
     if (data.success) {
       Swal.fire({
-        html: `<span style="color:white;font-weight:bold;">DELETED (${ref_no}) 🔴</span>`,
-        icon: 'error',
-        background: 'red',
-        timer: 1500,
-        showConfirmButton: false,
+        title: "Deleted",
+        text: `REF NO: ${ref_no}`,
+        icon: "success",
       });
       load();
     } else {
-      Swal.fire('Error', data.error || 'Delete failed', 'error');
+      Swal.fire("Error", data.error || "Delete failed", "error");
     }
   } catch {
-    Swal.fire('Error', 'Server error', 'error');
+    Swal.fire("Error", "Server error", "error");
   }
 };
+
+
 
   /* ================= VIEW ================= */
   const handleView = (type, ref_no) => {

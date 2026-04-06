@@ -73,55 +73,100 @@ export default function PurchaseList({ onNavigate }) {
   };
 
   /* ================= DELETE ================= */
-/* ================= DELETE ================= */
-
-
 const deletePurchase = async (refNo, customer_name, sale_pkr, purchase_pkr) => {
   const { value: password } = await Swal.fire({
-      html: `
-        <div style="text-align:left;font-size:14px">
-          <b style="color:#dc3545">DELETE PURCHASE RECORD</b><br>
-        <b style="color:#dc3545">REF NO:</b> ${refNo}<br>
-        <b>Customer:</b> ${customer_name}<br>
-        <b>Sale Amount:</b> ${sale_pkr}<br>
-        <b>Purchase Amount:</b> ${purchase_pkr}<br><br>
-        <input type="password" id="swal-input1" class="swal2-input" placeholder="Enter password">
-        <input type="checkbox" id="swal-showpass" style="margin-top:5px;">
-        <label for="swal-showpass" style="font-size:12px;">Show Password</label>
+    width: "360px", // 👈 compact width
+    padding: "1em",
+    html: `
+      <div style="text-align:left;font-size:13px;line-height:1.5">
+
+        <div style="margin-bottom:8px">
+          <b style="color:#dc3545">🗑 DELETE PURCHASE</b>
+        </div>
+
+        <div style="font-size:12px;margin-bottom:6px">
+          <b>REF NO:</b> ${refNo}
+        </div>
+
+        <div style="font-size:12px;margin-bottom:6px">
+          <b>Customer:</b> ${customer_name}
+        </div>
+
+        <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:8px">
+          <span>💰 Sale: ${sale_pkr}</span>
+          <span>🛒 Purchase: ${purchase_pkr}</span>
+        </div>
+
+        <div style="position:relative;margin-top:8px">
+          <input 
+            type="password" 
+            id="swal-input1" 
+            class="swal2-input" 
+            style="height:34px;font-size:13px"
+            placeholder="Enter password">
+
+          <span id="toggle-pass" style="
+            position:absolute;
+            right:12px;
+            top:50%;
+            transform:translateY(-50%);
+            cursor:pointer;
+            font-size:14px;
+          ">👁</span>
+        </div>
+
       </div>
     `,
     focusConfirm: false,
+    showCancelButton: true,
+    confirmButtonText: "Delete",
+    cancelButtonText: "Cancel",
+
     preConfirm: () => {
-      const passInput = document.getElementById('swal-input1');
-      if (!passInput.value) {
-        Swal.showValidationMessage('Password is required');
+      const val = document.getElementById("swal-input1").value;
+      if (!val || val.trim() === "") {
+        Swal.showValidationMessage("Password required");
       }
-      return passInput.value;
+      return val ? val.trim() : "";
     },
+
     didOpen: () => {
-      const checkbox = document.getElementById('swal-showpass');
-      const passInput = document.getElementById('swal-input1');
-      checkbox.addEventListener('change', () => {
-        passInput.type = checkbox.checked ? 'text' : 'password';
+      const input = document.getElementById("swal-input1");
+      const toggle = document.getElementById("toggle-pass");
+
+      let show = false;
+      toggle.addEventListener("click", () => {
+        show = !show;
+        input.type = show ? "text" : "password";
+        toggle.textContent = show ? "🙈" : "👁";
       });
     },
-    showCancelButton: true,
-    confirmButtonText: 'Delete',
-    cancelButtonText: 'Cancel',
   });
 
   if (!password) return;
 
+  /* ✅ PASSWORD FIX (IMPORTANT) */
+  if (password.toString().trim() !== "786") {
+    return Swal.fire("Error", "Wrong Password", "error");
+  }
+
   const confirmDelete = await Swal.fire({
-    title: 'Are you sure?',
-    html: `This will move REF NO: <b>${refNo}</b> of <b>${customer_name}</b> to deleted list.`,
-    icon: 'warning',
+    width: "320px",
+    title: "Are you sure?",
+    html: `REF NO: <b>${refNo}</b><br>Customer: <b>${customer_name}</b>`,
+    icon: "warning",
     showCancelButton: true,
-    confirmButtonText: 'Yes, Delete it!',
-    cancelButtonText: 'Cancel',
+    confirmButtonText: "Yes, Delete",
   });
 
   if (!confirmDelete.isConfirmed) return;
+
+  /* LOADER */
+  Swal.fire({
+    title: "Deleting...",
+    allowOutsideClick: false,
+    didOpen: () => Swal.showLoading(),
+  });
 
   try {
     const res = await fetch(
@@ -129,20 +174,22 @@ const deletePurchase = async (refNo, customer_name, sale_pkr, purchase_pkr) => {
       {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ password, customer_name }),
+        body: JSON.stringify({ customer_name }),
       }
     );
 
     const data = await res.json();
+    Swal.close();
 
     if (data.success) {
-      Swal.fire(`Deleted!`, `REF NO: ${refNo} has been deleted.`, 'success');
+      Swal.fire("Deleted!", `REF NO: ${refNo} deleted`, "success");
       loadList();
     } else {
-      Swal.fire('Error', data.error || 'Delete failed', 'error');
+      Swal.fire("Error", data.error || "Delete failed", "error");
     }
   } catch {
-    Swal.fire('Error', 'Server error', 'error');
+    Swal.close();
+    Swal.fire("Error", "Server error", "error");
   }
 };
 

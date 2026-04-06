@@ -64,109 +64,147 @@ export default function AllReports({ onNavigate }) {
   };
 
   /* ================= PASSWORD PROMPT ================= */
-  const askPassword = async (type, ref_no, customer_name, total_pkr) => {
-    const { value: password } = await Swal.fire({
-      html: `
-        <div style="text-align:left;font-size:14px">
-          <b style="color:#dc3545">DELETE SALE RECORD</b><br>
-          <b>TYPE:</b> ${type}<br>
-          <b>REF NO:</b> ${ref_no}<br>
-          <b>Customer:</b> ${customer_name}<br>
-          <b>Amount:</b> ${total_pkr}<br><br>
-          Enter Password
+const askPassword = async (type, ref_no, customer_name, total_pkr) => {
+  const { value: password } = await Swal.fire({
+    width: "360px", // 👈 compact
+    padding: "1em",
+    html: `
+      <div style="text-align:left;font-size:13px;line-height:1.5">
+
+        <div style="margin-bottom:8px">
+          <b style="color:#dc3545">🗑 DELETE SALE</b>
         </div>
-        <div style="position:relative">
-          <input id="swal-pass" type="password" class="swal2-input" placeholder="Enter password">
+
+        <div style="font-size:12px;margin-bottom:6px">
+          <b>Type:</b> ${type}
+        </div>
+
+        <div style="font-size:12px;margin-bottom:6px">
+          <b>REF NO:</b> ${ref_no}
+        </div>
+
+        <div style="font-size:12px;margin-bottom:6px">
+          <b>Customer:</b> ${customer_name}
+        </div>
+
+        <div style="font-size:12px;margin-bottom:8px">
+          💰 <b>Amount:</b> ${total_pkr}
+        </div>
+
+        <div style="position:relative;margin-top:8px">
+          <input 
+            id="swal-pass" 
+            type="password" 
+            class="swal2-input"
+            style="height:34px;font-size:13px"
+            placeholder="Enter password"
+          />
+
           <span id="toggle-pass" style="
             position:absolute;
-            right:20px;
+            right:12px;
             top:50%;
             transform:translateY(-50%);
             cursor:pointer;
+            font-size:14px;
           ">👁</span>
         </div>
-      `,
-      showCancelButton: true,
-      focusConfirm: false,
-      preConfirm: () => document.getElementById("swal-pass").value,
-      didOpen: () => {
-        let show = false;
-        const input = document.getElementById("swal-pass");
-        const toggle = document.getElementById("toggle-pass");
 
-        toggle.addEventListener("click", () => {
-          show = !show;
-          input.type = show ? "text" : "password";
-          toggle.textContent = show ? "🙈" : "👁";
-        });
+      </div>
+    `,
+    showCancelButton: true,
+    confirmButtonText: "Delete",
+    focusConfirm: false,
+
+    preConfirm: () => {
+      const val = document.getElementById("swal-pass").value;
+      if (!val || val.trim() === "") {
+        Swal.showValidationMessage("Password required");
       }
-    });
+      return val ? val.trim() : "";
+    },
 
-    return password;
+    didOpen: () => {
+      const input = document.getElementById("swal-pass");
+      const toggle = document.getElementById("toggle-pass");
+
+      let show = false;
+      toggle.addEventListener("click", () => {
+        show = !show;
+        input.type = show ? "text" : "password";
+        toggle.textContent = show ? "🙈" : "👁";
+      });
+    }
+  });
+
+  return password;
+};
+
+const showLoader = (text = "Processing...") => {
+  Swal.fire({
+    width: "300px",
+    title: text,
+    allowOutsideClick: false,
+    didOpen: () => Swal.showLoading(),
+  });
+};
+
+/* ================= DELETE ================= */
+const handleDelete = async (type, ref_no, customer_name, total_pkr) => {
+  const password = await askPassword(type, ref_no, customer_name, total_pkr);
+
+  if (!password) return;
+
+  /* ✅ PASSWORD FIX (IMPORTANT) */
+  if (password.toString().trim() !== "786") {
+    return Swal.fire("Error", "Wrong Password", "error");
+  }
+
+  const confirm = await Swal.fire({
+    width: "320px",
+    title: "Are you sure?",
+    html: `REF NO: <b>${ref_no}</b><br>Customer: <b>${customer_name}</b>`,
+    icon: "warning",
+    showCancelButton: true,
+    confirmButtonText: "Yes, Delete",
+  });
+
+  if (!confirm.isConfirmed) return;
+
+  const map = {
+    Packages: "bookings",
+    Hotels: "hotels",
+    Ticketing: "ticketing",
+    Transport: "transport",
+    Ziyarat: "ziyarat",
+    Visa: "visa",
+    Card: "card",
   };
 
-  const showLoader = (text = "Processing...") => {
-    Swal.fire({
-      title: text,
-      allowOutsideClick: false,
-      didOpen: () => {
-        Swal.showLoading();
-      },
-    });
-  };
+  const endpoint = map[type];
 
-  /* ================= DELETE ================= */
-  const handleDelete = async (type, ref_no, customer_name, total_pkr) => {
-    const password = await askPassword(type, ref_no, customer_name, total_pkr);
-    if (!password) return;
+  showLoader("Deleting...");
 
-    if (password !== "786") {
-      return Swal.fire("Error", "Wrong Password", "error");
+  try {
+    const res = await fetch(
+      `${import.meta.env.VITE_BACKEND_URL}/api/${endpoint}/delete/${ref_no}`,
+      { method: "DELETE" }
+    );
+
+    const data = await res.json();
+    Swal.close();
+
+    if (!data.success) {
+      return Swal.fire("Error", data.message || data.error || "Delete failed", "error");
     }
 
-    const confirm = await Swal.fire({
-      title: "Are you sure?",
-      text: `REF NO: ${ref_no}`,
-      icon: "warning",
-      showCancelButton: true,
-    });
-
-    if (!confirm.isConfirmed) return;
-
-    const map = {
-      Packages: "bookings",
-      Hotels: "hotels",
-      Ticketing: "ticketing",
-      Transport: "transport",
-      Ziyarat: "ziyarat",
-      Visa: "visa",
-      Card: "card",
-    };
-
-    const endpoint = map[type];
-
-    showLoader("Deleting...");
-
-    try {
-      const res = await fetch(
-        `${import.meta.env.VITE_BACKEND_URL}/api/${endpoint}/delete/${ref_no}`,
-        { method: "DELETE" }
-      );
-
-      const data = await res.json();
-      Swal.close();
-
-      if (!data.success) {
-        return Swal.fire("Error", data.message || data.error || "Delete failed", "error");
-      }
-
-      Swal.fire("Deleted", `REF NO: ${ref_no}`, "success");
-      loadData();
-    } catch (err) {
-      Swal.close();
-      Swal.fire("Error", "Delete failed", "error");
-    }
-  };
+    Swal.fire("Deleted", `REF NO: ${ref_no}`, "success");
+    loadData();
+  } catch (err) {
+    Swal.close();
+    Swal.fire("Error", "Delete failed", "error");
+  }
+};
 
   /* ================= VIEW ================= */
   const handleView = (type, ref_no) => {
