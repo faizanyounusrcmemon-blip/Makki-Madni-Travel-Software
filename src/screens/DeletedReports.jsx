@@ -92,7 +92,7 @@ const askPasswordPopup = async (
       }
 
       // ❌ WRONG PASSWORD → SHAKE
-      if (val.trim() !== "786") {
+      if (val.trim() !== "7865") {
         const popup = Swal.getPopup();
 
         popup.style.animation = "shake 0.3s";

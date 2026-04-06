@@ -128,3 +128,88 @@
   75% { transform: translateX(-6px); }
   100% { transform: translateX(0); }
 }
+
+/* ================= SHAKE ANIMATION ================= */
+@keyframes shake {
+  0% { transform: translateX(0); }
+  20% { transform: translateX(-5px); }
+  40% { transform: translateX(5px); }
+  60% { transform: translateX(-5px); }
+  80% { transform: translateX(5px); }
+  100% { transform: translateX(0); }
+}
+
+/* DELETE BUTTON */
+.swal-btn-delete {
+  background-color: #dc3545 !important;
+  color: #fff !important;
+  border: none !important;
+  padding: 6px 16px;
+  border-radius: 4px;
+  font-weight: bold;
+}
+
+/* CANCEL BUTTON COLOR */
+.swal-btn-cancel {
+  background-color: #6c757d !important; /* Gray */
+  color: #fff !important;
+  border: none !important;
+  padding: 6px 16px;
+  border-radius: 4px;
+  font-weight: bold;
+}
+
+/* SHAKE ANIMATION */
+@keyframes shake {
+  0% { transform: translateX(0); }
+  20% { transform: translateX(-5px); }
+  40% { transform: translateX(5px); }
+  60% { transform: translateX(-5px); }
+  80% { transform: translateX(5px); }
+  100% { transform: translateX(0); }
+}
+
+.swal2-popup.shake {
+  animation: shake 0.5s;
+}
+
+@keyframes shake {
+  0% { transform: translateX(0); }
+  25% { transform: translateX(-5px); }
+  50% { transform: translateX(5px); }
+  75% { transform: translateX(-5px); }
+  100% { transform: translateX(0); }
+}
+
+.swal2-popup.shake {
+  animation: shake 0.5s;
+}
+
+.swal-btn-delete {
+  background-color: #dc3545 !important;
+  color: white !important;
+}
+
+.swal-btn-cancel {
+  background-color: #6c757d !important;
+  color: white !important;
+}
+
+/* ================= SHAKE ANIMATION ================= */
+@keyframes shake {
+  0% { transform: translateX(0); }
+  10% { transform: translateX(-8px); }
+  20% { transform: translateX(8px); }
+  30% { transform: translateX(-6px); }
+  40% { transform: translateX(6px); }
+  50% { transform: translateX(-4px); }
+  60% { transform: translateX(4px); }
+  70% { transform: translateX(-2px); }
+  80% { transform: translateX(2px); }
+  90% { transform: translateX(0); }
+  100% { transform: translateX(0); }
+}
+
+.swal2-popup.shake {
+  animation: shake 0.6s;
+}

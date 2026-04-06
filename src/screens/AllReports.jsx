@@ -63,10 +63,10 @@ export default function AllReports({ onNavigate }) {
     setTypeFilter("");
   };
 
-  /* ================= PASSWORD PROMPT ================= */
+/* ================= PASSWORD PROMPT ================= */
 const askPassword = async (type, ref_no, customer_name, total_pkr) => {
   const { value: password } = await Swal.fire({
-    width: "360px", // 👈 compact
+    width: "360px",
     padding: "1em",
     html: `
       <div style="text-align:left;font-size:13px;line-height:1.5">
@@ -75,31 +75,13 @@ const askPassword = async (type, ref_no, customer_name, total_pkr) => {
           <b style="color:#dc3545">🗑 DELETE SALE</b>
         </div>
 
-        <div style="font-size:12px;margin-bottom:6px">
-          <b>Type:</b> ${type}
-        </div>
-
-        <div style="font-size:12px;margin-bottom:6px">
-          <b>REF NO:</b> ${ref_no}
-        </div>
-
-        <div style="font-size:12px;margin-bottom:6px">
-          <b>Customer:</b> ${customer_name}
-        </div>
-
-        <div style="font-size:12px;margin-bottom:8px">
-          💰 <b>Amount:</b> ${total_pkr}
-        </div>
+        <div style="font-size:12px;margin-bottom:6px"><b>Type:</b> ${type}</div>
+        <div style="font-size:12px;margin-bottom:6px"><b>REF NO:</b> ${ref_no}</div>
+        <div style="font-size:12px;margin-bottom:6px"><b>Customer:</b> ${customer_name}</div>
+        <div style="font-size:12px;margin-bottom:8px">💰 <b>Amount:</b> ${total_pkr}</div>
 
         <div style="position:relative;margin-top:8px">
-          <input 
-            id="swal-pass" 
-            type="password" 
-            class="swal2-input"
-            style="height:34px;font-size:13px"
-            placeholder="Enter password"
-          />
-
+          <input id="swal-pass" type="password" class="swal2-input" style="height:34px;font-size:13px" placeholder="Enter password"/>
           <span id="toggle-pass" style="
             position:absolute;
             right:12px;
@@ -115,19 +97,33 @@ const askPassword = async (type, ref_no, customer_name, total_pkr) => {
     showCancelButton: true,
     confirmButtonText: "Delete",
     focusConfirm: false,
+    buttonsStyling: false,
+    customClass: { 
+      confirmButton: "swal-btn-delete",
+      cancelButton: "swal-btn-cancel" // ✅ cancel color
+    },
 
     preConfirm: () => {
       const val = document.getElementById("swal-pass").value;
       if (!val || val.trim() === "") {
         Swal.showValidationMessage("Password required");
+        return false;
       }
-      return val ? val.trim() : "";
+      if (val.trim() !== "786") {
+        const popup = document.querySelector(".swal2-popup");
+        if (popup) {
+          popup.classList.add("shake");
+          setTimeout(() => popup.classList.remove("shake"), 500);
+        }
+        Swal.showValidationMessage("Wrong Password 😎");
+        return false; // ✅ prevent close
+      }
+      return val.trim();
     },
 
     didOpen: () => {
       const input = document.getElementById("swal-pass");
       const toggle = document.getElementById("toggle-pass");
-
       let show = false;
       toggle.addEventListener("click", () => {
         show = !show;
@@ -140,6 +136,8 @@ const askPassword = async (type, ref_no, customer_name, total_pkr) => {
   return password;
 };
 
+
+/* ================= LOADER ================= */
 const showLoader = (text = "Processing...") => {
   Swal.fire({
     width: "300px",
@@ -152,12 +150,16 @@ const showLoader = (text = "Processing...") => {
 /* ================= DELETE ================= */
 const handleDelete = async (type, ref_no, customer_name, total_pkr) => {
   const password = await askPassword(type, ref_no, customer_name, total_pkr);
-
   if (!password) return;
 
-  /* ✅ PASSWORD FIX (IMPORTANT) */
-  if (password.toString().trim() !== "786") {
-    return Swal.fire("Error", "Wrong Password", "error");
+  /* ✅ PASSWORD CHECK WITH SHAKE ANIMATION */
+  if (password !== "786") {
+    const popup = document.querySelector(".swal2-popup");
+    if (popup) {
+      popup.classList.add("shake");
+      setTimeout(() => popup.classList.remove("shake"), 500);
+    }
+    return Swal.showValidationMessage("Wrong Password 😎");
   }
 
   const confirm = await Swal.fire({
@@ -182,7 +184,6 @@ const handleDelete = async (type, ref_no, customer_name, total_pkr) => {
   };
 
   const endpoint = map[type];
-
   showLoader("Deleting...");
 
   try {

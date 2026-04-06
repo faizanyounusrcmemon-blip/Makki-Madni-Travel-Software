@@ -72,117 +72,103 @@ export default function PurchaseList({ onNavigate }) {
     setSearch("");
   };
 
-  /* ================= DELETE ================= */
+/* ================= DELETE ================= */
 const deletePurchase = async (refNo, customer_name, sale_pkr, purchase_pkr) => {
-  const { value: password } = await Swal.fire({
-    width: "360px", // 👈 compact width
-    padding: "1em",
-    html: `
-      <div style="text-align:left;font-size:13px;line-height:1.5">
-
-        <div style="margin-bottom:8px">
-          <b style="color:#dc3545">🗑 DELETE PURCHASE</b>
+  const password = await (async () => {
+    const { value } = await Swal.fire({
+      width: "360px",
+      padding: "1em",
+      html: `
+        <div style="text-align:left;font-size:14px;line-height:1.5">
+          <b style="color:#dc3545">DELETE PURCHASE RECORD</b><br>
+          <b style="color:#dc3545">REF NO:</b> ${refNo}<br>
+          <b>Customer:</b> ${customer_name}<br>
+          <b>Sale Amount:</b> ${sale_pkr}<br>
+          <b>Purchase Amount:</b> ${purchase_pkr}<br><br>
+          <div style="position:relative">
+            <input type="password" id="swal-pass" class="swal2-input" placeholder="Enter password">
+            <span id="toggle-pass" style="
+              position:absolute;
+              right:12px;
+              top:50%;
+              transform:translateY(-50%);
+              cursor:pointer;
+              font-size:14px;">👁</span>
+          </div>
         </div>
+      `,
+      focusConfirm: false,
+      showCancelButton: true,
+      confirmButtonText: "Delete",
+      cancelButtonText: "Cancel",
+      buttonsStyling: false,
+      customClass: { confirmButton: "swal-btn-delete", cancelButton: "swal-btn-cancel" },
+      allowOutsideClick: true,
+      allowEscapeKey: true,
 
-        <div style="font-size:12px;margin-bottom:6px">
-          <b>REF NO:</b> ${refNo}
-        </div>
+      didOpen: () => {
+        const input = document.getElementById("swal-pass");
+        const toggle = document.getElementById("toggle-pass");
+        let show = false;
+        toggle.addEventListener("click", () => {
+          show = !show;
+          input.type = show ? "text" : "password";
+          toggle.textContent = show ? "🙈" : "👁";
+        });
+      },
 
-        <div style="font-size:12px;margin-bottom:6px">
-          <b>Customer:</b> ${customer_name}
-        </div>
-
-        <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:8px">
-          <span>💰 Sale: ${sale_pkr}</span>
-          <span>🛒 Purchase: ${purchase_pkr}</span>
-        </div>
-
-        <div style="position:relative;margin-top:8px">
-          <input 
-            type="password" 
-            id="swal-input1" 
-            class="swal2-input" 
-            style="height:34px;font-size:13px"
-            placeholder="Enter password">
-
-          <span id="toggle-pass" style="
-            position:absolute;
-            right:12px;
-            top:50%;
-            transform:translateY(-50%);
-            cursor:pointer;
-            font-size:14px;
-          ">👁</span>
-        </div>
-
-      </div>
-    `,
-    focusConfirm: false,
-    showCancelButton: true,
-    confirmButtonText: "Delete",
-    cancelButtonText: "Cancel",
-
-    preConfirm: () => {
-      const val = document.getElementById("swal-input1").value;
-      if (!val || val.trim() === "") {
-        Swal.showValidationMessage("Password required");
+      preConfirm: () => {
+        const val = document.getElementById("swal-pass").value.trim();
+        if (!val) {
+          Swal.showValidationMessage("Password required");
+          return false;
+        }
+        if (val !== "786") {
+          const popup = document.querySelector(".swal2-popup");
+          if (popup) {
+            popup.classList.add("shake");
+            setTimeout(() => popup.classList.remove("shake"), 500);
+          }
+          Swal.showValidationMessage("Wrong Password 😎");
+          return false;
+        }
+        return val;
       }
-      return val ? val.trim() : "";
-    },
+    });
+    return value;
+  })();
 
-    didOpen: () => {
-      const input = document.getElementById("swal-input1");
-      const toggle = document.getElementById("toggle-pass");
+  if (!password) return; // Cancel or wrong password
 
-      let show = false;
-      toggle.addEventListener("click", () => {
-        show = !show;
-        input.type = show ? "text" : "password";
-        toggle.textContent = show ? "🙈" : "👁";
-      });
-    },
-  });
-
-  if (!password) return;
-
-  /* ✅ PASSWORD FIX (IMPORTANT) */
-  if (password.toString().trim() !== "786") {
-    return Swal.fire("Error", "Wrong Password", "error");
-  }
-
+  // Confirm Delete
   const confirmDelete = await Swal.fire({
     width: "320px",
     title: "Are you sure?",
-    html: `REF NO: <b>${refNo}</b><br>Customer: <b>${customer_name}</b>`,
+    html: `This will move REF NO: <b>${refNo}</b> of <b>${customer_name}</b> to deleted list.`,
     icon: "warning",
     showCancelButton: true,
-    confirmButtonText: "Yes, Delete",
+    confirmButtonText: "Yes, Delete it!",
+    cancelButtonText: "Cancel",
+    buttonsStyling: false,
+    customClass: { confirmButton: "swal-btn-delete", cancelButton: "swal-btn-cancel" }
   });
 
   if (!confirmDelete.isConfirmed) return;
 
-  /* LOADER */
-  Swal.fire({
-    title: "Deleting...",
-    allowOutsideClick: false,
-    didOpen: () => Swal.showLoading(),
-  });
+  Swal.fire({ title: "Deleting...", allowOutsideClick: false, didOpen: () => Swal.showLoading() });
 
   try {
-    const res = await fetch(
-      `${import.meta.env.VITE_BACKEND_URL}/api/purchase/delete/${refNo}`,
-      {
-        method: "DELETE",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ customer_name }),
-      }
-    );
+    const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/purchase/delete/${refNo}`, {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ password, customer_name }),
+    });
 
     const data = await res.json();
     Swal.close();
 
     if (data.success) {
-      Swal.fire("Deleted!", `REF NO: ${refNo} deleted`, "success");
+      Swal.fire("Deleted!", `REF NO: ${refNo} has been deleted.`, "success");
       loadList();
     } else {
       Swal.fire("Error", data.error || "Delete failed", "error");
