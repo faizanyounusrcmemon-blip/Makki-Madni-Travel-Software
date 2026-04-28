@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import "./Navbar.css";
+import Swal from "sweetalert2";
 
 export default function Navbar({ onNavigate }) {
   const [open, setOpen] = useState(null);
@@ -15,34 +16,63 @@ export default function Navbar({ onNavigate }) {
   };
 
 const logout = async () => {
-  const confirmLogout = window.confirm("⚠️ Do you want to logout?");
-  
-  if (!confirmLogout) return; // ❌ cancel → کچھ نہیں ہوگا
+  const confirmLogout = await Swal.fire({
+    width: "320px",
+    title: "Logout?",
+    html: "⚠️ Do you want to logout?",
+    icon: "warning",
+    showCancelButton: true,
+    confirmButtonText: "Yes, Logout",
+    cancelButtonText: "Cancel",
+    buttonsStyling: false,
+    customClass: {
+      confirmButton: "swal-btn-delete",
+      cancelButton: "swal-btn-cancel"
+    }
+  });
+
+  if (!confirmLogout.isConfirmed) return; // ❌ cancel
 
   const user = JSON.parse(sessionStorage.getItem("user"));
   if (!user) return;
 
+  // loader
+  Swal.fire({
+    title: "Logging out...",
+    allowOutsideClick: false,
+    didOpen: () => Swal.showLoading(),
+  });
+
   try {
-    const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/auth/logout`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id: user.id })
-    });
+    const res = await fetch(
+      `${import.meta.env.VITE_BACKEND_URL}/api/auth/logout`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: user.id })
+      }
+    );
 
     const data = await res.json();
+    Swal.close();
 
     if (data.success) {
       sessionStorage.removeItem("user");
 
-      // ✅ redirect to login
-      onNavigate("login");
+      Swal.fire("Logged out!", "", "success");
+
+      // redirect
+      setTimeout(() => {
+        onNavigate("login");
+      }, 800);
 
     } else {
-      alert(data.error || "Logout failed");
+      Swal.fire("Error", data.error || "Logout failed", "error");
     }
 
   } catch (err) {
-    alert("Server error");
+    Swal.close();
+    Swal.fire("Error", "Server error", "error");
   }
 };
 
