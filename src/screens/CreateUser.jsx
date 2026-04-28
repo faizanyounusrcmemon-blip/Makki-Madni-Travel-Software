@@ -45,8 +45,72 @@ export default function CreateUser({ onNavigate }) {
 
 
 
-  /* ================= SAVE / UPDATE ================= */
+/* ================= PASSWORD POPUP ================= */
+const askPassword = async (title = "Enter Password") => {
+  const { value } = await Swal.fire({
+    width: "300px",
+    html: `
+      <div style="text-align:left;font-size:13px">
+        <b>${title}</b>
+        <div style="position:relative;margin-top:10px">
+          <input id="swal-pass" type="password" class="swal2-input"
+            style="height:34px;font-size:13px" placeholder="Enter password"/>
+          <span id="toggle-pass" style="
+            position:absolute;
+            right:12px;
+            top:50%;
+            transform:translateY(-50%);
+            cursor:pointer;
+          ">👁</span>
+        </div>
+      </div>
+    `,
+    showCancelButton: true,
+    confirmButtonText: "OK",
+    focusConfirm: false,
 
+    preConfirm: () => {
+      const input = document.getElementById("swal-pass");
+      const val = input.value.trim();
+
+      if (!val) {
+        Swal.showValidationMessage("Password required");
+        return false;
+      }
+
+      if (val !== "786") {
+        const popup = document.querySelector(".swal2-popup");
+        if (popup) {
+          popup.classList.add("shake");
+          setTimeout(() => popup.classList.remove("shake"), 400);
+        }
+
+        Swal.showValidationMessage("Wrong Password 😎");
+        return false;
+      }
+
+      return val;
+    },
+
+    didOpen: () => {
+      const input = document.getElementById("swal-pass");
+      const toggle = document.getElementById("toggle-pass");
+
+      let show = false;
+
+      toggle.addEventListener("click", () => {
+        show = !show;
+        input.type = show ? "text" : "password";
+        toggle.textContent = show ? "🙈" : "👁";
+      });
+    }
+  });
+
+  return value;
+};
+
+
+/* ================= SAVE / UPDATE ================= */
 const save = async () => {
 
   if (!name || !username) {
@@ -99,8 +163,8 @@ const save = async () => {
   loadUsers();
 };
 
-  /* ================= DELETE ================= */
 
+/* ================= DELETE ================= */
 const deleteUser = async (u) => {
 
   const confirmDelete = await Swal.fire({
@@ -114,22 +178,8 @@ const deleteUser = async (u) => {
 
   if (!confirmDelete.isConfirmed) return;
 
-  const { value: pass } = await Swal.fire({
-    width: "300px",
-    input: "password",
-    inputPlaceholder: "Enter delete password",
-    showCancelButton: true
-  });
-
+  const pass = await askPassword("Enter Delete Password");
   if (!pass) return;
-
-  if (pass !== "786") {
-    return Swal.fire({
-      width: "300px",
-      icon: "error",
-      text: "Wrong Password 😎"
-    });
-  }
 
   Swal.fire({
     width: "260px",
@@ -160,6 +210,7 @@ const deleteUser = async (u) => {
 
   } catch {
     Swal.close();
+
     Swal.fire({
       width: "300px",
       icon: "error",
@@ -168,26 +219,12 @@ const deleteUser = async (u) => {
   }
 };
 
-  /* ================= EDIT ================= */
 
+/* ================= EDIT ================= */
 const editUser = async (u) => {
 
-  const { value: pass } = await Swal.fire({
-    width: "300px",
-    input: "password",
-    inputPlaceholder: "Enter edit password",
-    showCancelButton: true
-  });
-
+  const pass = await askPassword("Enter Edit Password");
   if (!pass) return;
-
-  if (pass !== "786") {
-    return Swal.fire({
-      width: "300px",
-      icon: "error",
-      text: "Wrong Password 😎"
-    });
-  }
 
   setName(u.name);
   setUsername(u.username);
@@ -196,7 +233,10 @@ const editUser = async (u) => {
 
   setEditId(u.id);
 
-  window.scrollTo({ top: 0, behavior: "smooth" });
+  window.scrollTo({
+    top: 0,
+    behavior: "smooth"
+  });
 };
 
   return (

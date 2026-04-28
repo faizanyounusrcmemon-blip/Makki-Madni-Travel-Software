@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import Swal from "sweetalert2";
 
 export default function Supplier({ onNavigate }) {
   const [rows, setRows] = useState([]);
@@ -26,42 +27,131 @@ export default function Supplier({ onNavigate }) {
     load();
   }, []);
 
-  /* ================= SAVE / UPDATE ================= */
-  const save = async () => {
-    const url = editId ? `/update/${editId}` : "/create";
-    const method = editId ? "PUT" : "POST";
+/* ================= PASSWORD POPUP ================= */
+const askPassword = async (title = "Enter Password") => {
+  const { value } = await Swal.fire({
+    width: "300px",
+    html: `
+      <div style="text-align:left;font-size:13px">
+        <b>${title}</b>
+        <div style="position:relative;margin-top:10px">
+          <input id="swal-pass" type="password" class="swal2-input"
+            style="height:34px;font-size:13px" placeholder="Enter password"/>
+          <span id="toggle-pass" style="
+            position:absolute;
+            right:12px;
+            top:50%;
+            transform:translateY(-50%);
+            cursor:pointer;
+          ">👁</span>
+        </div>
+      </div>
+    `,
+    showCancelButton: true,
+    confirmButtonText: "OK",
+    focusConfirm: false,
 
-    const r = await fetch(
-      `${import.meta.env.VITE_BACKEND_URL}/api/supplier${url}`,
-      {
-        method,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
+    preConfirm: () => {
+      const input = document.getElementById("swal-pass");
+      const val = input.value.trim();
+
+      if (!val) {
+        Swal.showValidationMessage("Password required");
+        return false;
       }
-    );
 
-   const d = await r.json();
+      if (val !== "786") {
+        const popup = document.querySelector(".swal2-popup");
+        if (popup) {
+          popup.classList.add("shake");
+          setTimeout(() => popup.classList.remove("shake"), 400);
+        }
+        Swal.showValidationMessage("Wrong Password 😎");
+        return false;
+      }
 
-    if (d.success) {
-      alert(editId ? "Supplier Updated Successfully ✅" : "Supplier Saved Successfully ✅");
+      return val;
+    },
 
-      setForm({ supplier_name: "", category: "", contact_no: "" });
-      setEditId(null);
-      load();
-    } else {
-      alert("Error: " + d.error);
+    didOpen: () => {
+      const input = document.getElementById("swal-pass");
+      const toggle = document.getElementById("toggle-pass");
+
+      let show = false;
+
+      toggle.addEventListener("click", () => {
+        show = !show;
+        input.type = show ? "text" : "password";
+        toggle.textContent = show ? "🙈" : "👁";
+      });
     }
+  });
 
-    };
+  return value;
+};
 
-  /* ================= DELETE ================= */
+
+/* ================= SAVE / UPDATE ================= */
+const save = async () => {
+  const url = editId ? `/update/${editId}` : "/create";
+  const method = editId ? "PUT" : "POST";
+
+  const r = await fetch(
+    `${import.meta.env.VITE_BACKEND_URL}/api/supplier${url}`,
+    {
+      method,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(form),
+    }
+  );
+
+  const d = await r.json();
+
+  if (d.success) {
+    Swal.fire({
+      width: "300px",
+      icon: "success",
+      text: editId
+        ? "Supplier Updated Successfully"
+        : "Supplier Saved Successfully",
+    });
+
+    setForm({ supplier_name: "", category: "", contact_no: "" });
+    setEditId(null);
+    load();
+  } else {
+    Swal.fire({
+      width: "300px",
+      icon: "error",
+      text: d.error,
+    });
+  }
+};
+
+
+/* ================= DELETE ================= */
 const del = async (id) => {
 
-  const confirmDelete = window.confirm("⚠ Are you sure you want to delete this supplier?");
-  if (!confirmDelete) return;
+  const confirmDelete = await Swal.fire({
+    width: "300px",
+    icon: "warning",
+    text: "Are you sure you want to delete this supplier?",
+    showCancelButton: true,
+    confirmButtonText: "Delete",
+    cancelButtonText: "Cancel"
+  });
 
-  const pass = prompt("Enter delete password:");
+  if (!confirmDelete.isConfirmed) return;
+
+  const pass = await askPassword("Enter Delete Password");
   if (!pass) return;
+
+  Swal.fire({
+    width: "260px",
+    title: "Deleting...",
+    allowOutsideClick: false,
+    didOpen: () => Swal.showLoading()
+  });
 
   const r = await fetch(
     `${import.meta.env.VITE_BACKEND_URL}/api/supplier/delete/${id}`,
@@ -74,11 +164,21 @@ const del = async (id) => {
 
   const d = await r.json();
 
+  Swal.close();
+
   if (d.success) {
-    alert("Supplier Deleted Successfully 🗑");
+    Swal.fire({
+      width: "280px",
+      icon: "success",
+      text: "Supplier Deleted Successfully"
+    });
     load();
   } else {
-    alert("Error: " + d.error);
+    Swal.fire({
+      width: "300px",
+      icon: "error",
+      text: d.error
+    });
   }
 };
 
