@@ -1,5 +1,6 @@
 
 import React, { useEffect, useState } from "react";
+import Swal from "sweetalert2";
 import {
   Eye,
   EyeOff,
@@ -46,59 +47,98 @@ export default function CreateUser({ onNavigate }) {
 
   /* ================= SAVE / UPDATE ================= */
 
-  const save = async () => {
+const save = async () => {
 
-    if (!name || !username)
-      return alert("All fields required");
+  if (!name || !username) {
+    return Swal.fire({
+      width: "300px",
+      icon: "error",
+      text: "All fields required"
+    });
+  }
 
-    const url = editId
-      ? `/api/users/update`
-      : `/api/users/create`;
+  const url = editId ? `/api/users/update` : `/api/users/create`;
 
-    const res = await fetch(
-      `${import.meta.env.VITE_BACKEND_URL}${url}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          id: editId,
-          name,
-          username,
-          password,
-          role
-        })
-      }
-    );
+  const res = await fetch(
+    `${import.meta.env.VITE_BACKEND_URL}${url}`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        id: editId,
+        name,
+        username,
+        password,
+        role
+      })
+    }
+  );
 
-    const d = await res.json();
+  const d = await res.json();
 
-    if (!d.success) return alert(d.error);
+  if (!d.success) {
+    return Swal.fire({
+      width: "300px",
+      icon: "error",
+      text: d.error
+    });
+  }
 
-    alert(editId ? "✅ User Updated Successfully" : "🎉 User Created Successfully");
+  Swal.fire({
+    width: "300px",
+    icon: "success",
+    text: editId ? "User Updated Successfully" : "User Created Successfully"
+  });
 
-    setName("");
-    setUsername("");
-    setPassword("");
-    setRole("user");
-    setEditId(null);
+  setName("");
+  setUsername("");
+  setPassword("");
+  setRole("user");
+  setEditId(null);
 
-    loadUsers();
-  };
+  loadUsers();
+};
 
   /* ================= DELETE ================= */
 
-  const deleteUser = async (u) => {
+const deleteUser = async (u) => {
 
-    const confirmDelete = window.confirm(
-      "⚠ Are you sure you want to delete this user?"
-    );
+  const confirmDelete = await Swal.fire({
+    width: "300px",
+    icon: "warning",
+    text: "Are you sure you want to delete this user?",
+    showCancelButton: true,
+    confirmButtonText: "Delete",
+    cancelButtonText: "Cancel"
+  });
 
-    if (!confirmDelete) return;
+  if (!confirmDelete.isConfirmed) return;
 
-    const pass = prompt("Enter delete password");
+  const { value: pass } = await Swal.fire({
+    width: "300px",
+    input: "password",
+    inputPlaceholder: "Enter delete password",
+    showCancelButton: true
+  });
 
-    if (pass !== "786") return alert("❌ Wrong Password");
+  if (!pass) return;
 
+  if (pass !== "786") {
+    return Swal.fire({
+      width: "300px",
+      icon: "error",
+      text: "Wrong Password 😎"
+    });
+  }
+
+  Swal.fire({
+    width: "260px",
+    title: "Deleting...",
+    allowOutsideClick: false,
+    didOpen: () => Swal.showLoading()
+  });
+
+  try {
     await fetch(
       `${import.meta.env.VITE_BACKEND_URL}/api/users/delete/${u.id}`,
       {
@@ -108,31 +148,56 @@ export default function CreateUser({ onNavigate }) {
       }
     );
 
-    alert("🗑 User Deleted");
+    Swal.close();
+
+    Swal.fire({
+      width: "280px",
+      icon: "success",
+      text: "User Deleted"
+    });
 
     loadUsers();
-  };
+
+  } catch {
+    Swal.close();
+    Swal.fire({
+      width: "300px",
+      icon: "error",
+      text: "Delete failed"
+    });
+  }
+};
 
   /* ================= EDIT ================= */
 
-  const editUser = (u) => {
+const editUser = async (u) => {
 
-    const pass = prompt("Enter edit password");
+  const { value: pass } = await Swal.fire({
+    width: "300px",
+    input: "password",
+    inputPlaceholder: "Enter edit password",
+    showCancelButton: true
+  });
 
-    if (pass !== "786") {
-      alert("❌ Wrong Password");
-      return;
-    }
+  if (!pass) return;
 
-    setName(u.name);
-    setUsername(u.username);
-    setPassword(u.password);
-    setRole(u.role);
+  if (pass !== "786") {
+    return Swal.fire({
+      width: "300px",
+      icon: "error",
+      text: "Wrong Password 😎"
+    });
+  }
 
-    setEditId(u.id);
+  setName(u.name);
+  setUsername(u.username);
+  setPassword(u.password);
+  setRole(u.role);
 
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  };
+  setEditId(u.id);
+
+  window.scrollTo({ top: 0, behavior: "smooth" });
+};
 
   return (
     <div className="user-wrap">
