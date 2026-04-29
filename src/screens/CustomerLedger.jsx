@@ -1,6 +1,8 @@
 import React, { useState, useRef, useEffect } from "react";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
+import Swal from "sweetalert2";
+
 
 /* =========================
    HELPERS
@@ -76,66 +78,303 @@ export default function CustomerLedger({ onNavigate }) {
   /* =========================
      LOAD LEDGER
   ========================== */
-  const loadLedger = async (r = refNo) => {
-    if (!r) return alert("Ref No required");
-    setRefNo(r);
+const loadLedger = async (r = refNo) => {
 
-    const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/customer-ledger/${r}`);
+  if (!r) {
+    return Swal.fire({
+      width: "300px",
+      icon: "warning",
+      text: "Ref No required"
+    });
+  }
+
+  setRefNo(r);
+
+  Swal.fire({
+    width: "260px",
+    title: "Loading...",
+    allowOutsideClick: false,
+    didOpen: () => Swal.showLoading()
+  });
+
+  try {
+
+    const res = await fetch(
+      `${import.meta.env.VITE_BACKEND_URL}/api/customer-ledger/${r}`
+    );
+
     const d = await res.json();
-    if (d.success) setRows(d.rows || []);
-    else alert(d.error);
-  };
+
+    Swal.close();
+
+    if (d.success) {
+      setRows(d.rows || []);
+
+      Swal.fire({
+        width: "300px",
+        icon: "success",
+        text: "Ledger Loaded Successfully"
+      });
+
+    } else {
+      Swal.fire({
+        width: "300px",
+        icon: "error",
+        text: d.error || "Failed to load ledger"
+      });
+    }
+
+  } catch (err) {
+
+    Swal.close();
+
+    Swal.fire({
+      width: "300px",
+      icon: "error",
+      text: "Network Error"
+    });
+  }
+};
 
   /* =========================
      SAVE ENTRY
   ========================== */
-  const saveEntry = async () => {
-    if (!refNo) return alert("Ref No required");
-    if (!amountRaw || amountRaw <= 0) return alert("Amount required");
-    if (!date) return alert("Date required");
+const saveEntry = async () => {
 
-    setSaving(true);
-    try {
-      const r = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/customer-ledger/payment`, {
+  if (!refNo) {
+    return Swal.fire({
+      width: "300px",
+      icon: "warning",
+      text: "Ref No required"
+    });
+  }
+
+  if (!amountRaw || amountRaw <= 0) {
+    return Swal.fire({
+      width: "300px",
+      icon: "warning",
+      text: "Amount required"
+    });
+  }
+
+  if (!date) {
+    return Swal.fire({
+      width: "300px",
+      icon: "warning",
+      text: "Date required"
+    });
+  }
+
+  setSaving(true);
+
+  Swal.fire({
+    width: "260px",
+    title: "Saving...",
+    allowOutsideClick: false,
+    didOpen: () => Swal.showLoading()
+  });
+
+  try {
+
+    const r = await fetch(
+      `${import.meta.env.VITE_BACKEND_URL}/api/customer-ledger/payment`,
+      {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ref_no: refNo, amount: Number(amountRaw), payment_date: date, payment_method: method, type }),
-      });
-
-      const d = await r.json();
-      if (!d.success) alert(d.error || "Save failed");
-      else {
-        setAmountRaw(0);
-        setAmountDisp("");
-        setDate(today); // ✅ Reset to today after save
-        await loadLedger(refNo);
-        await loadPending();
-        alert("✅ Entry Saved Successfully");
+        body: JSON.stringify({
+          ref_no: refNo,
+          amount: Number(amountRaw),
+          payment_date: date,
+          payment_method: method,
+          type
+        }),
       }
-    } finally { setSaving(false); }
-  };
+    );
+
+    const d = await r.json();
+
+    Swal.close();
+
+    if (!d.success) {
+      Swal.fire({
+        width: "300px",
+        icon: "error",
+        text: d.error || "Save failed"
+      });
+    } else {
+
+      setAmountRaw(0);
+      setAmountDisp("");
+      setDate(today);
+
+      await loadLedger(refNo);
+      await loadPending();
+
+      Swal.fire({
+        width: "280px",
+        icon: "success",
+        text: "Entry Saved Successfully"
+      });
+    }
+
+  } catch (err) {
+
+    Swal.close();
+
+    Swal.fire({
+      width: "300px",
+      icon: "error",
+      text: "Network Error"
+    });
+
+  } finally {
+    setSaving(false);
+  }
+};
 
   /* =========================
      DELETE ENTRY
   ========================== */
-  const del = async (id) => {
-    if (id === "SALE" || id === "CUSTOMER") {
-      alert("یہ entry delete نہیں ہو سکتی"); return;
+const askPassword = async (title = "Enter Password") => {
+  const { value } = await Swal.fire({
+    width: "300px",
+    html: `
+      <div style="text-align:left;font-size:13px">
+        <b>${title}</b>
+
+        <div style="position:relative;margin-top:10px">
+          <input id="swal-pass" type="password" class="swal2-input"
+            style="height:34px;font-size:13px" placeholder="Enter password"/>
+
+          <span id="toggle-pass" style="
+            position:absolute;
+            right:12px;
+            top:50%;
+            transform:translateY(-50%);
+            cursor:pointer;
+            user-select:none;
+          ">👁</span>
+        </div>
+      </div>
+    `,
+    showCancelButton: true,
+    confirmButtonText: "Delete",
+    focusConfirm: false,
+
+    preConfirm: () => {
+      const input = document.getElementById("swal-pass");
+      const val = input.value.trim();
+
+      if (!val) {
+        Swal.showValidationMessage("Password required");
+        return false;
+      }
+
+      if (val !== "786") {
+        const popup = document.querySelector(".swal2-popup");
+        if (popup) {
+          popup.classList.add("shake");
+          setTimeout(() => popup.classList.remove("shake"), 400);
+        }
+        Swal.showValidationMessage("Wrong Password 😎");
+        return false;
+      }
+
+      return val;
+    },
+
+    didOpen: () => {
+      const input = document.getElementById("swal-pass");
+      const toggle = document.getElementById("toggle-pass");
+
+      let show = false;
+
+      toggle.addEventListener("click", () => {
+        show = !show;
+        input.type = show ? "text" : "password";
+        toggle.textContent = show ? "🙈" : "👁";
+      });
     }
+  });
 
-    const pass = prompt("Password?");
-    if (!pass) return;
+  return value;
+};
 
-    const r = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/customer-ledger/delete/${id}`, {
-      method: "DELETE",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ password: pass }),
+
+const del = async (id) => {
+
+  if (id === "SALE" || id === "CUSTOMER") {
+    return Swal.fire({
+      width: "300px",
+      icon: "warning",
+      text: "یہ entry delete نہیں ہو سکتی"
     });
+  }
+
+  const confirmDelete = await Swal.fire({
+    width: "300px",
+    icon: "warning",
+    text: "Are you sure you want to delete this entry?",
+    showCancelButton: true,
+    confirmButtonText: "Yes Delete"
+  });
+
+  if (!confirmDelete.isConfirmed) return;
+
+  const pass = await askPassword("Enter Delete Password");
+  if (!pass) return;
+
+  Swal.fire({
+    width: "260px",
+    title: "Deleting...",
+    allowOutsideClick: false,
+    didOpen: () => Swal.showLoading()
+  });
+
+  try {
+
+    const r = await fetch(
+      `${import.meta.env.VITE_BACKEND_URL}/api/customer-ledger/delete/${id}`,
+      {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password: pass }),
+      }
+    );
 
     const d = await r.json();
-    if (d.success) { loadLedger(refNo); loadPending(); }
-    else alert(d.error);
-  };
+    Swal.close();
+
+    if (d.success) {
+
+      await loadLedger(refNo);
+      await loadPending();
+
+      Swal.fire({
+        width: "280px",
+        icon: "success",
+        text: "Entry Deleted Successfully"
+      });
+
+    } else {
+      Swal.fire({
+        width: "300px",
+        icon: "error",
+        text: d.error || "Delete failed"
+      });
+    }
+
+  } catch (err) {
+
+    Swal.close();
+
+    Swal.fire({
+      width: "300px",
+      icon: "error",
+      text: "Network Error"
+    });
+  }
+};
 
 /* =========================
    EXPORT PDF
@@ -296,6 +535,5 @@ const exportPDF = async () => {
     </div>
   );
 }
-
 
 

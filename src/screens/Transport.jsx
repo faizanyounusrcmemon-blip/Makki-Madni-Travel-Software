@@ -1,6 +1,7 @@
 import React, { useState, useRef } from "react";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
+import Swal from "sweetalert2";
 
 // VIP Transport Styles (Royal Blue + Gold)
 const styles = {
@@ -98,26 +99,44 @@ export default function Transport({ onNavigate }) {
   const totalSar = rows.reduce((sum, r) => sum + (Number(r.sar) || 0), 0);
   const totalPkr = totalSar * pkrRate;
 
-  const loadTransport = async () => {
-    if (!searchRef) return alert("Ref No likho");
+const loadTransport = async () => {
 
-    // 1️⃣ Fetch transport record
+  if (!searchRef) {
+    return Swal.fire({
+      width: "280px",
+      icon: "warning",
+      text: "Ref No likho"
+    });
+  }
+
+  try {
+
     const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/transport/get/${searchRef}`);
     const data = await res.json();
-    if (!data.success) return alert("Record not found");
+
+    if (!data.success) {
+      return Swal.fire({
+        width: "280px",
+        icon: "error",
+        text: "Record not found"
+      });
+    }
 
     const d = data.row;
 
-    // 2️⃣ Check if purchase entries exist
+    // 🔹 Purchase check
     const purchaseRes = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/purchase/check/${d.ref_no}`);
     const purchaseData = await purchaseRes.json();
 
-    // ❌ Alert if purchase exists
     if (purchaseData.total > 0) {
-      return alert("❌ Cannot edit. Purchase entries exist for this Ref No. Delete purchases first.");
+      return Swal.fire({
+        width: "300px",
+        icon: "error",
+        text: "❌ Cannot edit. Purchase entries exist.\nDelete purchases first."
+      });
     }
 
-    // 3️⃣ Load transport data into form
+    // 🔹 Load data
     setRefNo(d.ref_no);
     setCustomerName(d.customer_name);
     setBookingDate(d.booking_date);
@@ -125,16 +144,31 @@ export default function Transport({ onNavigate }) {
     setPkrRate(d.pkr_rate || 0);
     setIsEdit(true);
 
-    alert("✅ Transport Edit Mode load successfully!");
-  };
+    Swal.fire({
+      width: "260px",
+      icon: "success",
+      text: "Transport Edit Mode Loaded"
+    });
+
+  } catch (err) {
+    Swal.fire({
+      width: "300px",
+      icon: "error",
+      text: "Load failed"
+    });
+  }
+};
 
 const saveData = async () => {
 
-  if (saving) return; // double click stop
+  if (saving) return;
 
   if (!customerName || !bookingDate) {
-    alert("Customer name & booking date required");
-    return;
+    return Swal.fire({
+      width: "280px",
+      icon: "warning",
+      text: "Customer name & booking date required"
+    });
   }
 
   setSaving(true);
@@ -151,6 +185,13 @@ const saveData = async () => {
 
   try {
 
+    Swal.fire({
+      width: "260px",
+      title: "Saving...",
+      allowOutsideClick: false,
+      didOpen: () => Swal.showLoading()
+    });
+
     const res = await fetch(
       `${import.meta.env.VITE_BACKEND_URL}/api/transport/save`,
       {
@@ -162,17 +203,37 @@ const saveData = async () => {
 
     const data = await res.json();
 
+    Swal.close();
+
     if (data.success) {
+
       setRefNo(data.ref_no);
-      alert("✅ Transport Saved Successfully! Ref#: " + data.ref_no);
+
+      Swal.fire({
+        width: "280px",
+        icon: "success",
+        text: `Transport Saved! Ref#: ${data.ref_no}`
+      });
+
       onNavigate("dashboard");
+
     } else {
-      alert(data.error || "Save failed");
+      Swal.fire({
+        width: "300px",
+        icon: "error",
+        text: data.error || "Save failed"
+      });
     }
 
   } catch (err) {
-    console.error("SAVE ERROR:", err);
-    alert("❌ Something went wrong while saving.");
+
+    Swal.close();
+
+    Swal.fire({
+      width: "300px",
+      icon: "error",
+      text: "❌ Something went wrong while saving."
+    });
   }
 
   setSaving(false);

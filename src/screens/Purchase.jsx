@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import Select from "react-select";
+import Swal from "sweetalert2";
 
 /* ===============================
    HELPERS (DECIMAL SAFE)
@@ -16,6 +17,94 @@ const parseNumber = (v) => {
   if (v === "" || v === null || v === undefined) return 0;
   return parseFloat(String(v).replace(/,/g, "")) || 0;
 };
+
+const customSelectStyles = {
+  control: (base, state) => ({
+    ...base,
+    minHeight: "34px",
+    fontSize: "12px",
+    borderRadius: "10px",
+    border: state.isFocused
+      ? "1px solid #0d6efd"
+      : "1px solid #ced4da",
+    boxShadow: state.isFocused
+      ? "0 0 0 2px rgba(13,110,253,0.15)"
+      : "none",
+    background: "#f8f9ff",
+    transition: "0.2s",
+    "&:hover": {
+      border: "1px solid #0d6efd",
+    },
+  }),
+
+  valueContainer: (base) => ({
+    ...base,
+    padding: "2px 8px",
+  }),
+
+  input: (base) => ({
+    ...base,
+    margin: 0,
+    padding: 0,
+  }),
+
+  indicatorSeparator: () => ({
+    display: "none",
+  }),
+
+  dropdownIndicator: (base, state) => ({
+    ...base,
+    color: state.isFocused ? "#0d6efd" : "#888",
+    padding: "4px",
+    "&:hover": {
+      color: "#0d6efd",
+    },
+  }),
+
+  menu: (base) => ({
+    ...base,
+    borderRadius: "12px",
+    overflow: "hidden",
+    boxShadow: "0 10px 25px rgba(0,0,0,0.15)",
+    animation: "fadeIn 0.2s ease",
+  }),
+
+  menuList: (base) => ({
+    ...base,
+    padding: "4px",
+  }),
+
+  option: (base, state) => ({
+    ...base,
+    fontSize: "12px",
+    padding: "8px 10px",
+    borderRadius: "8px",
+    cursor: "pointer",
+    background: state.isSelected
+      ? "linear-gradient(135deg,#0d6efd,#4dabf7)"
+      : state.isFocused
+      ? "#eef4ff"
+      : "#fff",
+    color: state.isSelected ? "#fff" : "#333",
+    transition: "0.15s",
+  }),
+
+  placeholder: (base) => ({
+    ...base,
+    color: "#888",
+  }),
+};
+
+const customTheme = (theme) => ({
+  ...theme,
+  borderRadius: 10,
+  colors: {
+    ...theme.colors,
+    primary: "#0d6efd",
+    primary25: "#eef4ff",
+  },
+});
+
 
 /* ===============================
    ITEM CATEGORY COLOR
@@ -60,21 +149,36 @@ export default function Purchase({ onNavigate }) {
   }, []);
 
   /* ================= LOAD PACKAGE (MANUAL) ================= */
-  const loadPackage = async (r = refNo) => {
-    if (!r) return alert("Ref No required");
-    setRefNo(r);
-    setLoading(true);
+const loadPackage = async (r = refNo) => {
+
+  if (!r) {
+    return Swal.fire({
+      width: "300px",
+      icon: "warning",
+      text: "Ref No required"
+    });
+  }
+
+  setRefNo(r);
+  setLoading(true);
+
+  try {
 
     const res = await fetch(
       `${import.meta.env.VITE_BACKEND_URL}/api/purchase/load/${r}`
     );
+
     const data = await res.json();
     setLoading(false);
 
     if (!data.success) {
-      alert(data.error || "Not found");
       setRows([]);
-      return;
+
+      return Swal.fire({
+        width: "300px",
+        icon: "error",
+        text: data.error || "Record not found"
+      });
     }
 
     setIsEdit(data.is_edit === true);
@@ -94,7 +198,23 @@ export default function Purchase({ onNavigate }) {
         supplier_name: x.supplier_name || "",
       }))
     );
-  };
+
+    Swal.fire({
+      width: "300px",
+      icon: "success",
+      text: "Data Loaded Successfully"
+    });
+
+  } catch (err) {
+    setLoading(false);
+
+    Swal.fire({
+      width: "300px",
+      icon: "error",
+      text: "Network Error"
+    });
+  }
+};
 
   /* ================= UPDATE ROW ================= */
   const updateRow = (i, field, value) => {
@@ -120,23 +240,45 @@ export default function Purchase({ onNavigate }) {
   };
 
   /* ================= SAVE ================= */
-  const savePurchase = async () => {
-    if (!rows.length) return alert("No data");
+const savePurchase = async () => {
 
-    const cleanRows = rows
-      .filter(
-        (r) =>
-          parseNumber(r.sale_sar) !== 0 ||
-          parseNumber(r.sale_rate) !== 0 ||
-          parseNumber(r.sale_pkr) !== 0
-      )
-      .map((r) => ({
-        ...r,
-        purchase_sar: parseNumber(r.purchase_sar),
-        purchase_rate: parseNumber(r.purchase_rate),
-      }));
+  if (!rows.length) {
+    return Swal.fire({
+      width: "300px",
+      icon: "warning",
+      text: "No data to save"
+    });
+  }
 
-    if (!cleanRows.length) return alert("No valid rows to save");
+  const cleanRows = rows
+    .filter(
+      (r) =>
+        parseNumber(r.sale_sar) !== 0 ||
+        parseNumber(r.sale_rate) !== 0 ||
+        parseNumber(r.sale_pkr) !== 0
+    )
+    .map((r) => ({
+      ...r,
+      purchase_sar: parseNumber(r.purchase_sar),
+      purchase_rate: parseNumber(r.purchase_rate),
+    }));
+
+  if (!cleanRows.length) {
+    return Swal.fire({
+      width: "300px",
+      icon: "warning",
+      text: "No valid rows to save"
+    });
+  }
+
+  Swal.fire({
+    width: "260px",
+    title: "Saving...",
+    allowOutsideClick: false,
+    didOpen: () => Swal.showLoading()
+  });
+
+  try {
 
     const res = await fetch(
       `${import.meta.env.VITE_BACKEND_URL}/api/purchase/save`,
@@ -149,17 +291,42 @@ export default function Purchase({ onNavigate }) {
 
     const data = await res.json();
 
+    Swal.close();
+
     if (data.success) {
-      alert(isEdit ? "✅ Purchase Updated" : "✅ Purchase Saved");
+
+      await Swal.fire({
+        width: "280px",
+        icon: "success",
+        text: isEdit ? "Purchase Updated Successfully" : "Purchase Saved Successfully"
+      });
+
       setRows([]);
       setRefNo("");
       setIsEdit(false);
       loadPending();
-      onNavigate("dashboard");
+      onNavigate("purchase");
+
     } else {
-      alert(data.error || "Save failed");
+
+      Swal.fire({
+        width: "300px",
+        icon: "error",
+        text: data.error || "Save failed"
+      });
     }
-  };
+
+  } catch (err) {
+
+    Swal.close();
+
+    Swal.fire({
+      width: "300px",
+      icon: "error",
+      text: "Network Error"
+    });
+  }
+};
 
   /* ================= PARTIAL CHECK ================= */
   const isPartial = rows
@@ -378,18 +545,26 @@ export default function Purchase({ onNavigate }) {
                       </td>
 
                       <td style={{ minWidth: "220px" }}>
-                        <Select
-                          options={supplierOptions}
-                          value={supplierOptions.find((opt) => opt.value === r.supplier_code) || null}
-                          onChange={(selected) => updateRow(r.originalIndex, "supplier_code", selected ? selected.value : "")}
-                          placeholder="Select Supplier..."
-                          isClearable
-                          menuPortalTarget={document.body}
-                          styles={{
-                            control: (base) => ({ ...base, minHeight: "32px", fontSize: "12px", borderRadius: "6px" }),
-                            menuPortal: (base) => ({ ...base, zIndex: 9999 }),
-                          }}
-                        />
+<Select
+  options={supplierOptions}
+  value={supplierOptions.find((opt) => opt.value === r.supplier_code) || null}
+  onChange={(selected) =>
+    updateRow(
+      r.originalIndex,
+      "supplier_code",
+      selected ? selected.value : ""
+    )
+  }
+  placeholder="🔍 Select Supplier..."
+  isClearable
+  isSearchable
+  menuPortalTarget={document.body}
+  styles={{
+    ...customSelectStyles,
+    menuPortal: (base) => ({ ...base, zIndex: 9999 }),
+  }}
+  theme={customTheme}
+/>
                       </td>
                     </tr>
                   );

@@ -1,6 +1,7 @@
 import React, { useState, useRef } from "react";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
+import Swal from "sweetalert2";
 
 // VIP Visa Styles (Purple + Silver)
 const styles = {
@@ -101,38 +102,86 @@ export default function Visa({ onNavigate }) {
   };
 
   // -------------------- Load Existing Visa --------------------
-  const loadVisa = async () => {
-    if (!searchRef) return alert("Ref No likho");
+const loadVisa = async () => {
+
+  if (!searchRef) {
+    return Swal.fire({
+      width: "280px",
+      icon: "warning",
+      text: "Ref No likho"
+    });
+  }
+
+  try {
 
     const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/visa/get/${searchRef}`);
     const data = await res.json();
 
-    if (!data.success) return alert("Record not found");
+    if (!data.success) {
+      return Swal.fire({
+        width: "280px",
+        icon: "error",
+        text: "Record not found"
+      });
+    }
 
-    // Purchase check
+    // 🔹 Purchase check
     const purchaseRes = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/purchase/check/${data.row.ref_no}`);
     const purchaseData = await purchaseRes.json();
+
     if (purchaseData.total > 0) {
-      return alert("❌ Cannot edit. Purchase entries exist for this Ref No.");
+      return Swal.fire({
+        width: "300px",
+        icon: "error",
+        text: "❌ Cannot edit. Purchase entries exist Delete purchases first."
+      });
     }
 
     const d = data.row;
+
+    // 🔹 Load data
     setRefNo(d.ref_no);
     setCustomerName(d.customer_name);
     setBookingDate(d.booking_date);
     setRows(d.rows || []);
     setPkrRate(d.pkr_rate || 0);
     setIsEdit(true);
-    alert("✅ Visa loaded for edit!");
-  };
+
+    Swal.fire({
+      width: "260px",
+      icon: "success",
+      text: "Visa Edit Mode Loaded"
+    });
+
+  } catch (err) {
+    Swal.fire({
+      width: "300px",
+      icon: "error",
+      text: "Load failed"
+    });
+  }
+};
 
   // -------------------- Save / Update --------------------
 const saveData = async () => {
 
-  if (saving) return; // double click stop
+  if (saving) return;
 
-  if (!customerName) return alert("Customer name required");
-  if (!bookingDate) return alert("Booking date required");
+  if (!customerName) {
+    return Swal.fire({
+      width: "280px",
+      icon: "warning",
+      text: "Customer name & booking date required"
+    });
+  }
+
+  if (!bookingDate) {
+    return Swal.fire({
+      width: "280px",
+      icon: "warning",
+      text: "Booking date required"
+    });
+  }
 
   setSaving(true);
 
@@ -146,6 +195,13 @@ const saveData = async () => {
 
   try {
 
+    Swal.fire({
+      width: "260px",
+      title: "Saving...",
+      allowOutsideClick: false,
+      didOpen: () => Swal.showLoading()
+    });
+
     const res = await fetch(
       `${import.meta.env.VITE_BACKEND_URL}/api/visa/save`,
       {
@@ -157,17 +213,37 @@ const saveData = async () => {
 
     const data = await res.json();
 
+    Swal.close();
+
     if (data.success) {
+
       setRefNo(data.ref_no);
-      alert("✅ Visa saved successfully! Ref#: " + data.ref_no);
+
+      Swal.fire({
+        width: "280px",
+        icon: "success",
+        text: `Visa Saved! Ref#: ${data.ref_no}`
+      });
+
       onNavigate("dashboard");
+
     } else {
-      alert("ERROR: " + data.error);
+      Swal.fire({
+        width: "300px",
+        icon: "error",
+        text: data.error || "Save failed"
+      });
     }
 
   } catch (err) {
-    console.log(err);
-    alert("Server Error");
+
+    Swal.close();
+
+    Swal.fire({
+      width: "300px",
+      icon: "error",
+      text: "Server Error"
+    });
   }
 
   setSaving(false);

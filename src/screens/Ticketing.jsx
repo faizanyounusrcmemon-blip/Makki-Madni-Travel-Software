@@ -1,6 +1,7 @@
 import React, { useState, useRef } from "react";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
+import Swal from "sweetalert2";
 
 // =========================
 // VIP Ticketing Styles
@@ -86,55 +87,102 @@ export default function Ticketing({ onNavigate }) {
 
   // ===== LOAD TICKETING =====
 // ===== LOAD TICKETING WITH PURCHASE CHECK =====
-  const loadTicketing = async () => {
-    if (!searchRef) return alert("Search Ref No likho");
+const loadTicketing = async () => {
 
-    const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/ticketing/get/${searchRef}`);
-    const data = await res.json();
-    if (!data.success) return alert("Record not found");
+  if (!searchRef) {
+    return Swal.fire({
+      width: "300px",
+      icon: "error",
+      text: "Search Ref No likho"
+    });
+  }
 
-    const d = data.row;
+  const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/ticketing/get/${searchRef}`);
+  const data = await res.json();
 
-    // 🔹 CHECK IF PURCHASE ENTRIES EXIST
-    const purchaseRes = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/purchase/check/${d.ref_no}`);
-    const purchaseData = await purchaseRes.json();
-    if (purchaseData.total > 0) {
-      return alert("❌ Cannot edit. Purchase entries exist for this Ref No. Delete purchases first.");
-    }
+  if (!data.success) {
+    return Swal.fire({
+      width: "300px",
+      icon: "error",
+      text: "Record not found"
+    });
+  }
 
-    // 🔹 LOAD DATA
-    setRefNo(d.ref_no);
-    setCustomerName(d.customer_name);
-    setBookingDate(d.booking_date);
-    setFlights(d.flight_from.map((_, i) => ({
-      from: d.flight_from[i],
-      to: d.flight_to[i],
-      date: d.flight_date[i],
-      airline: d.airline?.[i] || "",
-    })));
-    setAdultQty(d.adult_qty);
-    setAdultRate(d.adult_rate);
-    setChildQty(d.child_qty);
-    setChildRate(d.child_rate);
-    setInfantQty(d.infant_qty);
-    setInfantRate(d.infant_rate);
-    setTicketRate(d.pkr_rate);
-    setIsEdit(true);
+  const d = data.row;
 
-    alert("✅ Ticketing Edit Mode load successfully!");
-  };
+  // 🔹 PURCHASE CHECK
+  const purchaseRes = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/purchase/check/${d.ref_no}`);
+  const purchaseData = await purchaseRes.json();
+
+  if (purchaseData.total > 0) {
+    return Swal.fire({
+      width: "300px",
+      icon: "error",
+      text: "❌ Cannot edit. Purchase entries exist. Delete purchases first."
+    });
+  }
+
+  // 🔹 LOAD DATA
+  setRefNo(d.ref_no);
+  setCustomerName(d.customer_name);
+  setBookingDate(d.booking_date);
+
+  setFlights(d.flight_from.map((_, i) => ({
+    from: d.flight_from[i],
+    to: d.flight_to[i],
+    date: d.flight_date[i],
+    airline: d.airline?.[i] || "",
+  })));
+
+  setAdultQty(d.adult_qty);
+  setAdultRate(d.adult_rate);
+  setChildQty(d.child_qty);
+  setChildRate(d.child_rate);
+  setInfantQty(d.infant_qty);
+  setInfantRate(d.infant_rate);
+  setTicketRate(d.pkr_rate);
+
+  setIsEdit(true);
+
+  Swal.fire({
+    width: "300px",
+    icon: "success",
+    text: "Ticketing Edit Mode loaded"
+  });
+};
 
   // ===== SAVE DATA =====
 const saveData = async () => {
 
-  if (saving) return; // 🚫 double click stop
+  if (saving) return;
 
   if (!customerName || !bookingDate) {
-    alert("Customer name & booking date required");
-    return;
+    return Swal.fire({
+      width: "300px",
+      icon: "error",
+      text: "Customer name & booking date required"
+    });
   }
 
+  const confirm = await Swal.fire({
+    width: "300px",
+    icon: "question",
+    text: "Do you want to save this ticketing?",
+    showCancelButton: true,
+    confirmButtonText: "Save",
+    cancelButtonText: "Cancel"
+  });
+
+  if (!confirm.isConfirmed) return;
+
   setSaving(true);
+
+  Swal.fire({
+    width: "260px",
+    title: "Saving...",
+    allowOutsideClick: false,
+    didOpen: () => Swal.showLoading()
+  });
 
   const payload = {
     ref_no: refNo || null,
@@ -165,16 +213,35 @@ const saveData = async () => {
 
     const data = await res.json();
 
+    Swal.close();
+
     if (data.success) {
       setRefNo(data.ref_no);
-      alert("✅ Ticketing Saved Successfully! Ref#: " + data.ref_no);
+
+      await Swal.fire({
+        width: "300px",
+        icon: "success",
+        text: "Ticketing Saved Successfully!"
+      });
+
       onNavigate("dashboard");
     } else {
-      alert("Error: " + data.error);
+      Swal.fire({
+        width: "300px",
+        icon: "error",
+        text: data.error
+      });
     }
 
   } catch (err) {
-    alert("Network Error: " + err.message);
+
+    Swal.close();
+
+    Swal.fire({
+      width: "300px",
+      icon: "error",
+      text: "Network Error"
+    });
   }
 
   setSaving(false);

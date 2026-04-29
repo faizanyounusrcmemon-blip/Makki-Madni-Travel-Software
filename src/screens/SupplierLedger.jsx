@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
+import Swal from "sweetalert2";
 
 /* =========================
    HELPERS (NO -0 EVER)
@@ -91,42 +92,59 @@ export default function SupplierLedger({ onNavigate }) {
   /* =========================
      LOAD LEDGER
   ========================== */
-  const loadLedger = async (code = supplierCode) => {
-    if (!code) return;
-    try {
-      const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/supplier-ledger/${code}`);
-      const d = await res.json();
-      if (d.success) {
-        const mapped = (d.ledger || []).map(row => {
-          const t = (row.type || "").toLowerCase();
-          const isPay = t === "payment" || t === "adjustment";
+const loadLedger = async (code = supplierCode) => {
+  if (!code) return;
 
-          const debit = Math.round(normalizeZero(row.debit));
-          const credit = Math.round(normalizeZero(row.credit));
-          const balance = Math.round(normalizeZero(row.balance));
+  try {
+    const res = await fetch(
+      `${import.meta.env.VITE_BACKEND_URL}/api/supplier-ledger/${code}`
+    );
 
-          return {
-            ...row,
-            entry_type: isPay ? "payment" : "purchase",
-            id: isPay ? (row.id || row.payment_id) : null,
-            type: isPay ? t.charAt(0).toUpperCase() + t.slice(1) : "Purchase",
-            detail: row.item || "Purchase Entry",
-            debit,
-            credit,
-            balance,
-            ref_no: row.ref_no || row.purchase_ref || row.invoice_no || "-"   // ✅ NEW
-          };
-        });
-        setLedger(mapped);
-        setLedgerView(mapped);
-      } else {
-        alert(d.error || "Failed to load ledger");
-        setLedger([]);
-      }
-    } catch (e) {
-      console.error("Ledger load error:", e);
+    const d = await res.json();
+
+    if (!d.success) {
+      Swal.fire({
+        width: "300px",
+        icon: "error",
+        text: d.error || "Failed to load ledger"
+      });
+      setLedger([]);
+      return;
     }
-  };
+
+    const mapped = (d.ledger || []).map(row => {
+      const t = (row.type || "").toLowerCase();
+      const isPay = t === "payment" || t === "adjustment";
+
+      const debit = Math.round(normalizeZero(row.debit));
+      const credit = Math.round(normalizeZero(row.credit));
+      const balance = Math.round(normalizeZero(row.balance));
+
+      return {
+        ...row,
+        entry_type: isPay ? "payment" : "purchase",
+        id: isPay ? (row.id || row.payment_id) : null,
+        type: isPay ? t.charAt(0).toUpperCase() + t.slice(1) : "Purchase",
+        detail: row.item || "Purchase Entry",
+        debit,
+        credit,
+        balance,
+        ref_no: row.ref_no || row.purchase_ref || row.invoice_no || "-"
+      };
+    });
+
+    setLedger(mapped);
+    setLedgerView(mapped);
+
+  } catch (e) {
+    console.error("Ledger load error:", e);
+    Swal.fire({
+      width: "300px",
+      icon: "error",
+      text: "Network Error"
+    });
+  }
+};
 
   useEffect(() => { loadPendingAlways(); }, []);
 
@@ -147,13 +165,19 @@ export default function SupplierLedger({ onNavigate }) {
   /* =========================
      SAVE ENTRY
   ========================== */
-  const saveEntry = async () => {
-    if (!supplierCode) return alert("Supplier Code required");
-    if (!amountRaw || amountRaw <= 0) return alert("Amount required");
+const saveEntry = async () => {
+  if (!supplierCode)
+    return Swal.fire({ icon: "warning", text: "Supplier Code required" });
 
-    setSaving(true);
-    try {
-      const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/supplier-ledger/payment`, {
+  if (!amountRaw || amountRaw <= 0)
+    return Swal.fire({ icon: "warning", text: "Amount required" });
+
+  setSaving(true);
+
+  try {
+    const res = await fetch(
+      `${import.meta.env.VITE_BACKEND_URL}/api/supplier-ledger/payment`,
+      {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -163,54 +187,186 @@ export default function SupplierLedger({ onNavigate }) {
           amount: amountRaw,
           type
         }),
-      });
-      const d = await res.json();
-      if (!d.success) alert(d.error || "Save failed");
-      else {
-        setAmountRaw(0);
-        setAmountDisp("");
-        await loadLedger();
-        await loadPendingAlways();
-        alert("✅ Entry saved");
       }
-    } finally {
-      setSaving(false);
+    );
+
+    const d = await res.json();
+
+    if (!d.success) {
+      Swal.fire({ icon: "error", text: d.error || "Save failed" });
+      return;
     }
-  };
+
+    setAmountRaw(0);
+    setAmountDisp("");
+
+    await loadLedger();
+    await loadPendingAlways();
+
+    Swal.fire({
+      icon: "success",
+      text: "Entry saved"
+    });
+
+  } finally {
+    setSaving(false);
+  }
+};
+
 
   /* =========================
      DELETE ENTRY
   ========================== */
-  const deleteEntry = async (entry) => {
-    if (entry.entry_type !== "payment" || !entry.id) return;
 
-    const pwd = prompt("Enter password");
-    if (pwd !== "786") return alert("Wrong password");
+const askPassword = async (title = "Enter Password") => {
+  const { value } = await Swal.fire({
+    width: "300px",
+    html: `
+      <div style="text-align:left;font-size:13px">
+        <b>${title}</b>
 
+        <div style="position:relative;margin-top:10px">
+          <input id="swal-pass" type="password" class="swal2-input"
+            style="height:34px;font-size:13px" placeholder="Enter password"/>
+
+          <span id="toggle-pass" style="
+            position:absolute;
+            right:12px;
+            top:50%;
+            transform:translateY(-50%);
+            cursor:pointer;
+            user-select:none;
+          ">👁</span>
+        </div>
+      </div>
+    `,
+
+    showCancelButton: true,
+    confirmButtonText: "OK",
+    focusConfirm: false,
+
+    preConfirm: () => {
+      const input = document.getElementById("swal-pass");
+      const val = input.value.trim();
+
+      if (!val) {
+        Swal.showValidationMessage("Password required");
+        return false;
+      }
+
+      if (val !== "786") {
+        const popup = Swal.getPopup();
+        if (popup) {
+          popup.classList.add("shake");
+          setTimeout(() => popup.classList.remove("shake"), 400);
+        }
+        Swal.showValidationMessage("Wrong Password 😎");
+        return false;
+      }
+
+      return val;
+    },
+
+    didOpen: () => {
+      const input = document.getElementById("swal-pass");
+      const toggle = document.getElementById("toggle-pass");
+
+      let show = false;
+
+      // 👁 toggle password
+      toggle.onclick = () => {
+        show = !show;
+        input.type = show ? "text" : "password";
+        toggle.textContent = show ? "🙈" : "👁";
+      };
+
+      // 🔥 auto focus
+      setTimeout(() => input.focus(), 100);
+
+      // 🔥 ENTER KEY FIX (REAL WORKING)
+      const handleEnter = (e) => {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          document.querySelector(".swal2-confirm").click();
+        }
+      };
+
+      document.addEventListener("keydown", handleEnter);
+
+      // cleanup (IMPORTANT)
+      Swal.getPopup().addEventListener("remove", () => {
+        document.removeEventListener("keydown", handleEnter);
+      });
+    }
+  });
+
+  return value;
+};
+
+const deleteEntry = async (entry) => {
+  if (entry.entry_type !== "payment" || !entry.id) return;
+
+  const confirm = await Swal.fire({
+    width: "300px",
+    icon: "warning",
+    text: "Delete this entry?",
+    showCancelButton: true,
+    confirmButtonText: "Delete"
+  });
+
+  if (!confirm.isConfirmed) return;
+
+  const pwd = await askPassword("Enter Delete Password");
+  if (!pwd) return;
+
+  Swal.fire({
+    width: "260px",
+    title: "Deleting...",
+    allowOutsideClick: false,
+    didOpen: () => Swal.showLoading()
+  });
+
+  try {
     const res = await fetch(
       `${import.meta.env.VITE_BACKEND_URL}/api/supplier-ledger/delete/${entry.id}`,
       {
         method: "DELETE",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           password: pwd,
-          type: "payment", // 🔥 THIS WAS MISSING
+          type: "payment",
         }),
       }
     );
 
     const d = await res.json();
+
+    Swal.close();
+
     if (!d.success) {
-      alert(d.error || "Delete failed");
+      Swal.fire({
+        icon: "error",
+        text: d.error || "Delete failed"
+      });
       return;
     }
 
     await loadLedger();
     await loadPendingAlways();
-    alert("✅ Entry deleted");
-  };
+
+    Swal.fire({
+      icon: "success",
+      text: "Entry deleted"
+    });
+
+  } catch (err) {
+    Swal.close();
+    Swal.fire({
+      icon: "error",
+      text: "Network Error"
+    });
+  }
+};
 
 /* =========================
    EXPORT PDF (PRO VERSION)
@@ -464,11 +620,4 @@ return (
   </div>
  );
 }
-
-
-
-
-
-
-
 

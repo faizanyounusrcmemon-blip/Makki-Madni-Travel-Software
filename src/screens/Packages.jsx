@@ -3,6 +3,7 @@ import "./packages.css";
 import React, { useState, useRef } from "react";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
+import Swal from "sweetalert2";
 
 const calcNights = (inD, outD) => {
   if (!inD || !outD) return "";
@@ -178,23 +179,44 @@ const totalPassengers = Number(adultCount || 0) + Number(childCount || 0) + Numb
     quoteRef.current.classList.remove("pdf-mode");
   };
 
-  const loadPackage = async () => {
-    if (!searchRef) return alert("Search Ref No likho");
+const loadPackage = async () => {
 
-    // Load hotel record
+  if (!searchRef) {
+    return Swal.fire({
+      width: "280px",
+      icon: "warning",
+      text: "Search Ref No likho"
+    });
+  }
+
+  try {
+
     const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/bookings/get/${searchRef}`);
     const data = await res.json();
-    if (!data.success) return alert("Record not found");
+
+    if (!data.success) {
+      return Swal.fire({
+        width: "280px",
+        icon: "error",
+        text: "Record not found"
+      });
+    }
 
     const d = data.row;
 
-    // 🔹 CHECK PURCHASE ENTRIES BEFORE EDIT
+    // 🔹 Purchase check
     const purchaseRes = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/purchase/check/${d.ref_no}`);
     const purchaseData = await purchaseRes.json();
+
     if (purchaseData.total > 0) {
-      return alert("❌ Cannot edit. Purchase entries exist for this Ref No. Delete purchases first.");
+      return Swal.fire({
+        width: "300px",
+        icon: "error",
+        text: "❌ Cannot edit. Purchase entries exist.\nDelete purchases first."
+      });
     }
 
+    // 🔹 Load data
     setRefNo(d.ref_no);
     setCustomerName(d.customer_name);
     setContactNo(d.contact_no);
@@ -207,6 +229,7 @@ const totalPassengers = Number(adultCount || 0) + Number(childCount || 0) + Numb
     setInfantRate(d.infant_rate);
     setFlights(d.flights || []);
     setHotels(d.hotels || []);
+
     setVisaRows(
       d.visa && d.visa.length > 0
         ? d.visa
@@ -229,12 +252,24 @@ const totalPassengers = Number(adultCount || 0) + Number(childCount || 0) + Numb
     setTransportRate(d.transport_sar_rate);
     setIsEdit(true);
 
-    alert("✅ Package Edit Mode load successfully!");
-  };
+    Swal.fire({
+      width: "260px",
+      icon: "success",
+      text: "Package Edit Mode Loaded"
+    });
+
+  } catch (err) {
+    Swal.fire({
+      width: "300px",
+      icon: "error",
+      text: "Load failed"
+    });
+  }
+};
 
 const handleSavePackage = async () => {
 
-  if (saving) return;   // double click stop
+  if (saving) return;
 
   setSaving(true);
 
@@ -286,6 +321,13 @@ const handleSavePackage = async () => {
 
   try {
 
+    Swal.fire({
+      width: "260px",
+      title: "Saving...",
+      allowOutsideClick: false,
+      didOpen: () => Swal.showLoading()
+    });
+
     const res = await fetch(
       `${import.meta.env.VITE_BACKEND_URL}/api/bookings/save`,
       {
@@ -297,16 +339,37 @@ const handleSavePackage = async () => {
 
     const data = await res.json();
 
+    Swal.close();
+
     if (data.success) {
+
       setRefNo(data.ref_no);
-      alert("✅ Saved Successfully! Ref#: " + data.ref_no);
+
+      Swal.fire({
+        width: "280px",
+        icon: "success",
+        text: `Saved Successfully! Ref#: ${data.ref_no}`
+      });
+
       onNavigate("bookings");
+
     } else {
-      alert("Error: " + data.error);
+      Swal.fire({
+        width: "300px",
+        icon: "error",
+        text: data.error || "Save failed"
+      });
     }
 
   } catch (err) {
-    console.log(err);
+
+    Swal.close();
+
+    Swal.fire({
+      width: "300px",
+      icon: "error",
+      text: "Server Error"
+    });
   }
 
   setSaving(false);

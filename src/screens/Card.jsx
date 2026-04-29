@@ -1,6 +1,7 @@
 import React, { useState, useRef } from "react";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
+import Swal from "sweetalert2";
 
 // VIP Card Styles (Purple + Silver)
 // VIP Visa Styles (Royal Blue + Gold Luxury Theme)
@@ -121,42 +122,86 @@ export default function Card({ onNavigate }) {
   };
 
   // -------------------- Load Existing Card --------------------
-  const loadCard = async () => {
-    if (!searchRef) return alert("Ref No likho");
+const loadCard = async () => {
 
-    const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/card/get/${searchRef}`);
-    const data = await res.json();
+  if (!searchRef) {
+    return Swal.fire({
+      width: "300px",
+      icon: "error",
+      text: "Ref No likho"
+    });
+  }
 
-    if (!data.success) return alert("Record not found");
+  const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/card/get/${searchRef}`);
+  const data = await res.json();
 
-    // Purchase check
-    const purchaseRes = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/purchase/check/${data.row.ref_no}`);
-    const purchaseData = await purchaseRes.json();
-    if (purchaseData.total > 0) {
-      return alert("❌ Cannot edit. Purchase entries exist for this Ref No.");
-    }
+  if (!data.success) {
+    return Swal.fire({
+      width: "300px",
+      icon: "error",
+      text: "Record not found"
+    });
+  }
 
-    const d = data.row;
-    setRefNo(d.ref_no);
-    setCustomerName(d.customer_name);
-    setBookingDate(d.booking_date);
-    setRows(d.rows || []);
-    setPkrRate(d.pkr_rate || 0);
-    setIsEdit(true);
-    alert("✅ Card loaded for edit!");
-  };
+  const purchaseRes = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/purchase/check/${data.row.ref_no}`);
+  const purchaseData = await purchaseRes.json();
+
+  if (purchaseData.total > 0) {
+    return Swal.fire({
+      width: "300px",
+      icon: "error",
+      text: "❌ Cannot edit. Purchase exists Delete purchases first."
+    });
+  }
+
+  const d = data.row;
+
+  setRefNo(d.ref_no);
+  setCustomerName(d.customer_name);
+  setBookingDate(d.booking_date);
+  setRows(d.rows || []);
+  setPkrRate(d.pkr_rate || 0);
+  setIsEdit(true);
+
+  Swal.fire({
+    width: "300px",
+    icon: "success",
+    text: "Card loaded for edit"
+  });
+};
 
   // -------------------- Save / Update --------------------
 const saveData = async () => {
 
-  if (saving) return; // 🚫 double click stop
+  if (saving) return;
 
   if (!customerName || !bookingDate) {
-    alert("Customer name & booking date required");
-    return;
+    return Swal.fire({
+      width: "300px",
+      icon: "error",
+      text: "Customer name & booking date required"
+    });
   }
 
+  const confirm = await Swal.fire({
+    width: "300px",
+    icon: "question",
+    text: "Do you want to save this card?",
+    showCancelButton: true,
+    confirmButtonText: "Save",
+    cancelButtonText: "Cancel"
+  });
+
+  if (!confirm.isConfirmed) return;
+
   setSaving(true);
+
+  Swal.fire({
+    width: "260px",
+    title: "Saving...",
+    allowOutsideClick: false,
+    didOpen: () => Swal.showLoading()
+  });
 
   const payload = {
     ref_no: refNo || null,
@@ -179,16 +224,34 @@ const saveData = async () => {
 
     const data = await res.json();
 
+    Swal.close();
+
     if (data.success) {
       setRefNo(data.ref_no);
-      alert("✅ Card saved successfully! Ref#: " + data.ref_no);
+
+      await Swal.fire({
+        width: "300px",
+        icon: "success",
+        text: "Card saved successfully!"
+      });
+
       onNavigate("dashboard");
     } else {
-      alert("ERROR: " + data.error);
+      Swal.fire({
+        width: "300px",
+        icon: "error",
+        text: data.error
+      });
     }
 
   } catch (err) {
-    alert("Network Error: " + err.message);
+    Swal.close();
+
+    Swal.fire({
+      width: "300px",
+      icon: "error",
+      text: "Network Error"
+    });
   }
 
   setSaving(false);
