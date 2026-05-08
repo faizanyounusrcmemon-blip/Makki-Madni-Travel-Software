@@ -121,17 +121,16 @@ const loadLedger = async (code = supplierCode) => {
 
       Swal.close();
 
-      Swal.fire({
+      return Swal.fire({
         width: "300px",
         icon: "error",
         text: d.error || "Failed to load ledger"
       });
-
-      setLedger([]);
-      setLedgerView([]);
-      return;
     }
 
+    // =========================
+    // MAP LEDGER
+    // =========================
     const mapped = (d.ledger || []).map(row => {
 
       const t = (row.type || "").toLowerCase();
@@ -163,35 +162,86 @@ const loadLedger = async (code = supplierCode) => {
     setLedger(mapped);
     setLedgerView(mapped);
 
-    // ✅ Supplier Name from pending list
+    // =========================
+    // SUPPLIER NAME (SAFE + FAST)
+    // =========================
     let supplierName = "Unknown Supplier";
 
-    const found = pending.find(
+    const found = pending?.find(
       p => p.supplier_code === code
     );
 
-    if (found) {
+    if (found?.supplier_name) {
       supplierName = found.supplier_name;
     }
 
+    // =========================
+    // CLOSE LOADING
+    // =========================
     Swal.close();
 
-    Swal.fire({
-      width: "340px",
-      icon: "success",
-      title: "Ledger Loaded Successfully",
-      html: `
-        <div style="font-size:14px">
-          <b>Supplier Code:</b><br/>
+    // =========================
+    // SMALL BEAUTIFUL POPUP
+    // =========================
+Swal.fire({
+  width: "300px",
+  icon: "success",
+  title: "Ledger Loaded",
+  html: `
+    <div style="
+      text-align:left;
+      font-size:12px;
+      line-height:1.4;
+    ">
+
+      <div style="
+        background:#0d6efd;
+        color:#fff;
+        padding:6px 8px;
+        border-radius:8px;
+        font-weight:bold;
+        margin-bottom:8px;
+        font-size:12px;
+      ">
+        📦 Supplier Info
+      </div>
+
+      <div style="margin-bottom:6px;">
+        <span style="color:#777;">Supplier Code:</span><br/>
+        <span style="
+          background:#212529;
+          color:#fff;
+          padding:3px 6px;
+          border-radius:6px;
+          font-weight:600;
+          display:inline-block;
+          font-size:12px;
+        ">
           ${code}
+        </span>
+      </div>
 
-          <br/><br/>
-
-          <b>Supplier Name:</b><br/>
+      <div>
+        <span style="color:#777;">Supplier Name:</span><br/>
+        <span style="
+          background:linear-gradient(135deg,#198754,#20c997);
+          color:#fff;
+          padding:4px 8px;
+          border-radius:6px;
+          font-weight:600;
+          display:inline-block;
+          font-size:12px;
+        ">
           ${supplierName}
-        </div>
-      `
-    });
+        </span>
+      </div>
+
+    </div>
+  `,
+  showConfirmButton: true,   // ✅ OK button ON
+  confirmButtonText: "OK",   // optional
+  confirmButtonColor: "#0d6efd"
+});
 
   } catch (e) {
 
@@ -206,6 +256,7 @@ const loadLedger = async (code = supplierCode) => {
     });
   }
 };
+
 
   useEffect(() => { loadPendingAlways(); }, []);
 
