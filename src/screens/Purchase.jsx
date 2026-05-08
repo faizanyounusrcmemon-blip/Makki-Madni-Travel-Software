@@ -127,6 +127,7 @@ export default function Purchase({ onNavigate }) {
   const [suppliers, setSuppliers] = useState([]);
   const [loading, setLoading] = useState(false);
   const [isEdit, setIsEdit] = useState(false);
+  const [pendingMap, setPendingMap] = useState({});
 
   /* ================= LOAD SUPPLIERS ================= */
   useEffect(() => {
@@ -136,6 +137,15 @@ export default function Purchase({ onNavigate }) {
   }, []);
 
   /* ================= LOAD PENDING ================= */
+const getCustomerName = (refNo, data) => {
+  return (
+    pendingMap[refNo] ||
+    data.rows?.find(r => r.customer_name)?.customer_name ||
+    data.rows?.[0]?.customer_name ||
+    "N/A"
+  );
+};
+
   const loadPending = async () => {
     const r = await fetch(
       `${import.meta.env.VITE_BACKEND_URL}/api/purchase/pending`
@@ -144,9 +154,19 @@ export default function Purchase({ onNavigate }) {
     if (d.success) setPending(d.rows || []);
   };
 
-  useEffect(() => {
-    loadPending();
-  }, []);
+useEffect(() => {
+  loadPending();
+}, []);
+
+useEffect(() => {
+  const map = {};
+
+  pending.forEach((p) => {
+    map[p.ref_no] = p.customer_name;
+  });
+
+  setPendingMap(map);
+}, [pending]);
 
   /* ================= LOAD PACKAGE (MANUAL) ================= */
 const loadPackage = async (r = refNo) => {
@@ -168,7 +188,10 @@ const loadPackage = async (r = refNo) => {
       `${import.meta.env.VITE_BACKEND_URL}/api/purchase/load/${r}`
     );
 
-    const data = await res.json();
+    const data = await res.json(); // ✅ FIRST PARSE DATA
+
+    console.log("API RESPONSE:", data); // ✅ FIXED POSITION
+
     setLoading(false);
 
     if (!data.success) {
@@ -181,28 +204,58 @@ const loadPackage = async (r = refNo) => {
       });
     }
 
+    // ======================
+    // EDIT MODE
+    // ======================
     setIsEdit(data.is_edit === true);
 
+    // ======================
+    // ROWS SET
+    // ======================
     setRows(
-      data.rows.map((x) => ({
+      (data.rows || []).map((x) => ({
         item: x.item,
         item_label: x.item_label,
         sale_sar: parseNumber(x.sale_sar),
         sale_rate: parseNumber(x.sale_rate),
         sale_pkr: parseNumber(x.sale_pkr),
+
         purchase_sar: x.purchase_sar ? formatInput(String(x.purchase_sar)) : "",
         purchase_rate: x.purchase_rate ? formatInput(String(x.purchase_rate)) : "",
         purchase_pkr: parseNumber(x.purchase_pkr),
+
         profit: parseNumber(x.profit),
+
         supplier_code: x.supplier_code || "",
         supplier_name: x.supplier_name || "",
       }))
     );
 
+    // ======================
+    // CUSTOMER NAME FIXED (SAFE)
+    // ======================
+const customerName =
+  data.customer_name ||
+  data.customer ||
+  data.rows?.[0]?.customer_name ||
+  data.rows?.[0]?.cust_name ||
+  data.rows?.[0]?.client_name ||
+  pendingMap[r] ||
+  "N/A";
+
+    // ======================
+    // SUCCESS POPUP
+    // ======================
     Swal.fire({
-      width: "300px",
+      width: "360px",
       icon: "success",
-      text: "Data Loaded Successfully"
+      html: `
+        <div style="text-align:left; font-size:13px">
+          <b>✅ Data Loaded Successfully</b><br/><br/>
+          <b>Ref No:</b> ${r}<br/>
+          <b>Customer:</b> ${customerName}<br/>
+        </div>
+      `
     });
 
   } catch (err) {
