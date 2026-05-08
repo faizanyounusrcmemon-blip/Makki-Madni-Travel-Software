@@ -93,9 +93,24 @@ export default function SupplierLedger({ onNavigate }) {
      LOAD LEDGER
   ========================== */
 const loadLedger = async (code = supplierCode) => {
-  if (!code) return;
+
+  if (!code) {
+    return Swal.fire({
+      width: "300px",
+      icon: "warning",
+      text: "Supplier Code required"
+    });
+  }
+
+  Swal.fire({
+    width: "260px",
+    title: "Loading Ledger...",
+    allowOutsideClick: false,
+    didOpen: () => Swal.showLoading()
+  });
 
   try {
+
     const res = await fetch(
       `${import.meta.env.VITE_BACKEND_URL}/api/supplier-ledger/${code}`
     );
@@ -103,16 +118,22 @@ const loadLedger = async (code = supplierCode) => {
     const d = await res.json();
 
     if (!d.success) {
+
+      Swal.close();
+
       Swal.fire({
         width: "300px",
         icon: "error",
         text: d.error || "Failed to load ledger"
       });
+
       setLedger([]);
+      setLedgerView([]);
       return;
     }
 
     const mapped = (d.ledger || []).map(row => {
+
       const t = (row.type || "").toLowerCase();
       const isPay = t === "payment" || t === "adjustment";
 
@@ -124,20 +145,60 @@ const loadLedger = async (code = supplierCode) => {
         ...row,
         entry_type: isPay ? "payment" : "purchase",
         id: isPay ? (row.id || row.payment_id) : null,
-        type: isPay ? t.charAt(0).toUpperCase() + t.slice(1) : "Purchase",
+        type: isPay
+          ? t.charAt(0).toUpperCase() + t.slice(1)
+          : "Purchase",
         detail: row.item || "Purchase Entry",
         debit,
         credit,
         balance,
-        ref_no: row.ref_no || row.purchase_ref || row.invoice_no || "-"
+        ref_no:
+          row.ref_no ||
+          row.purchase_ref ||
+          row.invoice_no ||
+          "-"
       };
     });
 
     setLedger(mapped);
     setLedgerView(mapped);
 
+    // ✅ Supplier Name from pending list
+    let supplierName = "Unknown Supplier";
+
+    const found = pending.find(
+      p => p.supplier_code === code
+    );
+
+    if (found) {
+      supplierName = found.supplier_name;
+    }
+
+    Swal.close();
+
+    Swal.fire({
+      width: "340px",
+      icon: "success",
+      title: "Ledger Loaded Successfully",
+      html: `
+        <div style="font-size:14px">
+          <b>Supplier Code:</b><br/>
+          ${code}
+
+          <br/><br/>
+
+          <b>Supplier Name:</b><br/>
+          ${supplierName}
+        </div>
+      `
+    });
+
   } catch (e) {
+
     console.error("Ledger load error:", e);
+
+    Swal.close();
+
     Swal.fire({
       width: "300px",
       icon: "error",
@@ -620,4 +681,3 @@ return (
   </div>
  );
 }
-

@@ -92,7 +92,7 @@ const loadLedger = async (r = refNo) => {
 
   Swal.fire({
     width: "260px",
-    title: "Loading...",
+    title: "Loading Ledger...",
     allowOutsideClick: false,
     didOpen: () => Swal.showLoading()
   });
@@ -105,26 +105,64 @@ const loadLedger = async (r = refNo) => {
 
     const d = await res.json();
 
-    Swal.close();
+    if (!d.success) {
 
-    if (d.success) {
-      setRows(d.rows || []);
+      Swal.close();
 
-      Swal.fire({
-        width: "300px",
-        icon: "success",
-        text: "Ledger Loaded Successfully"
-      });
-
-    } else {
       Swal.fire({
         width: "300px",
         icon: "error",
         text: d.error || "Failed to load ledger"
       });
+
+      setRows([]);
+      return;
     }
 
+    setRows(d.rows || []);
+
+    // ✅ Customer Name Find
+    let customerName = "Unknown Customer";
+
+    const customerRow = (d.rows || []).find(
+      x => x.id === "CUSTOMER"
+    );
+
+    if (customerRow?.description) {
+      customerName = customerRow.description;
+    }
+
+    Swal.close();
+
+    Swal.fire({
+      width: "360px",
+      icon: "success",
+      title: "Ledger Loaded Successfully",
+      html: `
+        <div style="text-align:left;font-size:14px">
+          
+          <div style="
+            background:#f8f9fa;
+            padding:10px;
+            border-radius:8px;
+            margin-top:5px;
+          ">
+            <b>Ref No:</b><br/>
+            <span style="color:#0d6efd">${r}</span>
+
+            <hr style="margin:8px 0"/>
+
+            <b>Customer:</b><br/>
+            <span style="color:#198754">${customerName}</span>
+          </div>
+
+        </div>
+      `
+    });
+
   } catch (err) {
+
+    console.error("Ledger load error:", err);
 
     Swal.close();
 
