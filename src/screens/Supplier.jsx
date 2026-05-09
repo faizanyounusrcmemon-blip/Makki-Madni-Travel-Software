@@ -28,45 +28,72 @@ export default function Supplier({ onNavigate }) {
   }, []);
 
 /* ================= PASSWORD POPUP ================= */
+/* ================= PASSWORD POPUP ================= */
 const askPassword = async (title = "Enter Password") => {
+
   const { value } = await Swal.fire({
     width: "300px",
+
     html: `
       <div style="text-align:left;font-size:13px">
         <b>${title}</b>
+
         <div style="position:relative;margin-top:10px">
-          <input id="swal-pass" type="password" class="swal2-input"
-            style="height:34px;font-size:13px" placeholder="Enter password"/>
+
+          <input
+            id="swal-pass"
+            type="password"
+            class="swal2-input"
+            style="height:34px;font-size:13px;padding-right:40px"
+            placeholder="Enter password"
+          />
+
           <span id="toggle-pass" style="
             position:absolute;
             right:12px;
             top:50%;
             transform:translateY(-50%);
             cursor:pointer;
+            user-select:none;
+            font-size:16px;
           ">👁</span>
+
         </div>
       </div>
     `,
+
     showCancelButton: true,
     confirmButtonText: "OK",
     focusConfirm: false,
 
     preConfirm: () => {
+
       const input = document.getElementById("swal-pass");
       const val = input.value.trim();
 
+      // ✅ EMPTY
       if (!val) {
         Swal.showValidationMessage("Password required");
         return false;
       }
 
+      // ✅ WRONG PASSWORD
       if (val !== "786") {
-        const popup = document.querySelector(".swal2-popup");
+
+        const popup = Swal.getPopup();
+
+        // 😎 SHAKE EFFECT
         if (popup) {
+
           popup.classList.add("shake");
-          setTimeout(() => popup.classList.remove("shake"), 400);
+
+          setTimeout(() => {
+            popup.classList.remove("shake");
+          }, 400);
         }
+
         Swal.showValidationMessage("Wrong Password 😎");
+
         return false;
       }
 
@@ -74,15 +101,40 @@ const askPassword = async (title = "Enter Password") => {
     },
 
     didOpen: () => {
+
       const input = document.getElementById("swal-pass");
       const toggle = document.getElementById("toggle-pass");
 
       let show = false;
 
-      toggle.addEventListener("click", () => {
+      // 👁 SHOW / HIDE PASSWORD
+      toggle.onclick = () => {
         show = !show;
+
         input.type = show ? "text" : "password";
         toggle.textContent = show ? "🙈" : "👁";
+      };
+
+      // ✅ AUTO FOCUS
+      setTimeout(() => input.focus(), 100);
+
+      // ✅ ENTER BUTTON SUPPORT
+      const handleEnter = (e) => {
+
+        if (e.key === "Enter") {
+          e.preventDefault();
+
+          document
+            .querySelector(".swal2-confirm")
+            ?.click();
+        }
+      };
+
+      document.addEventListener("keydown", handleEnter);
+
+      // ✅ CLEANUP
+      Swal.getPopup()?.addEventListener("remove", () => {
+        document.removeEventListener("keydown", handleEnter);
       });
     }
   });
@@ -331,15 +383,30 @@ const del = async (id) => {
                   </td>
                   <td>{r.contact_no}</td>
                   <td>
-                    <button
-                      className="btn btn-sm btn-outline-warning me-1"
-                      onClick={() => {
-                        setForm(r);
-                        setEditId(r.id);
-                      }}
-                    >
-                      ✏ Edit
-                    </button>
+<button
+  className="btn btn-sm btn-outline-warning me-1"
+  onClick={async () => {
+
+    const pass = await askPassword("Enter Edit Password");
+    if (!pass) return;
+
+    setForm({
+      supplier_name: r.supplier_name || "",
+      category: r.category || "",
+      contact_no: r.contact_no || "",
+    });
+
+    setEditId(r.id);
+
+    Swal.fire({
+      width: "280px",
+      icon: "success",
+      text: "Edit Mode Enabled 😎"
+    });
+  }}
+>
+  ✏ Edit
+</button>
                     <button
                       className="btn btn-sm btn-outline-danger"
                       onClick={() => del(r.id)}
@@ -356,5 +423,4 @@ const del = async (id) => {
     </div>
   );
 }
-
 
