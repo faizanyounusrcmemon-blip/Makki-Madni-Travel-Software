@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useRef } from "react";
+import Swal from "sweetalert2";
 
 /* ================= COLOR PALETTE ================= */
 const colorPalette = ["#FF6B6B", "#4ECDC4", "#FFD93D", "#6A4C93", "#FF8C42", "#00A6ED", "#FF5D8F"];
@@ -102,33 +103,263 @@ export default function CashLedger({ onNavigate }) {
   }, [fromDate, toDate, rows, search]);
 
   /* ================= SAVE ================= */
-  const save = async () => {
-    if (!date || !amount) return setMsg({ type: "danger", text: "Date & Amount required" });
-    const r = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/cash-ledger/transaction`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ txn_date: date, type, amount: amount.replace(/,/g, ""), comment }),
+const save = async () => {
+
+  if (!date || !amount) {
+    return Swal.fire({
+      width: "300px",
+      icon: "warning",
+      text: "Date & Amount required"
     });
+  }
+
+  Swal.fire({
+    width: "260px",
+    title: "Saving...",
+    allowOutsideClick: false,
+    didOpen: () => Swal.showLoading()
+  });
+
+  try {
+
+    const r = await fetch(
+      `${import.meta.env.VITE_BACKEND_URL}/api/cash-ledger/transaction`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          txn_date: date,
+          type,
+          amount: amount.replace(/,/g, ""),
+          comment
+        }),
+      }
+    );
+
     const d = await r.json();
+
+    Swal.close();
+
     if (d.success) {
-      setMsg({ type: "success", text: d.message });
-      setAmount(""); setComment(""); load();
-    } else setMsg({ type: "danger", text: d.error });
-  };
+
+      setMsg({
+        type: "success",
+        text: d.message
+      });
+
+      setAmount("");
+      setComment("");
+
+      load();
+
+      Swal.fire({
+        width: "280px",
+        icon: "success",
+        text: d.message || "Transaction Saved Successfully"
+      });
+
+    } else {
+
+      Swal.fire({
+        width: "300px",
+        icon: "error",
+        text: d.error || "Save failed"
+      });
+    }
+
+  } catch (err) {
+
+    Swal.close();
+
+    Swal.fire({
+      width: "300px",
+      icon: "error",
+      text: "Network Error"
+    });
+  }
+};
 
   /* ================= DELETE ================= */
-  const del = async (id) => {
-    const pass = prompt("Enter delete password");
-    if (!pass) return;
-    const r = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/cash-ledger/transaction/${id}`, {
-      method: "DELETE",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ password: pass }),
-    });
+/* ================= PASSWORD POPUP ================= */
+const askPassword = async (title = "Enter Password") => {
+
+  const { value } = await Swal.fire({
+    width: "300px",
+
+    html: `
+      <div style="text-align:left;font-size:13px">
+        <b>${title}</b>
+
+        <div style="position:relative;margin-top:10px">
+
+          <input 
+            id="swal-pass"
+            type="password"
+            class="swal2-input"
+            placeholder="Enter password"
+            style="height:34px;font-size:13px;padding-right:40px"
+          />
+
+          <span id="toggle-pass" style="
+            position:absolute;
+            right:12px;
+            top:50%;
+            transform:translateY(-50%);
+            cursor:pointer;
+            user-select:none;
+            font-size:16px;
+          ">👁</span>
+
+        </div>
+      </div>
+    `,
+
+    showCancelButton: true,
+    confirmButtonText: "OK",
+    focusConfirm: false,
+
+    preConfirm: () => {
+
+      const input = document.getElementById("swal-pass");
+      const val = input.value.trim();
+
+      if (!val) {
+        Swal.showValidationMessage("Password required");
+        return false;
+      }
+
+      // ✅ PASSWORD CHECK
+      if (val !== "786") {
+
+        // 🔥 SHAKE EFFECT
+        const popup = Swal.getPopup();
+
+        if (popup) {
+          popup.classList.add("shake");
+
+          setTimeout(() => {
+            popup.classList.remove("shake");
+          }, 400);
+        }
+
+        Swal.showValidationMessage("Wrong Password 😎");
+
+        return false;
+      }
+
+      return val;
+    },
+
+    didOpen: () => {
+
+      const input = document.getElementById("swal-pass");
+      const toggle = document.getElementById("toggle-pass");
+
+      let show = false;
+
+      // 👁 SHOW / HIDE
+      toggle.onclick = () => {
+        show = !show;
+
+        input.type = show ? "text" : "password";
+        toggle.textContent = show ? "🙈" : "👁";
+      };
+
+      // 🔥 AUTO FOCUS
+      setTimeout(() => input.focus(), 100);
+
+      // 🔥 ENTER KEY SUPPORT
+      const handleEnter = (e) => {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          document.querySelector(".swal2-confirm").click();
+        }
+      };
+
+      document.addEventListener("keydown", handleEnter);
+
+      Swal.getPopup().addEventListener("remove", () => {
+        document.removeEventListener("keydown", handleEnter);
+      });
+    }
+  });
+
+  return value;
+};
+
+const del = async (id) => {
+
+  const confirmDelete = await Swal.fire({
+    width: "300px",
+    icon: "warning",
+    text: "Delete this transaction?",
+    showCancelButton: true,
+    confirmButtonText: "Delete"
+  });
+
+  if (!confirmDelete.isConfirmed) return;
+
+  const pass = await askPassword("Enter Delete Password");
+
+  if (!pass) return;
+
+  Swal.fire({
+    width: "260px",
+    title: "Deleting...",
+    allowOutsideClick: false,
+    didOpen: () => Swal.showLoading()
+  });
+
+  try {
+
+    const r = await fetch(
+      `${import.meta.env.VITE_BACKEND_URL}/api/cash-ledger/transaction/${id}`,
+      {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password: pass }),
+      }
+    );
+
     const d = await r.json();
-    if (d.success) { setMsg({ type: "success", text: d.message }); load(); }
-    else setMsg({ type: "danger", text: d.error });
-  };
+
+    Swal.close();
+
+    if (d.success) {
+
+      setMsg({
+        type: "success",
+        text: d.message
+      });
+
+      load();
+
+      Swal.fire({
+        width: "280px",
+        icon: "success",
+        text: d.message || "Transaction Deleted Successfully"
+      });
+
+    } else {
+
+      Swal.fire({
+        width: "300px",
+        icon: "error",
+        text: d.error || "Delete failed"
+      });
+    }
+
+  } catch (err) {
+
+    Swal.close();
+
+    Swal.fire({
+      width: "300px",
+      icon: "error",
+      text: "Network Error"
+    });
+  }
+};
 
   /* ================= PAGINATION ================= */
   const [currentPage, setCurrentPage] = useState(1);
