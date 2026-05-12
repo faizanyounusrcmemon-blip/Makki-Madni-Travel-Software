@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import Swal from "sweetalert2";
 
 export default function Login({ onLogin }) {
   const [username, setUsername] = useState("");
@@ -6,50 +7,108 @@ export default function Login({ onLogin }) {
   const [show, setShow] = useState(false);
   const [loading, setLoading] = useState(false);
 
-const submit = async () => {
-  if (!username || !password) {
-    alert("Username & Password required");
-    return;
-  }
-
-  setLoading(true);
-
-  try {
-    const res = await fetch(
-      `${import.meta.env.VITE_BACKEND_URL}/api/auth/login`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username, password }),
-      }
-    );
-
-    const data = await res.json();
-    setLoading(false);
-
-    if (!data.success) {
-      alert("❌ Invalid login");
-      return;
-    }
-
-    // ✅ store updated user
-    sessionStorage.setItem("user", JSON.stringify(data.user));
-    onLogin();
-
-  } catch (err) {
-    setLoading(false);
-    alert("Server error");
-  }
-};
+  // ✅ NEW STATES
+  const [shake, setShake] = useState(false);
+  const [capsLock, setCapsLock] = useState(false);
 
   const cancel = () => {
     setUsername("");
     setPassword("");
   };
 
+  // ================= ENTER KEY LOGIN =================
+  const handleKeyDown = (e) => {
+    if (e.key === "Enter") {
+      submit();
+    }
+  };
+
+  const submit = async () => {
+    if (!username || !password) {
+      Swal.fire({
+        width: "280px",
+        icon: "warning",
+        text: "Username & Password required"
+      });
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const res = await fetch(
+        `${import.meta.env.VITE_BACKEND_URL}/api/auth/login`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ username, password }),
+        }
+      );
+
+      const data = await res.json();
+      setLoading(false);
+
+      // ❌ LOGIN FAIL
+      if (!data.success) {
+
+        // 🔥 SHAKE TRIGGER
+        setShake(true);
+        setTimeout(() => setShake(false), 500);
+
+        const msg = (data.error || "").toLowerCase();
+
+        let errorText = "Invalid login";
+
+        if (msg.includes("username") || msg.includes("user not found")) {
+          errorText = "❌ Username is incorrect";
+        } 
+        else if (msg.includes("password")) {
+          errorText = "❌ Password is incorrect";
+        } 
+        else if (msg.includes("both") || msg.includes("invalid")) {
+          errorText = "❌ Username & Password both are incorrect";
+        }
+
+        Swal.fire({
+          width: "300px",
+          icon: "error",
+          title: "Login Failed",
+          text: errorText
+        });
+
+        return;
+      }
+
+      // ✅ SUCCESS
+      sessionStorage.setItem("user", JSON.stringify(data.user));
+
+      Swal.fire({
+        width: "280px",
+        icon: "success",
+        title: "Login Successful",
+        text: `Welcome ${data.user.username || "User"}`,
+        timer: 1500,
+        showConfirmButton: false
+      });
+
+      setTimeout(() => {
+        onLogin();
+      }, 1500);
+
+    } catch (err) {
+      setLoading(false);
+
+      Swal.fire({
+        width: "280px",
+        icon: "error",
+        text: "Server Error"
+      });
+    }
+  };
+
   return (
     <div className="login-wrapper">
-      <div className="login-card">
+      <div className={`login-card ${shake ? "shake" : ""}`}>
         <h2 className="title">✈️ Makki Madni Travel</h2>
         <p className="subtitle">Secure Login Panel</p>
 
@@ -58,6 +117,7 @@ const submit = async () => {
           placeholder="Username"
           value={username}
           onChange={(e) => setUsername(e.target.value)}
+          onKeyDown={handleKeyDown}
         />
 
         <div className="password-box">
@@ -67,11 +127,21 @@ const submit = async () => {
             placeholder="Password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
+            onKeyDown={handleKeyDown}
+            onKeyUp={(e) => setCapsLock(e.getModifierState("CapsLock"))}
           />
+
           <span className="eye" onClick={() => setShow(!show)}>
             {show ? "🙈" : "👁️"}
           </span>
         </div>
+
+        {/* CAPS LOCK WARNING */}
+        {capsLock && (
+          <div style={{ color: "yellow", fontSize: "12px", marginBottom: "8px" }}>
+            ⚠️ Caps Lock is ON
+          </div>
+        )}
 
         <div className="btn-row">
           <button
@@ -88,6 +158,23 @@ const submit = async () => {
         </div>
       </div>
 
+      {/* ================= SHAKE ANIMATION (ONLY ADDITION) ================= */}
+      <style>{`
+        .shake {
+          animation: shake 0.4s ease;
+        }
+
+        @keyframes shake {
+          0% { transform: translateX(0); }
+          20% { transform: translateX(-8px); }
+          40% { transform: translateX(8px); }
+          60% { transform: translateX(-6px); }
+          80% { transform: translateX(6px); }
+          100% { transform: translateX(0); }
+        }
+      `}</style>
+
+      {/* ORIGINAL CSS (UNCHANGED) */}
       <style>{`
         .login-wrapper {
           height: 100vh;
@@ -166,7 +253,6 @@ const submit = async () => {
           font-weight: bold;
         }
 
-        /* ✅ CHANGE: hover red */
         .login-btn:hover {
           background: red;
           color: white;
@@ -178,7 +264,6 @@ const submit = async () => {
           color: white;
         }
 
-        /* ✅ CHANGE: hover red */
         .cancel-btn:hover {
           background: red;
           color: white;
@@ -187,4 +272,3 @@ const submit = async () => {
     </div>
   );
 }
-

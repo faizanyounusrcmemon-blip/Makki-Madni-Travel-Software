@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import Swal from "sweetalert2";
 
 export default function ManageUsers({ onNavigate }) {
   const currentUser = JSON.parse(sessionStorage.getItem("user"));
@@ -48,12 +49,152 @@ export default function ManageUsers({ onNavigate }) {
     setUsers(copy);
   };
 
-  /* SAVE */
-  const saveAll = async () => {
-    if (!isAdmin) return alert("Admin only");
+/* ================= PASSWORD POPUP ================= */
+const askPassword = async (title = "Enter Password") => {
+
+  const { value } = await Swal.fire({
+    width: "300px",
+
+    html: `
+      <div style="text-align:left;font-size:13px">
+        <b>${title}</b>
+
+        <div style="position:relative;margin-top:10px">
+
+          <input
+            id="swal-pass"
+            type="password"
+            class="swal2-input"
+            style="height:34px;font-size:13px;padding-right:40px"
+            placeholder="Enter password"
+          />
+
+          <span id="toggle-pass" style="
+            position:absolute;
+            right:12px;
+            top:50%;
+            transform:translateY(-50%);
+            cursor:pointer;
+            user-select:none;
+            font-size:16px;
+          ">👁</span>
+
+        </div>
+      </div>
+    `,
+
+    showCancelButton: true,
+    confirmButtonText: "Save",
+    focusConfirm: false,
+
+    preConfirm: () => {
+
+      const input = document.getElementById("swal-pass");
+      const val = input.value.trim();
+
+      // EMPTY
+      if (!val) {
+        Swal.showValidationMessage("Password required");
+        return false;
+      }
+
+      // WRONG PASSWORD
+      if (val !== "786") {
+
+        const popup = Swal.getPopup();
+
+        // 😎 SHAKE EFFECT
+        if (popup) {
+
+          popup.classList.add("shake");
+
+          setTimeout(() => {
+            popup.classList.remove("shake");
+          }, 400);
+        }
+
+        Swal.showValidationMessage("Wrong Password 😎");
+
+        return false;
+      }
+
+      return val;
+    },
+
+    didOpen: () => {
+
+      const input = document.getElementById("swal-pass");
+      const toggle = document.getElementById("toggle-pass");
+
+      let show = false;
+
+      // 👁 SHOW / HIDE PASSWORD
+      toggle.onclick = () => {
+
+        show = !show;
+
+        input.type = show ? "text" : "password";
+        toggle.textContent = show ? "🙈" : "👁";
+      };
+
+      // AUTO FOCUS
+      setTimeout(() => input.focus(), 100);
+
+      // ENTER KEY SUPPORT
+      const handleEnter = (e) => {
+
+        if (e.key === "Enter") {
+
+          e.preventDefault();
+
+          document
+            .querySelector(".swal2-confirm")
+            ?.click();
+        }
+      };
+
+      document.addEventListener("keydown", handleEnter);
+
+      // CLEANUP
+      Swal.getPopup()?.addEventListener("remove", () => {
+        document.removeEventListener("keydown", handleEnter);
+      });
+    }
+  });
+
+  return value;
+};
+
+
+/* ================= SAVE ================= */
+const saveAll = async () => {
+
+  if (!isAdmin) {
+
+    return Swal.fire({
+      width: "300px",
+      icon: "warning",
+      text: "Admin only"
+    });
+  }
+
+  // 🔐 PASSWORD
+  const pass = await askPassword("Enter Save Password");
+
+  if (!pass) return;
+
+  Swal.fire({
+    width: "260px",
+    title: "Saving Permissions...",
+    allowOutsideClick: false,
+    didOpen: () => Swal.showLoading()
+  });
+
+  try {
 
     setSaving(true);
-    await fetch(
+
+    const r = await fetch(
       `${import.meta.env.VITE_BACKEND_URL}/api/users/permissions/update`,
       {
         method: "POST",
@@ -61,10 +202,45 @@ export default function ManageUsers({ onNavigate }) {
         body: JSON.stringify({ users })
       }
     );
+
+    const d = await r.json();
+
+    Swal.close();
+
+    if (d.success) {
+
+      Swal.fire({
+        width: "300px",
+        icon: "success",
+        text: "✅ Permissions Saved Successfully"
+      });
+
+      loadUsers();
+
+    } else {
+
+      Swal.fire({
+        width: "300px",
+        icon: "error",
+        text: d.error || "Save failed"
+      });
+    }
+
+  } catch (err) {
+
+    Swal.close();
+
+    Swal.fire({
+      width: "300px",
+      icon: "error",
+      text: "Network Error"
+    });
+
+  } finally {
+
     setSaving(false);
-    alert("✅ Permissions Saved");
-    loadUsers();
-  };
+  }
+};
 
   return (
     <div className="container-fluid py-3 bg-dark text-white">
