@@ -59,14 +59,24 @@ export default function Login({ onLogin }) {
 
         let errorText = "Invalid login";
 
-        if (msg.includes("username") || msg.includes("user not found")) {
+        if (msg.includes("missing")) {
+          errorText = "⚠️ Please enter username and password";
+        }
+
+        else if (msg.includes("inactive")) {
+          errorText = "⛔ Your account is deactivated. Contact admin";
+        }
+
+        else if (msg.includes("invalid login")) {
+          errorText = "❌ Username or password is incorrect";
+        }
+
+        else if (msg.includes("username")) {
           errorText = "❌ Username is incorrect";
-        } 
+        }
+ 
         else if (msg.includes("password")) {
           errorText = "❌ Password is incorrect";
-        } 
-        else if (msg.includes("both") || msg.includes("invalid")) {
-          errorText = "❌ Username & Password both are incorrect";
         }
 
         Swal.fire({
