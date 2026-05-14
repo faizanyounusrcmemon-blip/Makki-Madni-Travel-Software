@@ -92,14 +92,34 @@ export default function Login({ onLogin }) {
       // ✅ SUCCESS
       sessionStorage.setItem("user", JSON.stringify(data.user));
 
-      Swal.fire({
-        width: "280px",
-        icon: "success",
-        title: "Login Successful",
-        text: `Welcome ${data.user.username || "User"}`,
-        timer: 1500,
-        showConfirmButton: false
-      });
+Swal.fire({
+  width: "280px",
+  icon: "success",
+  title: "Login Successful",
+  html: `
+    <div style="font-size:16px;">
+      Welcome <span id="typedUser" style="color:#1e90ff; font-weight:bold;"></span>
+    </div>
+  `,
+  showConfirmButton: false,
+  timer: 2000,
+  didOpen: () => {
+    const text = data.user.username || "User";
+    const el = document.getElementById("typedUser");
+
+    let i = 0;
+    el.textContent = "";
+
+    const typing = setInterval(() => {
+      el.textContent += text[i];
+      i++;
+
+      if (i >= text.length) {
+        clearInterval(typing);
+      }
+    }, 100);
+  }
+});
 
       setTimeout(() => {
         onLogin();
