@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import Navbar from "./components/Navbar";
 import Login from "./screens/Login";
 
+
 // DASHBOARD
 import Dashboard from "./screens/Dashboard";
 
@@ -42,6 +43,7 @@ import Restore from "./screens/Restore";
 import SystemStorage from "./screens/SystemStorage";
 import SaleChangeCheckReport from "./screens/SaleChangeCheckReport";
 import ItemLossZeroReport from "./screens/ItemLossZeroReport";
+import MonthlyProfitDashboard from "./screens/MonthlyProfitDashboard";
 
 // VOUCHERS
 import HotelVoucher from "./screens/HotelVoucher";
@@ -129,6 +131,7 @@ export default function App() {
       {page === "supplierPurchaseDetailReport" && <SupplierPurchaseDetailReport onNavigate={navigate} />}
       {page === "saleChangeCheckReport" && <SaleChangeCheckReport onNavigate={navigate} />}
       {page === "itemLossZeroReport" && <ItemLossZeroReport onNavigate={navigate} />}
+      {page === "monthlyProfitDashboard" && <MonthlyProfitDashboard onNavigate={navigate} />}
       {page === "createUser" && <CreateUser onNavigate={navigate} />}
       {page === "deletedReports" && (
         <DeletedReports onNavigate={navigate} />
