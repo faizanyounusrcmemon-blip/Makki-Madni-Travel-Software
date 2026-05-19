@@ -22,7 +22,7 @@ export default function ManageUsers({ onNavigate }) {
     "hotel_voucher", "transport_voucher",
 
     // REPORTS
-    "all_reports", "profit_report", "sale_adjustment_report", "supplier_adjustment_only", "supplier_purchase_detail_report", "item_loss_zero_report", "sale_change_check_report",
+    "all_reports", "profit_report", "monthly_profit_dashboard", "sale_adjustment_report", "supplier_adjustment_only", "supplier_purchase_detail_report", "item_loss_zero_report", "sale_change_check_report",
 
     // MASTER
     "create_user", "manage_users", "supplier", "deleted_reports", "restore", "system_storage"
