@@ -150,6 +150,7 @@ const logout = async () => {
             <div className="menu-box">
               {can("all_reports") && <a onClick={() => go("allreports")}>📈 All Reports</a>}
               {can("profit_report") && <a onClick={() => go("profitReport")}>💰 Profit Report</a>}
+              {can("monthly_profit_dashboard") && <a onClick={() => go("monthlyProfitDashboard")}>💰 Monthly Profit</a>}
               {can("sale_adjustment_report") && <a onClick={() => go("saleAdjustmentReport")}>📉 Sale Adjustment Report</a>}
               {can("supplier_adjustment_only") && <a onClick={() => go("supplierAdjustmentOnly")}>📉 Supplier Adjustment Only</a>}
               {can("supplier_purchase_detail_report") && <a onClick={() => go("supplierPurchaseDetailReport")}>📦 Supplier Purchase Detail Report</a>}
