@@ -109,7 +109,7 @@ export default function TransportVoucher({ onNavigate }) {
         />
 
         <button className="btn btn-primary btn-sm" onClick={loadVoucher}>
-          Load
+          Load Voucher
         </button>
 
 {data && (
@@ -118,7 +118,7 @@ export default function TransportVoucher({ onNavigate }) {
       className="btn btn-success btn-sm"
       onClick={exportPDF}
     >
-      PDF
+      📄 Download PDF
     </button>
 
     <button
