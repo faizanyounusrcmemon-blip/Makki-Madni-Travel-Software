@@ -137,6 +137,7 @@ const logout = async () => {
           {open === "voucher" && (
             <div className="menu-box">
               {can("hotel_voucher") && <a onClick={() => go("hotelVoucher")}>🏨 Hotel Voucher</a>}
+              {can("hotel_voucher3") && <a onClick={() => go("hotelVoucher3")}>🏨 3.Hotel IN 1 PAGE</a>}
               {can("transport_voucher") && <a onClick={() => go("transportVoucher")}>🚐 Transport Voucher</a>}
             </div>
           )}
