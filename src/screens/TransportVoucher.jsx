@@ -93,7 +93,7 @@ export default function TransportVoucher({ onNavigate }) {
   return (
     <div className="container py-3">
       {/* TOP BAR */}
-      <div className="d-flex gap-2 mb-3">
+      <div className="d-flex gap-2 mb-3 flex-wrap top-buttons">
         <button
           className="btn btn-secondary btn-sm"
           onClick={() => onNavigate("dashboard")}
@@ -112,11 +112,66 @@ export default function TransportVoucher({ onNavigate }) {
           Load
         </button>
 
-        {data && (
-          <button className="btn btn-success btn-sm" onClick={exportPDF}>
-            PDF
-          </button>
-        )}
+{data && (
+  <>
+    <button
+      className="btn btn-success btn-sm"
+      onClick={exportPDF}
+    >
+      PDF
+    </button>
+
+    <button
+      className="btn btn-secondary btn-sm"
+      onClick={async () => {
+        if (!voucherRef.current || !data) return;
+
+        const canvas = await html2canvas(voucherRef.current, {
+          scale: 2,
+          useCORS: true,
+        });
+
+        const imgData = canvas.toDataURL("image/png");
+
+        const pdf = new jsPDF("p", "mm", "a4");
+
+        const pageWidth = pdf.internal.pageSize.getWidth();
+        const pageHeight = pdf.internal.pageSize.getHeight();
+
+        const imgWidth = pageWidth;
+
+        let imgHeight =
+          (canvas.height * imgWidth) / canvas.width;
+
+        if (imgHeight > pageHeight) {
+          const scale = pageHeight / imgHeight;
+
+          pdf.addImage(
+            imgData,
+            "PNG",
+            0,
+            0,
+            imgWidth * scale,
+            pageHeight
+          );
+        } else {
+          pdf.addImage(
+            imgData,
+            "PNG",
+            0,
+            0,
+            imgWidth,
+            imgHeight
+          );
+        }
+
+        window.open(pdf.output("bloburl"), "_blank");
+      }}
+    >
+      🖨️ Print
+    </button>
+  </>
+)}
       </div>
 
       {data && (

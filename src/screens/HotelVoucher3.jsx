@@ -81,53 +81,50 @@ const exportPDF = async () => {
   if (!voucherRef.current || !data) return;
 
   const pdf = new jsPDF("p", "mm", "a4");
-  const pageWidth = 210;
-  const pageHeight = 297;
-  const margin = 10;
-  const usableWidth = pageWidth - margin * 2;
-  let y = margin;
 
-  const addCanvas = async (el) => {
-    if (!el) return;
-    const canvas = await html2canvas(el, { scale: 3 });
-    const img = canvas.toDataURL("image/png");
-    const height = (canvas.height * usableWidth) / canvas.width * 0.95;
+  const canvas = await html2canvas(voucherRef.current, {
+    scale: 2,
+    useCORS: true,
+  });
 
-    if (y + height > pageHeight - margin) {
-      pdf.addPage();
-      y = margin;
-    }
+  const imgData = canvas.toDataURL("image/jpeg", 0.9);
 
-    pdf.addImage(img, "PNG", margin, y, usableWidth, height);
-    y += height + 4;
-  };
+  const pdfWidth = 210;
+  const pdfHeight = 297;
 
-  // HEADER, REF, AGENT, CUSTOMER
-  await addCanvas(voucherRef.current.querySelector(".text-center.mb-3"));
-  await addCanvas(voucherRef.current.querySelector(".pdf-ref-row"));
-  await addCanvas(voucherRef.current.querySelector(".pdf-agent"));
-  await addCanvas(voucherRef.current.querySelector(".pdf-customer"));
+  const imgWidth = pdfWidth;
+  const imgHeight = (canvas.height * imgWidth) / canvas.width;
 
-const hotels = voucherRef.current.querySelectorAll(".pdf-hotel-block");
-for (let h of hotels) {
-  const canvasBlock = await html2canvas(h, { scale: 3 });
-  const imgBlock = canvasBlock.toDataURL("image/png");
-  const heightBlock = (canvasBlock.height * usableWidth) / canvasBlock.width * 0.95;
+  let heightLeft = imgHeight;
+  let position = 0;
 
-  if (y + heightBlock > pageHeight - margin) {
+  pdf.addImage(
+    imgData,
+    "JPEG",
+    0,
+    position,
+    imgWidth,
+    imgHeight
+  );
+
+  heightLeft -= pdfHeight;
+
+  while (heightLeft > 0) {
+    position = heightLeft - imgHeight;
+
     pdf.addPage();
-    y = margin;
+
+    pdf.addImage(
+      imgData,
+      "JPEG",
+      0,
+      position,
+      imgWidth,
+      imgHeight
+    );
+
+    heightLeft -= pdfHeight;
   }
-
-  pdf.addImage(imgBlock, "PNG", margin, y, usableWidth, heightBlock);
-  y += heightBlock + 4;
-}
-
-
-
-  // TIMING AND FOOTER
-  await addCanvas(voucherRef.current.querySelector(".pdf-timing"));
-  await addCanvas(voucherRef.current.querySelector(".pdf-footer"));
 
   pdf.save(`Hotel-Voucher-${data.ref_no}.pdf`);
 };
@@ -142,7 +139,7 @@ for (let h of hotels) {
   return (
     <div className="container py-3">
       {/* TOP BAR */}
-      <div className="d-flex gap-2 mb-3 flex-wrap">
+      <div className="d-flex gap-2 mb-3 flex-wrap top-buttons">
         <button
           className="btn btn-dark btn-sm"
           onClick={() => onNavigate("dashboard")}
@@ -176,100 +173,52 @@ for (let h of hotels) {
         if (!voucherRef.current || !data) return;
 
         const pdf = new jsPDF("p", "mm", "a4");
-        const pageWidth = 210;
-        const pageHeight = 297;
-        const margin = 10;
-        const usableWidth = pageWidth - margin * 2;
 
-        let y = margin;
+        const canvas = await html2canvas(voucherRef.current, {
+          scale: 2,
+          useCORS: true,
+        });
 
-        const addCanvas = async (el) => {
-          if (!el) return;
+        const imgData = canvas.toDataURL("image/jpeg", 0.9);
 
-          const canvas = await html2canvas(el, {
-            scale: 3,
-            useCORS: true,
-          });
+        const pdfWidth = 210;
+        const pdfHeight = 297;
 
-          const img = canvas.toDataURL("image/png");
+        const imgWidth = pdfWidth;
 
-          const height =
-            (canvas.height * usableWidth) / canvas.width * 0.95;
+        const imgHeight =
+          (canvas.height * imgWidth) / canvas.width;
 
-          if (y + height > pageHeight - margin) {
-            pdf.addPage();
-            y = margin;
-          }
+        let heightLeft = imgHeight;
+        let position = 0;
+
+        pdf.addImage(
+          imgData,
+          "JPEG",
+          0,
+          position,
+          imgWidth,
+          imgHeight
+        );
+
+        heightLeft -= pdfHeight;
+
+        while (heightLeft > 0) {
+          position = heightLeft - imgHeight;
+
+          pdf.addPage();
 
           pdf.addImage(
-            img,
-            "PNG",
-            margin,
-            y,
-            usableWidth,
-            height
+            imgData,
+            "JPEG",
+            0,
+            position,
+            imgWidth,
+            imgHeight
           );
 
-          y += height + 4;
-        };
-
-        await addCanvas(
-          voucherRef.current.querySelector(".text-center.mb-3")
-        );
-
-        await addCanvas(
-          voucherRef.current.querySelector(".pdf-ref-row")
-        );
-
-        await addCanvas(
-          voucherRef.current.querySelector(".pdf-agent")
-        );
-
-        await addCanvas(
-          voucherRef.current.querySelector(".pdf-customer")
-        );
-
-        const hotels =
-          voucherRef.current.querySelectorAll(".pdf-hotel-block");
-
-        for (let h of hotels) {
-          const canvasBlock = await html2canvas(h, {
-            scale: 3,
-            useCORS: true,
-          });
-
-          const imgBlock =
-            canvasBlock.toDataURL("image/png");
-
-          const heightBlock =
-            (canvasBlock.height * usableWidth) /
-            canvasBlock.width *
-            0.95;
-
-          if (y + heightBlock > pageHeight - margin) {
-            pdf.addPage();
-            y = margin;
-          }
-
-          pdf.addImage(
-            imgBlock,
-            "PNG",
-            margin,
-            y,
-            usableWidth,
-            heightBlock
-          );
-
-          y += heightBlock + 4;
+          heightLeft -= pdfHeight;
         }
-
-        await addCanvas(
-          voucherRef.current.querySelector(".pdf-timing")
-        );
-
-        await addCanvas(
-          voucherRef.current.querySelector(".pdf-footer")
-        );
 
         window.open(pdf.output("bloburl"), "_blank");
       }}
@@ -278,11 +227,13 @@ for (let h of hotels) {
     </button>
   </>
 )}
-      </div>
+
+</div>
 
       {/* ================= VOUCHER ================= */}
       {data && (
         <div
+          id="print-area"
           ref={voucherRef}
           style={{
             maxWidth: "820px",
@@ -290,7 +241,8 @@ for (let h of hotels) {
             background: "#fff",
             border: "3px solid #0d6efd",
             borderRadius: "12px",
-            padding: "20px",
+            padding: "12px",
+            fontSize: "12px",
           }}
         >
           {/* HEADER */}
@@ -340,9 +292,22 @@ for (let h of hotels) {
           </div>
 
 {data.hotels.map((h, i) => (
-  <div key={i} className="pdf-hotel-block mb-3 p-2 bg-light rounded">
+<div
+  key={i}
+  className="pdf-hotel-block mb-2 p-2 bg-light rounded"
+  style={{
+    fontSize: "12px",
+    lineHeight: "1.2",
+  }}
+>
     {/* Heading inside the hotel block */}
-    <h6 className="bg-primary text-white p-2 rounded mb-2">
+<h6
+  className="bg-primary text-white rounded mb-2"
+  style={{
+    padding: "4px 8px",
+    fontSize: "13px",
+  }}
+>
       {i + 1 } 🏨 Hotel Details
     </h6>
 
@@ -350,6 +315,11 @@ for (let h of hotels) {
     <label className="fw-bold">Confirm No</label>
     <input
       className="form-control form-control-sm mb-2 fw-bold"
+style={{
+  padding: "2px 6px",
+  fontSize: "12px",
+  minHeight: "28px",
+}}
       placeholder=""
       value={h.confirmNo}
       onChange={(e) => handleHotelChange(i, "confirmNo", e.target.value)}
@@ -358,7 +328,7 @@ for (let h of hotels) {
     <br />
     <b>📍 Address:</b> {h.location}
 
-    <div className="row mt-2">
+    <div className="row mt-1">
       <div className="col">
         <b>🚪 Room:</b> {h.room}
       </div>
@@ -367,11 +337,17 @@ for (let h of hotels) {
       </div>
     </div>
 
-    <div className="row mt-2">
-      <div className="col bg-warning p-2">
+    <div className="row mt-1">
+<div
+  className="col bg-warning"
+  style={{ padding: "4px" }}
+>
         <b>Check-In:</b> {showDate(h.checkIn)}
       </div>
-      <div className="col bg-success text-white p-2">
+<div
+  className="col bg-success text-white"
+  style={{ padding: "4px" }}
+>
         <b>Check-Out:</b> {showDate(h.checkOut)}
       </div>
       <div className="col">
@@ -379,11 +355,16 @@ for (let h of hotels) {
       </div>
     </div>
 
-    <div className="row mt-2">
+    <div className="row mt-1">
       <div className="col">
         <label className="fw-bold">CONTACT 1</label>
         <input
           className="form-control form-control-sm fw-bold"
+style={{
+  padding: "2px 6px",
+  fontSize: "12px",
+  minHeight: "28px",
+}}
           placeholder=""
           value={h.contact1}
           onChange={(e) => handleHotelChange(i, "contact1", e.target.value)}
@@ -393,6 +374,11 @@ for (let h of hotels) {
         <label className="fw-bold">CONTACT 2</label>
         <input
           className="form-control form-control-sm fw-bold"
+style={{
+  padding: "2px 6px",
+  fontSize: "12px",
+  minHeight: "28px",
+}}
           placeholder=""
           value={h.contact2}
           onChange={(e) => handleHotelChange(i, "contact2", e.target.value)}
@@ -420,11 +406,49 @@ for (let h of hotels) {
           </div>
 
           {/* FOOTER */}
-          <div className="text-center small mt-3 pdf-footer" style={{ color: "#555" }}>
-            Please check your hotel details carefully.
-            <br />
-            This voucher is valid only for the mentioned booking.
-          </div>
+<div className="text-center small mt-3 pdf-footer" style={{ color: "#555" }}>
+  Please check your hotel details carefully.
+  <br />
+  This voucher is valid only for the mentioned booking.
+</div>
+
+<style>{`
+@media print {
+
+  body * {
+    visibility: hidden;
+  }
+
+  #print-area,
+  #print-area * {
+    visibility: visible;
+  }
+
+  #print-area {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    background: white;
+    padding: 10px;
+  }
+
+  .top-buttons {
+    display: none !important;
+  }
+
+  .pdf-hotel-block {
+    page-break-inside: avoid;
+  }
+
+  @page {
+    size: A4;
+    margin: 10mm;
+  }
+}
+`}</style>
+
+
         </div>
       )}
     </div>
