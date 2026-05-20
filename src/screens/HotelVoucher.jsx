@@ -48,11 +48,13 @@ export default function HotelVoucher({ onNavigate }) {
       let url = "";
       let isPkg = false;
 
-      if (ref.startsWith("PKG-")) {
-        url = `${import.meta.env.VITE_BACKEND_URL}/api/bookings/voucher/${ref}`;
+      const upperRef = ref.toUpperCase();
+
+      if (upperRef.startsWith("PKG-")) {
+        url = `${import.meta.env.VITE_BACKEND_URL}/api/bookings/voucher/${upperRef}`;
         isPkg = true;
-      } else if (ref.startsWith("HOT-")) {
-        url = `${import.meta.env.VITE_BACKEND_URL}/api/hotels/get/${ref}`;
+      } else if (upperRef.startsWith("HOT-")) {
+        url = `${import.meta.env.VITE_BACKEND_URL}/api/hotels/get/${upperRef}`;
       } else {
         return alert("Invalid Ref No");
       }

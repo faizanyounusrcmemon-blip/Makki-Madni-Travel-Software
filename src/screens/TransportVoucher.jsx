@@ -31,17 +31,20 @@ export default function TransportVoucher({ onNavigate }) {
   /* ================= LOAD ================= */
   const loadVoucher = async () => {
     try {
-      if (ref.startsWith("PKG-")) {
+
+      const upperRef = ref.toUpperCase();
+
+      if (upperRef.startsWith("PKG-")) {
         const r = await fetch(
-          `${import.meta.env.VITE_BACKEND_URL}/api/bookings/get/${ref}`
+          `${import.meta.env.VITE_BACKEND_URL}/api/bookings/get/${upperRef}`
         );
         const d = await r.json();
         if (!d.success) return alert("Voucher not found");
         setData(d.row);
         setRows(d.row.transport || []);
-      } else if (ref.startsWith("TRN-")) {
+      } else if (upperRef.startsWith("TRN-")) {
         const r = await fetch(
-          `${import.meta.env.VITE_BACKEND_URL}/api/transport/get/${ref}`
+          `${import.meta.env.VITE_BACKEND_URL}/api/transport/get/${upperRef}`
         );
         const d = await r.json();
         if (!d.success) return alert("Voucher not found");
