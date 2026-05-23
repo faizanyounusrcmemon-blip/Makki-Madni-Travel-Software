@@ -8,6 +8,9 @@ export default function ManageUsers({ onNavigate }) {
   const [users, setUsers] = useState([]);
   const [saving, setSaving] = useState(false);
 
+  /* ================= STATES ================= */
+  const [openUser, setOpenUser] = useState(null);
+
   const permissions = [
     // SALES
     "packages", "ticketing", "transport", "ziyarat", "visa", "hotels", "card",
@@ -242,79 +245,320 @@ const saveAll = async () => {
   }
 };
 
-  return (
-    <div className="container-fluid py-3 bg-dark text-white">
-      <button
-        className="btn btn-warning fw-bold mb-3"
-        onClick={() => onNavigate("dashboard")}
-      >
-        ⬅ Exit
-      </button>
+return (
+  <div
+    className="container-fluid py-3"
+    style={{
+      background: "#eef2f7",
+      minHeight: "100vh",
+      maxWidth: "650px",
+    }}
+  >
+    {/* ================= HEADER ================= */}
+    <div
+      className="rounded-4 shadow-lg overflow-hidden mb-3 position-relative"
+      style={{
+        background:
+          "linear-gradient(135deg,#0f172a 0%, #1e293b 45%, #334155 100%)",
+      }}
+    >
+      {/* GLOW */}
+      <div
+        style={{
+          position: "absolute",
+          top: "-50px",
+          right: "-50px",
+          width: "180px",
+          height: "180px",
+          borderRadius: "50%",
+          background: "rgba(255,255,255,0.08)",
+        }}
+      />
 
-      <h2 className="fw-bold text-warning mb-3">
-        ⚙ Manage Users (Navbar Permissions)
-      </h2>
+      <div className="p-3 position-relative">
+        <div className="d-flex justify-content-between align-items-center">
+          
+          {/* TITLE */}
+          <div>
+            <div
+              className="fw-bold text-white"
+              style={{
+                fontSize: "24px",
+                lineHeight: 1.2,
+              }}
+            >
+              ⚙ Manage Users
+            </div>
 
-      {!isAdmin && (
-        <div className="alert alert-danger">
-          ⛔ Only admin can change permissions
+            <div
+              style={{
+                color: "#cbd5e1",
+                fontSize: "12px",
+                marginTop: "3px",
+              }}
+            >
+              User access & permission control
+            </div>
+          </div>
+
+          {/* EXIT */}
+          <button
+            onClick={() => onNavigate("dashboard")}
+            className="btn btn-light border-0 fw-bold px-3"
+            style={{
+              borderRadius: "12px",
+              fontSize: "12px",
+            }}
+          >
+            ⬅ Exit
+          </button>
         </div>
-      )}
+      </div>
+    </div>
 
-      <div className="table-responsive">
-        <table
-          className="table table-dark table-bordered table-sm"
-          style={{ minWidth: "1800px" }}
+    {/* ================= WARNING ================= */}
+    {!isAdmin && (
+      <div
+        className="alert border-0 rounded-4 shadow-sm"
+        style={{
+          background: "#fff1f2",
+          color: "#dc2626",
+          fontWeight: "600",
+          fontSize: "13px",
+        }}
+      >
+        ⛔ Only admin can change permissions
+      </div>
+    )}
+
+{/* ================= USERS ================= */}
+<div className="d-flex flex-column gap-3">
+  {users.map((u, i) => {
+
+    const opened = openUser === u.id;
+
+    return (
+      <div
+        key={u.id}
+        className="card border-0 shadow-sm rounded-4 overflow-hidden"
+        style={{
+          background: "#fff",
+        }}
+      >
+        {/* ================= USER TOP ================= */}
+        <div
+          onClick={() =>
+            setOpenUser(opened ? null : u.id)
+          }
+          className="p-3"
+          style={{
+            background:
+              u.role === "admin"
+                ? "linear-gradient(135deg,#ef4444,#dc2626)"
+                : "linear-gradient(135deg,#3b82f6,#2563eb)",
+            color: "#fff",
+            cursor: "pointer",
+            userSelect: "none",
+          }}
         >
-          <thead style={{ position: "sticky", top: 0 }}>
-            <tr>
-              <th>User</th>
-              <th>Role</th>
-              {permissions.map(p => (
-                <th key={p} className="text-center">
-                  {p.replace(/_/g, " ").toUpperCase()}
-                </th>
-              ))}
-            </tr>
-          </thead>
+          <div className="d-flex justify-content-between align-items-center">
+            
+            {/* LEFT */}
+            <div>
+              <div
+                className="fw-bold"
+                style={{
+                  fontSize: "17px",
+                  letterSpacing: "0.3px",
+                }}
+              >
+                👤 {u.username}
+              </div>
 
-          <tbody>
-            {users.map((u, i) => (
-              <tr key={u.id}>
-                <td className="fw-bold text-success">{u.username}</td>
-                <td>{u.role}</td>
+              <div
+                style={{
+                  fontSize: "11px",
+                  opacity: 0.9,
+                }}
+              >
+                ID: {u.id}
+              </div>
+            </div>
 
-                {permissions.map(p => (
-                  <td key={p} className="text-center">
+            {/* RIGHT */}
+            <div className="d-flex align-items-center gap-2">
+
+              {/* ROLE */}
+              <div
+                className="px-3 py-1 fw-bold"
+                style={{
+                  background: "rgba(255,255,255,0.2)",
+                  borderRadius: "10px",
+                  fontSize: "11px",
+                  backdropFilter: "blur(8px)",
+                }}
+              >
+                {u.role.toUpperCase()}
+              </div>
+
+              {/* ARROW */}
+              <div
+                style={{
+                  fontSize: "20px",
+                  transition: "0.2s",
+                  transform: opened
+                    ? "rotate(180deg)"
+                    : "rotate(0deg)",
+                }}
+              >
+                ⌄
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* ================= PERMISSIONS ================= */}
+        {opened && (
+          <div
+            className="p-3 border-top"
+            style={{
+              background: "#f8fafc",
+            }}
+          >
+            <div className="row g-2">
+
+              {permissions.map((p) => (
+                <div
+                  key={p}
+                  className="col-6"
+                >
+                  <div
+                    className="d-flex justify-content-between align-items-center px-2 py-2 rounded-3"
+                    style={{
+                      background: !!u[p]
+                        ? "linear-gradient(135deg,#ecfeff,#dbeafe)"
+                        : "#fff",
+                      border: !!u[p]
+                        ? "1px solid #93c5fd"
+                        : "1px solid #e5e7eb",
+                      minHeight: "55px",
+                    }}
+                  >
+                    {/* NAME */}
+                    <div
+                      style={{
+                        fontSize: "11px",
+                        fontWeight: "600",
+                        color: "#334155",
+                        lineHeight: 1.2,
+                        width: "75%",
+                        textTransform: "capitalize",
+                      }}
+                    >
+                      {p.replace(/_/g, " ")}
+                    </div>
+
+                    {/* CHECKBOX */}
                     <input
                       type="checkbox"
                       checked={!!u[p]}
                       disabled={!isAdmin}
                       onChange={() => toggle(i, p)}
-                      style={{ width: 18, height: 18 }}
+                      style={{
+                        width: "17px",
+                        height: "17px",
+                        cursor: isAdmin
+                          ? "pointer"
+                          : "not-allowed",
+                        accentColor:
+                          u.role === "admin"
+                            ? "#dc2626"
+                            : "#2563eb",
+                      }}
                     />
-                  </td>
-                ))}
-              </tr>
-            ))}
-          </tbody>
-        </table>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  })}
+</div>
+
+
+
+    {/* ================= FOOTER ================= */}
+    <div className="mt-4">
+      {/* TOTAL */}
+      <div
+        className="mb-3 px-3 py-3 rounded-4 shadow-sm d-flex justify-content-between align-items-center"
+        style={{
+          background: "#fff",
+        }}
+      >
+        <div>
+          <div
+            style={{
+              fontSize: "11px",
+              color: "#64748b",
+            }}
+          >
+            Total Users
+          </div>
+
+          <div
+            className="fw-bold"
+            style={{
+              fontSize: "22px",
+              color: "#111827",
+            }}
+          >
+            👥 {users.length}
+          </div>
+        </div>
+
+        <div
+          className="fw-bold px-3 py-2"
+          style={{
+            background:
+              "linear-gradient(135deg,#8b5cf6,#6366f1)",
+            color: "#fff",
+            borderRadius: "12px",
+            fontSize: "12px",
+          }}
+        >
+          Permission Panel
+        </div>
       </div>
 
+      {/* SAVE BUTTON */}
       {isAdmin && (
         <button
-          className="btn btn-success fw-bold mt-3 px-4"
           disabled={saving}
           onClick={saveAll}
+          className="btn w-100 border-0 fw-bold py-3"
+          style={{
+            background:
+              saving
+                ? "#94a3b8"
+                : "linear-gradient(135deg,#10b981,#059669)",
+            color: "#fff",
+            borderRadius: "18px",
+            fontSize: "15px",
+            letterSpacing: "0.3px",
+            boxShadow:
+              "0 10px 25px rgba(16,185,129,0.25)",
+          }}
         >
-          {saving ? "Saving..." : "💾 Save Permissions"}
+          {saving
+            ? "⏳ Saving Permissions..."
+            : "💾 Save Permissions"}
         </button>
       )}
     </div>
-  );
+  </div>
+);
+
 }
-
-
-
-
-
