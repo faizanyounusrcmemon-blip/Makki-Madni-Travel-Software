@@ -84,7 +84,7 @@ export default function BalanceSheet({ onNavigate }) {
   const totalExtraPaid = cleanBalance(supplierTotals.extra);
 
   /* ================= NET POSITION ================= */
-  const netPosition = cleanBalance(totalReceivable - totalPayable);
+  const netPosition = cleanBalance(totalReceivable - totalPayable - supplierTotals.extra + customerTotals.extra);
 
   /* ================= STATUS ================= */
   const getStatusBadge = (status) => {
