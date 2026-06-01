@@ -63,11 +63,12 @@ export default function PurchaseDetail({ refNo, onNavigate }) {
         });
       }
 
-      Swal.fire({
-        title: "Generating PDF...",
-        allowOutsideClick: false,
-        didOpen: () => Swal.showLoading(),
-      });
+    Swal.fire({
+      width: "260px",
+      title: "Generating PDF...",
+      allowOutsideClick: false,
+      didOpen: () => Swal.showLoading()
+    });
 
       const canvas = await html2canvas(boxRef.current, {
         scale: 2,
@@ -100,19 +101,26 @@ export default function PurchaseDetail({ refNo, onNavigate }) {
 
       pdf.save(`${rows[0]?.ref_no || refNo}-purchase-detail.pdf`);
 
-      Swal.close();
+    Swal.close();
 
-      Swal.fire({
-        icon: "success",
-        text: "PDF Downloaded 😎",
-        timer: 1500,
-        showConfirmButton: false,
-      });
-    } catch (err) {
-      Swal.close();
-      Swal.fire("Error", "PDF Export Failed", "error");
-    }
-  };
+    Swal.fire({
+      width: "280px",
+      icon: "success",
+      text: "PDF Downloaded Successfully 😎",
+      timer: 1500,
+      showConfirmButton: true
+    });
+
+  } catch (err) {
+    Swal.close();
+
+    Swal.fire({
+      width: "300px",
+      icon: "error",
+      text: "PDF Generation Failed"
+    });
+  }
+};
 
   /* ================= PRINT ================= */
   const printPDF = async () => {

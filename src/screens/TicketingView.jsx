@@ -67,11 +67,12 @@ export default function TicketingView({ id, onNavigate }) {
         });
       }
 
-      Swal.fire({
-        title: "Generating PDF...",
-        allowOutsideClick: false,
-        didOpen: () => Swal.showLoading(),
-      });
+    Swal.fire({
+      width: "260px",
+      title: "Generating PDF...",
+      allowOutsideClick: false,
+      didOpen: () => Swal.showLoading()
+    });
 
       const canvas = await html2canvas(ref.current, {
         scale: 3,
@@ -92,19 +93,26 @@ export default function TicketingView({ id, onNavigate }) {
 
       pdf.save(fileName);
 
-      Swal.close();
+    Swal.close();
 
-      Swal.fire({
-        icon: "success",
-        text: "PDF Downloaded 😎",
-        timer: 1500,
-        showConfirmButton: false,
-      });
-    } catch (err) {
-      Swal.close();
-      Swal.fire("Error", "PDF Export Failed", "error");
-    }
-  };
+    Swal.fire({
+      width: "280px",
+      icon: "success",
+      text: "PDF Downloaded Successfully 😎",
+      timer: 1500,
+      showConfirmButton: true
+    });
+
+  } catch (err) {
+    Swal.close();
+
+    Swal.fire({
+      width: "300px",
+      icon: "error",
+      text: "PDF Generation Failed"
+    });
+  }
+};
 
   /* ================= PRINT ================= */
   const printPDF = async () => {

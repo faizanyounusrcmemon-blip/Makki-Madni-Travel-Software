@@ -98,7 +98,7 @@ const exportPDF = async () => {
       icon: "success",
       text: "PDF Downloaded Successfully 😎",
       timer: 1500,
-      showConfirmButton: false
+      showConfirmButton: true
     });
 
   } catch (err) {

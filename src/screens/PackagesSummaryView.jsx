@@ -102,14 +102,17 @@ const exportPDF = async () => {
       width: "280px",
       icon: "success",
       text: "PDF Downloaded Successfully 😎",
+      timer: 1500,
+      showConfirmButton: true
     });
+
   } catch (err) {
     Swal.close();
 
     Swal.fire({
       width: "300px",
       icon: "error",
-      text: "PDF Generation Failed",
+      text: "PDF Generation Failed"
     });
   }
 };
