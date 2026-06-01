@@ -2,6 +2,8 @@ import React, { useState, useRef } from "react";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 import Swal from "sweetalert2";
+import Header from "../components/Header";
+
 
 // =========================
 // VIP Hotels Styles
@@ -22,27 +24,7 @@ const styles = {
     boxShadow: "0 8px 20px rgba(0,0,0,0.15)",
     border: "2px solid #20c997", // teal border
   },
-  header: {
-    textAlign: "center",
-    color: "#0d6efd", // primary blue
-    fontWeight: "bold",
-    fontSize: "2rem",
-    marginBottom: 5,
-    letterSpacing: 2,
-  },
-  contactInfo: {
-    textAlign: "center",
-    fontSize: "0.9rem",
-    color: "#555",
-    marginBottom: 20,
-  },
-  subHeader: {
-    textAlign: "center",
-    color: "#20c997", // teal accent
-    marginBottom: 15,
-    fontSize: "1.2rem",
-    fontWeight: "500",
-  },
+
   sectionHeader: {
     background: "linear-gradient(to right, #0d6efd, #20c997)",
     color: "#fff",
@@ -321,14 +303,8 @@ const saveData = async () => {
 
       {/* Main Card */}
       <div ref={pdfRef} style={styles.card}>
-        {/* Header */}
-        <h3 style={styles.header}>✈️ MAKKI MADNI TRAVEL</h3>
-        <div style={styles.contactInfo}>
-          Shop #4 Diamond City Building, Near Zeenat-ul-Islam Masjid<br />
-          Garden West, Karachi<br />
-          ✉️ makkimadnitravel@gmail.com | ☎️ 0335-7476744
-        </div>
-        <h4 style={styles.subHeader}>HOTEL QUOTATION</h4>
+
+        <Header title="HOTEL QUOTATION" />
 
         {/* Customer Info */}
         <div className="d-flex gap-3 mb-3">

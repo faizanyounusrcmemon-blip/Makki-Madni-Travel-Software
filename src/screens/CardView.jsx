@@ -1,6 +1,9 @@
 import React, { useEffect, useState, useRef } from "react";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
+import Swal from "sweetalert2";
+import Header from "../components/Header";
+
 
 /* ================= HELPERS ================= */
 const fmt = (v) => Number(v || 0).toLocaleString("en-US");
@@ -42,19 +45,72 @@ export default function CardView({ id, onNavigate }) {
   }, [id]);
 
   /* ================= EXPORT PDF ================= */
-  const exportPDF = async () => {
-    if (!ref.current) return;
+const exportPDF = async () => {
+  try {
+    if (!ref.current || !data) {
+      return Swal.fire({
+        width: "300px",
+        icon: "warning",
+        text: "No data found"
+      });
+    }
 
-    const canvas = await html2canvas(ref.current, { scale: 3, useCORS: true });
+    Swal.fire({
+      width: "260px",
+      title: "Generating PDF...",
+      allowOutsideClick: false,
+      didOpen: () => Swal.showLoading()
+    });
+
+    const canvas = await html2canvas(ref.current, {
+      scale: 3,
+      useCORS: true
+    });
+
     const img = canvas.toDataURL("image/jpeg", 1.0);
-    const pdf = new jsPDF("p", "mm", "a4");
-    const pageWidth = pdf.internal.pageSize.getWidth();
-    const pageHeight = (canvas.height * pageWidth) / canvas.width;
-    pdf.addImage(img, "JPEG", 0, 0, pageWidth, pageHeight);
 
-    const fileName = `${cleanName(data?.customer_name)}_${formatDateForFile(data?.booking_date)}.pdf`;
+    const pdf = new jsPDF("p", "mm", "a4");
+
+    const pageWidth = pdf.internal.pageSize.getWidth();
+    const pageHeight =
+      (canvas.height * pageWidth) / canvas.width;
+
+    pdf.addImage(
+      img,
+      "JPEG",
+      0,
+      0,
+      pageWidth,
+      pageHeight
+    );
+
+    const fileName =
+      `${cleanName(data?.customer_name)}_${formatDateForFile(
+        data?.booking_date
+      )}.pdf`;
+
     pdf.save(fileName);
-  };
+
+    Swal.close();
+
+    Swal.fire({
+      width: "280px",
+      icon: "success",
+      text: "PDF Downloaded Successfully 😎",
+      timer: 1500,
+      showConfirmButton: false
+    });
+
+  } catch (err) {
+    Swal.close();
+
+    Swal.fire({
+      width: "300px",
+      icon: "error",
+      text: "PDF Generation Failed"
+    });
+  }
+};
 
   if (!data) return <div className="p-3">Loading...</div>;
 
@@ -77,6 +133,89 @@ export default function CardView({ id, onNavigate }) {
         >
           📄 Export PDF
         </button>
+
+<button
+  className="btn btn-secondary btn-sm fw-bold shadow"
+  style={{ borderRadius: 8, padding: "6px 16px" }}
+  onClick={async () => {
+    try {
+
+      if (!ref.current || !data) {
+        return Swal.fire({
+          width: "300px",
+          icon: "warning",
+          text: "No data found"
+        });
+      }
+
+      Swal.fire({
+        width: "260px",
+        title: "Preparing Print...",
+        allowOutsideClick: false,
+        didOpen: () => Swal.showLoading()
+      });
+
+      const canvas = await html2canvas(ref.current, {
+        scale: 3,
+        useCORS: true
+      });
+
+      const img = canvas.toDataURL("image/jpeg", 1.0);
+
+      const pdf = new jsPDF("p", "mm", "a4");
+
+      const pageWidth =
+        pdf.internal.pageSize.getWidth();
+
+      const pageHeight =
+        (canvas.height * pageWidth) / canvas.width;
+
+      pdf.addImage(
+        img,
+        "JPEG",
+        0,
+        0,
+        pageWidth,
+        pageHeight
+      );
+
+      Swal.close();
+
+      const blobUrl = pdf.output("bloburl");
+
+      const printWindow =
+        window.open(blobUrl, "_blank");
+
+      if (printWindow) {
+        printWindow.onload = () => {
+          printWindow.focus();
+          printWindow.print();
+        };
+      }
+
+      Swal.fire({
+        width: "280px",
+        icon: "success",
+        text: "Print Preview Opened 😎",
+        timer: 1200,
+        showConfirmButton: false
+      });
+
+    } catch (err) {
+
+      Swal.close();
+
+      Swal.fire({
+        width: "300px",
+        icon: "error",
+        text: "Print Failed"
+      });
+    }
+  }}
+>
+  🖨️ Print
+</button>
+
       </div>
 
       {/* ===== PRINT AREA ===== */}
@@ -86,21 +225,11 @@ export default function CardView({ id, onNavigate }) {
         style={{ maxWidth: "800px", margin: "auto", fontFamily: "Arial, sans-serif" }}
       >
         {/* ===== HEADER ===== */}
-        <div
-          className="rounded-4 p-3 mb-4 text-white shadow"
-          style={{ background: "linear-gradient(135deg,#0d6efd,#00c6ff)" }}
-        >
-          <h2 className="text-center fw-bold mb-1">✈️ MAKKI MADNI TRAVEL</h2>
-          <div className="text-center" style={{ fontSize: 13, lineHeight: 1.4 }}>
-            Shop #4 Diamond City Building, Near Zeenat-ul-Islam Masjid<br />
-            Garden West, Karachi<br />
-            ✉️ makkimadnitravel@gmail.com | ☎️ 0335-7476744
-          </div>
-          <hr style={{ margin: "8px 0", borderTop: "2px solid #fff" }} />
-        </div>
+
+
 
         {/* ===== TITLE ===== */}
-        <h4 className="fw-bold text-center mb-3">💳 VACCINATION CARD DETAILS</h4>
+        <Header title="💳 VACCINATION CARD DETAILS" />
 
         {/* ===== BASIC INFO ===== */}
         <div className="row mb-3">
@@ -134,4 +263,3 @@ export default function CardView({ id, onNavigate }) {
     </div>
   );
 }
-

@@ -1,6 +1,8 @@
 import React, { useEffect, useState, useRef } from "react";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
+import Swal from "sweetalert2";
+import Header from "../components/Header";
 
 /* ================= DATE FORMAT ================= */
 const fmtDate = (d) =>
@@ -41,8 +43,16 @@ export default function PackagesView({ id, onNavigate }) {
       });
   }, [id]);
 
-  /* ================= EXPORT PDF ================= */
-  const exportPDF = async () => {
+/* ================= EXPORT PDF ================= */
+const exportPDF = async () => {
+  try {
+    Swal.fire({
+      width: "260px",
+      title: "Generating PDF...",
+      allowOutsideClick: false,
+      didOpen: () => Swal.showLoading(),
+    });
+
     const canvas = await html2canvas(ref.current, {
       scale: 2,
       useCORS: true,
@@ -65,17 +75,44 @@ export default function PackagesView({ id, onNavigate }) {
 
     while (heightLeft > 0) {
       position = heightLeft - imgHeight + 10;
+
       pdf.addPage();
-      pdf.addImage(imgData, "JPEG", 0, position, imgWidth, imgHeight);
+
+      pdf.addImage(
+        imgData,
+        "JPEG",
+        0,
+        position,
+        imgWidth,
+        imgHeight
+      );
+
       heightLeft -= pdfHeight;
     }
 
-    const fileName = `${cleanName(data?.customer_name)}_${formatDateForFile(
-      data?.booking_date
-    )}.pdf`;
+    const fileName = `${cleanName(
+      data?.customer_name
+    )}_${formatDateForFile(data?.booking_date)}.pdf`;
 
     pdf.save(fileName);
-  };
+
+    Swal.close();
+
+    Swal.fire({
+      width: "280px",
+      icon: "success",
+      text: "PDF Downloaded Successfully 😎",
+    });
+  } catch (err) {
+    Swal.close();
+
+    Swal.fire({
+      width: "300px",
+      icon: "error",
+      text: "PDF Generation Failed",
+    });
+  }
+};
 
   if (!data) return <div className="p-4">Loading...</div>;
 
@@ -165,6 +202,100 @@ if (data) {
         >
           📄 Export PDF
         </button>
+
+<button
+  className="btn btn-secondary btn-sm fw-bold shadow"
+  style={{ borderRadius: 8, padding: "6px 16px" }}
+  onClick={async () => {
+    try {
+      Swal.fire({
+        width: "260px",
+        title: "Preparing Print...",
+        allowOutsideClick: false,
+        didOpen: () => Swal.showLoading(),
+      });
+
+      const canvas = await html2canvas(ref.current, {
+        scale: 2,
+        useCORS: true,
+      });
+
+      const imgData = canvas.toDataURL("image/jpeg", 1.0);
+
+      const pdf = new jsPDF("p", "mm", "a4");
+
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = pdf.internal.pageSize.getHeight();
+
+      const imgWidth = pdfWidth;
+      const imgHeight =
+        (canvas.height * imgWidth) / canvas.width;
+
+      let heightLeft = imgHeight;
+      let position = 10;
+
+      pdf.addImage(
+        imgData,
+        "JPEG",
+        0,
+        position,
+        imgWidth,
+        imgHeight
+      );
+
+      heightLeft -= pdfHeight;
+
+      while (heightLeft > 0) {
+        position = heightLeft - imgHeight + 10;
+
+        pdf.addPage();
+
+        pdf.addImage(
+          imgData,
+          "JPEG",
+          0,
+          position,
+          imgWidth,
+          imgHeight
+        );
+
+        heightLeft -= pdfHeight;
+      }
+
+      Swal.close();
+
+      const printWindow = window.open(
+        pdf.output("bloburl"),
+        "_blank"
+      );
+
+      if (printWindow) {
+        printWindow.onload = () => {
+          printWindow.print();
+        };
+      }
+
+      Swal.fire({
+        width: "280px",
+        icon: "success",
+        text: "Print Preview Opened 😎",
+        timer: 1200,
+        showConfirmButton: false,
+      });
+    } catch (err) {
+      Swal.close();
+
+      Swal.fire({
+        width: "300px",
+        icon: "error",
+        text: "Print Failed",
+      });
+    }
+  }}
+>
+  🖨️ Print
+</button>
+
       </div>
 
       {/* ============ PDF CONTENT ============ */}
@@ -174,22 +305,9 @@ if (data) {
         style={{ maxWidth: "800px", margin: "auto", fontFamily: "Arial, sans-serif" }}
       >
         {/* ===== HEADER ===== */}
-        <div
-          className="rounded-4 p-3 mb-4 text-white shadow"
-          style={{
-            background: "linear-gradient(135deg,#0d6efd,#00c6ff)",
-          }}
-        >
-          <h2 className="text-center fw-bold mb-1" style={{ letterSpacing: "1px" }}>
-            ✈️ MAKKI MADNI TRAVEL
-          </h2>
-          <div className="text-center" style={{ fontSize: 13, lineHeight: 1.4 }}>
-            Shop #4 Diamond City Building, Near Zeenat-ul-Islam Masjid<br />
-            Garden West, Karachi<br />
-            ✉️ makkimadnitravel@gmail.com | ☎️ 0335-7476744
-          </div>
-          <hr style={{ margin: "8px 0", borderTop: "2px solid #fff" }} />
-        </div>
+
+      <Header title="PACKAGE QUOTATION" />
+
 
         {/* ===== PACKAGE INFO ===== */}
         <div className="mb-3">

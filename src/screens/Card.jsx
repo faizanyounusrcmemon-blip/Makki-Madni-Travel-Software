@@ -2,6 +2,7 @@ import React, { useState, useRef } from "react";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 import Swal from "sweetalert2";
+import Header from "../components/Header";
 
 // VIP Card Styles (Purple + Silver)
 // VIP Visa Styles (Royal Blue + Gold Luxury Theme)
@@ -23,31 +24,7 @@ const styles = {
     border: "1px solid rgba(212,175,55,0.4)",
   },
 
-  mainHeader: {
-    textAlign: "center",
-    color: "#0b3d91",
-    fontWeight: "800",
-    fontSize: "2.2rem",
-    marginBottom: 0,
-    letterSpacing: 3,
-  },
 
-  subHeader: {
-    textAlign: "center",
-    color: "#444",
-    fontSize: "1rem",
-    marginBottom: 4,
-  },
-
-  quoteHeader: {
-    textAlign: "center",
-    color: "#d4af37",
-    fontWeight: "700",
-    fontSize: "1.5rem",
-    marginTop: 12,
-    marginBottom: 22,
-    letterSpacing: 1,
-  },
 
   sectionHeader: {
     background: "linear-gradient(to right, #0b3d91, #1e5eff)",
@@ -291,14 +268,9 @@ const saveData = async () => {
       </div>
 
       <div ref={pdfRef} style={styles.card}>
-        <h1 style={styles.mainHeader}>✈️ MAKKI MADNI TRAVEL</h1>
-        <p style={styles.subHeader}>
-          Shop #4 Diamond City Building, Near Zeenat-ul-Islam Masjid<br/>
-          Garden West, Karachi<br/>
-          ✉️ makkimadnitravel@gmail.com | ☎️ 0335-7476744
-        </p>
 
-        <h4 style={styles.quoteHeader}>VACCINATION CARD QUOTATION</h4>
+
+        <Header title="💳 VACCINATION CARD QUOTATION" />
 
         <div className="d-flex gap-3 mb-3">
           <div>
@@ -315,7 +287,7 @@ const saveData = async () => {
           </div>
         </div>
 
-        <h5 style={styles.sectionHeader}>🃏 VACCINATION CARD Details</h5>
+        <h5 style={styles.sectionHeader}>💳 VACCINATION CARD Details</h5>
         <button className="btn btn-outline-primary btn-sm mb-2" style={styles.button} onClick={addRow}>➕ Add Card Row</button>
 
         <table style={styles.table}>

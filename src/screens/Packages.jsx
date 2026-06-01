@@ -4,6 +4,7 @@ import React, { useState, useRef } from "react";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 import Swal from "sweetalert2";
+import Header from "../components/Header";
 
 const calcNights = (inD, outD) => {
   if (!inD || !outD) return "";
@@ -411,11 +412,9 @@ const handleSavePackage = async () => {
 
       {/* QUOTE CARD */}
       <div ref={quoteRef} style={styles.quoteCard}>
-        <h3 style={styles.brandTitle}>✈️ MAKKI MADNI TRAVEL</h3>
-        <p className="text-center mb-1">Shop #4 Diamond City Building, Near Zeenat-ul-Islam Masjid, Garden West, Karachi</p>
-        <p className="text-center mb-3">✉️ makkimadnitravel@gmail.com | ☎️ 0335-7476744</p>
 
-        <h4 className="fw-bold mb-3">PACKAGE QUOTATION</h4>
+
+        <Header title="PACKAGE QUOTATION" />
 
         {/* CUSTOMER INFO */}
         <div className="d-flex gap-3 mb-3">

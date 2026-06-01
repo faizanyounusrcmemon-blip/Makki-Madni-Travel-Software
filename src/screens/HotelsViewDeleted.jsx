@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useRef } from "react";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
+import Header from "../components/Header";
 
 /* ================= HELPERS ================= */
 const fmt = (v) => Number(v || 0).toLocaleString("en-US");
@@ -141,23 +142,10 @@ export default function HotelsViewDeleted({ id, onNavigate }) {
         </div>
 
         {/* ===== HEADER ===== */}
-        <div
-          className="rounded-4 p-3 mb-4 text-white shadow"
-          style={{ background: "linear-gradient(135deg,#0d6efd,#00c6ff)" }}
-        >
 
-
-          <h2 className="text-center fw-bold mb-1">✈️ MAKKI MADNI TRAVEL</h2>
-          <div className="text-center" style={{ fontSize: 13, lineHeight: 1.4 }}>
-            Shop #4 Diamond City Building, Near Zeenat-ul-Islam Masjid<br />
-            Garden West, Karachi<br />
-            ✉️ makkimadnitravel@gmail.com | ☎️ 0335-7476744
-          </div>
-          <hr style={{ margin: "8px 0", borderTop: "2px solid #fff" }} />
-        </div>
 
         {/* ===== HOTEL QUOTATION ===== */}
-        <h4 className="fw-bold text-center mb-3">🏨 HOTEL QUOTATION</h4>
+        <Header title="🏨 HOTEL QUOTATION" />
 
         <div className="row mb-3">
           <div className="col-6">

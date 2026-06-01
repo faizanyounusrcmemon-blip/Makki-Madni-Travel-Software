@@ -22,7 +22,7 @@ export default function ManageUsers({ onNavigate }) {
     "customer_ledger", "supplier_ledger", "bank_ledger", "expense_ledger", "balance_sheet", "cash_ledger",
 
     // VOUCHERS
-    "hotel_voucher", "transport_voucher",
+    "hotel_voucher", "hotel_voucher3in1", "transport_voucher",
 
     // REPORTS
     "all_reports", "profit_report", "monthly_profit_dashboard", "sale_adjustment_report", "supplier_adjustment_only", "supplier_purchase_detail_report", "item_loss_zero_report", "sale_change_check_report",

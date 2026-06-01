@@ -1,6 +1,9 @@
 import React, { useEffect, useState, useRef } from "react";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
+import Swal from "sweetalert2";
+import Header from "../components/Header";
+
 
 /* ================= HELPERS ================= */
 const fmt = (v) => Number(v || 0).toLocaleString("en-US");
@@ -52,8 +55,22 @@ export default function HotelsView({ id, onNavigate }) {
   }, [id]);
 
   /* ================= EXPORT PDF ================= */
-  const exportPDF = async () => {
-    if (!pdfRef.current) return;
+const exportPDF = async () => {
+  try {
+    if (!pdfRef.current || !data) {
+      return Swal.fire({
+        width: "300px",
+        icon: "warning",
+        text: "No data found",
+      });
+    }
+
+    Swal.fire({
+      width: "260px",
+      title: "Generating PDF...",
+      allowOutsideClick: false,
+      didOpen: () => Swal.showLoading(),
+    });
 
     const canvas = await html2canvas(pdfRef.current, {
       scale: 2,
@@ -84,7 +101,111 @@ export default function HotelsView({ id, onNavigate }) {
     )}_${formatDateForFile(data?.booking_date)}.pdf`;
 
     pdf.save(fileName);
-  };
+
+    Swal.close();
+
+    Swal.fire({
+      width: "280px",
+      icon: "success",
+      text: "PDF Downloaded Successfully 😎",
+      timer: 1500,
+      showConfirmButton: false,
+    });
+  } catch (err) {
+    Swal.close();
+
+    Swal.fire({
+      width: "300px",
+      icon: "error",
+      text: "PDF Export Failed",
+    });
+  }
+};
+
+
+
+const printPDF = async () => {
+  try {
+    if (!pdfRef.current || !data) {
+      return Swal.fire({
+        width: "300px",
+        icon: "warning",
+        text: "No data found"
+      });
+    }
+
+    Swal.fire({
+      width: "260px",
+      title: "Preparing Print...",
+      allowOutsideClick: false,
+      didOpen: () => Swal.showLoading()
+    });
+
+    const canvas = await html2canvas(pdfRef.current, {
+      scale: 2,
+      useCORS: true
+    });
+
+    const imgData = canvas.toDataURL("image/jpeg", 1.0);
+
+    const pdf = new jsPDF("p", "mm", "a4");
+
+    const pdfWidth = pdf.internal.pageSize.getWidth();
+    const pdfHeight = pdf.internal.pageSize.getHeight();
+
+    const ratio = Math.min(
+      pdfWidth / canvas.width,
+      pdfHeight / canvas.height
+    );
+
+    const imgW = canvas.width * ratio;
+    const imgH = canvas.height * ratio;
+
+    const x = (pdfWidth - imgW) / 2;
+    const y = 8;
+
+    pdf.addImage(
+      imgData,
+      "JPEG",
+      x,
+      y,
+      imgW,
+      imgH
+    );
+
+    Swal.close();
+
+    const blobUrl = pdf.output("bloburl");
+
+    const printWindow =
+      window.open(blobUrl, "_blank");
+
+    if (printWindow) {
+      printWindow.onload = () => {
+        printWindow.focus();
+        printWindow.print();
+      };
+    }
+
+    Swal.fire({
+      width: "280px",
+      icon: "success",
+      text: "Print Preview Opened 😎",
+      timer: 1200,
+      showConfirmButton: false
+    });
+
+  } catch (err) {
+
+    Swal.close();
+
+    Swal.fire({
+      width: "300px",
+      icon: "error",
+      text: "Print Failed"
+    });
+  }
+};
 
   if (!data) return <div className="p-3">Loading...</div>;
 
@@ -112,7 +233,18 @@ export default function HotelsView({ id, onNavigate }) {
         >
           📄 Export PDF
         </button>
-      </div>
+
+<button
+  className="btn btn-secondary btn-sm fw-bold shadow"
+  style={{ borderRadius: 8, padding: "6px 16px" }}
+  onClick={printPDF}
+>
+  🖨️ Print
+</button>
+
+</div>
+
+
 
       {/* ===== PRINT AREA ===== */}
       <div
@@ -126,23 +258,10 @@ export default function HotelsView({ id, onNavigate }) {
       >
 
         {/* ===== HEADER ===== */}
-        <div
-          className="rounded-4 p-3 mb-4 text-white shadow"
-          style={{ background: "linear-gradient(135deg,#0d6efd,#00c6ff)" }}
-        >
-          <h2 className="text-center fw-bold mb-1">✈️ MAKKI MADNI TRAVEL</h2>
 
-          <div className="text-center" style={{ fontSize: 13, lineHeight: 1.4 }}>
-            Shop #4 Diamond City Building, Near Zeenat-ul-Islam Masjid<br />
-            Garden West, Karachi<br />
-            ✉️ makkimadnitravel@gmail.com | ☎️ 0335-7476744
-          </div>
-
-          <hr style={{ margin: "8px 0", borderTop: "2px solid #fff" }} />
-        </div>
 
         {/* ===== HOTEL QUOTATION ===== */}
-        <h4 className="fw-bold text-center mb-3">🏨 HOTEL QUOTATION</h4>
+        <Header title="🏨 HOTEL QUOTATION" />
 
         {/* BASIC INFO */}
         <div className="row mb-3">

@@ -1,6 +1,7 @@
 import React, { useState, useRef } from "react";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
+import Header from "../components/Header";
 
 /* ================= HELPERS ================= */
 const showDate = (val) => {
@@ -91,7 +92,11 @@ const exportPDF = async () => {
 
   const addCanvas = async (el) => {
     if (!el) return;
-    const canvas = await html2canvas(el, { scale: 3 });
+    const canvas = await html2canvas(el, {
+  scale: 3,
+  useCORS: true,
+  backgroundColor: "#ffffff",
+});
     const img = canvas.toDataURL("image/png");
     const height = (canvas.height * usableWidth) / canvas.width * 0.95;
 
@@ -105,7 +110,7 @@ const exportPDF = async () => {
   };
 
   // HEADER, REF, AGENT, CUSTOMER
-  await addCanvas(voucherRef.current.querySelector(".text-center.mb-3"));
+  await addCanvas(voucherRef.current.querySelector(".pdf-header"));
   await addCanvas(voucherRef.current.querySelector(".pdf-ref-row"));
   await addCanvas(voucherRef.current.querySelector(".pdf-agent"));
   await addCanvas(voucherRef.current.querySelector(".pdf-customer"));
@@ -216,7 +221,7 @@ for (let h of hotels) {
         };
 
         await addCanvas(
-          voucherRef.current.querySelector(".text-center.mb-3")
+          voucherRef.current.querySelector(".pdf-header")
         );
 
         await addCanvas(
@@ -295,23 +300,9 @@ for (let h of hotels) {
             padding: "20px",
           }}
         >
-          {/* HEADER */}
-          <div className="text-center mb-3">
-            <h3 style={{ color: "#0d6efd", fontWeight: "bold" }}>
-              ✈️ MAKKI MADNI TRAVEL
-            </h3>
 
-            <div className="text-center small mb-3" style={{ color: "#444" }}>
-              Shop #4 Diamond City Building, Near Zeenat-ul-Islam Masjid
-              <br />
-              Garden West Karachi
-              <br />
-              ✉️ makkimadnitravel@gmail.com | ☎️ 0335-7476744
-            </div>
+            <Header title="HOTEL VOUCHER" />
 
-            <hr />
-            <div className="fw-bold">HOTEL VOUCHER</div>
-          </div>
 
           {/* INFO */}
           <div className="row mb-2 pdf-ref-row">

@@ -2,6 +2,8 @@ import React, { useState, useRef } from "react";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 import Swal from "sweetalert2";
+import Header from "../components/Header";
+
 
 // VIP Transport Styles (Royal Blue + Gold)
 const styles = {
@@ -20,21 +22,7 @@ const styles = {
     boxShadow: "0 8px 20px rgba(0,0,0,0.15)",
     border: "2px solid #ffd700",
   },
-  header: {
-    textAlign: "center",
-    color: "#1a237e", // royal blue
-    fontWeight: "bold",
-    fontSize: "2rem",
-    marginBottom: 5,
-    letterSpacing: 2,
-  },
-  subHeader: {
-    textAlign: "center",
-    color: "#4b0082", // deep purple accent
-    marginBottom: 20,
-    fontSize: "1.2rem",
-    fontWeight: "500",
-  },
+
   sectionHeader: {
     background: "linear-gradient(to right, #1a237e, #3f51b5)", // royal blue gradient
     color: "#fff",
@@ -273,13 +261,8 @@ const saveData = async () => {
       </div>
 
       <div ref={quoteRef} style={styles.card}>
-        <h1 style={styles.header}>✈️ MAKKI MADNI TRAVEL </h1>
-        <p style={styles.subHeader}>
-          Shop #4 Diamond City Building, Near Zeenat-ul-Islam Masjid<br/>
-          Garden West, Karachi<br/>
-          ✉️ makkimadnitravel@gmail.com | ☎️ 0335-7476744
-        </p>
-        <h4 style={{...styles.header, fontSize: "1.5rem"}}>TRANSPORT QUOTATION</h4>
+
+        <Header title="TRANSPORT QUOTATION" />
 
         <div className="row g-3 mb-4">
           <div className="col-md-4">

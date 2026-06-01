@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
+import Swal from "sweetalert2";
 
 /* ================= HELPERS ================= */
 const fmt = (n) => Number(n || 0).toLocaleString("en-US");
@@ -44,43 +45,127 @@ export default function PurchaseDetail({ refNo, onNavigate }) {
         setTotals(data.totals);
       } else {
         setError(data.error || "Purchase not found");
+        Swal.fire("Error", data.error || "Purchase not found", "error");
       }
     } catch {
       setError("Server error");
+      Swal.fire("Error", "Server error", "error");
     }
   };
 
-  /* ================= MULTI PAGE PDF ================= */
+  /* ================= EXPORT PDF (MULTI PAGE) ================= */
   const exportPDF = async () => {
-    const canvas = await html2canvas(boxRef.current, {
-      scale: 2,
-      backgroundColor: "#ffffff",
-    });
+    try {
+      if (!boxRef.current || !rows.length) {
+        return Swal.fire({
+          icon: "warning",
+          text: "No data found",
+        });
+      }
 
-    const imgData = canvas.toDataURL("image/png");
+      Swal.fire({
+        title: "Generating PDF...",
+        allowOutsideClick: false,
+        didOpen: () => Swal.showLoading(),
+      });
 
-    const pdf = new jsPDF("l", "mm", "a4");
+      const canvas = await html2canvas(boxRef.current, {
+        scale: 2,
+        backgroundColor: "#ffffff",
+        useCORS: true,
+      });
 
-    const pageWidth = pdf.internal.pageSize.getWidth();
-    const pageHeight = pdf.internal.pageSize.getHeight();
+      const imgData = canvas.toDataURL("image/png");
 
-    const imgWidth = pageWidth;
-    const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      const pdf = new jsPDF("l", "mm", "a4");
 
-    let heightLeft = imgHeight;
-    let position = 0;
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
 
-    pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
-    heightLeft -= pageHeight;
+      const imgWidth = pageWidth;
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
 
-    while (heightLeft > 0) {
-      position = heightLeft - imgHeight;
-      pdf.addPage();
+      let heightLeft = imgHeight;
+      let position = 0;
+
       pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
       heightLeft -= pageHeight;
-    }
 
-    pdf.save(`${rows[0]?.ref_no || refNo}-purchase-detail.pdf`);
+      while (heightLeft > 0) {
+        position = heightLeft - imgHeight;
+        pdf.addPage();
+        pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
+        heightLeft -= pageHeight;
+      }
+
+      pdf.save(`${rows[0]?.ref_no || refNo}-purchase-detail.pdf`);
+
+      Swal.close();
+
+      Swal.fire({
+        icon: "success",
+        text: "PDF Downloaded 😎",
+        timer: 1500,
+        showConfirmButton: false,
+      });
+    } catch (err) {
+      Swal.close();
+      Swal.fire("Error", "PDF Export Failed", "error");
+    }
+  };
+
+  /* ================= PRINT ================= */
+  const printPDF = async () => {
+    try {
+      if (!boxRef.current || !rows.length) {
+        return Swal.fire({
+          icon: "warning",
+          text: "No data found",
+        });
+      }
+
+      Swal.fire({
+        title: "Preparing Print...",
+        allowOutsideClick: false,
+        didOpen: () => Swal.showLoading(),
+      });
+
+      const canvas = await html2canvas(boxRef.current, {
+        scale: 2,
+        backgroundColor: "#ffffff",
+        useCORS: true,
+      });
+
+      const img = canvas.toDataURL("image/jpeg", 1.0);
+      const pdf = new jsPDF("l", "mm", "a4");
+
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = (canvas.height * pageWidth) / canvas.width;
+
+      pdf.addImage(img, "JPEG", 0, 0, pageWidth, pageHeight);
+
+      Swal.close();
+
+      const blobUrl = pdf.output("bloburl");
+      const w = window.open(blobUrl, "_blank");
+
+      if (w) {
+        w.onload = () => {
+          w.focus();
+          w.print();
+        };
+      }
+
+      Swal.fire({
+        icon: "success",
+        text: "Print Ready 😎",
+        timer: 1200,
+        showConfirmButton: false,
+      });
+    } catch (err) {
+      Swal.close();
+      Swal.fire("Error", "Print Failed", "error");
+    }
   };
 
   if (error) return <div className="alert alert-danger">{error}</div>;
@@ -109,11 +194,8 @@ export default function PurchaseDetail({ refNo, onNavigate }) {
           ← Back
         </button>
 
-        {/* ✅ FIXED VISIBILITY AREA */}
-        <div
-          className="d-flex align-items-center gap-3 px-3 py-2 rounded shadow-sm"
-          style={{ background: "#ffffff" }}
-        >
+        <div className="d-flex align-items-center gap-3 px-3 py-2 rounded shadow-sm bg-white">
+
           <div className="form-check">
             <input
               type="checkbox"
@@ -121,9 +203,7 @@ export default function PurchaseDetail({ refNo, onNavigate }) {
               checked={showSale}
               onChange={(e) => setShowSale(e.target.checked)}
             />
-            <label className="form-check-label fw-bold text-dark">
-              Show Sale
-            </label>
+            <label className="form-check-label fw-bold">Show Sale</label>
           </div>
 
           <div className="form-check">
@@ -133,9 +213,7 @@ export default function PurchaseDetail({ refNo, onNavigate }) {
               checked={showProfit}
               onChange={(e) => setShowProfit(e.target.checked)}
             />
-            <label className="form-check-label fw-bold text-dark">
-              Show Profit
-            </label>
+            <label className="form-check-label fw-bold">Show Profit</label>
           </div>
 
           <button
@@ -145,14 +223,20 @@ export default function PurchaseDetail({ refNo, onNavigate }) {
           >
             📄 Export PDF
           </button>
+
+          <button
+            className="btn btn-secondary btn-sm shadow"
+            style={{ borderRadius: 10, padding: "6px 16px" }}
+            onClick={printPDF}
+          >
+            🖨️ Print
+          </button>
         </div>
       </div>
 
       {/* ===== PRINT AREA ===== */}
-      <div
-        ref={boxRef}
-        className="bg-white rounded-4 shadow-lg p-4"
-      >
+      <div ref={boxRef} className="bg-white rounded-4 shadow-lg p-4">
+
         {/* HEADER */}
         <div
           className="rounded-4 p-3 mb-4 text-white"
@@ -177,7 +261,7 @@ export default function PurchaseDetail({ refNo, onNavigate }) {
         <div className="table-responsive">
           <table className="table table-bordered align-middle">
 
-            <thead style={{ background: "#0d6efd", color: "#fff" }}>
+            <thead className="text-white bg-primary">
               <tr className="text-center">
                 <th rowSpan="2">Item</th>
                 <th rowSpan="2">Supplier</th>
@@ -224,9 +308,7 @@ export default function PurchaseDetail({ refNo, onNavigate }) {
                     <td className="text-center">
                       <span
                         className={`badge px-3 py-2 ${
-                          Number(r.profit) >= 0
-                            ? "bg-success"
-                            : "bg-danger"
+                          Number(r.profit) >= 0 ? "bg-success" : "bg-danger"
                         }`}
                       >
                         {fmt(r.profit)}
@@ -272,6 +354,7 @@ export default function PurchaseDetail({ refNo, onNavigate }) {
 
           </table>
         </div>
+
       </div>
     </div>
   );

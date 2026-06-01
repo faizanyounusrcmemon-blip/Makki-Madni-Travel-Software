@@ -2,6 +2,7 @@ import React, { useState, useRef } from "react";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 import Swal from "sweetalert2";
+import Header from "../components/Header";
 
 // VIP Visa Styles (Purple + Silver)
 const styles = {
@@ -20,28 +21,7 @@ const styles = {
     boxShadow: "0 8px 20px rgba(0,0,0,0.15)",
     border: "2px solid #c0c0c0",
   },
-  mainHeader: {
-    textAlign: "center",
-    color: "#4b0082",
-    fontWeight: "bold",
-    fontSize: "2rem",
-    marginBottom: 0,
-    letterSpacing: 2,
-  },
-  subHeader: {
-    textAlign: "center",
-    color: "#6a0dad",
-    fontSize: "1rem",
-    marginBottom: 3,
-  },
-  quoteHeader: {
-    textAlign: "center",
-    color: "#6a0dad",
-    fontWeight: "bold",
-    fontSize: "1.4rem",
-    marginTop: 10,
-    marginBottom: 20,
-  },
+
   sectionHeader: {
     background: "linear-gradient(to right, #6a0dad, #8a2be2)",
     color: "#fff",
@@ -284,14 +264,9 @@ const saveData = async () => {
       </div>
 
       <div ref={pdfRef} style={styles.card}>
-        <h1 style={styles.mainHeader}>✈️ MAKKI MADNI TRAVEL</h1>
-        <p style={styles.subHeader}>
-          Shop #4 Diamond City Building, Near Zeenat-ul-Islam Masjid<br/>
-          Garden West, Karachi<br/>
-          ✉️ makkimadnitravel@gmail.com | ☎️ 0335-7476744
-        </p>
 
-        <h4 style={styles.quoteHeader}>VISA QUOTATION</h4>
+
+        <Header title="🛂 VISA QUOTATION" />
 
         <div className="d-flex gap-3 mb-3">
           <div>
