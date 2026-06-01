@@ -47,7 +47,7 @@ import MonthlyProfitDashboard from "./screens/MonthlyProfitDashboard";
 
 // VOUCHERS
 import HotelVoucher from "./screens/HotelVoucher";
-import HotelVoucher3 from "./screens/HotelVoucher3";
+import HotelVoucher3in1 from "./screens/HotelVoucher3in1";
 import TransportVoucher from "./screens/TransportVoucher";
 import ManageUsers from "./screens/ManageUsers";
 
@@ -143,8 +143,8 @@ export default function App() {
       {page === "hotelVoucher" && (
         <HotelVoucher onNavigate={navigate} />
       )}
-      {page === "hotelVoucher3" && (
-        <HotelVoucher3 onNavigate={navigate} />
+      {page === "hotelVoucher3in1" && (
+        <HotelVoucher3in1 onNavigate={navigate} />
       )}
       {page === "transportVoucher" && (
         <TransportVoucher onNavigate={navigate} />
