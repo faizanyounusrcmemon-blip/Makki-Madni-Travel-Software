@@ -11,113 +11,127 @@ export default function Header({ title }) {
         marginBottom: 10,
         border: "2px solid #d4af37",
         boxShadow: "0 4px 10px rgba(0,0,0,.08)",
+        overflow: "hidden",
       }}
     >
       {/* Header Top */}
-<div
-  style={{
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 15,
-  }}
->
-  {/* Logo */}
-  <img
-    src="/logo.png"
-    alt="Makki Madni Travel"
-    style={{
-      width: 90,
-      height: 90,
-      borderRadius: "50%",
-      objectFit: "cover",
-      border: "3px solid #d4af37",
-      background: "#fff",
-      flexShrink: 0,
-    }}
-  />
-
-  {/* Company Info */}
-  <div
-    style={{
-      textAlign: "center",
-    }}
-  >
-
-<div
-  style={{
-    fontSize: 28,
-    fontWeight: 700,
-    letterSpacing: 0.5,
-    lineHeight: 1,
-    whiteSpace: "nowrap",
-  }}
->
-    <span style={{ color: "#0b3d91" }}>
-      MAKKI MADNI
-    </span>
-
-    <span
-      style={{
-        color: "#d4af37",
-        marginLeft: 8,
-      }}
-    >
-      TRAVEL & TOURS
-    </span>
-</div>
-
-    <div
-      style={{
-        width: 100,
-        height: 3,
-        margin: "8px auto",
-        borderRadius: 20,
-        background:
-          "linear-gradient(to right,#d4af37,#ffd700,#d4af37)",
-      }}
-    />
-
-    <div
-      style={{
-        fontSize: 10,
-        lineHeight: 1.3,
-        color: "#0b3d91",
-        fontWeight: 600,
-      }}
-    >
-      Shop #4 Diamond City Building,
-      Near Zeenat-ul-Islam Masjid
-      <br />
-      Garden West, Karachi
-    </div>
-
-    <div
-      style={{
-        marginTop: 4,
-        fontSize: 10,
-        fontWeight: 600,
-      }}
-    >
-      <span style={{ color: "#003366" }}>
-        📧 makkimadnitravel@gmail.com
-      </span>
-
-      <span
+      <div
         style={{
-          color: "#999",
-          margin: "0 6px",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: 15,
+          flexWrap: "wrap",
         }}
       >
-        |
-      </span>
+        {/* Logo */}
+        <img
+          src="/logo.png"
+          alt="Makki Madni Travel"
+          style={{
+            width: "clamp(60px, 15vw, 90px)",
+            height: "clamp(60px, 15vw, 90px)",
+            borderRadius: "50%",
+            objectFit: "cover",
+            border: "3px solid #d4af37",
+            background: "#fff",
+            flexShrink: 0,
+          }}
+        />
 
-      <span style={{ color: "#198754" }}>
-        ☎️ 0335-7476744
-      </span>
-    </div>
-  </div>
-</div>
+        {/* Company Info */}
+        <div
+          style={{
+            textAlign: "center",
+            flex: 1,
+            minWidth: 0,
+          }}
+        >
+          {/* Company Name */}
+          <div
+            style={{
+              fontSize: "clamp(18px, 4vw, 28px)",
+              fontWeight: 700,
+              letterSpacing: 0.5,
+              lineHeight: 1.2,
+              wordBreak: "break-word",
+            }}
+          >
+            <span style={{ color: "#0b3d91" }}>
+              MAKKI MADNI
+            </span>
+
+            <span
+              style={{
+                color: "#d4af37",
+                marginLeft: 8,
+              }}
+            >
+              TRAVEL & TOURS
+            </span>
+          </div>
+
+          {/* Golden Line */}
+          <div
+            style={{
+              width: 100,
+              height: 3,
+              margin: "8px auto",
+              borderRadius: 20,
+              background:
+                "linear-gradient(to right,#d4af37,#ffd700,#d4af37)",
+            }}
+          />
+
+          {/* Address */}
+          <div
+            style={{
+              fontSize: "clamp(9px, 2vw, 10px)",
+              lineHeight: 1.4,
+              color: "#0b3d91",
+              fontWeight: 600,
+              wordBreak: "break-word",
+            }}
+          >
+            Shop #4 Diamond City Building,
+            Near Zeenat-ul-Islam Masjid
+            <br />
+            Garden West, Karachi
+          </div>
+
+          {/* Contact */}
+          <div
+            style={{
+              marginTop: 4,
+              fontSize: "clamp(9px, 2vw, 10px)",
+              fontWeight: 600,
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+              flexWrap: "wrap",
+              gap: 4,
+              wordBreak: "break-word",
+            }}
+          >
+            <span style={{ color: "#003366" }}>
+              📧 makkimadnitravel@gmail.com
+            </span>
+
+            <span
+              style={{
+                color: "#999",
+                margin: "0 4px",
+              }}
+            >
+              |
+            </span>
+
+            <span style={{ color: "#198754" }}>
+              ☎️ 0335-7476744
+            </span>
+          </div>
+        </div>
+      </div>
 
       {/* Divider */}
       <div
@@ -141,6 +155,7 @@ export default function Header({ title }) {
           fontSize: 15,
           fontWeight: 700,
           letterSpacing: 0.5,
+          wordBreak: "break-word",
         }}
       >
         {title}
