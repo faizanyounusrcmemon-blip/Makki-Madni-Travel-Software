@@ -1,6 +1,5 @@
 import React, { useEffect, useState, useRef } from "react";
-import html2canvas from "html2canvas";
-import jsPDF from "jspdf";
+import usePdf from "../hooks/usePdf";
 import Header from "../components/Header";
 
 /* ================= HELPERS ================= */
@@ -20,6 +19,13 @@ export default function CardViewDeleted({ id, onNavigate }) {
   const [data, setData] = useState(null);
   const ref = useRef(null);
 
+const { exportPDF, printPDF } = usePdf(ref, {
+  filePrefix: "CardDelete",
+  customerName: data?.customer_name,
+  bookingDate: data?.booking_date,
+  orientation: "p",
+});
+
   /* ================= LOAD DELETED DATA ================= */
   useEffect(() => {
     if (!id) return;
@@ -33,19 +39,7 @@ export default function CardViewDeleted({ id, onNavigate }) {
   }, [id]);
 
   /* ================= EXPORT PDF ================= */
-  const exportPDF = async () => {
-    if (!ref.current) return;
 
-    const canvas = await html2canvas(ref.current, { scale: 3, useCORS: true });
-    const img = canvas.toDataURL("image/jpeg", 1.0);
-    const pdf = new jsPDF("p", "mm", "a4");
-    const pageWidth = pdf.internal.pageSize.getWidth();
-    const pageHeight = (canvas.height * pageWidth) / canvas.width;
-    pdf.addImage(img, "JPEG", 0, 0, pageWidth, pageHeight);
-
-    const fileName = `${cleanName(data?.customer_name)}_${formatDateForFile(data?.booking_date)}.pdf`;
-    pdf.save(fileName);
-  };
 
   if (!data) return <div className="p-3">Loading...</div>;
 
@@ -65,13 +59,21 @@ export default function CardViewDeleted({ id, onNavigate }) {
     ⬅ Back
   </button>
 
-        <button
-          className="btn btn-success btn-sm fw-bold shadow"
-          style={{ borderRadius: 8, padding: "6px 16px" }}
-          onClick={exportPDF}
-        >
-          📄 Export PDF
-        </button>
+<button
+  className="btn btn-success btn-sm fw-bold shadow"
+  style={{ borderRadius: 8, padding: "6px 16px" }}
+  onClick={exportPDF}
+>
+  📄 Export PDF
+</button>
+
+<button
+  className="btn btn-secondary btn-sm fw-bold shadow"
+  style={{ borderRadius: 8, padding: "6px 16px" }}
+  onClick={printPDF}
+>
+  🖨️ Print
+</button>
       </div>
 
       {/* ===== PRINT AREA ===== */}

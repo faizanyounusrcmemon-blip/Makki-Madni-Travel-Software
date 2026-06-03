@@ -1,6 +1,5 @@
 import React, { useState, useRef } from "react";
-import html2canvas from "html2canvas";
-import jsPDF from "jspdf";
+import usePdf from "../hooks/usePdf";
 import Swal from "sweetalert2";
 import Header from "../components/Header";
 
@@ -84,6 +83,13 @@ export default function Card({ onNavigate }) {
   const [isEdit, setIsEdit] = useState(false);
   const [saving, setSaving] = useState(false);
   const pdfRef = useRef(null);
+
+const { exportPDF, printPDF } = usePdf(pdfRef, {
+  filePrefix: "Card",
+  customerName: customerName,
+  bookingDate: bookingDate,
+  orientation: "p",
+});
 
   // -------------------- Row Management --------------------
   const addRow = () => setRows([...rows, { type: "", persons: 0, rate: 0, total: 0 }]);
@@ -234,14 +240,7 @@ const saveData = async () => {
   setSaving(false);
 };
 
-  // -------------------- Export PDF --------------------
-  const exportPDF = async () => {
-    const canvas = await html2canvas(pdfRef.current, { scale: 4 });
-    const img = canvas.toDataURL("image/jpeg");
-    const pdf = new jsPDF("l", "mm", "a4");
-    pdf.addImage(img, "JPEG", 0, 0, pdf.internal.pageSize.getWidth(), pdf.internal.pageSize.getHeight());
-    pdf.save(`${refNo || "Card"}.pdf`);
-  };
+
 
   // -------------------- Calculated Totals --------------------
   const totalSAR = rows.reduce((s, r) => s + Number(r.total || 0), 0);
@@ -263,7 +262,33 @@ const saveData = async () => {
 </button>
           <input className="form-control form-control-sm" style={{ width: 140, borderRadius: 50 }} placeholder="Search Ref" value={searchRef} onChange={(e) => setSearchRef(e.target.value)} />
           <button className="btn btn-warning btn-sm" style={styles.button} onClick={loadCard}>🔄 Load / Edit</button>
-          <button className="btn btn-success btn-sm" style={styles.button} onClick={exportPDF}>📄 Export PDF</button>
+<button
+  className="btn fw-bold text-white shadow"
+  style={{
+    background: "linear-gradient(135deg,#28a745,#20c997)",
+    border: "none",
+    borderRadius: "12px",
+    padding: "8px 18px",
+    transition: "0.3s",
+  }}
+  onClick={exportPDF}
+>
+  📄 Export PDF
+</button>
+
+<button
+  className="btn fw-bold text-white shadow"
+  style={{
+    background: "linear-gradient(135deg,#6c757d,#343a40)",
+    border: "none",
+    borderRadius: "12px",
+    padding: "8px 18px",
+    transition: "0.3s",
+  }}
+  onClick={printPDF}
+>
+  🖨️ Print
+</button>
         </div>
       </div>
 

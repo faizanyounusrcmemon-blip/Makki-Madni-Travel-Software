@@ -1,6 +1,5 @@
 import React, { useState, useRef } from "react";
-import html2canvas from "html2canvas";
-import jsPDF from "jspdf";
+import usePdf from "../hooks/usePdf";
 import Swal from "sweetalert2";
 import Header from "../components/Header";
 
@@ -75,6 +74,14 @@ export default function Hotels({ onNavigate }) {
   const [rows, setRows] = useState([]);
   const [sarRate, setSarRate] = useState(0);
   const pdfRef = useRef(null);
+
+const { exportPDF, printPDF } = usePdf(pdfRef, {
+  filePrefix: "Hotel",
+  customerName: customerName,
+  bookingDate: bookingDate,
+  orientation: "p",
+});
+
   const [isEdit, setIsEdit] = useState(false);
   const [saving, setSaving] = useState(false);
 
@@ -270,13 +277,6 @@ const saveData = async () => {
   setSaving(false);
 };
 
-  const exportPDF = async () => {
-    const canvas = await html2canvas(pdfRef.current, { scale: 3 });
-    const imgData = canvas.toDataURL("image/png");
-    const pdf = new jsPDF("l", "mm", "a4");
-    pdf.addImage(imgData, "PNG", 0, 0, pdf.internal.pageSize.getWidth(), pdf.internal.pageSize.getHeight());
-    pdf.save("hotels.pdf");
-  };
 
   return (
     <div style={styles.container}>
@@ -297,7 +297,33 @@ const saveData = async () => {
 
           <input className="form-control form-control-sm" style={{ width: "140px" }} placeholder="Search Ref" value={searchRef} onChange={(e) => setSearchRef(e.target.value)} />
           <button className="btn btn-warning btn-sm" onClick={loadHotel}>🔄 Load / Edit</button>
-          <button className="btn btn-success btn-sm" onClick={exportPDF}>📄 Export PDF</button>
+<button
+  className="btn fw-bold text-white shadow"
+  style={{
+    background: "linear-gradient(135deg,#28a745,#20c997)",
+    border: "none",
+    borderRadius: "12px",
+    padding: "8px 18px",
+    transition: "0.3s",
+  }}
+  onClick={exportPDF}
+>
+  📄 Export PDF
+</button>
+
+<button
+  className="btn fw-bold text-white shadow"
+  style={{
+    background: "linear-gradient(135deg,#6c757d,#343a40)",
+    border: "none",
+    borderRadius: "12px",
+    padding: "8px 18px",
+    transition: "0.3s",
+  }}
+  onClick={printPDF}
+>
+  🖨️ Print
+</button>
         </div>
       </div>
 

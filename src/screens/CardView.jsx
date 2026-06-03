@@ -1,26 +1,23 @@
 import React, { useEffect, useState, useRef } from "react";
-import html2canvas from "html2canvas";
-import jsPDF from "jspdf";
-import Swal from "sweetalert2";
+import usePdf from "../hooks/usePdf";
 import Header from "../components/Header";
 
 
 /* ================= HELPERS ================= */
 const fmt = (v) => Number(v || 0).toLocaleString("en-US");
 const fmtDate = (d) => d ? new Date(d).toLocaleDateString("en-GB") : "-";
-const cleanName = (name) => name ? name.replace(/[^a-zA-Z0-9]/g, "_") : "Customer";
-const formatDateForFile = (date) => {
-  if (!date) return "NoDate";
-  const d = new Date(date);
-  const day = String(d.getDate()).padStart(2, "0");
-  const mon = d.toLocaleString("en-US", { month: "short" }).toUpperCase();
-  const year = d.getFullYear();
-  return `${day}-${mon}-${year}`;
-};
+
 
 export default function CardView({ id, onNavigate }) {
   const [data, setData] = useState(null);
   const ref = useRef(null);
+
+  const { exportPDF, printPDF } = usePdf(ref, {
+    filePrefix: "Card",
+    customerName: data?.customer_name,
+    bookingDate: data?.booking_date,
+    orientation: "p",
+  });
 
   /* ================= LOAD CARD ================= */
   useEffect(() => {
@@ -45,72 +42,7 @@ export default function CardView({ id, onNavigate }) {
   }, [id]);
 
   /* ================= EXPORT PDF ================= */
-const exportPDF = async () => {
-  try {
-    if (!ref.current || !data) {
-      return Swal.fire({
-        width: "300px",
-        icon: "warning",
-        text: "No data found"
-      });
-    }
 
-    Swal.fire({
-      width: "260px",
-      title: "Generating PDF...",
-      allowOutsideClick: false,
-      didOpen: () => Swal.showLoading()
-    });
-
-    const canvas = await html2canvas(ref.current, {
-      scale: 3,
-      useCORS: true
-    });
-
-    const img = canvas.toDataURL("image/jpeg", 1.0);
-
-    const pdf = new jsPDF("p", "mm", "a4");
-
-    const pageWidth = pdf.internal.pageSize.getWidth();
-    const pageHeight =
-      (canvas.height * pageWidth) / canvas.width;
-
-    pdf.addImage(
-      img,
-      "JPEG",
-      0,
-      0,
-      pageWidth,
-      pageHeight
-    );
-
-    const fileName =
-      `${cleanName(data?.customer_name)}_${formatDateForFile(
-        data?.booking_date
-      )}.pdf`;
-
-    pdf.save(fileName);
-
-    Swal.close();
-
-    Swal.fire({
-      width: "280px",
-      icon: "success",
-      text: "PDF Downloaded Successfully 😎",
-      timer: 1500,
-      showConfirmButton: true
-    });
-
-  } catch (err) {
-    Swal.close();
-
-    Swal.fire({
-      width: "300px",
-      icon: "error",
-      text: "PDF Generation Failed"
-    });
-  }
-};
 
   if (!data) return <div className="p-3">Loading...</div>;
 
@@ -126,92 +58,18 @@ const exportPDF = async () => {
           ⬅ Back
         </button>
 
-        <button
-          className="btn btn-success btn-sm fw-bold shadow"
-          style={{ borderRadius: 8, padding: "6px 16px" }}
-          onClick={exportPDF}
-        >
-          📄 Export PDF
-        </button>
+<button
+  className="btn btn-success btn-sm fw-bold shadow"
+  style={{ borderRadius: 8, padding: "6px 16px" }}
+  onClick={exportPDF}
+>
+  📄 Export PDF
+</button>
 
 <button
   className="btn btn-secondary btn-sm fw-bold shadow"
   style={{ borderRadius: 8, padding: "6px 16px" }}
-  onClick={async () => {
-    try {
-
-      if (!ref.current || !data) {
-        return Swal.fire({
-          width: "300px",
-          icon: "warning",
-          text: "No data found"
-        });
-      }
-
-      Swal.fire({
-        width: "260px",
-        title: "Preparing Print...",
-        allowOutsideClick: false,
-        didOpen: () => Swal.showLoading()
-      });
-
-      const canvas = await html2canvas(ref.current, {
-        scale: 3,
-        useCORS: true
-      });
-
-      const img = canvas.toDataURL("image/jpeg", 1.0);
-
-      const pdf = new jsPDF("p", "mm", "a4");
-
-      const pageWidth =
-        pdf.internal.pageSize.getWidth();
-
-      const pageHeight =
-        (canvas.height * pageWidth) / canvas.width;
-
-      pdf.addImage(
-        img,
-        "JPEG",
-        0,
-        0,
-        pageWidth,
-        pageHeight
-      );
-
-      Swal.close();
-
-      const blobUrl = pdf.output("bloburl");
-
-      const printWindow =
-        window.open(blobUrl, "_blank");
-
-      if (printWindow) {
-        printWindow.onload = () => {
-          printWindow.focus();
-          printWindow.print();
-        };
-      }
-
-      Swal.fire({
-        width: "280px",
-        icon: "success",
-        text: "Print Preview Opened 😎",
-        timer: 1200,
-        showConfirmButton: false
-      });
-
-    } catch (err) {
-
-      Swal.close();
-
-      Swal.fire({
-        width: "300px",
-        icon: "error",
-        text: "Print Failed"
-      });
-    }
-  }}
+  onClick={printPDF}
 >
   🖨️ Print
 </button>

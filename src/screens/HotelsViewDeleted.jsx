@@ -1,6 +1,5 @@
 import React, { useEffect, useState, useRef } from "react";
-import html2canvas from "html2canvas";
-import jsPDF from "jspdf";
+import usePdf from "../hooks/usePdf";
 import Header from "../components/Header";
 
 /* ================= HELPERS ================= */
@@ -19,21 +18,18 @@ const fmtDate = (val) => {
   return `${day}/${month}/${year}`;
 };
 
-const cleanName = (name) =>
-  name ? name.replace(/[^a-zA-Z0-9]/g, "_") : "Customer";
 
-const formatDateForFile = (date) => {
-  if (!date) return "NoDate";
-  const d = new Date(date);
-  const day = String(d.getDate()).padStart(2, "0");
-  const mon = d.toLocaleString("en-US", { month: "short" }).toUpperCase();
-  const year = d.getFullYear();
-  return `${day}-${mon}-${year}`;
-};
 
 export default function HotelsViewDeleted({ id, onNavigate }) {
   const [data, setData] = useState(null);
   const pdfRef = useRef(null);
+
+const { exportPDF, printPDF } = usePdf(pdfRef, {
+  filePrefix: "HotelDelete",
+  customerName: data?.customer_name,
+  bookingDate: data?.booking_date,
+  orientation: "p",
+});
 
   /* ================= LOAD DELETED DATA ================= */
   useEffect(() => {
@@ -63,39 +59,7 @@ export default function HotelsViewDeleted({ id, onNavigate }) {
   }, [id]);
 
   /* ================= EXPORT PDF ================= */
-  const exportPDF = async () => {
-    if (!pdfRef.current) return;
 
-    const canvas = await html2canvas(pdfRef.current, {
-      scale: 2,
-      useCORS: true,
-    });
-
-    const imgData = canvas.toDataURL("image/jpeg", 1.0);
-    const pdf = new jsPDF("p", "mm", "a4");
-
-    const pdfWidth = pdf.internal.pageSize.getWidth();
-    const pdfHeight = pdf.internal.pageSize.getHeight();
-
-    const ratio = Math.min(
-      pdfWidth / canvas.width,
-      pdfHeight / canvas.height
-    );
-
-    const imgW = canvas.width * ratio;
-    const imgH = canvas.height * ratio;
-
-    const x = (pdfWidth - imgW) / 2;
-    const y = 8;
-
-    pdf.addImage(imgData, "JPEG", x, y, imgW, imgH);
-
-    const fileName = `${cleanName(
-      data?.customer_name
-    )}_${formatDateForFile(data?.booking_date)}.pdf`;
-
-    pdf.save(fileName);
-  };
 
   if (!data) return <div className="p-3 text-center">⏳ Loading...</div>;
 
@@ -116,13 +80,21 @@ export default function HotelsViewDeleted({ id, onNavigate }) {
           ⬅ Back
         </button>
 
-        <button
-          className="btn btn-success btn-sm fw-bold shadow"
-          style={{ borderRadius: 8, padding: "6px 16px" }}
-          onClick={exportPDF}
-        >
-          📄 Export PDF
-        </button>
+<button
+  className="btn btn-success btn-sm fw-bold shadow"
+  style={{ borderRadius: 8, padding: "6px 16px" }}
+  onClick={exportPDF}
+>
+  📄 Export PDF
+</button>
+
+<button
+  className="btn btn-secondary btn-sm fw-bold shadow"
+  style={{ borderRadius: 8, padding: "6px 16px" }}
+  onClick={printPDF}
+>
+  🖨️ Print
+</button>
       </div>
 
       {/* ===== PRINT AREA ===== */}

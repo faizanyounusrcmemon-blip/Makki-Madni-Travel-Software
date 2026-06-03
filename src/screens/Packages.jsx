@@ -1,9 +1,8 @@
-
+import Swal from "sweetalert2";
 import "./packages.css";
 import React, { useState, useRef } from "react";
-import jsPDF from "jspdf";
-import html2canvas from "html2canvas";
-import Swal from "sweetalert2";
+import usePdf from "../hooks/usePdf";
+
 import Header from "../components/Header";
 
 const calcNights = (inD, outD) => {
@@ -135,6 +134,13 @@ const totalPassengers = Number(adultCount || 0) + Number(childCount || 0) + Numb
 
   const quoteRef = useRef(null);
 
+const { exportPDF, printPDF } = usePdf(quoteRef, {
+  filePrefix: "Package",
+  customerName: customerName,
+  bookingDate: bookingDate,
+  orientation: "p",
+});
+
   const showDate = (val) => {
     if (!val) return "";
     const d = new Date(val);
@@ -144,41 +150,32 @@ const totalPassengers = Number(adultCount || 0) + Number(childCount || 0) + Numb
     return `${day}/${mon}/${year}`;
   };
 
-  const cleanName = (name) => name ? name.replace(/[^a-zA-Z0-9]/g, "_") : "Customer";
-  const formatDateForFile = (date) => {
-    if (!date) return "NoDate";
-    const d = new Date(date);
-    const day = String(d.getDate()).padStart(2, "0");
-    const mon = d.toLocaleString("en-US", { month: "short" }).toUpperCase();
-    const year = d.getFullYear();
-    return `${day}-${mon}-${year}`;
-  };
+const validFlights = flights.filter(
+  (f) => f.date && !isNaN(new Date(f.date))
+);
 
-  const handleExportPDF = async () => {
-    quoteRef.current.classList.add("pdf-mode");
-    const canvas = await html2canvas(quoteRef.current, { scale: 2, useCORS: true, backgroundColor: "#ffffff" });
-    const img = canvas.toDataURL("image/png");
-    const pdf = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
-    const w = pdf.internal.pageSize.getWidth();
-    const h = pdf.internal.pageSize.getHeight();
-    const imgProps = pdf.getImageProperties(img);
-    const pdfWidth = w - 20;
-    const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
-    let position = 15;
-    let heightLeft = pdfHeight;
-    const x = (w - pdfWidth) / 2;
-    pdf.addImage(img, "PNG", x, position, pdfWidth, pdfHeight);
-    heightLeft -= h;
-    while (heightLeft > 0) {
-      position = heightLeft - pdfHeight + 15;
-      pdf.addPage();
-      pdf.addImage(img, "PNG", x, position, pdfWidth, pdfHeight);
-      heightLeft -= h;
-    }
-    const fileName = `${cleanName(customerName)}_${formatDateForFile(bookingDate)}.pdf`;
-    pdf.save(fileName);
-    quoteRef.current.classList.remove("pdf-mode");
-  };
+let packageDays = 0;
+let packageNights = 0;
+
+if (validFlights.length >= 2) {
+  const sortedFlights = [...validFlights].sort(
+    (a, b) => new Date(a.date) - new Date(b.date)
+  );
+
+  const startDate = new Date(sortedFlights[0].date);
+  const endDate = new Date(
+    sortedFlights[sortedFlights.length - 1].date
+  );
+
+  const diffDays = Math.floor(
+    (endDate - startDate) / (1000 * 60 * 60 * 24)
+  );
+
+  packageDays = diffDays + 1;
+  packageNights = diffDays;
+}
+
+
 
 const loadPackage = async () => {
 
@@ -406,7 +403,35 @@ const handleSavePackage = async () => {
 
           <input className="form-control form-control-sm" style={{ width: "150px" }} placeholder="Search Ref No" value={searchRef} onChange={(e) => setSearchRef(e.target.value)} />
           <button className="btn btn-warning btn-sm" onClick={loadPackage}>🔄 Load / Edit</button>
-          <button className="btn btn-success btn-sm" onClick={handleExportPDF}>📄 Export PDF</button>
+<div className="d-flex gap-2">
+<button
+  className="btn fw-bold text-white shadow"
+  style={{
+    background: "linear-gradient(135deg,#28a745,#20c997)",
+    border: "none",
+    borderRadius: "12px",
+    padding: "8px 18px",
+    transition: "0.3s",
+  }}
+  onClick={exportPDF}
+>
+  📄 Export PDF
+</button>
+
+<button
+  className="btn fw-bold text-white shadow"
+  style={{
+    background: "linear-gradient(135deg,#6c757d,#343a40)",
+    border: "none",
+    borderRadius: "12px",
+    padding: "8px 18px",
+    transition: "0.3s",
+  }}
+  onClick={printPDF}
+>
+  🖨️ Print
+</button>
+</div>
         </div>
       </div>
 
@@ -435,6 +460,19 @@ const handleSavePackage = async () => {
             <input type="date" className="form-control form-control-sm" value={bookingDate} onChange={(e) => setBookingDate(e.target.value)} />
             <small className="text-muted">{showDate(bookingDate)}</small>
           </div>
+<div>
+  <label>Package Duration</label>
+  <input
+    className="form-control form-control-sm fw-bold"
+    value={
+      packageDays > 0
+        ? `${packageDays} Days / ${packageNights} Nights`
+        : ""
+    }
+    readOnly
+  />
+</div>
+
         </div>
 
 

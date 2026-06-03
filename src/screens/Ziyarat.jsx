@@ -1,6 +1,5 @@
 import React, { useState, useRef } from "react";
-import html2canvas from "html2canvas";
-import jsPDF from "jspdf";
+import usePdf from "../hooks/usePdf";
 import Swal from "sweetalert2";
 import Header from "../components/Header";
 
@@ -96,6 +95,13 @@ export default function Ziyarat({ onNavigate }) {
 
 
   const quoteRef = useRef(null);
+
+const { exportPDF, printPDF } = usePdf(quoteRef, {
+  filePrefix: "Ziyarat",
+  customerName: customerName,
+  bookingDate: bookingDate,
+  orientation: "p",
+});
 
   const addRow = () => setRows([...rows, { description: "", sar: 0 }]);
   const updateRow = (i, field, value) => {
@@ -260,13 +266,6 @@ const saveData = async () => {
 };
 
 
-  const exportPDF = async () => {
-    const canvas = await html2canvas(quoteRef.current, { scale: 3 });
-    const img = canvas.toDataURL("image/jpeg");
-    const pdf = new jsPDF("p", "mm", "a4");
-    pdf.addImage(img, "JPEG", 0, 0, 210, 297);
-    pdf.save(`${refNo || "ziyarat"}.pdf`);
-  };
 
   return (
     <div style={styles.container}>
@@ -288,7 +287,33 @@ const saveData = async () => {
 
           <input className="form-control" style={{ width: 150, borderRadius: 50 }} placeholder="Search Ref" value={searchRef} onChange={(e) => setSearchRef(e.target.value)} />
           <button className="btn btn-info fw-bold" style={styles.button} onClick={loadZiyarat}>🔄 Load / Edit</button>
-          <button className="btn btn-success fw-bold" style={styles.button} onClick={exportPDF}>📄 Export PDF</button>
+<button
+  className="btn fw-bold text-white shadow"
+  style={{
+    background: "linear-gradient(135deg,#28a745,#20c997)",
+    border: "none",
+    borderRadius: "12px",
+    padding: "8px 18px",
+    transition: "0.3s",
+  }}
+  onClick={exportPDF}
+>
+  📄 Export PDF
+</button>
+
+<button
+  className="btn fw-bold text-white shadow"
+  style={{
+    background: "linear-gradient(135deg,#6c757d,#343a40)",
+    border: "none",
+    borderRadius: "12px",
+    padding: "8px 18px",
+    transition: "0.3s",
+  }}
+  onClick={printPDF}
+>
+  🖨️ Print
+</button>
         </div>
       </div>
 

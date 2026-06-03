@@ -1,8 +1,6 @@
 import React, { useEffect, useState, useRef } from "react";
-import html2canvas from "html2canvas";
-import jsPDF from "jspdf";
-import Swal from "sweetalert2";
 import Header from "../components/Header";
+import usePdf from "../hooks/usePdf";
 
 /* ================= DATE FORMAT ================= */
 const fmtDate = (d) =>
@@ -15,21 +13,20 @@ const fmtDate = (d) =>
     : "";
 
 /* ================= FILE NAME HELPERS ================= */
-const cleanName = (name) =>
-  name ? name.replace(/[^a-zA-Z0-9]/g, "_") : "Customer";
 
-const formatDateForFile = (date) => {
-  if (!date) return "NoDate";
-  const d = new Date(date);
-  const day = String(d.getDate()).padStart(2, "0");
-  const mon = d.toLocaleString("en-US", { month: "short" }).toUpperCase();
-  const year = d.getFullYear();
-  return `${day}-${mon}-${year}`;
-};
 
 export default function PackagesView({ id, onNavigate }) {
   const [data, setData] = useState(null);
-  const ref = useRef(null);
+
+
+const ref = useRef(null);
+
+const { exportPDF, printPDF } = usePdf(ref, {
+  filePrefix: "PackageSummary",
+  customerName: data?.customer_name,
+  bookingDate: data?.booking_date,
+  orientation: "p",
+});
 
   /* ================= LOAD DATA ================= */
   useEffect(() => {
@@ -44,80 +41,32 @@ export default function PackagesView({ id, onNavigate }) {
   }, [id]);
 
 /* ================= EXPORT PDF ================= */
-const exportPDF = async () => {
-  try {
-    Swal.fire({
-      width: "260px",
-      title: "Generating PDF...",
-      allowOutsideClick: false,
-      didOpen: () => Swal.showLoading(),
-    });
 
-    const canvas = await html2canvas(ref.current, {
-      scale: 2,
-      useCORS: true,
-    });
-
-    const imgData = canvas.toDataURL("image/jpeg", 1.0);
-    const pdf = new jsPDF("p", "mm", "a4");
-
-    const pdfWidth = pdf.internal.pageSize.getWidth();
-    const pdfHeight = pdf.internal.pageSize.getHeight();
-
-    const imgWidth = pdfWidth;
-    const imgHeight = (canvas.height * imgWidth) / canvas.width;
-
-    let heightLeft = imgHeight;
-    let position = 10;
-
-    pdf.addImage(imgData, "JPEG", 0, position, imgWidth, imgHeight);
-    heightLeft -= pdfHeight;
-
-    while (heightLeft > 0) {
-      position = heightLeft - imgHeight + 10;
-
-      pdf.addPage();
-
-      pdf.addImage(
-        imgData,
-        "JPEG",
-        0,
-        position,
-        imgWidth,
-        imgHeight
-      );
-
-      heightLeft -= pdfHeight;
-    }
-
-    const fileName = `${cleanName(
-      data?.customer_name
-    )}_${formatDateForFile(data?.booking_date)}.pdf`;
-
-    pdf.save(fileName);
-
-    Swal.close();
-
-    Swal.fire({
-      width: "280px",
-      icon: "success",
-      text: "PDF Downloaded Successfully 😎",
-      timer: 1500,
-      showConfirmButton: true
-    });
-
-  } catch (err) {
-    Swal.close();
-
-    Swal.fire({
-      width: "300px",
-      icon: "error",
-      text: "PDF Generation Failed"
-    });
-  }
-};
 
   if (!data) return <div className="p-4">Loading...</div>;
+
+/* ================= PACKAGE DURATION ================= */
+const flightDates =
+  Array.isArray(data.flights)
+    ? data.flights
+        .map((f) => f.date)
+        .filter(Boolean)
+        .sort()
+    : [];
+
+let packageDays = 0;
+let packageNights = 0;
+
+if (flightDates.length >= 2) {
+  const startDate = new Date(flightDates[0]);
+  const endDate = new Date(flightDates[flightDates.length - 1]);
+
+  const diff =
+    (endDate - startDate) / (1000 * 60 * 60 * 24);
+
+  packageDays = diff + 1;
+  packageNights = diff;
+}
 
   // ================= CALCULATE TOTALS =================
   const flightTotal = Number(data.flight_sar_total || 0);
@@ -198,103 +147,18 @@ if (data) {
           ⬅ Back
         </button>
 
-        <button
-          className="btn btn-success btn-sm fw-bold shadow"
-          style={{ borderRadius: 8, padding: "6px 16px" }}
-          onClick={exportPDF}
-        >
-          📄 Export PDF
-        </button>
+<button
+  className="btn btn-success btn-sm fw-bold shadow"
+  style={{ borderRadius: 8, padding: "6px 16px" }}
+  onClick={exportPDF}
+>
+  📄 Export PDF
+</button>
 
 <button
   className="btn btn-secondary btn-sm fw-bold shadow"
   style={{ borderRadius: 8, padding: "6px 16px" }}
-  onClick={async () => {
-    try {
-      Swal.fire({
-        width: "260px",
-        title: "Preparing Print...",
-        allowOutsideClick: false,
-        didOpen: () => Swal.showLoading(),
-      });
-
-      const canvas = await html2canvas(ref.current, {
-        scale: 2,
-        useCORS: true,
-      });
-
-      const imgData = canvas.toDataURL("image/jpeg", 1.0);
-
-      const pdf = new jsPDF("p", "mm", "a4");
-
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = pdf.internal.pageSize.getHeight();
-
-      const imgWidth = pdfWidth;
-      const imgHeight =
-        (canvas.height * imgWidth) / canvas.width;
-
-      let heightLeft = imgHeight;
-      let position = 10;
-
-      pdf.addImage(
-        imgData,
-        "JPEG",
-        0,
-        position,
-        imgWidth,
-        imgHeight
-      );
-
-      heightLeft -= pdfHeight;
-
-      while (heightLeft > 0) {
-        position = heightLeft - imgHeight + 10;
-
-        pdf.addPage();
-
-        pdf.addImage(
-          imgData,
-          "JPEG",
-          0,
-          position,
-          imgWidth,
-          imgHeight
-        );
-
-        heightLeft -= pdfHeight;
-      }
-
-      Swal.close();
-
-      const printWindow = window.open(
-        pdf.output("bloburl"),
-        "_blank"
-      );
-
-      if (printWindow) {
-        printWindow.onload = () => {
-          printWindow.print();
-        };
-      }
-
-      Swal.fire({
-        width: "280px",
-        icon: "success",
-        text: "Print Preview Opened 😎",
-        timer: 1200,
-        showConfirmButton: false,
-      });
-    } catch (err) {
-      Swal.close();
-
-      Swal.fire({
-        width: "300px",
-        icon: "error",
-        text: "Print Failed",
-      });
-    }
-  }}
+  onClick={printPDF}
 >
   🖨️ Print
 </button>
@@ -318,6 +182,35 @@ if (data) {
           <p><b>Customer:</b> {data.customer_name}</p>
           <p><b>Contact No:</b> {data.contact_no || "-"}</p>
           <p><b>Booking Date:</b> {fmtDate(data.booking_date)}</p>
+<div
+  className="border rounded-3 p-3 mt-2 shadow-sm"
+  style={{
+    background: "linear-gradient(135deg,#f8f9fa,#e9f7ef)",
+    borderLeft: "5px solid #198754",
+  }}
+>
+  <div
+    style={{
+      fontSize: "12px",
+      color: "#6c757d",
+      textTransform: "uppercase",
+      fontWeight: "600",
+    }}
+  >
+    Package Duration
+  </div>
+
+  <div
+    style={{
+      fontSize: "22px",
+      fontWeight: "800",
+      color: "#198754",
+    }}
+  >
+    📅 {packageDays} Days / 🌙 {packageNights} Nights
+  </div>
+</div>
+
         </div>
 
         <hr />

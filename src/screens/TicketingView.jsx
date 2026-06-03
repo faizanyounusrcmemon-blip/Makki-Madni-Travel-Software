@@ -1,7 +1,5 @@
 import React, { useEffect, useState, useRef } from "react";
-import html2canvas from "html2canvas";
-import jsPDF from "jspdf";
-import Swal from "sweetalert2";
+import usePdf from "../hooks/usePdf";
 import Header from "../components/Header";
 
 /* ================= HELPERS ================= */
@@ -17,19 +15,19 @@ const fmtDate = (d) => {
   return `${day}/${mon}/${year}`;
 };
 
-const cleanName = (name) => name ? name.replace(/[^a-zA-Z0-9]/g, "_") : "Customer";
-const formatDateForFile = (date) => {
-  if (!date) return "NoDate";
-  const dt = new Date(date);
-  const day = String(dt.getDate()).padStart(2, "0");
-  const mon = dt.toLocaleString("en-US", { month: "short" }).toUpperCase();
-  const year = dt.getFullYear();
-  return `${day}-${mon}-${year}`;
-};
+
 
 export default function TicketingView({ id, onNavigate }) {
   const [data, setData] = useState(null);
   const ref = useRef(null);
+
+  const { exportPDF, printPDF } = usePdf(ref, {
+    filePrefix: "Ticket",
+    customerName: data?.customer_name,
+    bookingDate: data?.booking_date,
+    orientation: "p",
+  });
+
 
   /* ================= LOAD TICKETING ================= */
   useEffect(() => {
@@ -58,114 +56,7 @@ export default function TicketingView({ id, onNavigate }) {
   }, [id]);
 
   /* ================= EXPORT PDF ================= */
-  const exportPDF = async () => {
-    try {
-      if (!ref.current || !data) {
-        return Swal.fire({
-          icon: "warning",
-          text: "No data found",
-        });
-      }
 
-    Swal.fire({
-      width: "260px",
-      title: "Generating PDF...",
-      allowOutsideClick: false,
-      didOpen: () => Swal.showLoading()
-    });
-
-      const canvas = await html2canvas(ref.current, {
-        scale: 3,
-        useCORS: true,
-      });
-
-      const img = canvas.toDataURL("image/jpeg", 1.0);
-      const pdf = new jsPDF("p", "mm", "a4");
-
-      const pageWidth = pdf.internal.pageSize.getWidth();
-      const pageHeight = (canvas.height * pageWidth) / canvas.width;
-
-      pdf.addImage(img, "JPEG", 0, 0, pageWidth, pageHeight);
-
-      const fileName = `${cleanName(
-        data?.customer_name
-      )}_${formatDateForFile(data?.booking_date)}.pdf`;
-
-      pdf.save(fileName);
-
-    Swal.close();
-
-    Swal.fire({
-      width: "280px",
-      icon: "success",
-      text: "PDF Downloaded Successfully 😎",
-      timer: 1500,
-      showConfirmButton: true
-    });
-
-  } catch (err) {
-    Swal.close();
-
-    Swal.fire({
-      width: "300px",
-      icon: "error",
-      text: "PDF Generation Failed"
-    });
-  }
-};
-
-  /* ================= PRINT ================= */
-  const printPDF = async () => {
-    try {
-      if (!ref.current || !data) {
-        return Swal.fire({
-          icon: "warning",
-          text: "No data found",
-        });
-      }
-
-      Swal.fire({
-        title: "Preparing Print...",
-        allowOutsideClick: false,
-        didOpen: () => Swal.showLoading(),
-      });
-
-      const canvas = await html2canvas(ref.current, {
-        scale: 3,
-        useCORS: true,
-      });
-
-      const img = canvas.toDataURL("image/jpeg", 1.0);
-      const pdf = new jsPDF("p", "mm", "a4");
-
-      const pageWidth = pdf.internal.pageSize.getWidth();
-      const pageHeight = (canvas.height * pageWidth) / canvas.width;
-
-      pdf.addImage(img, "JPEG", 0, 0, pageWidth, pageHeight);
-
-      Swal.close();
-
-      const blobUrl = pdf.output("bloburl");
-      const w = window.open(blobUrl, "_blank");
-
-      if (w) {
-        w.onload = () => {
-          w.focus();
-          w.print();
-        };
-      }
-
-      Swal.fire({
-        icon: "success",
-        text: "Print Ready 😎",
-        timer: 1200,
-        showConfirmButton: false,
-      });
-    } catch (err) {
-      Swal.close();
-      Swal.fire("Error", "Print Failed", "error");
-    }
-  };
 
   if (!data) return <div className="p-3">Loading...</div>;
 
@@ -182,20 +73,21 @@ export default function TicketingView({ id, onNavigate }) {
           ⬅ Back
         </button>
 
-        <button
-          className="btn btn-success btn-sm fw-bold shadow"
-          style={{ borderRadius: 8, padding: "6px 16px" }}
-          onClick={exportPDF}
-        >
-          📄 Export PDF
-        </button>
-        <button
-          className="btn btn-secondary btn-sm fw-bold shadow"
-          style={{ borderRadius: 8, padding: "6px 16px" }}
-          onClick={printPDF}
-        >
-          🖨️ Print
-        </button>
+<button
+  className="btn btn-success btn-sm fw-bold shadow"
+  style={{ borderRadius: 8, padding: "6px 16px" }}
+  onClick={exportPDF}
+>
+  📄 Export PDF
+</button>
+
+<button
+  className="btn btn-secondary btn-sm fw-bold shadow"
+  style={{ borderRadius: 8, padding: "6px 16px" }}
+  onClick={printPDF}
+>
+  🖨️ Print
+</button>
       </div>
 
       {/* ===== PRINT AREA ===== */}

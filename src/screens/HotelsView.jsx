@@ -3,6 +3,7 @@ import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 import Swal from "sweetalert2";
 import Header from "../components/Header";
+import usePdf from "../hooks/usePdf";
 
 
 /* ================= HELPERS ================= */
@@ -22,21 +23,17 @@ const fmtDate = (val) => {
   return `${day}/${month}/${year}`;
 };
 
-const cleanName = (name) =>
-  name ? name.replace(/[^a-zA-Z0-9]/g, "_") : "Customer";
-
-const formatDateForFile = (date) => {
-  if (!date) return "NoDate";
-  const d = new Date(date);
-  const day = String(d.getDate()).padStart(2, "0");
-  const mon = d.toLocaleString("en-US", { month: "short" }).toUpperCase();
-  const year = d.getFullYear();
-  return `${day}-${mon}-${year}`;
-};
 
 export default function HotelsView({ id, onNavigate }) {
   const [data, setData] = useState(null);
   const pdfRef = useRef(null);
+
+const { exportPDF, printPDF } = usePdf(pdfRef, {
+  filePrefix: "Hotel",
+  customerName: data?.customer_name,
+  bookingDate: data?.booking_date,
+  orientation: "p",
+});
 
   /* ================= LOAD HOTEL ================= */
   useEffect(() => {
@@ -55,157 +52,7 @@ export default function HotelsView({ id, onNavigate }) {
   }, [id]);
 
   /* ================= EXPORT PDF ================= */
-const exportPDF = async () => {
-  try {
-    if (!pdfRef.current || !data) {
-      return Swal.fire({
-        width: "300px",
-        icon: "warning",
-        text: "No data found",
-      });
-    }
 
-    Swal.fire({
-      width: "260px",
-      title: "Generating PDF...",
-      allowOutsideClick: false,
-      didOpen: () => Swal.showLoading(),
-    });
-
-    const canvas = await html2canvas(pdfRef.current, {
-      scale: 2,
-      useCORS: true,
-    });
-
-    const imgData = canvas.toDataURL("image/jpeg", 1.0);
-    const pdf = new jsPDF("p", "mm", "a4");
-
-    const pdfWidth = pdf.internal.pageSize.getWidth();
-    const pdfHeight = pdf.internal.pageSize.getHeight();
-
-    const ratio = Math.min(
-      pdfWidth / canvas.width,
-      pdfHeight / canvas.height
-    );
-
-    const imgW = canvas.width * ratio;
-    const imgH = canvas.height * ratio;
-
-    const x = (pdfWidth - imgW) / 2;
-    const y = 8;
-
-    pdf.addImage(imgData, "JPEG", x, y, imgW, imgH);
-
-    const fileName = `${cleanName(
-      data?.customer_name
-    )}_${formatDateForFile(data?.booking_date)}.pdf`;
-
-    pdf.save(fileName);
-
-    Swal.close();
-
-    Swal.fire({
-      width: "280px",
-      icon: "success",
-      text: "PDF Downloaded Successfully 😎",
-      timer: 1500,
-      showConfirmButton: true,
-    });
-  } catch (err) {
-    Swal.close();
-
-    Swal.fire({
-      width: "300px",
-      icon: "error",
-      text: "PDF Export Failed",
-    });
-  }
-};
-
-
-
-const printPDF = async () => {
-  try {
-    if (!pdfRef.current || !data) {
-      return Swal.fire({
-        width: "300px",
-        icon: "warning",
-        text: "No data found"
-      });
-    }
-
-    Swal.fire({
-      width: "260px",
-      title: "Preparing Print...",
-      allowOutsideClick: false,
-      didOpen: () => Swal.showLoading()
-    });
-
-    const canvas = await html2canvas(pdfRef.current, {
-      scale: 2,
-      useCORS: true
-    });
-
-    const imgData = canvas.toDataURL("image/jpeg", 1.0);
-
-    const pdf = new jsPDF("p", "mm", "a4");
-
-    const pdfWidth = pdf.internal.pageSize.getWidth();
-    const pdfHeight = pdf.internal.pageSize.getHeight();
-
-    const ratio = Math.min(
-      pdfWidth / canvas.width,
-      pdfHeight / canvas.height
-    );
-
-    const imgW = canvas.width * ratio;
-    const imgH = canvas.height * ratio;
-
-    const x = (pdfWidth - imgW) / 2;
-    const y = 8;
-
-    pdf.addImage(
-      imgData,
-      "JPEG",
-      x,
-      y,
-      imgW,
-      imgH
-    );
-
-    Swal.close();
-
-    const blobUrl = pdf.output("bloburl");
-
-    const printWindow =
-      window.open(blobUrl, "_blank");
-
-    if (printWindow) {
-      printWindow.onload = () => {
-        printWindow.focus();
-        printWindow.print();
-      };
-    }
-
-    Swal.fire({
-      width: "280px",
-      icon: "success",
-      text: "Print Preview Opened 😎",
-      timer: 1200,
-      showConfirmButton: false
-    });
-
-  } catch (err) {
-
-    Swal.close();
-
-    Swal.fire({
-      width: "300px",
-      icon: "error",
-      text: "Print Failed"
-    });
-  }
-};
 
   if (!data) return <div className="p-3">Loading...</div>;
 
