@@ -46,6 +46,29 @@ const { exportPDF, printPDF } = usePdf(ref, {
 
   if (!data) return <div className="p-3">Loading...</div>;
 
+/* ================= TRIP DURATION ================= */
+const flightDates = (data.flight_date || [])
+  .filter(Boolean)
+  .sort();
+
+let tripDays = 0;
+let tripNights = 0;
+
+if (flightDates.length >= 2) {
+  const startDate = new Date(flightDates[0]);
+  const endDate = new Date(
+    flightDates[flightDates.length - 1]
+  );
+
+  const diff =
+    (endDate - startDate) /
+    (1000 * 60 * 60 * 24);
+
+  tripDays = diff + 1;
+  tripNights = diff;
+}
+
+
   return (
     <div className="container mt-3 mb-5">
       {/* ===== TOP ACTIONS ===== */}
@@ -100,25 +123,73 @@ const { exportPDF, printPDF } = usePdf(ref, {
                 <Header title="🎫 TICKETING DETAILS" />
 
         {/* BASIC INFO */}
-        <div className="row mb-3">
-          <div className="col-6"><b>Ref No:</b> {data.ref_no}</div>
-          <div className="col-6 text-end"><b>Booking Date:</b> {fmtDate(data.booking_date)}</div>
-        </div>
+<div className="row mb-3">
 
-        <p><b>Customer Name:</b> {data.customer_name}</p>
-        <hr />
+  <div className="col-md-4">
+    <b>Ref No:</b> {data.ref_no}
+  </div>
 
-        {/* ===== FLIGHT ROUTES ===== */}
-        <h5 className="fw-bold text-primary mb-2">✈️ Flight Routes</h5>
-        {data.flight_from.length === 0 && <p className="text-muted">No routes</p>}
-        {data.flight_from.map((f, i) => (
-          <div key={i} className="border rounded p-2 mb-2 shadow-sm">
-            <b>{f}</b> → <b>{data.flight_to[i]}</b> ({fmtDate(data.flight_date[i])}){" "}
-            {data.airline?.[i] && <span className="fw-bold text-success">— {data.airline[i]}</span>}
-          </div>
-        ))}
+  <div className="col-md-4">
+    <b>Booking Date:</b> {fmtDate(data.booking_date)}
+  </div>
 
-        <hr />
+  <div className="col-md-4">
+    <div
+      style={{
+        background:
+          "linear-gradient(135deg,#ff6f61,#ffa07a)",
+        color: "#fff",
+        padding: "8px 12px",
+        borderRadius: "12px",
+        textAlign: "center",
+        fontWeight: "700",
+        boxShadow:
+          "0 3px 8px rgba(0,0,0,0.15)",
+      }}
+    >
+      📅 {tripDays > 0
+        ? `${tripDays} Days / ${tripNights} Nights`
+        : "Duration N/A"}
+    </div>
+  </div>
+
+</div>
+
+{/* ===== FLIGHT ROUTES ===== */}
+<h5 className="fw-bold text-primary mb-2">✈️ Flight Routes</h5>
+
+{data.flight_from.length === 0 && (
+  <p className="text-muted">No routes</p>
+)}
+
+{data.flight_from.map((f, i) => (
+  <div
+    key={i}
+    className="border rounded p-3 mb-2 shadow-sm"
+  >
+    <div className="fw-bold fs-6">
+      {f} → {data.flight_to[i]}
+    </div>
+
+    <div className="mt-2">
+      <span
+        className="badge bg-primary"
+        style={{
+          fontSize: "12px",
+          padding: "6px 10px",
+        }}
+      >
+        📅 {fmtDate(data.flight_date[i])}
+      </span>
+
+      {data.airline?.[i] && (
+        <span className="fw-bold text-success ms-2">
+          ✈ {data.airline[i]}
+        </span>
+      )}
+    </div>
+  </div>
+))}
 
         {/* ===== PASSENGERS ===== */}
         <h5 className="fw-bold text-primary mb-2">👥 Passengers</h5>

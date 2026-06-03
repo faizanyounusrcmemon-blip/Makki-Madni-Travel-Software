@@ -157,31 +157,41 @@ if (flightDates.length >= 2) {
 
 </div>
 
-        {/* ===== FLIGHT ROUTES ===== */}
-        <h5 className="fw-bold text-primary mb-2">✈️ Flight Routes</h5>
-        {data.flight_from.length === 0 && <p className="text-muted">No routes</p>}
-        {data.flight_from.map((f, i) => (
-          <div key={i} className="border rounded p-2 mb-2 shadow-sm">
-            <br />
+{/* ===== FLIGHT ROUTES ===== */}
+<h5 className="fw-bold text-primary mb-2">✈️ Flight Routes</h5>
 
-<span
-  className="badge bg-primary mt-1"
-  style={{
-    fontSize: "12px",
-    padding: "6px 10px"
-  }}
->
-  📅 {fmtDate(data.flight_date[i])}
-</span> ({fmtDate(data.flight_date[i])}){" "}
-            {data.airline?.[i] && (
-  <span className="fw-bold text-success ms-2">
-    ✈ {data.airline[i]}
-  </span>
+{data.flight_from.length === 0 && (
+  <p className="text-muted">No routes</p>
 )}
-          </div>
-        ))}
 
-        <hr />
+{data.flight_from.map((f, i) => (
+  <div
+    key={i}
+    className="border rounded p-3 mb-2 shadow-sm"
+  >
+    <div className="fw-bold fs-6">
+      {f} → {data.flight_to[i]}
+    </div>
+
+    <div className="mt-2">
+      <span
+        className="badge bg-primary"
+        style={{
+          fontSize: "12px",
+          padding: "6px 10px",
+        }}
+      >
+        📅 {fmtDate(data.flight_date[i])}
+      </span>
+
+      {data.airline?.[i] && (
+        <span className="fw-bold text-success ms-2">
+          ✈ {data.airline[i]}
+        </span>
+      )}
+    </div>
+  </div>
+))}
 
         {/* ===== PASSENGERS ===== */}
         <h5 className="fw-bold text-primary mb-2">👥 Passengers</h5>
