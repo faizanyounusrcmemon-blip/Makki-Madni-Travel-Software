@@ -461,16 +461,42 @@ const handleSavePackage = async () => {
             <small className="text-muted">{showDate(bookingDate)}</small>
           </div>
 <div>
-  <label>Package Duration</label>
-  <input
-    className="form-control form-control-sm fw-bold"
-    value={
-      packageDays > 0
-        ? `${packageDays} Days / ${packageNights} Nights`
-        : ""
-    }
-    readOnly
-  />
+  <label className="fw-bold text-muted mb-1 d-block">
+    📅 Package Duration
+  </label>
+
+  <div
+    style={{
+      minWidth: "230px",
+      padding: "10px 15px",
+      borderRadius: "12px",
+      background: "#f8f9fa",
+      border: "2px solid #20c997",
+      textAlign: "center",
+      boxShadow: "0 2px 10px rgba(0,0,0,.08)",
+    }}
+  >
+    <div
+      style={{
+        fontSize: "20px",
+        fontWeight: "800",
+        color: "#198754",
+      }}
+    >
+      {packageDays}
+      <span style={{ fontSize: "13px" }}> Days</span>
+    </div>
+
+    <div
+      style={{
+        fontSize: "14px",
+        color: "#6c757d",
+        fontWeight: "600",
+      }}
+    >
+      🌙 {packageNights} Nights
+    </div>
+  </div>
 </div>
 
         </div>
