@@ -3,6 +3,21 @@ import usePdf from "../hooks/usePdf";
 import Swal from "sweetalert2";
 import Header from "../components/Header";
 
+const showDate = (val) => {
+  if (!val) return "";
+  const d = new Date(val);
+
+  const day = String(d.getDate()).padStart(2, "0");
+  const mon = d.toLocaleString("en-US", {
+    month: "short",
+  });
+  const year = d.getFullYear();
+
+  return `${day}/${mon}/${year}`;
+};
+
+
+
 
 // =========================
 // VIP Ticketing Styles
@@ -45,11 +60,36 @@ export default function Ticketing({ onNavigate }) {
   const [saving, setSaving] = useState(false);
 
 
+
+
   // ===== FLIGHTS =====
   const [flights, setFlights] = useState([
     { from: "", to: "", date: "", airline: "" },
     { from: "", to: "", date: "", airline: "" },
   ]);
+
+/* ===== TRIP DURATION ===== */
+const flightDates = flights
+  .map((f) => f.date)
+  .filter(Boolean)
+  .sort();
+
+let tripDays = 0;
+let tripNights = 0;
+
+if (flightDates.length >= 2) {
+  const startDate = new Date(flightDates[0]);
+  const endDate = new Date(
+    flightDates[flightDates.length - 1]
+  );
+
+  const diff =
+    (endDate - startDate) /
+    (1000 * 60 * 60 * 24);
+
+  tripDays = diff + 1;
+  tripNights = diff;
+}
 
   const addFlightRow = () => setFlights([...flights, { from: "", to: "", date: "", airline: "" }]);
 
@@ -292,11 +332,69 @@ const saveData = async () => {
         <Header title="🎫 TICKETING QUOTATION" />
 
         {/* Customer Info */}
-        <div className="d-flex gap-3 mb-3">
-          <div><label>Ref No</label><input className="form-control form-control-sm" value={refNo} readOnly /></div>
-          <div><label>Customer Name</label><input className="form-control form-control-sm" value={customerName} onChange={(e) => setCustomerName(e.target.value)} /></div>
-          <div><label>Booking Date</label><input type="date" className="form-control form-control-sm" value={bookingDate} onChange={(e) => setBookingDate(e.target.value)} /></div>
-        </div>
+<div className="d-flex gap-3 mb-3 flex-wrap">
+
+  <div>
+    <label>Ref No</label>
+    <input
+      className="form-control form-control-sm"
+      value={refNo}
+      readOnly
+    />
+  </div>
+
+  <div>
+    <label>Customer Name</label>
+    <input
+      className="form-control form-control-sm"
+      value={customerName}
+      onChange={(e) =>
+        setCustomerName(e.target.value)
+      }
+    />
+  </div>
+
+  <div>
+    <label>Booking Date</label>
+    <input
+      type="date"
+      className="form-control form-control-sm"
+      value={bookingDate}
+      onChange={(e) =>
+        setBookingDate(e.target.value)
+      }
+    />
+    <small className="text-muted">
+      {showDate(bookingDate)}
+    </small>
+  </div>
+
+  <div>
+    <label className="fw-bold text-muted d-block">
+      📅 Trip Duration
+    </label>
+
+    <div
+      style={{
+        minWidth: "220px",
+        padding: "8px 12px",
+        borderRadius: "10px",
+        background:
+          "linear-gradient(135deg,#ff6f61,#ffa07a)",
+        color: "#fff",
+        fontWeight: "700",
+        textAlign: "center",
+        boxShadow:
+          "0 3px 8px rgba(0,0,0,0.15)",
+      }}
+    >
+      {tripDays > 0
+        ? `${tripDays} Days / ${tripNights} Nights`
+        : "Not Available"}
+    </div>
+  </div>
+
+</div>
 
         {/* Flight Details */}
         <h6 style={styles.sectionHeader}>Flight Details</h6>
@@ -310,7 +408,22 @@ const saveData = async () => {
               <tr key={i}>
                 <td><input className="form-control form-control-sm" value={f.from} onChange={(e) => { const u = [...flights]; u[i].from = e.target.value; setFlights(u); }} /></td>
                 <td><input className="form-control form-control-sm" value={f.to} onChange={(e) => { const u = [...flights]; u[i].to = e.target.value; setFlights(u); }} /></td>
-                <td><input type="date" className="form-control form-control-sm" value={f.date} onChange={(e) => { const u = [...flights]; u[i].date = e.target.value; setFlights(u); }} /></td>
+<td>
+  <input
+    type="date"
+    className="form-control form-control-sm"
+    value={f.date}
+    onChange={(e) => {
+      const u = [...flights];
+      u[i].date = e.target.value;
+      setFlights(u);
+    }}
+  />
+
+  <small className="text-muted d-block">
+    {showDate(f.date)}
+  </small>
+</td>
                 <td><input className="form-control form-control-sm" placeholder="PIA / SAUDIA" value={f.airline} onChange={(e) => { const u = [...flights]; u[i].airline = e.target.value; setFlights(u); }} /></td>
                 <td><button className="btn btn-sm btn-link text-danger" onClick={() => setFlights(flights.filter((_, x) => x !== i))}>✖</button></td>
               </tr>
