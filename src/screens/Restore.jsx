@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import "./restore.css";
 import Swal from "sweetalert2";
+import UploadRestoreCard from "../components/UploadRestoreCard";
 
 export default function Restore({ onNavigate }) {
   const [files, setFiles] = useState([]);
@@ -288,6 +289,8 @@ const askPassword = async (title, fileObj) => {
         >
           ⬅ Dashboard
         </button>
+
+<UploadRestoreCard />
 
         <table className="table vip-table mt-3">
           <thead>
