@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import Swal from "sweetalert2";
 import "./dashboard.css";
+import axios from "axios";
 
 export default function Dashboard({ onNavigate }) {
   const [lastBackup, setLastBackup] = useState(null);
@@ -36,37 +37,61 @@ export default function Dashboard({ onNavigate }) {
   const formatDate = (d) =>
     d ? new Date(d).toLocaleString("en-GB", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: true }) : "-";
 
-  // RUN BACKUP FUNCTION
+// RUN BACKUP FUNCTION
 const runBackup = async () => {
+
   const { value: pass, isDismissed } = await Swal.fire({
     width: "360px",
     padding: "1em",
     html: `
       <div style="text-align:center;font-size:14px;line-height:1.5">
         <b style="color:#198754;font-size:16px">💾 Backup</b><br>
-        <span style="font-size:13px;color:#555">Enter password to start backup</span>
+        <span style="font-size:13px;color:#555">
+          Enter password to start backup
+        </span>
+
         <div style="position:relative; margin-top:10px">
-          <input 
-  type="password" 
-  id="swal-pass" 
-  class="swal2-input" 
-  placeholder="Enter password"
-  style="height:32px;font-size:15px;padding:6px 10px;"
->
-          <span id="toggle-pass" style="
-            position:absolute;
-            right:8px;
-            top:50%;
-            transform:translateY(-50%);
-            cursor:pointer;
-            font-size:14px;
-          ">👁</span>
+          <input
+            type="password"
+            id="swal-pass"
+            class="swal2-input"
+            placeholder="Enter password"
+            style="
+              height:34px;
+              font-size:14px;
+              padding:6px 10px;
+            "
+          >
+
+          <span
+            id="toggle-pass"
+            style="
+              position:absolute;
+              right:12px;
+              top:50%;
+              transform:translateY(-50%);
+              cursor:pointer;
+              font-size:15px;
+            "
+          >
+            👁
+          </span>
         </div>
-        <div id="swal-error" style="color:#dc3545;font-size:12px;min-height:18px;margin-top:4px"></div>
+
+        <div
+          id="swal-error"
+          style="
+            color:#dc3545;
+            font-size:12px;
+            min-height:18px;
+            margin-top:4px
+          "
+        ></div>
+
       </div>
     `,
     showCancelButton: true,
-    confirmButtonText: "Start",
+    confirmButtonText: "Start Backup",
     cancelButtonText: "Cancel",
     buttonsStyling: false,
     customClass: {
@@ -74,40 +99,77 @@ const runBackup = async () => {
       cancelButton: "swal-btn-cancel",
       popup: "swal-backup-popup",
     },
+
     didOpen: () => {
-      const input = document.getElementById("swal-pass");
-      const toggle = document.getElementById("toggle-pass");
+
+      const input =
+        document.getElementById("swal-pass");
+
+      const toggle =
+        document.getElementById("toggle-pass");
+
       input.focus();
 
-      // Show/Hide password
       let visible = false;
+
       toggle.addEventListener("click", () => {
+
         visible = !visible;
-        input.type = visible ? "text" : "password";
-        toggle.textContent = visible ? "🙈" : "👁";
+
+        input.type = visible
+          ? "text"
+          : "password";
+
+        toggle.textContent = visible
+          ? "🙈"
+          : "👁";
       });
 
-      // Press Enter to confirm
       input.addEventListener("keyup", (e) => {
-        if (e.key === "Enter") document.querySelector(".swal-btn-confirm").click();
+        if (e.key === "Enter") {
+          document
+            .querySelector(".swal-btn-confirm")
+            .click();
+        }
       });
     },
+
     preConfirm: () => {
-      const input = document.getElementById("swal-pass");
-      const errorBox = document.getElementById("swal-error");
-      const popup = document.querySelector(".swal-backup-popup");
+
+      const input =
+        document.getElementById("swal-pass");
+
+      const errorBox =
+        document.getElementById("swal-error");
+
+      const popup =
+        document.querySelector(".swal-backup-popup");
 
       if (!input.value) {
-        errorBox.textContent = "Password required";
+
+        errorBox.textContent =
+          "Password required";
+
         popup.classList.add("shake");
-        setTimeout(() => popup.classList.remove("shake"), 500);
+
+        setTimeout(() => {
+          popup.classList.remove("shake");
+        }, 500);
+
         return false;
       }
 
       if (input.value !== "8515") {
-        errorBox.textContent = "Wrong password 😎";
+
+        errorBox.textContent =
+          "Wrong password 😎";
+
         popup.classList.add("shake");
-        setTimeout(() => popup.classList.remove("shake"), 500);
+
+        setTimeout(() => {
+          popup.classList.remove("shake");
+        }, 500);
+
         return false;
       }
 
@@ -117,41 +179,161 @@ const runBackup = async () => {
 
   if (isDismissed || !pass) return;
 
-  // Backup loader
+  /* ================= BACKUP PROGRESS ================= */
+
   Swal.fire({
-    title: "Backing up...",
-    html: `<div class="vip-progress"><div class="vip-progress-bar" style="width:0%">0%</div></div>`,
+    title: "💾 Creating Backup...",
+    html: `
+      <div style="margin-top:15px">
+
+        <div style="
+          width:100%;
+          height:24px;
+          background:#e5e7eb;
+          border-radius:50px;
+          overflow:hidden;
+          box-shadow:inset 0 2px 5px rgba(0,0,0,.08);
+        ">
+          <div
+            id="backupBar"
+            style="
+              width:0%;
+              height:100%;
+              background:linear-gradient(
+                90deg,
+                #22c55e,
+                #16a34a
+              );
+              transition:width .35s ease;
+            "
+          ></div>
+        </div>
+
+        <div
+          id="backupPercent"
+          style="
+            margin-top:10px;
+            font-size:18px;
+            font-weight:800;
+            color:#0f172a;
+          "
+        >
+          0%
+        </div>
+
+        <div style="
+          margin-top:5px;
+          font-size:12px;
+          color:#64748b;
+        ">
+          Generating secure backup...
+        </div>
+
+      </div>
+    `,
     allowOutsideClick: false,
+    allowEscapeKey: false,
     showConfirmButton: false,
-    didOpen: () => {
-      const bar = document.querySelector(".vip-progress-bar");
-      let prog = 0;
-      const interval = setInterval(() => {
-        if (prog < 90) { prog += 10; bar.style.width = prog + "%"; bar.textContent = prog + "%"; }
-        else clearInterval(interval);
-      }, 400);
-    }
   });
 
+  let percent = 0;
+
+  const timer = setInterval(() => {
+
+    if (percent >= 90) return;
+
+    percent += 5;
+
+    const bar =
+      document.getElementById("backupBar");
+
+    const txt =
+      document.getElementById("backupPercent");
+
+    if (bar) {
+      bar.style.width = `${percent}%`;
+    }
+
+    if (txt) {
+      txt.innerHTML = `${percent}%`;
+    }
+
+  }, 250);
+
   try {
-    const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/backup/manual`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ password: pass }),
-    });
+
+    const res = await fetch(
+      `${import.meta.env.VITE_BACKEND_URL}/api/backup/manual`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          password: pass,
+        }),
+      }
+    );
+
     const data = await res.json();
-    const bar = document.querySelector(".vip-progress-bar");
-    bar.style.width = "100%";
-    bar.textContent = "100%";
+
+    clearInterval(timer);
+
+    const bar =
+      document.getElementById("backupBar");
+
+    const txt =
+      document.getElementById("backupPercent");
+
+    if (bar) {
+      bar.style.width = "100%";
+    }
+
+    if (txt) {
+      txt.innerHTML = "100%";
+    }
+
+    await new Promise((r) =>
+      setTimeout(r, 500)
+    );
+
+    Swal.close();
 
     if (data.success) {
-      Swal.fire("Backup Completed ✅", "Your backup was successful.", "success");
+
+      Swal.fire({
+        icon: "success",
+        title: "Backup Completed ✅",
+        text: "Your backup was created successfully.",
+        confirmButtonColor: "#16a34a",
+      });
+
       loadLastBackup();
+
     } else {
-      Swal.fire("Error ❌", data.error || "Backup failed", "error");
+
+      Swal.fire({
+        icon: "error",
+        title: "Backup Failed",
+        text:
+          data.error ||
+          "Unable to create backup",
+      });
     }
-  } catch {
-    Swal.fire("Error ❌", "Server error during backup", "error");
+
+  } catch (err) {
+
+    clearInterval(timer);
+
+    Swal.close();
+
+    Swal.fire({
+      icon: "error",
+      title: "Server Error",
+      text:
+        err.message ||
+        "Backup process failed",
+    });
   }
 };
 

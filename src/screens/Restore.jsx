@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import "./restore.css";
+import axios from "axios";
 import Swal from "sweetalert2";
 import UploadRestoreCard from "../components/UploadRestoreCard";
 
@@ -155,9 +156,75 @@ const askPassword = async (title, fileObj) => {
       return Swal.fire("Error", "Table select karo", "error");
     }
 
-    showLoader("Restoring...");
+    Swal.fire({
+  title: "🔄 Restoring Backup",
+  html: `
+    <div style="margin-top:15px">
+
+      <div style="
+        width:100%;
+        height:24px;
+        background:#e5e7eb;
+        border-radius:50px;
+        overflow:hidden;
+      ">
+        <div
+          id="restoreBar"
+          style="
+            width:0%;
+            height:100%;
+            background:linear-gradient(
+              90deg,
+              #3b82f6,
+              #2563eb
+            );
+            transition:width .4s ease;
+          "
+        ></div>
+      </div>
+
+      <div
+        id="restorePercent"
+        style="
+          margin-top:10px;
+          font-size:18px;
+          font-weight:800;
+        "
+      >
+        0%
+      </div>
+
+    </div>
+  `,
+  showConfirmButton: false,
+  allowOutsideClick: false,
+});
 
     try {
+let p = 0;
+
+const timer = setInterval(() => {
+
+  if (p >= 90) return;
+
+  p += 5;
+
+  const bar =
+    document.getElementById("restoreBar");
+
+  const txt =
+    document.getElementById("restorePercent");
+
+  if (bar) {
+    bar.style.width = `${p}%`;
+  }
+
+  if (txt) {
+    txt.innerHTML = `${p}%`;
+  }
+
+}, 250);
+
       const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}${
         mode === "full"
           ? "/api/backup/restore/full"
@@ -169,11 +236,34 @@ const askPassword = async (title, fileObj) => {
       });
 
       const data = await res.json();
+
+clearInterval(timer);
+
+const bar =
+  document.getElementById("restoreBar");
+
+const txt =
+  document.getElementById("restorePercent");
+
+if (bar) {
+  bar.style.width = "100%";
+}
+
+if (txt) {
+  txt.innerHTML = "100%";
+}
+
+await new Promise((r) =>
+  setTimeout(r, 500)
+);
+
       Swal.close();
 
       if (!res.ok || !data.success) {
         return Swal.fire("Error", data.error || "Wrong password", "error");
       }
+
+Swal.close();
 
       Swal.fire("Success", "Restore completed successfully", "success");
     } catch {
@@ -190,7 +280,21 @@ const askPassword = async (title, fileObj) => {
     const password = await askPassword("Download Backup", fileObj);
     if (!password) return;
 
-    showLoader("Preparing Download...");
+    Swal.fire({
+  title: "⬇ Preparing Download",
+  html: `
+    <div style="
+      padding:20px;
+      font-size:15px;
+      color:#2563eb;
+      font-weight:700;
+    ">
+      Please wait...
+    </div>
+  `,
+  allowOutsideClick:false,
+  showConfirmButton:false
+});
 
     try {
       const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/backup/download`, {
@@ -240,7 +344,21 @@ const askPassword = async (title, fileObj) => {
 
     if (!confirm.isConfirmed) return;
 
-    showLoader("Deleting...");
+    Swal.fire({
+  title: "🗑 Deleting Backup",
+  html: `
+    <div style="
+      padding:20px;
+      font-size:15px;
+      color:#dc2626;
+      font-weight:700;
+    ">
+      Removing backup...
+    </div>
+  `,
+  allowOutsideClick:false,
+  showConfirmButton:false
+});
 
     try {
       const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/backup/delete`, {
