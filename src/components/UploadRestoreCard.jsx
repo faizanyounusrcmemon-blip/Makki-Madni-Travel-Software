@@ -1,5 +1,7 @@
 import React, { useState } from "react";
 import Swal from "sweetalert2";
+import axios from "axios";
+
 
 export default function UploadRestoreCard() {
   const [zipFile, setZipFile] = useState(null);
@@ -8,6 +10,8 @@ export default function UploadRestoreCard() {
 
   const [zipTable, setZipTable] = useState("");
   const [csvTable, setCsvTable] = useState("");
+  const [uploading, setUploading] = useState(false);
+  const [progress, setProgress] = useState(0);
 
   const TABLES = [
     "bookings",
@@ -27,6 +31,214 @@ export default function UploadRestoreCard() {
     "suppliers",
     "ziyarat",
   ];
+
+const uploadRequest = async (
+  url,
+  fileField,
+  file,
+  table = null,
+  title = "Restore"
+) => {
+
+  if (!file) {
+    return Swal.fire(
+      "Error",
+      "Please select a file",
+      "error"
+    );
+  }
+
+  const password = await askPassword(
+    title,
+    file
+  );
+
+  if (!password) return;
+
+  const fd = new FormData();
+
+  fd.append(fileField, file);
+  fd.append("password", password);
+
+  if (table) {
+    fd.append("table", table);
+  }
+
+  try {
+
+    Swal.fire({
+      title: "📤 Uploading Backup...",
+      html: `
+        <div style="margin-top:15px">
+
+          <div style="
+            width:100%;
+            height:24px;
+            background:#e5e7eb;
+            border-radius:50px;
+            overflow:hidden;
+            box-shadow:inset 0 2px 5px rgba(0,0,0,.1);
+          ">
+            <div
+              id="uploadBar"
+              style="
+                width:0%;
+                height:100%;
+                background:linear-gradient(
+                  90deg,
+                  #22c55e,
+                  #16a34a
+                );
+                transition:width .3s ease;
+              "
+            ></div>
+          </div>
+
+          <div
+            id="uploadPercent"
+            style="
+              margin-top:10px;
+              font-size:18px;
+              font-weight:800;
+              color:#0f172a;
+            "
+          >
+            0%
+          </div>
+
+          <div style="
+            margin-top:6px;
+            color:#64748b;
+            font-size:12px;
+          ">
+            Uploading file to server...
+          </div>
+
+        </div>
+      `,
+      allowOutsideClick: false,
+      allowEscapeKey: false,
+      showConfirmButton: false,
+    });
+
+    const res = await axios.post(
+      `${import.meta.env.VITE_BACKEND_URL}${url}`,
+      fd,
+      {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+
+        onUploadProgress: (evt) => {
+
+          if (!evt.total) return;
+
+          const percent = Math.round(
+            (evt.loaded * 100) / evt.total
+          );
+
+          const bar =
+            document.getElementById("uploadBar");
+
+          const txt =
+            document.getElementById("uploadPercent");
+
+          if (bar) {
+            bar.style.width = `${percent}%`;
+          }
+
+          if (txt) {
+            txt.innerHTML = `${percent}%`;
+          }
+        },
+      }
+    );
+
+    const bar =
+      document.getElementById("uploadBar");
+
+    const txt =
+      document.getElementById("uploadPercent");
+
+    if (bar) {
+      bar.style.width = "100%";
+    }
+
+    if (txt) {
+      txt.innerHTML = "100%";
+    }
+
+    Swal.update({
+      title: "🔄 Restoring Database...",
+      html: `
+        <div style="
+          padding:20px;
+          text-align:center;
+        ">
+          <div style="
+            font-size:40px;
+            margin-bottom:10px;
+          ">
+            ⏳
+          </div>
+
+          <div style="
+            font-weight:700;
+            color:#2563eb;
+            font-size:16px;
+          ">
+            Please wait...
+          </div>
+
+          <div style="
+            margin-top:8px;
+            color:#64748b;
+            font-size:13px;
+          ">
+            Backup uploaded successfully.<br>
+            Database restore is in progress.
+          </div>
+        </div>
+      `
+    });
+
+    if (!res.data.success) {
+
+      Swal.close();
+
+      return Swal.fire(
+        "Error",
+        res.data.error || "Restore failed",
+        "error"
+      );
+    }
+
+    Swal.fire({
+      icon: "success",
+      title: "Restore Completed",
+      html: `
+        <div style="font-size:14px">
+          Backup restored successfully.
+        </div>
+      `,
+      confirmButtonColor: "#16a34a",
+    });
+
+  } catch (err) {
+
+    Swal.close();
+
+    Swal.fire({
+      icon: "error",
+      title: "Restore Failed",
+      text:
+        err?.response?.data?.error ||
+        err.message ||
+        "Unknown Error",
+    });
+  }
+};
+
 
   const askPassword = async (title, fileObj) => {
     let show = false;
@@ -145,235 +357,254 @@ export default function UploadRestoreCard() {
     return password;
   };
 
-  const uploadRequest = async (
-    url,
-    fileField,
-    file,
-    table = null,
-    title = "Restore"
-  ) => {
-    if (!file) {
-      return Swal.fire(
-        "Error",
-        "Please select a file",
-        "error"
-      );
-    }
 
-    const password = await askPassword(
-      title,
-      file
-    );
 
-    if (!password) return;
+return (
+  <div
+    className="container-fluid py-4"
+    style={{
+      maxWidth: "1200px",
+      margin: "auto",
+    }}
+  >
 
-    const fd = new FormData();
+    {/* HEADER */}
+    <div
+      className="mb-4 p-4"
+      style={{
+        borderRadius: "20px",
+        background:
+          "linear-gradient(135deg,#0f172a,#1e3a8a,#2563eb)",
+        color: "#fff",
+        boxShadow: "0 15px 40px rgba(37,99,235,.25)",
+      }}
+    >
+      <h2 className="fw-bold mb-1">
+        🔄 External Backup Restore Center
+      </h2>
 
-    fd.append(fileField, file);
-    fd.append("password", password);
+      <div
+        style={{
+          opacity: 0.9,
+          fontSize: 14,
+        }}
+      >
+        Restore complete backups, single tables, and CSV
+        data securely.
+      </div>
+    </div>
 
-    if (table) {
-      fd.append("table", table);
-    }
+    <div className="row g-4">
 
-    try {
-      Swal.fire({
-        title: "Processing...",
-        html: "Please wait...",
-        allowOutsideClick: false,
-        didOpen: () => Swal.showLoading(),
-      });
+      {/* FULL RESTORE */}
+<div className="col-lg-4">
+  <div className="restore-card h-100">
+    <div className="restore-top success">
+      <span>📦</span>
+      <div>
+        <h5>Full Backup Restore</h5>
+        <small>Restore Entire Database</small>
+      </div>
+    </div>
 
-      const res = await fetch(
-        `${import.meta.env.VITE_BACKEND_URL}${url}`,
-        {
-          method: "POST",
-          body: fd,
-        }
-      );
+    <div className="modern-upload">
+      <div className="upload-icon">📦</div>
 
-      const data = await res.json();
+      <div className="fw-bold mb-2">
+        {zipFile ? zipFile.name : "No ZIP File Selected"}
+      </div>
 
-      Swal.close();
+      <label className="browse-btn">
+        📁 Choose ZIP File
+        <input
+          type="file"
+          hidden
+          accept=".zip"
+          onChange={(e) => setZipFile(e.target.files[0])}
+        />
+      </label>
 
-      if (!data.success) {
-        return Swal.fire(
-          "Error",
-          data.error || "Restore failed",
-          "error"
-        );
+      <small className="mt-2 d-block">
+        Click button to browse ZIP backup
+      </small>
+    </div>
+
+    <button
+      className="btn btn-success w-100 mt-3 py-2 fw-bold"
+      onClick={() =>
+        uploadRequest(
+          "/api/backup/restore/upload/full",
+          "backup",
+          zipFile,
+          null,
+          "ZIP Full Restore"
+        )
       }
+    >
+      Restore Complete Backup
+    </button>
+  </div>
+</div>
 
-      Swal.fire({
-        icon: "success",
-        title: "Success",
-        text: "Restore completed successfully",
-        timer: 2000,
-        showConfirmButton: false,
-      });
-    } catch (err) {
-      Swal.close();
+      {/* ZIP TABLE */}
+<div className="col-lg-4">
+  <div className="restore-card h-100">
+    <div className="restore-top primary">
+      <span>🗂️</span>
 
-      Swal.fire(
-        "Error",
-        err.message,
-        "error"
-      );
-    }
-  };
+      <div>
+        <h5>ZIP Table Restore</h5>
+        <small>Restore Single Table</small>
+      </div>
+    </div>
 
-  return (
-    <div className="upload-card">
-      <h4 className="mb-4 fw-bold text-primary">
-        📤 External Backup Restore
-      </h4>
+    <div className="modern-upload">
+      <div className="upload-icon">🗂️</div>
 
-      {/* ZIP FULL RESTORE */}
-      <div className="upload-section">
-        <div className="upload-title">
-          🔄 ZIP Full Restore
-        </div>
-
-        <input
-          type="file"
-          accept=".zip"
-          className="form-control mb-3"
-          onChange={(e) =>
-            setZipFile(e.target.files[0])
-          }
-        />
-
-        <button
-          className="vip-btn vip-success"
-          onClick={() =>
-            uploadRequest(
-              "/api/backup/restore/upload/full",
-              "backup",
-              zipFile,
-              null,
-              "ZIP Full Restore"
-            )
-          }
-        >
-          📦 Restore Complete Backup
-        </button>
+      <div className="fw-bold mb-2">
+        {zipSingleFile
+          ? zipSingleFile.name
+          : "No ZIP File Selected"}
       </div>
 
-      {/* ZIP SINGLE TABLE */}
-      <div className="upload-section">
-        <div className="upload-title">
-          📁 ZIP Single Table Restore
-        </div>
-
+      <label className="browse-btn">
+        📁 Choose ZIP File
         <input
           type="file"
+          hidden
           accept=".zip"
-          className="form-control mb-3"
           onChange={(e) =>
-            setZipSingleFile(
-              e.target.files[0]
-            )
+            setZipSingleFile(e.target.files[0])
           }
         />
+      </label>
 
-        <select
-          className="form-select mb-3"
-          value={zipTable}
-          onChange={(e) =>
-            setZipTable(e.target.value)
-          }
-        >
-          <option value="">
-            Select Table
-          </option>
+      <small className="mt-2 d-block">
+        Click button to browse ZIP backup
+      </small>
+    </div>
 
-          {TABLES.map((t) => (
-            <option key={t} value={t}>
-              {t}
-            </option>
-          ))}
-        </select>
+    <select
+      className="form-select mt-3"
+      value={zipTable}
+      onChange={(e) =>
+        setZipTable(e.target.value)
+      }
+    >
+      <option value="">Select Table</option>
 
-        <button
-          className="vip-btn vip-primary"
-          onClick={() => {
-            if (!zipTable) {
-              return Swal.fire(
-                "Error",
-                "Select a table",
-                "error"
-              );
-            }
+      {TABLES.map((t) => (
+        <option key={t} value={t}>
+          {t}
+        </option>
+      ))}
+    </select>
 
-            uploadRequest(
-              "/api/backup/restore/upload/table",
-              "backup",
-              zipSingleFile,
-              zipTable,
-              "ZIP Single Table Restore"
-            );
-          }}
-        >
-          📂 Restore Selected Table
-        </button>
+    <button
+      className="btn btn-primary w-100 mt-3 py-2 fw-bold"
+      onClick={() => {
+        if (!zipTable) {
+          return Swal.fire(
+            "Error",
+            "Select a table",
+            "error"
+          );
+        }
+
+        uploadRequest(
+          "/api/backup/restore/upload/table",
+          "backup",
+          zipSingleFile,
+          zipTable,
+          "ZIP Single Table Restore"
+        );
+      }}
+    >
+      Restore Selected Table
+    </button>
+  </div>
+</div>
+
+      {/* CSV */}
+<div className="col-lg-4">
+  <div className="restore-card h-100">
+    <div className="restore-top danger">
+      <span>📄</span>
+
+      <div>
+        <h5>CSV Restore</h5>
+        <small>Import Table Data</small>
+      </div>
+    </div>
+
+    <div className="modern-upload">
+      <div className="upload-icon">📄</div>
+
+      <div className="fw-bold mb-2">
+        {csvFile
+          ? csvFile.name
+          : "No CSV File Selected"}
       </div>
 
-      {/* CSV RESTORE */}
-      <div className="upload-section">
-        <div className="upload-title">
-          📄 CSV Single Table Restore
-        </div>
-
+      <label className="browse-btn">
+        📁 Choose CSV File
         <input
           type="file"
+          hidden
           accept=".csv"
-          className="form-control mb-3"
           onChange={(e) =>
             setCsvFile(e.target.files[0])
           }
         />
+      </label>
 
-        <select
-          className="form-select mb-3"
-          value={csvTable}
-          onChange={(e) =>
-            setCsvTable(e.target.value)
-          }
-        >
-          <option value="">
-            Select Table
-          </option>
-
-          {TABLES.map((t) => (
-            <option key={t} value={t}>
-              {t}
-            </option>
-          ))}
-        </select>
-
-        <button
-          className="vip-btn vip-danger"
-          onClick={() => {
-            if (!csvTable) {
-              return Swal.fire(
-                "Error",
-                "Select a table",
-                "error"
-              );
-            }
-
-            uploadRequest(
-              "/api/backup/restore/csv",
-              "csv",
-              csvFile,
-              csvTable,
-              "CSV Restore"
-            );
-          }}
-        >
-          📄 Restore CSV
-        </button>
-      </div>
+      <small className="mt-2 d-block">
+        Click button to browse CSV backup
+      </small>
     </div>
-  );
+
+    <select
+      className="form-select mt-3"
+      value={csvTable}
+      onChange={(e) =>
+        setCsvTable(e.target.value)
+      }
+    >
+      <option value="">Select Table</option>
+
+      {TABLES.map((t) => (
+        <option key={t} value={t}>
+          {t}
+        </option>
+      ))}
+    </select>
+
+    <button
+      className="btn btn-danger w-100 mt-3 py-2 fw-bold"
+      onClick={() => {
+        if (!csvTable) {
+          return Swal.fire(
+            "Error",
+            "Select a table",
+            "error"
+          );
+        }
+
+        uploadRequest(
+          "/api/backup/restore/csv",
+          "csv",
+          csvFile,
+          csvTable,
+          "CSV Restore"
+        );
+      }}
+    >
+      Restore CSV Data
+    </button>
+  </div>
+</div>
+
+    </div>
+  </div>
+);
 }
