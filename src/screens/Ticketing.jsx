@@ -55,7 +55,9 @@ export default function Ticketing({ onNavigate }) {
   const [searchRef, setSearchRef] = useState("");
   const [customerName, setCustomerName] = useState("");
   const [refNo, setRefNo] = useState("");
-  const [bookingDate, setBookingDate] = useState("");
+  const [bookingDate, setBookingDate] = useState(
+    new Date().toISOString().split("T")[0]
+  );
   const [isEdit, setIsEdit] = useState(false);
   const [saving, setSaving] = useState(false);
 

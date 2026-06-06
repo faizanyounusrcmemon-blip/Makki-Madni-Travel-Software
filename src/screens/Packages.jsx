@@ -14,7 +14,9 @@ const calcNights = (inD, outD) => {
 export default function Packages({ onNavigate }) {
   const [refNo, setRefNo] = useState("");
   const [customerName, setCustomerName] = useState("");
-  const [bookingDate, setBookingDate] = useState("");
+  const [bookingDate, setBookingDate] = useState(
+    new Date().toISOString().split("T")[0]
+  );
   const [contactNo, setContactNo] = useState("");
   const [searchRef, setSearchRef] = useState("");
   const [isEdit, setIsEdit] = useState(false);

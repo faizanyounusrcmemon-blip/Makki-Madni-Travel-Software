@@ -70,7 +70,9 @@ export default function Hotels({ onNavigate }) {
   const [customerName, setCustomerName] = useState("");
   const [agentName, setAgentName] = useState("");
   const [refNo, setRefNo] = useState("");
-  const [bookingDate, setBookingDate] = useState("");
+  const [bookingDate, setBookingDate] = useState(
+    new Date().toISOString().split("T")[0]
+  );
   const [rows, setRows] = useState([]);
   const [sarRate, setSarRate] = useState(0);
   const pdfRef = useRef(null);

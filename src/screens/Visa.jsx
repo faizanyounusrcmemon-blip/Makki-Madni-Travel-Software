@@ -3,6 +3,19 @@ import usePdf from "../hooks/usePdf";
 import Swal from "sweetalert2";
 import Header from "../components/Header";
 
+const showDate = (val) => {
+  if (!val) return "";
+  const d = new Date(val);
+
+  const day = String(d.getDate()).padStart(2, "0");
+  const mon = d.toLocaleString("en-US", {
+    month: "short",
+  });
+  const year = d.getFullYear();
+
+  return `${day}/${mon}/${year}`;
+};
+
 // VIP Visa Styles (Purple + Silver)
 const styles = {
   container: {
@@ -60,7 +73,9 @@ export default function Visa({ onNavigate }) {
   const [searchRef, setSearchRef] = useState("");
   const [refNo, setRefNo] = useState("");
   const [customerName, setCustomerName] = useState("");
-  const [bookingDate, setBookingDate] = useState("");
+  const [bookingDate, setBookingDate] = useState(
+    new Date().toISOString().split("T")[0]
+  );
   const [rows, setRows] = useState([]);
   const [pkrRate, setPkrRate] = useState(0);
   const [isEdit, setIsEdit] = useState(false);
@@ -292,19 +307,43 @@ const saveData = async () => {
 
         <Header title="🛂 VISA QUOTATION" />
 
-        <div className="d-flex gap-3 mb-3">
-          <div>
-            <label>Ref No</label>
-            <input className="form-control form-control-sm" value={refNo} readOnly />
-          </div>
-          <div>
-            <label>Customer Name</label>
-            <input className="form-control form-control-sm" value={customerName} onChange={(e) => setCustomerName(e.target.value)} />
-          </div>
-          <div>
-            <label>Booking Date</label>
-            <input type="date" className="form-control form-control-sm" value={bookingDate} onChange={(e) => setBookingDate(e.target.value)} />
-          </div>
+        {/* Customer Info */}
+<div className="d-flex gap-3 mb-3 flex-wrap">
+
+  <div>
+    <label>Ref No</label>
+    <input
+      className="form-control form-control-sm"
+      value={refNo}
+      readOnly
+    />
+  </div>
+
+  <div>
+    <label>Customer Name</label>
+    <input
+      className="form-control form-control-sm"
+      value={customerName}
+      onChange={(e) =>
+        setCustomerName(e.target.value)
+      }
+    />
+  </div>
+
+  <div>
+    <label>Booking Date</label>
+    <input
+      type="date"
+      className="form-control form-control-sm"
+      value={bookingDate}
+      onChange={(e) =>
+        setBookingDate(e.target.value)
+      }
+    />
+    <small className="text-muted">
+      {showDate(bookingDate)}
+    </small>
+  </div>
         </div>
 
         <h5 style={styles.sectionHeader}>🛂 Visa Details</h5>
