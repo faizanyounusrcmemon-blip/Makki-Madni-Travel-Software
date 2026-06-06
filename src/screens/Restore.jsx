@@ -17,6 +17,108 @@ export default function Restore({ onNavigate }) {
     "supplier_payments","suppliers","ziyarat",
   ];
 
+
+const fixSequences = async () => {
+  let passwordValue = "";
+  let showPassword = false;
+
+  const { value: confirmed } = await Swal.fire({
+    title: "🔐 Admin Authentication",
+    html: `
+      <div style="text-align:left">
+        <label style="font-weight:600;">Enter Password</label>
+
+        <div style="position:relative; margin-top:8px;">
+          <input
+            id="swal-pass"
+            type="password"
+            class="swal2-input"
+            placeholder="Enter admin password"
+            style="margin:0; width:100%; padding-right:40px;"
+          />
+
+          <button
+            type="button"
+            id="togglePass"
+            style="
+              position:absolute;
+              right:10px;
+              top:50%;
+              transform:translateY(-50%);
+              border:none;
+              background:transparent;
+              cursor:pointer;
+              font-size:16px;
+            "
+          >👁️</button>
+        </div>
+      </div>
+    `,
+    showCancelButton: true,
+    confirmButtonText: "🚀 Run Fix",
+    cancelButtonText: "Cancel",
+    focusConfirm: false,
+    preConfirm: () => {
+      const input = document.getElementById("swal-pass").value;
+      if (!input) {
+        Swal.showValidationMessage("Password required!");
+        return false;
+      }
+      return input;
+    },
+    didOpen: () => {
+      const input = document.getElementById("swal-pass");
+      const toggleBtn = document.getElementById("togglePass");
+
+      toggleBtn.addEventListener("click", () => {
+        showPassword = !showPassword;
+        input.type = showPassword ? "text" : "password";
+        toggleBtn.textContent = showPassword ? "🙈" : "👁️";
+      });
+    }
+  });
+
+  if (!confirmed) return;
+
+  // PASSWORD CHECK
+  if (confirmed !== "8515") {
+    return Swal.fire("❌ Error", "Wrong password!", "error");
+  }
+
+  // LOADING
+  Swal.fire({
+    title: "Fixing Sequences...",
+    text: "Please wait...",
+    allowOutsideClick: false,
+    didOpen: () => Swal.showLoading()
+  });
+
+  try {
+    const res = await fetch(
+      `${import.meta.env.VITE_BACKEND_URL}/api/backup/fix-sequences`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        }
+      }
+    );
+
+    const data = await res.json();
+    Swal.close();
+
+    if (!data.success) {
+      return Swal.fire("Error", data.error || "Something went wrong", "error");
+    }
+
+    Swal.fire("✅ Success", "All sequences fixed successfully", "success");
+
+  } catch (err) {
+    Swal.close();
+    Swal.fire("Error", err.message, "error");
+  }
+};
+
   /* ================= HELPERS ================= */
 
   const fmtDate = (d) => {
@@ -407,6 +509,33 @@ Swal.close();
         >
           ⬅ Dashboard
         </button>
+
+<button
+  onClick={fixSequences}
+  style={{
+    background: "linear-gradient(135deg,#f59e0b,#ea580c)",
+    color: "#fff",
+    border: "none",
+    borderRadius: "14px",
+    padding: "14px 24px",
+    fontWeight: "700",
+    fontSize: "15px",
+    cursor: "pointer",
+    boxShadow: "0 8px 20px rgba(234,88,12,.25)",
+    transition: "all .3s ease",
+    display: "flex",
+    alignItems: "center",
+    gap: "10px"
+  }}
+  onMouseEnter={(e) => {
+    e.currentTarget.style.transform = "translateY(-2px)";
+  }}
+  onMouseLeave={(e) => {
+    e.currentTarget.style.transform = "translateY(0)";
+  }}
+>
+  🔧 Fix Sequences After Restore
+</button>
 
 <UploadRestoreCard />
 
