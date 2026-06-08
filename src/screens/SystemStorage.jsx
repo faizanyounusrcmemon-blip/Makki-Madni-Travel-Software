@@ -30,6 +30,22 @@ export default function SystemStorage({ onNavigate }) {
 
   const usedPercent = Math.round((data.usedMB / data.dbLimitMB) * 100);
 
+const uniqueTables = Object.values(
+  data.tables.reduce((acc, item) => {
+    if (!acc[item.table]) {
+      acc[item.table] = {
+        table: item.table,
+        rows: Number(item.rows || 0),
+      };
+    } else {
+      acc[item.table].rows += Number(item.rows || 0);
+    }
+    return acc;
+  }, {})
+);
+
+
+
   return (
     <div className="container py-3">
 
@@ -137,14 +153,14 @@ export default function SystemStorage({ onNavigate }) {
                 <th>Rows</th>
               </tr>
             </thead>
-            <tbody>
-              {data.tables.map((t) => (
-                <tr key={t.table}>
-                  <td className="fw-semibold">{t.table}</td>
-                  <td>{Number(t.rows).toLocaleString()}</td>
-                </tr>
-              ))}
-            </tbody>
+<tbody>
+  {data.tables.map((t, i) => (
+    <tr key={`${t.table}-${i}`}>
+      <td className="fw-semibold">{t.table}</td>
+      <td>{Number(t.rows).toLocaleString()}</td>
+    </tr>
+  ))}
+</tbody>
           </table>
         </div>
       </div>
