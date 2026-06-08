@@ -185,7 +185,7 @@ const saveData = async () => {
   const confirm = await Swal.fire({
     width: "300px",
     icon: "question",
-    text: "Do you want to save this card?",
+    text: "Do you want to save this Card?",
     showCancelButton: true,
     confirmButtonText: "Save",
     cancelButtonText: "Cancel"
@@ -225,14 +225,19 @@ const saveData = async () => {
 
     Swal.close();
 
-    if (data.success) {
-      setRefNo(data.ref_no);
+if (data.success) {
 
-      await Swal.fire({
-        width: "300px",
-        icon: "success",
-        text: "Card saved successfully!"
-      });
+  await Swal.fire({
+    width: "320px",
+    icon: "success",
+    title: "Saved Successfully",
+    html: `
+      <div style="text-align:left">
+        <b>Ref#:</b> ${data.ref_no}<br/>
+        <b>Customer:</b> ${customerName}
+      </div>
+    `
+  });
 
       onNavigate("dashboard");
     } else {

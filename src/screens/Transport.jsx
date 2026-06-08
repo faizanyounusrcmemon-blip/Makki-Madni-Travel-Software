@@ -174,13 +174,31 @@ const saveData = async () => {
 
   if (!customerName || !bookingDate) {
     return Swal.fire({
-      width: "280px",
-      icon: "warning",
+      width: "300px",
+      icon: "error",
       text: "Customer name & booking date required"
     });
   }
 
+  const confirm = await Swal.fire({
+    width: "300px",
+    icon: "question",
+    text: "Do you want to save this Transport?",
+    showCancelButton: true,
+    confirmButtonText: "Save",
+    cancelButtonText: "Cancel"
+  });
+
+  if (!confirm.isConfirmed) return;
+
   setSaving(true);
+
+  Swal.fire({
+    width: "260px",
+    title: "Saving...",
+    allowOutsideClick: false,
+    didOpen: () => Swal.showLoading()
+  });
 
   const payload = {
     ref_no: refNo || null,
@@ -214,15 +232,19 @@ const saveData = async () => {
 
     Swal.close();
 
-    if (data.success) {
+if (data.success) {
 
-      setRefNo(data.ref_no);
-
-      Swal.fire({
-        width: "280px",
-        icon: "success",
-        text: `Transport Saved! Ref#: ${data.ref_no}`
-      });
+  await Swal.fire({
+    width: "320px",
+    icon: "success",
+    title: "Saved Successfully",
+    html: `
+      <div style="text-align:left">
+        <b>Ref#:</b> ${data.ref_no}<br/>
+        <b>Customer:</b> ${customerName}
+      </div>
+    `
+  });
 
       onNavigate("dashboard");
 

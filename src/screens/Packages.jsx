@@ -271,7 +271,33 @@ const handleSavePackage = async () => {
 
   if (saving) return;
 
+  if (!customerName || !bookingDate) {
+    return Swal.fire({
+      width: "300px",
+      icon: "error",
+      text: "Customer name & booking date required"
+    });
+  }
+
+  const confirm = await Swal.fire({
+    width: "300px",
+    icon: "question",
+    text: "Do you want to save this Package?",
+    showCancelButton: true,
+    confirmButtonText: "Save",
+    cancelButtonText: "Cancel"
+  });
+
+  if (!confirm.isConfirmed) return;
+
   setSaving(true);
+
+  Swal.fire({
+    width: "260px",
+    title: "Saving...",
+    allowOutsideClick: false,
+    didOpen: () => Swal.showLoading()
+  });
 
   const payload = {
     ref_no: refNo || null,
@@ -341,17 +367,21 @@ const handleSavePackage = async () => {
 
     Swal.close();
 
-    if (data.success) {
+if (data.success) {
 
-      setRefNo(data.ref_no);
+  await Swal.fire({
+    width: "320px",
+    icon: "success",
+    title: "Saved Successfully",
+    html: `
+      <div style="text-align:left">
+        <b>Ref#:</b> ${data.ref_no}<br/>
+        <b>Customer:</b> ${customerName}
+      </div>
+    `
+  });
 
-      Swal.fire({
-        width: "280px",
-        icon: "success",
-        text: `Saved Successfully! Ref#: ${data.ref_no}`
-      });
-
-      onNavigate("bookings");
+      onNavigate("dashboard");
 
     } else {
       Swal.fire({
