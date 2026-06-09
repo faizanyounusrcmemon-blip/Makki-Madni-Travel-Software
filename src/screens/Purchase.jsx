@@ -146,13 +146,19 @@ const getCustomerName = (refNo, data) => {
   );
 };
 
-  const loadPending = async () => {
-    const r = await fetch(
-      `${import.meta.env.VITE_BACKEND_URL}/api/purchase/pending`
-    );
-    const d = await r.json();
-    if (d.success) setPending(d.rows || []);
-  };
+const loadPending = async () => {
+  const r = await fetch(
+    `${import.meta.env.VITE_BACKEND_URL}/api/purchase/pending`
+  );
+
+  const d = await r.json();
+
+  console.log("PENDING API:", d);
+
+  if (d.success) {
+    setPending(d.rows || []);
+  }
+};
 
 useEffect(() => {
   loadPending();
@@ -450,15 +456,17 @@ const savePurchase = async () => {
                   <div className="fw-bold">
                     <span className="badge bg-dark me-2">{p.ref_no}</span>
                     <span className="text-primary">{p.customer_name}</span>
-                    <span
-                      className={`badge ms-2 ${
-                        p.status === "PENDING"
-                          ? "bg-danger"
-                          : "bg-warning text-dark"
-                      }`}
-                    >
-                      {p.status}
-                    </span>
+<span
+  className={`badge ms-2 ${
+    p.purchase_status === "PENDING"
+      ? "bg-danger"
+      : p.purchase_status === "PARTIAL"
+      ? "bg-warning text-dark"
+      : "bg-success"
+  }`}
+>
+  {p.purchase_status}
+</span>
                   </div>
 
                   <button
