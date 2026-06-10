@@ -62,16 +62,25 @@ export default function CustomerLedger({ onNavigate }) {
   const [type, setType] = useState("payment");
   const [method, setMethod] = useState("Bank");
   const [saving, setSaving] = useState(false);
+  const [paymentStatus, setPaymentStatus] = useState("");
   const pdfRef = useRef(null);
 
   /* =========================
      LOAD PENDING LIST
   ========================== */
-  const loadPending = async () => {
-    const r = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/customer-ledger/pending/list`);
-    const d = await r.json();
-    if (d.success) setPending(d.rows || []);
-  };
+const loadPending = async () => {
+  const r = await fetch(
+    `${import.meta.env.VITE_BACKEND_URL}/api/customer-ledger/pending/list`
+  );
+
+  const d = await r.json();
+
+  console.log("PENDING API:", d);
+
+  if (d.success) {
+    setPending(d.rows || []);
+  }
+};
 
   useEffect(() => { loadPending(); }, []);
 
@@ -121,6 +130,16 @@ const loadLedger = async (r = refNo) => {
 
     setRows(d.rows || []);
 
+const pendingItem = pending.find(
+  x => x.ref_no === r
+);
+
+const currentStatus =
+  pendingItem?.payment_status || "CLEARED";
+
+setPaymentStatus(currentStatus);
+
+
     // ✅ Customer Name Find
     let customerName = "Unknown Customer";
 
@@ -131,6 +150,9 @@ const loadLedger = async (r = refNo) => {
     if (customerRow?.description) {
       customerName = customerRow.description;
     }
+
+
+
 
     Swal.close();
 
@@ -152,8 +174,25 @@ const loadLedger = async (r = refNo) => {
 
             <hr style="margin:8px 0"/>
 
-            <b>Customer:</b><br/>
-            <span style="color:#198754">${customerName}</span>
+<b>Customer:</b><br/>
+<span style="color:#198754">${customerName}</span>
+
+<hr style="margin:8px 0"/>
+
+<b>Payment Status:</b><br/>
+
+<span style="
+  color:${
+    currentStatus === "PENDING"
+      ? "#dc3545"
+      : currentStatus === "PARTIAL"
+      ? "#fd7e14"
+      : "#198754"
+  };
+  font-weight:bold;
+">
+  ${currentStatus}
+</span>
           </div>
 
         </div>
@@ -385,8 +424,9 @@ const del = async (id) => {
 
     if (d.success) {
 
-      await loadLedger(refNo);
       await loadPending();
+      await loadLedger(refNo);
+
 
       Swal.fire({
         width: "280px",
@@ -455,7 +495,28 @@ const exportPDF = async () => {
       {/* HEADER */}
       <div className="card shadow-sm mb-3">
         <div className="card-body d-flex justify-content-between align-items-center">
-          <h4 className="fw-bold mb-0">📘 CUSTOMER LEDGER — {refNo}</h4>
+          <h4 className="fw-bold mb-0">
+  📘 CUSTOMER LEDGER — {refNo}
+
+{paymentStatus === "PENDING" && (
+  <span className="badge bg-danger ms-2">
+    PENDING
+  </span>
+)}
+
+{paymentStatus === "PARTIAL" && (
+  <span className="badge bg-warning text-dark ms-2">
+    PARTIAL
+  </span>
+)}
+
+{paymentStatus === "CLEARED" && refNo && (
+  <span className="badge bg-success ms-2">
+    CLEARED
+  </span>
+)}
+
+</h4>
           <button className="btn btn-secondary btn-sm" onClick={() => onNavigate("dashboard")}>⬅ Back</button>
         </div>
       </div>
@@ -469,15 +530,50 @@ const exportPDF = async () => {
         ) : (
           <ul className="list-group list-group-flush">
             {pending.map((p, i) => (
-              <li key={i} className="list-group-item d-flex justify-content-between align-items-center">
-                <div>
-                  <b>
-                    {p.ref_no} — <span className="text-primary">{p.customer_name || "-"}</span>
-                  </b>
-                  <span className={`badge ms-2 ${p.status === "PENDING" ? "bg-danger" : "bg-warning text-dark"}`}>
-                    {p.status}
-                  </span>
-                </div>
+<li
+  key={i}
+  className={`list-group-item d-flex justify-content-between align-items-center ${
+    p.payment_status === "PENDING"
+      ? "list-group-item-danger"
+      : p.payment_status === "PARTIAL"
+      ? "list-group-item-warning"
+      : ""
+  }`}
+>
+  <div>
+    <b>
+      <span className="badge bg-dark me-2">
+        {p.ref_no}
+      </span>
+
+      <span className="text-primary">
+        {p.customer_name || "-"}
+      </span>
+    </b>
+
+<span
+  className={`badge ms-2 ${
+    p.payment_status === "PENDING"
+      ? "bg-danger"
+      : p.payment_status === "PARTIAL"
+      ? "bg-warning text-dark"
+      : "bg-success"
+  }`}
+>
+  {p.payment_status}
+</span>
+
+    <div
+      style={{
+        fontSize: "11px",
+        color: "#666",
+        marginTop: "2px"
+      }}
+    >
+      {p.note}
+    </div>
+  </div>
+
                 <button className="btn btn-sm btn-outline-primary" onClick={() => loadLedger(p.ref_no)}>Load</button>
               </li>
             ))}
