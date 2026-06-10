@@ -20,7 +20,10 @@ export default function PendingPurchase({ onNavigate }) {
 
   useEffect(() => {
     loadAll();
+
   }, []);
+
+
 
   // ================= MAIN LOADER =================
   const loadAll = async () => {
@@ -42,6 +45,8 @@ export default function PendingPurchase({ onNavigate }) {
 
       const pendingBase = pendingData.success ? pendingData.rows : [];
       const missingBase = missingData.success ? missingData.rows : [];
+      console.log("Pending Data:", pendingData);
+      console.log("Pending Rows:", pendingData.rows);
 
       // Sale map
       const saleMap = {};
@@ -175,7 +180,16 @@ export default function PendingPurchase({ onNavigate }) {
               )}
 
               {rows.map((r, i) => (
-                <tr key={i}>
+<tr
+  key={i}
+  className={
+    r.purchase_status === "PENDING"
+      ? "table-danger"
+      : r.purchase_status === "PARTIAL"
+      ? "table-warning"
+      : ""
+  }
+>
                   <td className="fw-bold text-primary">{r.ref_no}</td>
                   <td>{r.customer_name || "-"}</td>
 
@@ -185,17 +199,35 @@ export default function PendingPurchase({ onNavigate }) {
                     </td>
                   )}
 
-                  <td>
-                    {r.status === "PENDING" && (
-                      <span className="badge bg-danger">Pending</span>
-                    )}
-                    {r.status === "PARTIAL" && (
-                      <span className="badge bg-warning text-dark">Partial</span>
-                    )}
-                    {activeTab === "missing" && (
-                      <span className="badge bg-success">Complete</span>
-                    )}
-                  </td>
+<td>
+  {activeTab === "pending" && (
+    <>
+      {r.purchase_status === "PENDING" && (
+        <span className="badge bg-danger">
+          Pending
+        </span>
+      )}
+
+      {r.purchase_status === "PARTIAL" && (
+        <span className="badge bg-warning text-dark">
+          Partial
+        </span>
+      )}
+
+      {r.purchase_status === "COMPLETE" && (
+        <span className="badge bg-success">
+          Complete
+        </span>
+      )}
+    </>
+  )}
+
+  {activeTab === "missing" && (
+    <span className="badge bg-success">
+      Complete
+    </span>
+  )}
+</td>
 
                   <td className="text-end text-success fw-bold">
                     {Number(r.sale_pkr).toLocaleString("en-US")}
@@ -205,18 +237,24 @@ export default function PendingPurchase({ onNavigate }) {
                     {Number(r.purchase_pkr).toLocaleString("en-US")}
                   </td>
 
-                  <td>
-                    {activeTab === "pending" ? (
-                      <button
-                        className="btn btn-sm btn-primary"
-                        onClick={() => onNavigate("purchase", r.ref_no)}
-                      >
-                        ➕ Complete
-                      </button>
-                    ) : (
-                      <span className="text-muted">—</span>
-                    )}
-                  </td>
+<td>
+  {activeTab === "pending" ? (
+    <button
+      className={`btn btn-sm ${
+        r.purchase_status === "PENDING"
+          ? "btn-danger"
+          : "btn-warning"
+      }`}
+      onClick={() => onNavigate("purchase", r.ref_no)}
+    >
+      {r.purchase_status === "PENDING"
+        ? "➕ Start Purchase"
+        : "✏ Complete Purchase"}
+    </button>
+  ) : (
+    <span className="text-muted">—</span>
+  )}
+</td>
                 </tr>
               ))}
             </tbody>
