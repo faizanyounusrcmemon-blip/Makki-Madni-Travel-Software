@@ -87,14 +87,40 @@ export default function BalanceSheet({ onNavigate }) {
   const netPosition = cleanBalance(totalReceivable - totalPayable - supplierTotals.extra + customerTotals.extra);
 
   /* ================= STATUS ================= */
-  const getStatusBadge = (status) => {
-    if (!status) return null;
-    const s = status.toUpperCase();
-    if (s === "EXTRA PAID") return <span className="badge bg-primary">{s}</span>;
-    if (s === "PARTIAL") return <span className="badge bg-warning text-dark">{s}</span>;
-    if (s === "PENDING") return <span className="badge bg-danger">{s}</span>;
-    return null;
-  };
+const getStatusBadge = (status) => {
+  if (!status) return null;
+
+  switch (status.toUpperCase()) {
+
+    case "PENDING":
+      return (
+        <span className="badge bg-danger">
+          PENDING
+        </span>
+      );
+
+    case "PARTIAL":
+      return (
+        <span className="badge bg-warning text-dark">
+          PARTIAL
+        </span>
+      );
+
+    case "PAID":
+      return (
+        <span className="badge bg-success">
+          PAID
+        </span>
+      );
+
+    default:
+      return (
+        <span className="badge bg-secondary">
+          {status}
+        </span>
+      );
+  }
+};
 
   const balanceColor = (bal, type) => {
     if (bal < 0) return "text-primary";
@@ -248,5 +274,4 @@ export default function BalanceSheet({ onNavigate }) {
     </div>
   );
 }
-
 
