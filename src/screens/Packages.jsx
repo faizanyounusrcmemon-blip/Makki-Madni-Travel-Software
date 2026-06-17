@@ -267,6 +267,47 @@ const loadPackage = async () => {
   }
 };
 
+const handleCopyPackage = () => {
+
+  if (!isEdit) {
+    return Swal.fire({
+      width: "280px",
+      icon: "warning",
+      text: "Pehle package Edit Mode me load karein"
+    });
+  }
+
+
+  Swal.fire({
+    width: "320px",
+    icon: "question",
+    text: "Create copy of this package?",
+    showCancelButton: true,
+    confirmButtonText: "Copy",
+    cancelButtonText: "Cancel"
+  }).then((result)=>{
+
+    if(result.isConfirmed){
+
+      // Remove old reference
+      setRefNo("");
+
+      // New package mode
+      setIsEdit(false);
+
+      Swal.fire({
+        width:"300px",
+        icon:"success",
+        title:"Package Copied",
+        text:"Ab Save karne se new Ref No generate hoga"
+      });
+
+    }
+
+  });
+
+};
+
 const handleSavePackage = async () => {
 
   if (saving) return;
@@ -435,6 +476,13 @@ if (data.success) {
 
           <input className="form-control form-control-sm" style={{ width: "150px" }} placeholder="Search Ref No" value={searchRef} onChange={(e) => setSearchRef(e.target.value)} />
           <button className="btn btn-warning btn-sm" onClick={loadPackage}>🔄 Load / Edit</button>
+<button 
+ className="btn btn-success btn-sm"
+ onClick={handleCopyPackage}
+>
+📋 Copy Package
+</button>
+
 <div className="d-flex gap-2">
 <button
   className="btn fw-bold text-white shadow"
