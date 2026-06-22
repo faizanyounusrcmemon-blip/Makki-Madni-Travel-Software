@@ -28,8 +28,8 @@ export default function Header({ title }) {
 
 <div
   style={{
-    width: 120,
-    height: 120,
+    width: 110,
+    height: 110,
     borderRadius: "50%",
     border: "2px solid #d4af37",
     overflow: "hidden",
