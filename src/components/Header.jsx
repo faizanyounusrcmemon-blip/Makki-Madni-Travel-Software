@@ -25,19 +25,33 @@ export default function Header({ title }) {
         }}
       >
         {/* Logo */}
-        <img
-          src="/logo.png"
-          alt="Makki Madni Travel"
-          style={{
-            width: "clamp(60px, 15vw, 90px)",
-            height: "clamp(60px, 15vw, 90px)",
-            borderRadius: "50%",
-            objectFit: "cover",
-            border: "3px solid #d4af37",
-            background: "#fff",
-            flexShrink: 0,
-          }}
-        />
+
+<div
+  style={{
+    width: 120,
+    height: 120,
+    borderRadius: "50%",
+    border: "2px solid #d4af37",
+    overflow: "hidden",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    background: "#fff",
+    flexShrink: 0,
+  }}
+>
+  <img
+    src="/logo.png"
+    alt="Makki Madni Travel"
+    style={{
+      width: "140%",
+      height: "140%",
+      objectFit: "contain",
+      transform: "scale(1.4)",
+      display: "block",
+    }}
+  />
+</div>
 
         {/* Company Info */}
         <div
