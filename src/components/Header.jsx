@@ -28,8 +28,8 @@ export default function Header({ title }) {
 
 <div
   style={{
-    width: 110,
-    height: 110,
+    width: 105,
+    height: 105,
     borderRadius: "50%",
     border: "2px solid #d4af37",
     overflow: "hidden",
@@ -44,8 +44,8 @@ export default function Header({ title }) {
     src="/logo.png"
     alt="Makki Madni Travel"
     style={{
-      width: "140%",
-      height: "140%",
+      width: "135%",
+      height: "135%",
       objectFit: "contain",
       transform: "scale(1.4)",
       display: "block",
