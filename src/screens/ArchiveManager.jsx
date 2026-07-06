@@ -55,7 +55,7 @@ export default function ArchiveManager({ onNavigate }) {
 
     const password = result.value;
     if (!password) return false;
-    if (password === "1234") return true;
+    if (password === "faizan") return true;
 
     Swal.close();
     await Swal.fire({ icon: "error", title: "Wrong Password", text: "Access Denied", width: 320 });
