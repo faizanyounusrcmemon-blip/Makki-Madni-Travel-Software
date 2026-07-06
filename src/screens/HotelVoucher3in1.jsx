@@ -164,10 +164,27 @@ const exportPDF = async () => {
 
     const pdf = new jsPDF("p", "mm", "a4");
 
-    const canvas = await html2canvas(voucherRef.current, {
+const canvas = await html2canvas(voucherRef.current, {
   scale: 3,
   useCORS: true,
+
   backgroundColor: "#ffffff",
+
+  ignoreElements: (el) =>
+    el.tagName === "CANVAS",
+
+  onclone: (doc) => {
+    doc.querySelectorAll("*").forEach((el) => {
+      const bg = el.style.backgroundImage;
+
+      if (
+        bg &&
+        bg.includes("gradient")
+      ) {
+        el.style.backgroundImage = "none";
+      }
+    });
+  },
 });
 
     const imgData =
@@ -291,10 +308,26 @@ const exportPDF = async () => {
 
       const pdf = new jsPDF("p", "mm", "a4");
 
-      const canvas = await html2canvas(voucherRef.current, {
+const canvas = await html2canvas(voucherRef.current, {
   scale: 3,
   useCORS: true,
   backgroundColor: "#ffffff",
+
+  ignoreElements: (el) =>
+    el.tagName === "CANVAS",
+
+  onclone: (doc) => {
+    doc.querySelectorAll("*").forEach((el) => {
+      const bg = el.style.backgroundImage;
+
+      if (
+        bg &&
+        bg.includes("gradient")
+      ) {
+        el.style.backgroundImage = "none";
+      }
+    });
+  },
 });
 
       const imgData =

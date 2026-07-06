@@ -181,6 +181,7 @@ const handleDelete = async (type, ref_no, customer_name, total_pkr) => {
     Ziyarat: "ziyarat",
     Visa: "visa",
     Card: "card",
+    Groups: "groups",
   };
 
   const endpoint = map[type];
@@ -217,6 +218,7 @@ const handleDelete = async (type, ref_no, customer_name, total_pkr) => {
       Ziyarat: "ziyarat_view",
       Visa: "visa_view",
       Card: "card_view",
+      Groups: "groups_view",
     };
     onNavigate(map[type], ref_no);
   };
@@ -301,6 +303,7 @@ const handleDelete = async (type, ref_no, customer_name, total_pkr) => {
       Ziyarat: "🕌",
       Visa: "🛂",
       Card: "💳",
+      Groups: "👨‍👩‍👧‍👦",
     };
     return map[type] || "📄";
   };
@@ -356,6 +359,7 @@ const handleDelete = async (type, ref_no, customer_name, total_pkr) => {
                 <option>Ziyarat</option>
                 <option>Visa</option>
                 <option>Card</option>
+                <option>Groups</option>
               </select>
             </div>
           </div>

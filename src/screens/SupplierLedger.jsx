@@ -64,6 +64,11 @@ export default function SupplierLedger({ onNavigate }) {
   const [toDate, setToDate] = useState("");
   const [ledgerView, setLedgerView] = useState([]);
   const pdfRef = useRef(null);
+const [snapshotDate, setSnapshotDate] = useState(null);
+const [openingBalance, setOpeningBalance] = useState(0);
+
+
+
    
   /* =========================
      LOAD PENDING / PARTIAL
@@ -92,6 +97,8 @@ export default function SupplierLedger({ onNavigate }) {
   /* =========================
      LOAD LEDGER
   ========================== */
+
+
 const loadLedger = async (code = supplierCode) => {
 
   if (!code) {
@@ -127,6 +134,9 @@ const loadLedger = async (code = supplierCode) => {
         text: d.error || "Failed to load ledger"
       });
     }
+
+setSnapshotDate(d.snapshotDate || null);
+setOpeningBalance(Number(d.openingBalance || 0));
 
     // =========================
     // MAP LEDGER
@@ -724,8 +734,32 @@ return (
                 </td>
               </tr>
             ))}
+
           </tbody>
         </table>
+<div className="card p-2 mb-2">
+  <div>
+    Snapshot Date:
+    {snapshotDate
+      ? formatDate(snapshotDate)
+      : "No Snapshot"}
+  </div>
+
+  <div>
+    Opening Balance:
+    {fmtAmt(openingBalance)}
+  </div>
+
+  <div>
+    Current Balance:
+    {
+      ledger.length
+        ? fmtAmt(ledger[ledger.length - 1].balance)
+        : 0
+    }
+  </div>
+</div>
+
       </div>
     </div>
 

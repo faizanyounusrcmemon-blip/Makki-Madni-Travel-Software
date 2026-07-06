@@ -299,6 +299,7 @@ const del = async (id) => {
                 <option>Visa</option>
                 <option>Transport</option>
                 <option>Ziyarat</option>
+                <option>Groups</option>
                 <option>Other</option>
               </select>
             </div>

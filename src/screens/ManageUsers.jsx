@@ -13,7 +13,7 @@ export default function ManageUsers({ onNavigate }) {
 
   const permissions = [
     // SALES
-    "packages", "ticketing", "transport", "ziyarat", "visa", "hotels", "card",
+    "packages", "ticketing", "transport", "ziyarat", "visa", "hotels", "card","groups",
 
     // PURCHASE
     "purchase_entry", "purchase_list", "pending_purchase",
@@ -28,7 +28,10 @@ export default function ManageUsers({ onNavigate }) {
     "all_reports", "profit_report", "monthly_profit_dashboard", "sale_adjustment_report", "supplier_adjustment_only", "supplier_purchase_detail_report", "item_loss_zero_report", "sale_change_check_report",
 
     // MASTER
-    "create_user", "manage_users", "supplier", "deleted_reports", "restore", "system_storage"
+    "create_user", "manage_users", "supplier", "deleted_reports", "restore", "system_storage",
+   // ARCHIVE
+    "archive_manager", "archive_list"
+
   ];
 
   /* LOAD USERS */

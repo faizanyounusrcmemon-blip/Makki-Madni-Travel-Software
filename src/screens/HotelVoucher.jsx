@@ -95,8 +95,26 @@ const exportPDF = async () => {
     const canvas = await html2canvas(el, {
   scale: 3,
   useCORS: true,
+
   backgroundColor: "#ffffff",
+
+  ignoreElements: (el) =>
+    el.tagName === "CANVAS",
+
+  onclone: (doc) => {
+    doc.querySelectorAll("*").forEach((el) => {
+      const bg = el.style.backgroundImage;
+
+      if (
+        bg &&
+        bg.includes("gradient")
+      ) {
+        el.style.backgroundImage = "none";
+      }
+    });
+  },
 });
+
     const img = canvas.toDataURL("image/png");
     const height = (canvas.height * usableWidth) / canvas.width * 0.95;
 
@@ -194,9 +212,26 @@ for (let h of hotels) {
           if (!el) return;
 
           const canvas = await html2canvas(el, {
-            scale: 3,
-            useCORS: true,
-          });
+  scale: 3,
+  useCORS: true,
+  backgroundColor: "#ffffff",
+
+  ignoreElements: (el) =>
+    el.tagName === "CANVAS",
+
+  onclone: (doc) => {
+    doc.querySelectorAll("*").forEach((el) => {
+      const bg = el.style.backgroundImage;
+
+      if (
+        bg &&
+        bg.includes("gradient")
+      ) {
+        el.style.backgroundImage = "none";
+      }
+    });
+  },
+});
 
           const img = canvas.toDataURL("image/png");
 

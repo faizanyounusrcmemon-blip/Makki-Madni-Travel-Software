@@ -158,9 +158,26 @@ const exportPDF = async () => {
     const element = voucherRef.current;
 
     const canvas = await html2canvas(element, {
-      scale: 2,
-      useCORS: true,
+  scale: 3,
+  useCORS: true,
+  backgroundColor: "#ffffff",
+
+  ignoreElements: (el) =>
+    el.tagName === "CANVAS",
+
+  onclone: (doc) => {
+    doc.querySelectorAll("*").forEach((el) => {
+      const bg = el.style.backgroundImage;
+
+      if (
+        bg &&
+        bg.includes("gradient")
+      ) {
+        el.style.backgroundImage = "none";
+      }
     });
+  },
+});
 
     const imgData = canvas.toDataURL("image/png");
 
@@ -275,9 +292,26 @@ const exportPDF = async () => {
       });
 
       const canvas = await html2canvas(voucherRef.current, {
-        scale: 2,
-        useCORS: true,
-      });
+  scale: 3,
+  useCORS: true,
+  backgroundColor: "#ffffff",
+
+  ignoreElements: (el) =>
+    el.tagName === "CANVAS",
+
+  onclone: (doc) => {
+    doc.querySelectorAll("*").forEach((el) => {
+      const bg = el.style.backgroundImage;
+
+      if (
+        bg &&
+        bg.includes("gradient")
+      ) {
+        el.style.backgroundImage = "none";
+      }
+    });
+  },
+});
 
       const imgData = canvas.toDataURL("image/png");
 

@@ -115,6 +115,7 @@ const itemCategoryColor = (text = "") => {
   if (t.includes("hotel")) return "#198754";
   if (t.includes("visa")) return "#6f42c1";
   if (t.includes("card")) return "#0b3d91";
+  if (t.includes("groups")) return "#212529";
   if (t.includes("ticket")) return "#fd7e14";
   if (t.includes("ziyarat")) return "#dc3545";
   return "#212529";

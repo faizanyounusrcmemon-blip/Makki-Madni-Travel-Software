@@ -261,6 +261,7 @@ const permanentDelete = async (type, ref_no, customer_name, amount) => {
     else if (t === "ZIYARAT") route = "ziyarat_view_deleted";
     else if (t === "VISA") route = "visa_view_deleted";
     else if (t === "CARD") route = "card_view_deleted";
+    else if (t === "GROUPS") route = "groups_view_deleted";
     else if (t === "PURCHASE") route = "purchase_view_deleted";
     else {
       alert("No view available");
@@ -395,6 +396,7 @@ return (
         <option value="ZIYARAT">ZIYARAT</option>
         <option value="VISA">VISA</option>
         <option value="CARD">CARD</option>
+        <option value="GROUPS">GROUPS</option>
         <option value="PURCHASE">PURCHASE</option>
       </select>
     </div>
