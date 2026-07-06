@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import API from "../api"; // ✅ Fixed: Import central API routing file instead of raw axios
+import API from "../api"; // ✅ Fixed: Central API routing config active
 
 export default function ArchiveView({ archiveId, onNavigate }) {
   const [data, setData] = useState(null);
@@ -16,7 +16,6 @@ export default function ArchiveView({ archiveId, onNavigate }) {
       console.log("ArchiveView ID =", archiveId);
       setLoading(true);
 
-      // ✅ Fixed path router mismatch mapping
       const res = await API.get(`/archive/view/${archiveId}`);
       console.log("ArchiveView Response =", res.data);
 
@@ -67,12 +66,11 @@ export default function ArchiveView({ archiveId, onNavigate }) {
   }
 
   const s = data.snapshot;
-  
-  // Dynamic fallback mapping backend data array ke mutabiq
-  const monthlyProfits = data.monthly_profits || data.monthlyProfits || data.months || [];
 
   return (
     <div className="container-fluid p-4">
+
+      {/* HEADER */}
       <div
         className="d-flex justify-content-between align-items-center mb-4"
         style={{
@@ -86,6 +84,7 @@ export default function ArchiveView({ archiveId, onNavigate }) {
         <button className="btn btn-light btn-sm fw-bold" onClick={() => onNavigate("archiveList")} style={{ borderRadius: "8px", padding: "8px 18px" }}>← Back</button>
       </div>
 
+      {/* SUMMARY CARDS */}
       <div className="row g-3 mb-4">
         <Card title="Opening Cash" value={s.opening_cash} icon="💵" color="success" money={money} />
         <Card title="Opening Bank" value={s.opening_bank} icon="🏦" color="primary" money={money} />
@@ -93,7 +92,10 @@ export default function ArchiveView({ archiveId, onNavigate }) {
         <Card title="Total Profit" value={s.total_profit || s.opening_profit} icon="💰" color="danger" money={money} />
       </div>
 
+      {/* BALANCES SECTION (ROW SPLIT) */}
       <div className="row g-3 mb-4">
+        
+        {/* CUSTOMERS BALANCES TABLE */}
         <div className="col-md-6">
           <div className="card shadow border-0 h-100">
             <div className="card-header bg-info text-dark fw-bold">👥 Customer Balances</div>
@@ -116,6 +118,7 @@ export default function ArchiveView({ archiveId, onNavigate }) {
           </div>
         </div>
 
+        {/* SUPPLIERS BALANCES TABLE */}
         <div className="col-md-6">
           <div className="card shadow border-0 h-100">
             <div className="card-header bg-dark text-white fw-bold">🏪 Supplier Balances</div>
@@ -137,46 +140,43 @@ export default function ArchiveView({ archiveId, onNavigate }) {
             </div>
           </div>
         </div>
+
       </div>
 
-      {/* ✅ NEW: Month Wise Profit Panel Block Added */}
-      <div className="row g-3 mb-4">
-        <div className="col-12">
-          <div className="card shadow border-0">
-            <div className="card-header text-white fw-bold" style={{ backgroundColor: "#7e3af2" }}>
-              📅 Month Wise Profit Records
-            </div>
-            <div className="table-responsive" style={{ maxHeight: "300px", overflowY: "auto" }}>
-              <table className="table table-hover mb-0">
-                <thead className="table-dark sticky-top">
-                  <tr>
-                    <th>Month / Period</th>
-                    <th className="text-end">Profit Value</th>
+      {/* ✅ RESTORED OLD LOGIC: Profit Detailed Logs with old mapping structure */}
+      <div className="card shadow border-0">
+        <div className="card-header bg-success text-white fw-bold">
+          📊 Monthly Profit Detail
+        </div>
+        <div className="table-responsive">
+          <table className="table table-hover mb-0">
+            <thead className="table-success">
+              <tr>
+                <th>Month</th>
+                <th className="text-end">Sales</th>
+                <th className="text-end">Purchase</th>
+                <th className="text-end">Net Profit</th>
+              </tr>
+            </thead>
+            <tbody>
+              {(!data.profit || data.profit.length === 0) ? (
+                <tr>
+                  <td colSpan="4" className="text-center text-muted py-3">No monthly profit logs found.</td>
+                </tr>
+              ) : (
+                data.profit.map((p) => (
+                  <tr key={p.id}>
+                    <td>{p.report_month}/{p.report_year}</td>
+                    <td className="text-end text-success">{money(p.total_sales)}</td>
+                    <td className="text-end text-danger">{money(p.total_purchase)}</td>
+                    <td className="text-end">
+                      <span className="badge bg-success fs-6">{money(p.net_profit)}</span>
+                    </td>
                   </tr>
-                </thead>
-                <tbody>
-                  {monthlyProfits.length === 0 ? (
-                    <tr>
-                      <td colSpan="2" className="text-center text-muted py-3">
-                        No monthly profit records compiled in this snapshot.
-                      </td>
-                    </tr>
-                  ) : (
-                    monthlyProfits.map((m, index) => (
-                      <tr key={m.id || index}>
-                        <td className="fw-bold text-secondary">
-                          {m.month_name || m.month || m.period || `Month Record #${index + 1}`}
-                        </td>
-                        <td className="text-end fw-bold text-primary">
-                          {money(m.profit_amount || m.profit || m.amount)}
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </div>
+                ))
+              )}
+            </tbody>
+          </table>
         </div>
       </div>
 
