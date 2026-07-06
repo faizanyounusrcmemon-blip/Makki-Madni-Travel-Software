@@ -30,6 +30,10 @@ export default function UploadRestoreCard() {
     "supplier_payments",
     "suppliers",
     "ziyarat",
+    "archive_snapshots",
+    "archive_balances",
+    "archive_profit_monthly",
+    "archive_logs",
   ];
 
 const uploadRequest = async (

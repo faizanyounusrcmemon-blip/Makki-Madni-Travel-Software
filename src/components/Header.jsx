@@ -28,8 +28,8 @@ export default function Header({ title }) {
 
 <div
   style={{
-    width: 100,
-    height: 100,
+    width: 120,
+    height: 120,
     borderRadius: "50%",
     border: "2px solid #d4af37",
     overflow: "hidden",
@@ -44,8 +44,8 @@ export default function Header({ title }) {
     src="/logo.png"
     alt="Makki Madni Travel"
     style={{
-      width: "135%",
-      height: "135%",
+      width: "140%",
+      height: "140%",
       objectFit: "contain",
       transform: "scale(1.4)",
       display: "block",
@@ -107,7 +107,7 @@ export default function Header({ title }) {
               wordBreak: "break-word",
             }}
           >
-            Shop #10 Diamond City Building,
+            Shop #4 Diamond City Building,
             Near Zeenat-ul-Islam Masjid
             <br />
             Garden West, Karachi

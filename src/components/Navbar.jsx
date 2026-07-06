@@ -15,66 +15,62 @@ export default function Navbar({ onNavigate }) {
     onNavigate(page);
   };
 
-const logout = async () => {
-  const confirmLogout = await Swal.fire({
-    width: "320px",
-    title: "Logout?",
-    html: "⚠️ Do you want to logout?",
-    icon: "warning",
-    showCancelButton: true,
-    confirmButtonText: "Yes, Logout",
-    cancelButtonText: "Cancel",
-    buttonsStyling: false,
-    customClass: {
-      confirmButton: "swal-btn-delete",
-      cancelButton: "swal-btn-cancel"
-    }
-  });
-
-  if (!confirmLogout.isConfirmed) return; // ❌ cancel
-
-  const user = JSON.parse(sessionStorage.getItem("user"));
-  if (!user) return;
-
-  // loader
-  Swal.fire({
-    title: "Logging out...",
-    allowOutsideClick: false,
-    didOpen: () => Swal.showLoading(),
-  });
-
-  try {
-    const res = await fetch(
-      `${import.meta.env.VITE_BACKEND_URL}/api/auth/logout`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id: user.id })
+  const logout = async () => {
+    const confirmLogout = await Swal.fire({
+      width: "280px",
+      title: "Logout?",
+      html: "⚠️ Do you want to logout?",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonText: "Yes, Logout",
+      cancelButtonText: "Cancel",
+      buttonsStyling: false,
+      customClass: {
+        confirmButton: "swal-btn-delete",
+        cancelButton: "swal-btn-cancel"
       }
-    );
+    });
 
-    const data = await res.json();
-    Swal.close();
+    if (!confirmLogout.isConfirmed) return;
 
-    if (data.success) {
-      sessionStorage.removeItem("user");
+    const user = JSON.parse(sessionStorage.getItem("user"));
+    if (!user) return;
 
-      Swal.fire("Logged out!", "", "success");
+    Swal.fire({
+      width: "260px",
+      title: "Logging out...",
+      allowOutsideClick: false,
+      didOpen: () => Swal.showLoading(),
+    });
 
-      // redirect
-      setTimeout(() => {
-        onNavigate("login");
-      }, 800);
+    try {
+      const res = await fetch(
+        `${import.meta.env.VITE_BACKEND_URL}/api/auth/logout`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ id: user.id })
+        }
+      );
 
-    } else {
-      Swal.fire("Error", data.error || "Logout failed", "error");
+      const data = await res.json();
+      Swal.close();
+
+      if (data.success) {
+        sessionStorage.removeItem("user");
+        Swal.fire("Logged out!", "", "success");
+
+        setTimeout(() => {
+          onNavigate("login");
+        }, 800);
+      } else {
+        Swal.fire("Error", data.error || "Logout failed", "error");
+      }
+    } catch (err) {
+      Swal.close();
+      Swal.fire("Error", "Server error", "error");
     }
-
-  } catch (err) {
-    Swal.close();
-    Swal.fire("Error", "Server error", "error");
-  }
-};
+  };
 
   return (
     <nav className="vip-navbar">
@@ -83,7 +79,9 @@ const logout = async () => {
       </div>
 
       <div className="nav-links">
-
+        {/* ==============================
+            SALES DROPDOWN
+        =============================== */}
         <div className="nav-item">
           <span className="nav-title" onClick={() => setOpen(open === "sales" ? null : "sales")}>
             Sales ▾
@@ -96,11 +94,15 @@ const logout = async () => {
               {can("ziyarat") && <a onClick={() => go("ziyarat")}>🕌 Ziyarat</a>}
               {can("visa") && <a onClick={() => go("visa")}>🛂 Visa</a>}
               {can("hotels") && <a onClick={() => go("hotels")}>🏨 Hotels</a>}
+              {can("groups") && <a onClick={() => go("groups")}>👨‍👩‍👧‍👦 Groups Package</a>}
               {can("card") && <a onClick={() => go("card")}>💳 Vaccination Card</a>}
             </div>
           )}
         </div>
 
+        {/* ==============================
+            PURCHASE DROPDOWN
+        =============================== */}
         <div className="nav-item">
           <span className="nav-title" onClick={() => setOpen(open === "purchase" ? null : "purchase")}>
             Purchase ▾
@@ -114,6 +116,9 @@ const logout = async () => {
           )}
         </div>
 
+        {/* ==============================
+            LEDGER DROPDOWN
+        =============================== */}
         <div className="nav-item">
           <span className="nav-title" onClick={() => setOpen(open === "ledger" ? null : "ledger")}>
             Ledger ▾
@@ -130,6 +135,9 @@ const logout = async () => {
           )}
         </div>
 
+        {/* ==============================
+            VOUCHERS DROPDOWN
+        =============================== */}
         <div className="nav-item">
           <span className="nav-title" onClick={() => setOpen(open === "voucher" ? null : "voucher")}>
             Vouchers ▾
@@ -143,6 +151,9 @@ const logout = async () => {
           )}
         </div>
 
+        {/* ==============================
+            REPORTS DROPDOWN
+        =============================== */}
         <div className="nav-item">
           <span className="nav-title" onClick={() => setOpen(open === "reports" ? null : "reports")}>
             Reports ▾
@@ -155,17 +166,15 @@ const logout = async () => {
               {can("sale_adjustment_report") && <a onClick={() => go("saleAdjustmentReport")}>📉 Sale Adjustment Report</a>}
               {can("supplier_adjustment_only") && <a onClick={() => go("supplierAdjustmentOnly")}>📉 Supplier Adjustment Only</a>}
               {can("supplier_purchase_detail_report") && <a onClick={() => go("supplierPurchaseDetailReport")}>📦 Supplier Purchase Detail Report</a>}
-              {can("item_loss_zero_report") && (
-                <a onClick={() => go("itemLossZeroReport")}>
-                  📊 Item Loss & Zero Profit Report
-                </a>
-              )}
-
+              {can("item_loss_zero_report") && <a onClick={() => go("itemLossZeroReport")}>📊 Item Loss & Zero Profit Report</a>}
               {can("sale_change_check_report") && <a onClick={() => go("saleChangeCheckReport")}>📊 Sale vs Purchase Sale Check Report</a>}
             </div>
           )}
         </div>
 
+        {/* ==============================
+            MASTER DROPDOWN (Archive Items Removed)
+        =============================== */}
         <div className="nav-item">
           <span className="nav-title" onClick={() => setOpen(open === "master" ? null : "master")}>
             Master ▾
@@ -182,20 +191,35 @@ const logout = async () => {
           )}
         </div>
 
+        {/* ==============================
+            NEW: ARCHIVE DROPDOWN LIST 
+        =============================== */}
+        <div className="nav-item">
+          <span className="nav-title" onClick={() => setOpen(open === "archive" ? null : "archive")}>
+            Archive ▾
+          </span>
+          {open === "archive" && (
+            <div className="menu-box">
+              {can("archive_manager") && <a onClick={() => go("archiveManager")}>📦 Archive Manager</a>}
+              {can("archive_list") && <a onClick={() => go("archiveList")}>📑 Archive List Report</a>}
+            </div>
+          )}
+        </div>
       </div>
 
-<div className="nav-user">
-  <div className="online-indicator-nav">
-    <span className="online-dot"></span>
-    Online
-  </div>
-
-  <span className="user-name">👤 {user?.name || "User"}</span>
-
-  <button className="logout-btn" onClick={logout}>
-   🏃🚪 Logout
-  </button>
-</div>
+      {/* ==============================
+          USER STICKER & LOGOUT
+      =============================== */}
+      <div className="nav-user">
+        <div className="online-indicator-nav">
+          <span className="online-dot"></span>
+          Online
+        </div>
+        <span className="user-name">👤 {user?.name || "User"}</span>
+        <button className="logout-btn" onClick={logout}>
+          🏃🚪 Logout
+        </button>
+      </div>
     </nav>
   );
 }
