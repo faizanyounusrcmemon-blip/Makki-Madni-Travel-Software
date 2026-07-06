@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import axios from "axios";
+import API from "../api";
 import Swal from "sweetalert2";
 
 export default function ArchiveList({ onNavigate, onView, onLogs }) {
