@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import axios from "axios";
+import API from "../api"; // ✅ Fixed: Import our central API instance instead of raw axios
 
 export default function ArchiveDashboard() {
   const [liveStartDate, setLiveStartDate] = useState("Loading...");
@@ -32,10 +32,12 @@ export default function ArchiveDashboard() {
   const fetchLiveDatabaseStartDate = async () => {
     try {
       setCheckingTables(true);
-      const res = await axios.post("/api/archive/live-data-start", {
+      
+      // ✅ Fixed: Using API instance and pointing directly to the configured routes
+      const res = await API.post("/archive/live-data-start", {
         tables: targetTables
       }).catch(async () => {
-        return await axios.get("/api/archive/live-data-start");
+        return await API.get("/archive/live-data-start");
       });
 
       if (res.data.success && res.data.first_date) {
