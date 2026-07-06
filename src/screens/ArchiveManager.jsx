@@ -1,11 +1,7 @@
 import React, { useState, useEffect } from "react";
-import axios from "axios";
 import Swal from "sweetalert2";
 import ArchiveDashboard from "../components/ArchiveDashboard";
-
-const api = axios.create({
-  baseURL: "/api/archive"
-});
+import API from "../api"; // ✅ Sirf ye ek line add karni hai top par
 
 export default function ArchiveManager({ onNavigate }) {
   const [from, setFrom] = useState("");
