@@ -2,9 +2,14 @@ import React, { useState } from "react";
 import Navbar from "./components/Navbar";
 import Login from "./screens/Login";
 
-
 // DASHBOARD
 import Dashboard from "./screens/Dashboard";
+
+// ARCHIVE
+import ArchiveManager from "./screens/ArchiveManager";
+import ArchiveList from "./screens/ArchiveList";
+import ArchiveView from "./screens/ArchiveView";
+import ArchiveLogs from "./screens/ArchiveLogs";
 
 // SALES
 import Packages from "./screens/Packages";
@@ -14,6 +19,7 @@ import Transport from "./screens/Transport";
 import Ziyarat from "./screens/Ziyarat";
 import Visa from "./screens/Visa";
 import Card from "./screens/Card";
+import Groups from "./screens/Groups";
 
 // PURCHASE
 import Purchase from "./screens/Purchase";
@@ -58,6 +64,7 @@ import HotelsView from "./screens/HotelsView";
 import TicketingView from "./screens/TicketingView";
 import VisaView from "./screens/VisaView";
 import CardView from "./screens/CardView";
+import GroupsView from "./screens/GroupsView";
 import TransportView from "./screens/TransportView";
 import ZiyaratView from "./screens/ZiyaratView";
 
@@ -66,6 +73,7 @@ import HotelsViewDeleted from "./screens/HotelsViewDeleted";
 import TicketingViewDeleted from "./screens/TicketingViewDeleted";
 import VisaViewDeleted from "./screens/VisaViewDeleted";
 import CardViewDeleted from "./screens/CardViewDeleted";
+import GroupsViewDeleted from "./screens/GroupsViewDeleted";
 import TransportViewDeleted from "./screens/TransportViewDeleted";
 import ZiyaratViewDeleted from "./screens/ZiyaratViewDeleted";
 import PurchaseDetailDeleted from "./screens/PurchaseDetailDeleted";
@@ -83,6 +91,14 @@ export default function App() {
     setDetail(d);
   };
 
+  const handleView = (id) => {
+    navigate("archiveView", id);
+  };
+
+  const handleLogs = (id) => {
+    navigate("archiveLogs", id);
+  };
+
   // 🔐 LOGIN GUARD
   if (!loggedIn) {
     return <Login onLogin={() => window.location.reload()} />;
@@ -95,6 +111,32 @@ export default function App() {
       {/* ================= DASHBOARD ================= */}
       {page === "dashboard" && <Dashboard onNavigate={navigate} />}
 
+      {/* ================= ARCHIVE ================= */}
+      {page === "archiveManager" && <ArchiveManager onNavigate={navigate} />}
+      
+      {/* Case matching validation secured */}
+      {(page === "archiveList" || page === "dashboard/archiveList") && (
+        <ArchiveList
+          onNavigate={navigate}
+          onView={handleView}
+          onLogs={handleLogs}
+        />
+      )}
+
+      {page === "archiveView" && (
+        <ArchiveView
+          archiveId={detail}
+          onNavigate={navigate}
+        />
+      )}
+
+      {page === "archiveLogs" && (
+        <ArchiveLogs
+          archiveId={detail}
+          onNavigate={navigate}
+        />
+      )}
+
       {/* ================= SALES ================= */}
       {page === "packages" && <Packages onNavigate={navigate} />}
       {page === "hotels" && <Hotels onNavigate={navigate} />}
@@ -104,6 +146,7 @@ export default function App() {
       {page === "manageUsers" && <ManageUsers onNavigate={navigate} />}
       {page === "visa" && <Visa onNavigate={navigate} />}
       {page === "card" && <Card onNavigate={navigate} />}
+      {page === "groups" && <Groups onNavigate={navigate} />}
       {page === "systemStorage" && <SystemStorage onNavigate={navigate} />}
 
       {/* ================= PURCHASE ================= */}
@@ -169,6 +212,9 @@ export default function App() {
       {page === "card_view" && (
         <CardView id={detail} onNavigate={navigate} />
       )}
+      {page === "groups_view" && (
+        <GroupsView id={detail} onNavigate={navigate} />
+      )}
       {page === "transport_view" && (
         <TransportView id={detail} onNavigate={navigate} />
       )}
@@ -192,6 +238,9 @@ export default function App() {
       )}
       {page === "card_view_deleted" && (
         <CardViewDeleted id={detail} onNavigate={navigate} />
+      )}
+      {page === "groups_view_deleted" && (
+        <GroupsViewDeleted id={detail} onNavigate={navigate} />
       )}
       {page === "transport_view_deleted" && (
         <TransportViewDeleted id={detail} onNavigate={navigate} />
