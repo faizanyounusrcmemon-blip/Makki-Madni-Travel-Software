@@ -218,19 +218,29 @@ export default function ArchiveManager({ onNavigate }) {
     }
   };
 
-  const handleDelete = async () => {
+const handleDelete = async () => {
     if (!(await checkPassword())) return;
     Swal.close();
-    const confirm = await Swal.fire({ title: "Delete Data?", text: "Backup must be created first", icon: "warning", showCancelButton: true });
+    const confirm = await Swal.fire({ 
+      title: "Delete Live Data?", 
+      text: "Warning: This will clear the live operational data. Make sure backup is created first!", 
+      icon: "warning", 
+      showCancelButton: true 
+    });
     if (!confirm.isConfirmed) return;
 
     try {
-      showLoading("Deleting Archive Data...");
-      // ✅ Fixed path router mapping
-      const res = await API.post("/archive/delete", { from_date: from, to_date: to, backup_file: "" });
+      showLoading("Wiping Live System Data...");
+      
+      // ✅ Fixed: Changed endpoint route from /archive/delete to /archive/live-data-start
+      const res = await API.post("/archive/live-data-start", { 
+        from_date: from, 
+        to_date: to 
+      });
+      
       if (res.data.success) {
         Swal.close();
-        await Swal.fire({ icon: "success", title: "Deleted", text: "Archive Completed", width: 320 });
+        await Swal.fire({ icon: "success", title: "Wiped Successfully", text: "Live data has been cleared.", width: 320 });
         loadList();
       }
     } catch (err) {
