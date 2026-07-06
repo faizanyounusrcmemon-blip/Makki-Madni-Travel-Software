@@ -67,6 +67,9 @@ export default function ArchiveView({ archiveId, onNavigate }) {
   }
 
   const s = data.snapshot;
+  
+  // Dynamic fallback mapping backend data array ke mutabiq
+  const monthlyProfits = data.monthly_profits || data.monthlyProfits || data.months || [];
 
   return (
     <div className="container-fluid p-4">
@@ -135,6 +138,48 @@ export default function ArchiveView({ archiveId, onNavigate }) {
           </div>
         </div>
       </div>
+
+      {/* ✅ NEW: Month Wise Profit Panel Block Added */}
+      <div className="row g-3 mb-4">
+        <div className="col-12">
+          <div className="card shadow border-0">
+            <div className="card-header text-white fw-bold" style={{ backgroundColor: "#7e3af2" }}>
+              📅 Month Wise Profit Records
+            </div>
+            <div className="table-responsive" style={{ maxHeight: "300px", overflowY: "auto" }}>
+              <table className="table table-hover mb-0">
+                <thead className="table-dark sticky-top">
+                  <tr>
+                    <th>Month / Period</th>
+                    <th className="text-end">Profit Value</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {monthlyProfits.length === 0 ? (
+                    <tr>
+                      <td colSpan="2" className="text-center text-muted py-3">
+                        No monthly profit records compiled in this snapshot.
+                      </td>
+                    </tr>
+                  ) : (
+                    monthlyProfits.map((m, index) => (
+                      <tr key={m.id || index}>
+                        <td className="fw-bold text-secondary">
+                          {m.month_name || m.month || m.period || `Month Record #${index + 1}`}
+                        </td>
+                        <td className="text-end fw-bold text-primary">
+                          {money(m.profit_amount || m.profit || m.amount)}
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
     </div>
   );
 }
