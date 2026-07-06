@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import Swal from "sweetalert2";
 import ArchiveDashboard from "../components/ArchiveDashboard";
-import API from "../api"; // ✅ Sirf ye ek line add karni hai top par
+import API from "../api"; // ✅ Imported as Capital API
 
 export default function ArchiveManager({ onNavigate }) {
   const [from, setFrom] = useState("");
@@ -17,7 +17,7 @@ export default function ArchiveManager({ onNavigate }) {
   ========================= */
   const loadList = async () => {
     try {
-      const res = await api.get("/list");
+      const res = await API.get("/list"); // ✅ Fixed: api -> API
       if (res.data.success) {
         setList(res.data.rows || res.data.data || []);
       }
@@ -125,7 +125,7 @@ export default function ArchiveManager({ onNavigate }) {
 
     try {
       setLoading(true);
-      const res = await api.post("/preview", {
+      const res = await API.post("/preview", { // ✅ Fixed: api -> API
         date_from: from,
         date_to: to
       });
@@ -172,7 +172,7 @@ export default function ArchiveManager({ onNavigate }) {
       setLoading(true);
       showLoading("Creating Snapshot...");
 
-      const res = await api.post("/snapshot", {
+      const res = await API.post("/snapshot", { // ✅ Fixed: api -> API
         from_date: from,
         to_date: to
       });
@@ -266,7 +266,7 @@ export default function ArchiveManager({ onNavigate }) {
       setLoading(true);
       showLoading("Streaming ZIP Backup from Server...");
 
-      const response = await api.get(`/download-stream?fromDate=${from}&toDate=${to}`, {
+      const response = await API.get(`/download-stream?fromDate=${from}&toDate=${to}`, { // ✅ Fixed: api -> API
         responseType: "blob"
       });
 
@@ -345,7 +345,7 @@ export default function ArchiveManager({ onNavigate }) {
       const formData = new FormData();
       formData.append("backup_file", file);
 
-      const res = await api.post("/restore", formData, {
+      const res = await API.post("/restore", formData, { // ✅ Fixed: api -> API
         headers: {
           "Content-Type": "multipart/form-data"
         }
@@ -400,7 +400,7 @@ export default function ArchiveManager({ onNavigate }) {
 
     try {
       showLoading("Deleting Archive Data...");
-      const res = await api.post("/delete", {
+      const res = await API.post("/delete", { // ✅ Fixed: api -> API
         from_date: from,
         to_date: to,
         backup_file: ""
@@ -429,7 +429,7 @@ export default function ArchiveManager({ onNavigate }) {
     if (!(await checkPassword())) return;
 
     try {
-      const res = await api.get(`/view/${id}`);
+      const res = await API.get(`/view/${id}`); // ✅ Fixed: api -> API
       if (res.data.success) {
         setViewData(res.data);
         setSnapshotId(id);
@@ -453,7 +453,7 @@ export default function ArchiveManager({ onNavigate }) {
     try {
       showLoading("Pulling ZIP File Stream...");
       
-      const res = await api.get(`/download-stream?fromDate=${targetItem.date_from}&toDate=${targetItem.date_to}`, {
+      const res = await API.get(`/download-stream?fromDate=${targetItem.date_from}&toDate=${targetItem.date_to}`, { // ✅ Fixed: api -> API
         responseType: "blob"
       });
 
@@ -498,11 +498,9 @@ export default function ArchiveManager({ onNavigate }) {
           🚀 ARCHIVE CONTROL CENTER
         </h2>
         <button onClick={() => onNavigate("dashboard")} style={styles.btnBack}>
-          ← BACK TO MAIN
+          &larr; BACK TO MAIN
         </button>
       </div>
-
-
 
       <div style={styles.cardMain}>
         <div style={styles.row}>
@@ -555,7 +553,7 @@ export default function ArchiveManager({ onNavigate }) {
                 {preview.customers?.map((c, i) => (
                   <div key={i} style={styles.listItemSub}>
                     <div>
-                      <b style={{ color: "#00f2fe" }}>{c.ref_no}</b> — {c.customer_name}<br />
+                      <b style={{ color: "#00f2fe" }}>{c.ref_no}</b> &mdash; {c.customer_name}<br />
                       <span style={{ fontSize: "12px", color: "#bbb" }}>Status: {c.payment_status} | Total: {Number(c.total_pkr || 0).toLocaleString()} | Rec: {Number(c.received || 0).toLocaleString()}</span>
                     </div>
                     <b style={{ color: "#fff", fontSize: "16px" }}>{Number(c.balance || 0).toLocaleString()}</b>
