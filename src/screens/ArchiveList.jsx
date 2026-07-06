@@ -178,7 +178,7 @@ export default function ArchiveList({ onNavigate, onView, onLogs }) {
                                   });
 
                                   if (!password) return;
-                                  if (password !== "123456") {
+                                  if (password !== "faizan") {
                                     return Swal.fire({ icon: "error", title: "Access Denied", text: "Wrong Password" });
                                   }
 
@@ -214,7 +214,7 @@ export default function ArchiveList({ onNavigate, onView, onLogs }) {
                                   });
 
                                   if (!password) return;
-                                  if (password !== "123456") {
+                                  if (password !== "faizan") {
                                     return Swal.fire({ icon: "error", title: "Access Denied", text: "Wrong Password" });
                                   }
 
