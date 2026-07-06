@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import API from "../api"; // ✅ Fixed: Using central API configurations setup
+import API from "../api"; // ✅ Back to your original central setup
 import Swal from "sweetalert2";
 import ArchiveDashboard from "../components/ArchiveDashboard";
 
@@ -14,7 +14,6 @@ export default function ArchiveManager({ onNavigate }) {
 
   const loadList = async () => {
     try {
-      // ✅ Fixed path routing prefix
       const res = await API.get("/archive/list");
       if (res.data.success) {
         setList(res.data.rows || res.data.data || []);
@@ -81,7 +80,6 @@ export default function ArchiveManager({ onNavigate }) {
     }
     try {
       setLoading(true);
-      // ✅ Fixed path mapping prefix
       const res = await API.post("/archive/preview", { date_from: from, date_to: to });
       if (res.data.success) {
         setPreview(res.data);
@@ -113,20 +111,20 @@ export default function ArchiveManager({ onNavigate }) {
     try {
       setLoading(true);
       showLoading("Creating Snapshot...");
-      // ✅ Fixed route mapping path
       const res = await API.post("/archive/snapshot", { from_date: from, to_date: to });
       if (res.data.success) {
         const newSnapshotId = res.data.snapshotId;
         setSnapshotId(newSnapshotId);
+        
+        // ✨ SAFE STATE PATCH: Object keys mapping consistent rakhi hai
         setPreview((prev) => ({
           ...(prev || {}),
           snapshotId: newSnapshotId,
-          customer_count: res.data.customerCount,
-          supplier_count: res.data.supplierCount,
-          opening_cash: res.data.opening_cash,
-          opening_bank: res.data.opening_bank,
-          opening_profit: res.data.opening_profit
+          opening_cash: res.data.opening_cash !== undefined ? res.data.opening_cash : prev?.opening_cash,
+          opening_bank: res.data.opening_bank !== undefined ? res.data.opening_bank : prev?.opening_bank,
+          opening_profit: res.data.opening_profit !== undefined ? res.data.opening_profit : prev?.opening_profit
         }));
+
         Swal.close();
         await Swal.fire({
           icon: "success",
@@ -164,7 +162,6 @@ export default function ArchiveManager({ onNavigate }) {
     try {
       setLoading(true);
       showLoading("Streaming ZIP Backup from Server...");
-      // ✅ Fixed route mapping path
       const response = await API.get(`/archive/download-stream?fromDate=${from}&toDate=${to}`, { responseType: "blob" });
       const blob = new Blob([response.data], { type: "application/zip" });
       const url = window.URL.createObjectURL(blob);
@@ -203,7 +200,6 @@ export default function ArchiveManager({ onNavigate }) {
       showLoading("Restoring Database...");
       const formData = new FormData();
       formData.append("backup_file", file);
-      // ✅ Fixed path prefix route
       const res = await API.post("/archive/restore", formData, { headers: { "Content-Type": "multipart/form-data" } });
       Swal.close();
       if (res.data.success) {
@@ -218,7 +214,7 @@ export default function ArchiveManager({ onNavigate }) {
     }
   };
 
-const handleDelete = async () => {
+  const handleDelete = async () => {
     if (!(await checkPassword())) return;
     Swal.close();
     const confirm = await Swal.fire({ 
@@ -231,8 +227,6 @@ const handleDelete = async () => {
 
     try {
       showLoading("Wiping Live System Data...");
-      
-      // ✅ Fixed: Changed endpoint route from /archive/delete to /archive/live-data-start
       const res = await API.post("/archive/live-data-start", { 
         from_date: from, 
         to_date: to 
@@ -252,7 +246,6 @@ const handleDelete = async () => {
   const handleView = async (id) => {
     if (!(await checkPassword())) return;
     try {
-      // ✅ Fixed path route mapping
       const res = await API.get(`/archive/view/${id}`);
       if (res.data.success) {
         setViewData(res.data);
@@ -270,7 +263,6 @@ const handleDelete = async () => {
 
     try {
       showLoading("Pulling ZIP File Stream...");
-      // ✅ Fixed path endpoint prefix
       const res = await API.get(`/archive/download-stream?fromDate=${targetItem.date_from}&toDate=${targetItem.date_to}`, { responseType: "blob" });
       const blob = new Blob([res.data], { type: "application/zip" });
       const url = window.URL.createObjectURL(blob);
