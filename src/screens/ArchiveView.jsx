@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import API from "../api"; // ✅ Fixed: Central API routing config active
+import axios from "axios";
 
 export default function ArchiveView({ archiveId, onNavigate }) {
   const [data, setData] = useState(null);
@@ -16,7 +16,7 @@ export default function ArchiveView({ archiveId, onNavigate }) {
       console.log("ArchiveView ID =", archiveId);
       setLoading(true);
 
-      const res = await API.get(`/archive/view/${archiveId}`);
+      const res = await axios.get(`/api/archive/view/${archiveId}`);
       console.log("ArchiveView Response =", res.data);
 
       if (res.data.success) {
@@ -45,8 +45,12 @@ export default function ArchiveView({ archiveId, onNavigate }) {
             boxShadow: "0 4px 10px rgba(0,0,0,0.25)"
           }}
         >
-          <h2 className="mb-0 fw-bold" style={{ color: "#fff", fontSize: "26px" }}>📦 Archive Snapshot</h2>
-          <button className="btn btn-light btn-sm fw-bold" onClick={() => onNavigate("archiveList")}>← Back</button>
+          <h2 className="mb-0 fw-bold" style={{ color: "#fff", fontSize: "26px" }}>
+            📦 Archive Snapshot
+          </h2>
+          <button className="btn btn-light btn-sm fw-bold" onClick={() => onNavigate("archiveList")}>
+            ← Back
+          </button>
         </div>
         <div className="text-center mt-5">
           <div className="spinner-border text-primary" style={{ width: "50px", height: "50px" }}></div>
@@ -56,20 +60,23 @@ export default function ArchiveView({ archiveId, onNavigate }) {
     );
   }
 
-  if (!data || !data.snapshot) {
+  // ⭐ SAFETY CHECK FIX: Agar core data hi nahi aya
+  if (!data) {
     return (
       <div className="p-4">
         <div className="alert alert-warning">📦 No Archive Found</div>
-        <button className="btn btn-secondary" onClick={() => onNavigate("archiveList")}>← Back</button>
+        <button className="btn btn-secondary" onClick={() => onNavigate("archiveList")}>
+          ← Back
+        </button>
       </div>
     );
   }
 
-  const s = data.snapshot;
+  // ⭐ FALLBACK LOGIC: Agar backend se direct properties ayin ya 'snapshot' object aya, dono handle honge
+  const s = data.snapshot ? data.snapshot : data;
 
   return (
     <div className="container-fluid p-4">
-
       {/* HEADER */}
       <div
         className="d-flex justify-content-between align-items-center mb-4"
@@ -80,8 +87,17 @@ export default function ArchiveView({ archiveId, onNavigate }) {
           boxShadow: "0 4px 10px rgba(0,0,0,0.25)"
         }}
       >
-        <h2 className="mb-0 fw-bold" style={{ color: "#fff", fontSize: "26px" }}>📦 Archive Snapshot #{s.id}</h2>
-        <button className="btn btn-light btn-sm fw-bold" onClick={() => onNavigate("archiveList")} style={{ borderRadius: "8px", padding: "8px 18px" }}>← Back</button>
+        <h2 className="mb-0 fw-bold" style={{ color: "#fff", fontSize: "26px" }}>
+          📦 Archive Snapshot {s.id ? `#${s.id}` : ""}
+        </h2>
+
+        <button
+          className="btn btn-light btn-sm fw-bold"
+          onClick={() => onNavigate("archiveList")}
+          style={{ borderRadius: "8px", padding: "8px 18px" }}
+        >
+          ← Back
+        </button>
       </div>
 
       {/* SUMMARY CARDS */}
@@ -92,9 +108,8 @@ export default function ArchiveView({ archiveId, onNavigate }) {
         <Card title="Total Profit" value={s.total_profit || s.opening_profit} icon="💰" color="danger" money={money} />
       </div>
 
-      {/* BALANCES SECTION (ROW SPLIT) */}
+      {/* BALANCES SECTION */}
       <div className="row g-3 mb-4">
-        
         {/* CUSTOMERS BALANCES TABLE */}
         <div className="col-md-6">
           <div className="card shadow border-0 h-100">
@@ -102,14 +117,22 @@ export default function ArchiveView({ archiveId, onNavigate }) {
             <div className="table-responsive" style={{ maxHeight: "350px", overflowY: "auto" }}>
               <table className="table table-hover mb-0">
                 <thead className="table-dark sticky-top">
-                  <tr><th>Customer</th><th className="text-end">Balance</th></tr>
+                  <tr>
+                    <th>Customer</th>
+                    <th className="text-end">Balance</th>
+                  </tr>
                 </thead>
                 <tbody>
                   {(data.customers || []).length === 0 ? (
-                    <tr><td colSpan="2" className="text-center text-muted py-2">No customer balances found.</td></tr>
+                    <tr>
+                      <td colSpan="2" className="text-center text-muted py-2">No customer balances found.</td>
+                    </tr>
                   ) : (
                     (data.customers || []).map((x) => (
-                      <tr key={x.id}><td>{x.name}</td><td className="text-end fw-bold text-success">{money(x.balance)}</td></tr>
+                      <tr key={x.id || x.ref_no}>
+                        <td>{x.name || x.customer_name}</td>
+                        <td className="text-end fw-bold text-success">{money(x.balance)}</td>
+                      </tr>
                     ))
                   )}
                 </tbody>
@@ -125,14 +148,22 @@ export default function ArchiveView({ archiveId, onNavigate }) {
             <div className="table-responsive" style={{ maxHeight: "350px", overflowY: "auto" }}>
               <table className="table table-hover mb-0">
                 <thead className="table-dark sticky-top">
-                  <tr><th>Supplier</th><th className="text-end">Balance</th></tr>
+                  <tr>
+                    <th>Supplier</th>
+                    <th className="text-end">Balance</th>
+                  </tr>
                 </thead>
                 <tbody>
                   {(data.suppliers || []).length === 0 ? (
-                    <tr><td colSpan="2" className="text-center text-muted py-2">No supplier balances found.</td></tr>
+                    <tr>
+                      <td colSpan="2" className="text-center text-muted py-2">No supplier balances found.</td>
+                    </tr>
                   ) : (
                     (data.suppliers || []).map((x) => (
-                      <tr key={x.id}><td>{x.name}</td><td className="text-end fw-bold text-danger">{money(x.balance)}</td></tr>
+                      <tr key={x.id || x.supplier_code}>
+                        <td>{x.name || x.supplier_name}</td>
+                        <td className="text-end fw-bold text-danger">{money(x.balance)}</td>
+                      </tr>
                     ))
                   )}
                 </tbody>
@@ -140,14 +171,11 @@ export default function ArchiveView({ archiveId, onNavigate }) {
             </div>
           </div>
         </div>
-
       </div>
 
-      {/* ✅ RESTORED OLD LOGIC: Profit Detailed Logs with old mapping structure */}
+      {/* PROFIT DETAILED LOGS */}
       <div className="card shadow border-0">
-        <div className="card-header bg-success text-white fw-bold">
-          📊 Monthly Profit Detail
-        </div>
+        <div className="card-header bg-success text-white fw-bold">📊 Monthly Profit Detail</div>
         <div className="table-responsive">
           <table className="table table-hover mb-0">
             <thead className="table-success">
@@ -159,27 +187,20 @@ export default function ArchiveView({ archiveId, onNavigate }) {
               </tr>
             </thead>
             <tbody>
-              {(!data.profit || data.profit.length === 0) ? (
-                <tr>
-                  <td colSpan="4" className="text-center text-muted py-3">No monthly profit logs found.</td>
+              {(data.profit || []).map((p) => (
+                <tr key={p.id}>
+                  <td>{p.report_month}/{p.report_year}</td>
+                  <td className="text-end text-success">{money(p.total_sales)}</td>
+                  <td className="text-end text-danger">{money(p.total_purchase)}</td>
+                  <td className="text-end">
+                    <span className="badge bg-success fs-6">{money(p.net_profit)}</span>
+                  </td>
                 </tr>
-              ) : (
-                data.profit.map((p) => (
-                  <tr key={p.id}>
-                    <td>{p.report_month}/{p.report_year}</td>
-                    <td className="text-end text-success">{money(p.total_sales)}</td>
-                    <td className="text-end text-danger">{money(p.total_purchase)}</td>
-                    <td className="text-end">
-                      <span className="badge bg-success fs-6">{money(p.net_profit)}</span>
-                    </td>
-                  </tr>
-                ))
-              )}
+              ))}
             </tbody>
           </table>
         </div>
       </div>
-
     </div>
   );
 }
