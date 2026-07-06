@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import axios from "axios"; //  Sahi package name
+import API from "../api";
 
 export default function ArchiveView({
   archiveId,
