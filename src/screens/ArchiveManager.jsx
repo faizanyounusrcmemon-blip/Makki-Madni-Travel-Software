@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import API from "../api"; // ✅ Back to your original central setup
+import API from "../api"; // ✅ Central configuration setup untouched
 import Swal from "sweetalert2";
 import ArchiveDashboard from "../components/ArchiveDashboard";
 
@@ -116,13 +116,16 @@ export default function ArchiveManager({ onNavigate }) {
         const newSnapshotId = res.data.snapshotId;
         setSnapshotId(newSnapshotId);
         
-        // ✨ SAFE STATE PATCH: Object keys mapping consistent rakhi hai
         setPreview((prev) => ({
           ...(prev || {}),
           snapshotId: newSnapshotId,
+          customer_count: res.data.customerCount || res.data.customer_count,
+          supplier_count: res.data.supplierCount || res.data.supplier_count,
           opening_cash: res.data.opening_cash !== undefined ? res.data.opening_cash : prev?.opening_cash,
           opening_bank: res.data.opening_bank !== undefined ? res.data.opening_bank : prev?.opening_bank,
-          opening_profit: res.data.opening_profit !== undefined ? res.data.opening_profit : prev?.opening_profit
+          opening_profit: res.data.opening_profit !== undefined ? res.data.opening_profit : prev?.opening_profit,
+          customers: res.data.customers || prev?.customers || [],
+          suppliers: res.data.suppliers || prev?.suppliers || []
         }));
 
         Swal.close();
@@ -311,9 +314,11 @@ export default function ArchiveManager({ onNavigate }) {
         </div>
       </div>
 
+      {/* 📊 FIXED: Added complete visual layout for Customers and Suppliers under Preview */}
       {preview && (
         <div style={styles.cardPreview}>
           <h3 style={{ color: "#fff", textTransform: "uppercase", fontWeight: "900", marginBottom: "20px", borderBottom: "2px dashed #f1c40f", paddingBottom: "10px" }}>📊 Live System Data Preview</h3>
+          
           <div style={{ display: "flex", gap: 15, marginBottom: 20 }}>
             <div style={styles.blockCash}>
               <span style={styles.blockLabel}>Opening Cash</span>
@@ -328,6 +333,53 @@ export default function ArchiveManager({ onNavigate }) {
               <h2 style={styles.blockValue}>{Number(preview.opening_profit || 0).toLocaleString()}</h2>
             </div>
           </div>
+
+          <div style={styles.tableGrid}>
+            {/* CUSTOMERS PANEL */}
+            <div style={styles.panelBox}>
+              <div style={styles.panelHeaderCyan}>
+                <span>👤 CUSTOMERS ({preview.customer_count || preview.customerCount || 0})</span>
+              </div>
+              <div style={styles.panelBody}>
+                {preview.customers && preview.customers.length > 0 ? (
+                  preview.customers.map((c, i) => (
+                    <div key={i} style={styles.listItemSub}>
+                      <div>
+                        <b style={{ color: "#06b6d4" }}>{c.ref_no || "N/A"}</b> — {c.customer_name}<br />
+                        <span style={{ fontSize: "12px", color: "#aaa" }}>Status: {c.payment_status || 'Pending'}</span>
+                      </div>
+                      <b style={{ color: "#fff" }}>{Number(c.balance || 0).toLocaleString()}</b>
+                    </div>
+                  ))
+                ) : (
+                  <div style={styles.emptyText}>No Customers Data Found</div>
+                )}
+              </div>
+            </div>
+
+            {/* SUPPLIERS PANEL */}
+            <div style={styles.panelBox}>
+              <div style={styles.panelHeaderPink}>
+                <span>🏢 SUPPLIERS ({preview.supplier_count || preview.supplierCount || 0})</span>
+              </div>
+              <div style={styles.panelBody}>
+                {preview.suppliers && preview.suppliers.length > 0 ? (
+                  preview.suppliers.map((s, i) => (
+                    <div key={i} style={styles.listItemSub}>
+                      <div>
+                        <b style={{ color: "#f43f5e" }}>{s.supplier_name}</b><br />
+                        <span style={{ fontSize: "12px", color: "#aaa" }}>Code: {s.supplier_code || 'N/A'}</span>
+                      </div>
+                      <b style={{ color: "#fff" }}>{Number(s.balance || 0).toLocaleString()}</b>
+                    </div>
+                  ))
+                ) : (
+                  <div style={styles.emptyText}>No Suppliers Data Found</div>
+                )}
+              </div>
+            </div>
+          </div>
+
         </div>
       )}
 
@@ -374,6 +426,16 @@ const styles = {
   blockProfit: { background: "#7e3af2", padding: "15px", borderRadius: "16px", flex: 1 },
   blockLabel: { display: "block", fontSize: "11px", color: "#fff" },
   blockValue: { margin: "5px 0 0 0", fontSize: "24px", fontWeight: "900" },
+  
+  // New Layout Style Engine
+  tableGrid: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "20px", marginTop: "20px" },
+  panelBox: { background: "#1e293b", borderRadius: "16px", overflow: "hidden", border: "1px solid #334155" },
+  panelHeaderCyan: { background: "linear-gradient(90deg, #06b6d4, #0284c7)", padding: "12px 15px", fontWeight: "900", fontSize: "14px" },
+  panelHeaderPink: { background: "linear-gradient(90deg, #f43f5e, #be123c)", padding: "12px 15px", fontWeight: "900", fontSize: "14px" },
+  panelBody: { maxHeight: "200px", overflowY: "auto", padding: "5px" },
+  listItemSub: { display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 15px", borderBottom: "1px solid #334155" },
+  emptyText: { padding: "20px", color: "#64748b", textAlign: "center", fontSize: "13px" },
+
   cardLogs: { background: "#1e293b", padding: "25px", borderRadius: "24px" },
   listItemLog: { display: "flex", justifyContent: "space-between", alignItems: "center", padding: "15px", background: "#0f172a", borderRadius: "16px" },
   badgeId: { background: "#4f46e5", padding: "4px 8px", borderRadius: "6px", fontSize: "11px" },
