@@ -53,11 +53,28 @@ export default function usePdf(
         didOpen: () => Swal.showLoading(),
       });
 
-      const canvas = await html2canvas(ref.current, {
-        scale,
-        useCORS: true,
-        backgroundColor: "#ffffff",
-      });
+const canvas = await html2canvas(ref.current, {
+  scale,
+  useCORS: true,
+  backgroundColor: "#fff",
+
+  ignoreElements: (el) =>
+    el.tagName === "CANVAS",
+
+  onclone: (doc) => {
+    doc.querySelectorAll("*").forEach((el) => {
+      const bg = el.style.backgroundImage;
+
+      if (
+        bg &&
+        bg.includes("gradient")
+      ) {
+        el.style.backgroundImage = "none";
+      }
+    });
+  },
+});
+
 
       const imgData = canvas.toDataURL(
         "image/jpeg",
@@ -169,11 +186,27 @@ export default function usePdf(
         didOpen: () => Swal.showLoading(),
       });
 
-      const canvas = await html2canvas(ref.current, {
-        scale,
-        useCORS: true,
-        backgroundColor: "#ffffff",
-      });
+const canvas = await html2canvas(ref.current, {
+  scale,
+  useCORS: true,
+  backgroundColor: "#fff",
+
+  ignoreElements: (el) =>
+    el.tagName === "CANVAS",
+
+  onclone: (doc) => {
+    doc.querySelectorAll("*").forEach((el) => {
+      const style = window.getComputedStyle(el);
+
+      if (
+        style.backgroundImage &&
+        style.backgroundImage !== "none"
+      ) {
+        el.style.backgroundImage = "none";
+      }
+    });
+  },
+});
 
       const imgData = canvas.toDataURL(
         "image/jpeg",
