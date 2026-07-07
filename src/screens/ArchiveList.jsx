@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import API from "../api"; // ✅ Fixed: Using central API router instead of raw axios
+import axios from "axios";
 import Swal from "sweetalert2";
 
 export default function ArchiveList({ onNavigate, onView, onLogs }) {
@@ -12,8 +12,7 @@ export default function ArchiveList({ onNavigate, onView, onLogs }) {
 
   const load = async () => {
     try {
-      // ✅ Fixed path matching with backend router mapping
-      const res = await API.get("/archive/list");
+      const res = await axios.get("/api/archive/list");
       if (res.data.success) {
         setRows(res.data.rows || []);
       }
@@ -50,8 +49,7 @@ export default function ArchiveList({ onNavigate, onView, onLogs }) {
     showProcessingAlert("Deleting Archive Data...");
 
     try {
-      // ✅ Fixed path matching
-      const res = await API.delete(`/archive/delete/${id}`);
+      const res = await axios.delete(`/api/archive/delete/${id}`);
       if (res.data.success) {
         Swal.fire("Deleted", "Archive deleted successfully", "success");
         load();
@@ -114,6 +112,8 @@ export default function ArchiveList({ onNavigate, onView, onLogs }) {
                 </thead>
                 <tbody>
                   {rows.map((r, index) => {
+                    // ⭐ STRICT BOOLEAN/TRUTHY CHECK: 
+                    // Agar string "true", number 1 ya real boolean true aaye, toh condition pass ho.
                     const isArchived = r.has_log === true || String(r.has_log).toLowerCase() === "true" || Number(r.has_log) === 1;
 
                     return (
@@ -178,7 +178,7 @@ export default function ArchiveList({ onNavigate, onView, onLogs }) {
                                   });
 
                                   if (!password) return;
-                                  if (password !== "faizan") {
+                                  if (password !== "123456") {
                                     return Swal.fire({ icon: "error", title: "Access Denied", text: "Wrong Password" });
                                   }
 
@@ -214,7 +214,7 @@ export default function ArchiveList({ onNavigate, onView, onLogs }) {
                                   });
 
                                   if (!password) return;
-                                  if (password !== "faizan") {
+                                  if (password !== "123456") {
                                     return Swal.fire({ icon: "error", title: "Access Denied", text: "Wrong Password" });
                                   }
 
@@ -231,8 +231,7 @@ export default function ArchiveList({ onNavigate, onView, onLogs }) {
                                   showProcessingAlert("Deleting Snapshot...");
 
                                   try {
-                                    // ✅ Fixed path mapping route
-                                    const res = await API.delete(`/archive/delete-snapshot/${r.id}`);
+                                    const res = await axios.delete(`/api/archive/delete-snapshot/${r.id}`);
                                     if (res.data.success) {
                                       Swal.fire("Deleted", "Snapshot deleted successfully", "success");
                                       load();
