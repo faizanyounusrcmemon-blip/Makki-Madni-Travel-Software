@@ -1,21 +1,19 @@
 import React, { useEffect, useState } from "react";
-import axios from "axios";
+import API from "../api"; // ✅ Fixed: Using central API router instead of raw axios
 import Swal from "sweetalert2";
-import ArchiveDashboard from "../components/ArchiveDashboard";
 
 export default function ArchiveList({ onNavigate, onView, onLogs }) {
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [dbRange, setDbRange] = useState({ start: "-", end: "-" });
 
   useEffect(() => {
     load();
-    getLiveDbDataRange();
   }, []);
 
   const load = async () => {
     try {
-      const res = await axios.get("/api/archive/list");
+      // ✅ Fixed path matching with backend router mapping
+      const res = await API.get("/archive/list");
       if (res.data.success) {
         setRows(res.data.rows || []);
       }
@@ -23,20 +21,6 @@ export default function ArchiveList({ onNavigate, onView, onLogs }) {
       console.error("Archive Load Error:", err);
     } finally {
       setLoading(false);
-    }
-  };
-
-  const getLiveDbDataRange = async () => {
-    try {
-      const res = await axios.get("/api/archive/live-data-range");
-      if (res.data.success) {
-        setDbRange({
-          start: formatDate(res.data.first_date),
-          end: formatDate(res.data.last_date)
-        });
-      }
-    } catch (err) {
-      console.error("Live DB Date Range Load Error:", err);
     }
   };
 
@@ -66,7 +50,8 @@ export default function ArchiveList({ onNavigate, onView, onLogs }) {
     showProcessingAlert("Deleting Archive Data...");
 
     try {
-      const res = await axios.delete(`/api/archive/delete/${id}`);
+      // ✅ Fixed path matching
+      const res = await API.delete(`/archive/delete/${id}`);
       if (res.data.success) {
         Swal.fire("Deleted", "Archive deleted successfully", "success");
         load();
@@ -83,7 +68,7 @@ export default function ArchiveList({ onNavigate, onView, onLogs }) {
   };
 
   const formatDate = (date) => {
-    if (!date || date === "-") return "-";
+    if (!date) return "-";
     return new Date(date).toLocaleDateString("en-GB");
   };
 
@@ -110,34 +95,6 @@ export default function ArchiveList({ onNavigate, onView, onLogs }) {
         </div>
 
         <div className="card-body">
-          <div 
-            className="card border-0 mb-4 shadow-sm"
-            style={{
-              background: "linear-gradient(135deg, #fff3cd, #ffe8a1)",
-              borderLeft: "6px solid #ffc107",
-              borderRadius: "8px"
-            }}
-          >
-            <div className="card-body p-3">
-              <div className="row align-items-center">
-                <div className="col-auto fs-2">📊</div>
-                <div className="col">
-                  <h6 className="text-uppercase mb-1 fw-bold" style={{ fontSize: "12px", color: "#856404", letterSpacing: "0.5px" }}>
-                    Supabase Live Database Range Info
-                  </h6>
-                  <div className="d-flex align-items-center flex-wrap gap-2 mt-1">
-                    <span className="text-dark fw-bold" style={{ fontSize: "15px" }}>
-                      Aapke Live Database me data is range tak maujod hai:
-                    </span>
-                    <span className="badge bg-dark fs-6 px-3 py-2 text-warning">{dbRange.start}</span>
-                    <span className="text-dark fw-bold">se</span>
-                    <span className="badge bg-dark fs-6 px-3 py-2 text-warning">{dbRange.end}</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
           {rows.length === 0 ? (
             <div className="text-center text-muted p-4">No Archive Found</div>
           ) : (
@@ -157,11 +114,10 @@ export default function ArchiveList({ onNavigate, onView, onLogs }) {
                 </thead>
                 <tbody>
                   {rows.map((r, index) => {
-                    // Safe ID detection fallback system
-                    const targetId = r.id || r.snapshot_id || r.snapshotId;
+                    const isArchived = r.has_log === true || String(r.has_log).toLowerCase() === "true" || Number(r.has_log) === 1;
 
                     return (
-                      <tr key={targetId || index}>
+                      <tr key={r.id || index}>
                         <td>{index + 1}</td>
                         <td>
                           <span className="fw-bold">{formatDate(r.date_from)}</span>
@@ -186,13 +142,12 @@ export default function ArchiveList({ onNavigate, onView, onLogs }) {
                           </span>
                         </td>
                         <td>
-                          {/* Yahan safe ID pass ho rahi hai parent state ko trigger krne k liye */}
-                          <button className="btn btn-primary btn-sm me-2" onClick={() => onView(targetId)}>
+                          <button className="btn btn-primary btn-sm me-2" onClick={() => onView(r.id)}>
                             👁 View
                           </button>
 
-                          {Number(r.has_log) === 1 ? (
-                            <button className="btn btn-warning btn-sm me-2" onClick={() => onLogs(targetId)}>
+                          {isArchived ? (
+                            <button className="btn btn-warning btn-sm me-2" onClick={() => onLogs(r.id)}>
                               📜 Logs
                             </button>
                           ) : (
@@ -223,11 +178,11 @@ export default function ArchiveList({ onNavigate, onView, onLogs }) {
                                   });
 
                                   if (!password) return;
-                                  if (password !== "123456") {
+                                  if (password !== "faizan") {
                                     return Swal.fire({ icon: "error", title: "Access Denied", text: "Wrong Password" });
                                   }
 
-                                  handleDelete(targetId);
+                                  handleDelete(r.id);
                                 }}
                               >
                                 🗑 Delete
@@ -259,7 +214,7 @@ export default function ArchiveList({ onNavigate, onView, onLogs }) {
                                   });
 
                                   if (!password) return;
-                                  if (password !== "123456") {
+                                  if (password !== "faizan") {
                                     return Swal.fire({ icon: "error", title: "Access Denied", text: "Wrong Password" });
                                   }
 
@@ -276,7 +231,8 @@ export default function ArchiveList({ onNavigate, onView, onLogs }) {
                                   showProcessingAlert("Deleting Snapshot...");
 
                                   try {
-                                    const res = await axios.delete(`/api/archive/delete-snapshot/${targetId}`);
+                                    // ✅ Fixed path mapping route
+                                    const res = await API.delete(`/archive/delete-snapshot/${r.id}`);
                                     if (res.data.success) {
                                       Swal.fire("Deleted", "Snapshot deleted successfully", "success");
                                       load();

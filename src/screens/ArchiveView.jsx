@@ -1,151 +1,220 @@
 import React, { useEffect, useState } from "react";
-import API from "../api"; 
-import Swal from "sweetalert2";
+import axios from "axios";
 
-export default function ArchiveView({ id, onBack }) {
+export default function ArchiveView({ archiveId, onNavigate }) {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Agar id hi undefined ya null ho to foran loading band karein aur alert dein
-    if (!id) {
-      console.error("ArchiveView Error: received id is undefined or null");
-      Swal.fire("Error", "Invalid Snapshot ID provided", "error");
-      setLoading(false);
-      return;
+    if (archiveId) {
+      load();
     }
-    fetchViewData();
-  }, [id]);
+  }, [archiveId]);
 
-  const fetchViewData = async () => {
+  const load = async () => {
     try {
+      console.log("ArchiveView ID =", archiveId);
       setLoading(true);
-      // Backend router ke mutabik direct view controller execution link
-      const res = await API.get(`/view/${id}`); 
-      
+
+      const res = await axios.get(`/api/archive/view/${archiveId}`);
+      console.log("ArchiveView Response =", res.data);
+
       if (res.data.success) {
         setData(res.data);
-      } else {
-        Swal.fire("Error", res.data.error || "Failed to load archive details", "error");
       }
     } catch (err) {
-      console.error("Error fetching archive view:", err);
-      Swal.fire("Error", "Server error while fetching data or route not found", "error");
+      console.error(err);
     } finally {
-      // Yeh block har haal me chalega taaki endless loading spinner ruk jaye
       setLoading(false);
     }
   };
 
-  const formatNumber = (num) => {
-    return Number(num || 0).toLocaleString();
-  };
-
-  const formatDate = (dateStr) => {
-    if (!dateStr) return "-";
-    const date = new Date(dateStr);
-    if (isNaN(date.getTime())) return dateStr;
-    const day = String(date.getDate()).padStart(2, "0");
-    const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-    return `${day}/${months[date.getMonth()]}/${date.getFullYear()}`;
+  const money = (v) => {
+    return Number(v || 0).toLocaleString();
   };
 
   if (loading) {
     return (
-      <div className="text-center p-5" style={{ color: "#fff" }}>
-        <div className="spinner-border text-primary mb-2"></div>
-        <p>Loading Archive Details...</p>
-      </div>
-    );
-  }
-
-  if (!data || !data.snapshot) {
-    return (
-      <div className="container p-4 text-center" style={{ color: "#fff" }}>
-        <h3>No Data Found</h3>
-        <p className="text-muted">Requested data structure is empty or route broken.</p>
-        <button className="btn btn-warning mt-3" onClick={onBack}>← Back</button>
-      </div>
-    );
-  }
-
-  const { snapshot, customers, suppliers, profit } = data;
-
-  return (
-    <div className="container-fluid p-4" style={{ backgroundColor: "#1a1d29", minHeight: "100vh", color: "#fff" }}>
-      
-      {/* HEADER BAR */}
-      <div className="card mb-4 border-0 shadow" style={{ background: "linear-gradient(90deg, #111827, #1f2937)", borderRadius: "15px" }}>
-        <div className="card-body p-4 d-flex justify-content-between align-items-center">
-          <div>
-            <h2 className="mb-1 fw-bold text-warning">🔍 INSPECTING SNAPSHOT #{snapshot.id}</h2>
-            <p className="mb-0 text-white-50 small">
-              Timeline Range: <b>{formatDate(snapshot.date_from)}</b> to <b>{formatDate(snapshot.date_to)}</b>
-            </p>
-          </div>
-          <button onClick={onBack} className="btn btn-danger fw-bold px-4 rounded-pill">
-            ← CLOSE INSPECTION
+      <div className="container-fluid p-4">
+        <div
+          className="d-flex justify-content-between align-items-center mb-4"
+          style={{
+            background: "linear-gradient(135deg,#667eea,#764ba2)",
+            padding: "15px 20px",
+            borderRadius: "12px",
+            boxShadow: "0 4px 10px rgba(0,0,0,0.25)"
+          }}
+        >
+          <h2 className="mb-0 fw-bold" style={{ color: "#fff", fontSize: "26px" }}>
+            📦 Archive Snapshot
+          </h2>
+          <button className="btn btn-light btn-sm fw-bold" onClick={() => onNavigate("archiveList")}>
+            ← Back
           </button>
         </div>
+        <div className="text-center mt-5">
+          <div className="spinner-border text-primary" style={{ width: "50px", height: "50px" }}></div>
+          <h5 className="mt-3 text-white">Loading Archive Snapshot...</h5>
+        </div>
+      </div>
+    );
+  }
+
+  // ⭐ SAFETY CHECK FIX: Agar core data hi nahi aya
+  if (!data) {
+    return (
+      <div className="p-4">
+        <div className="alert alert-warning">📦 No Archive Found</div>
+        <button className="btn btn-secondary" onClick={() => onNavigate("archiveList")}>
+          ← Back
+        </button>
+      </div>
+    );
+  }
+
+  // ⭐ FALLBACK LOGIC: Agar backend se direct properties ayin ya 'snapshot' object aya, dono handle honge
+  const s = data.snapshot ? data.snapshot : data;
+
+  return (
+    <div className="container-fluid p-4">
+      {/* HEADER */}
+      <div
+        className="d-flex justify-content-between align-items-center mb-4"
+        style={{
+          background: "linear-gradient(135deg,#667eea,#764ba2)",
+          padding: "15px 20px",
+          borderRadius: "12px",
+          boxShadow: "0 4px 10px rgba(0,0,0,0.25)"
+        }}
+      >
+        <h2 className="mb-0 fw-bold" style={{ color: "#fff", fontSize: "26px" }}>
+          📦 Archive Snapshot {s.id ? `#${s.id}` : ""}
+        </h2>
+
+        <button
+          className="btn btn-light btn-sm fw-bold"
+          onClick={() => onNavigate("archiveList")}
+          style={{ borderRadius: "8px", padding: "8px 18px" }}
+        >
+          ← Back
+        </button>
       </div>
 
-      {/* METRICS GRID */}
+      {/* SUMMARY CARDS */}
       <div className="row g-3 mb-4">
-        <div className="col-md-4">
-          <div className="card border-0 p-3 shadow-sm" style={{ background: "linear-gradient(135deg, #059669, #10b981)", borderRadius: "14px" }}>
-            <small className="text-white-50 fw-bold text-uppercase" style={{ fontSize: "11px" }}>Opening Cash balance</small>
-            <h2 className="fw-black mb-0 mt-1">{formatNumber(snapshot.opening_cash)} PKR</h2>
-          </div>
-        </div>
-        <div className="col-md-4">
-          <div className="card border-0 p-3 shadow-sm" style={{ background: "linear-gradient(135deg, #2563eb, #3b82f6)", borderRadius: "14px" }}>
-            <small className="text-white-50 fw-bold text-uppercase" style={{ fontSize: "11px" }}>Opening Bank balance</small>
-            <h2 className="fw-black mb-0 mt-1">{formatNumber(snapshot.opening_bank)} PKR</h2>
-          </div>
-        </div>
-        <div className="col-md-4">
-          <div className="card border-0 p-3 shadow-sm" style={{ background: "linear-gradient(135deg, #7e3af2, #a855f7)", borderRadius: "14px" }}>
-            <small className="text-white-50 fw-bold text-uppercase" style={{ fontSize: "11px" }}>Total Merged Profit Block</small>
-            <h2 className="fw-black mb-0 mt-1">{formatNumber(snapshot.total_profit || snapshot.opening_profit)} PKR</h2>
-          </div>
-        </div>
+        <Card title="Opening Cash" value={s.opening_cash} icon="💵" color="success" money={money} />
+        <Card title="Opening Bank" value={s.opening_bank} icon="🏦" color="primary" money={money} />
+        <Card title="Opening Profit" value={s.opening_profit} icon="📈" color="warning" money={money} />
+        <Card title="Total Profit" value={s.total_profit || s.opening_profit} icon="💰" color="danger" money={money} />
       </div>
 
-      {/* CUSTOMERS & SUPPLIERS DATA ENGINE */}
-      <div className="row g-4">
+      {/* BALANCES SECTION */}
+      <div className="row g-3 mb-4">
+        {/* CUSTOMERS BALANCES TABLE */}
         <div className="col-md-6">
-          <div className="card border-0 p-3 shadow" style={{ backgroundColor: "#212534", borderRadius: "15px" }}>
-            <h5 className="fw-bold text-info border-bottom border-secondary pb-2 mb-3">👤 CUSTOMER BALANCES LOG ({customers?.length || 0})</h5>
-            <div style={{ maxHeight: "400px", overflowY: "auto" }}>
-              {customers?.length === 0 ? <p className="text-muted text-center py-3">No customers found.</p> : 
-                customers?.map((c, idx) => (
-                  <div key={idx} className="d-flex justify-content-between align-items-center p-2 mb-2 rounded shadow-sm" style={{ backgroundColor: "#1a1d29", borderLeft: "4px solid #06b6d4" }}>
-                    <div><span className="fw-bold d-block text-white">{c.name || c.customer_name}</span></div>
-                    <span className="badge bg-dark text-info border border-secondary">{formatNumber(c.balance)}</span>
-                  </div>
-                ))
-              }
+          <div className="card shadow border-0 h-100">
+            <div className="card-header bg-info text-dark fw-bold">👥 Customer Balances</div>
+            <div className="table-responsive" style={{ maxHeight: "350px", overflowY: "auto" }}>
+              <table className="table table-hover mb-0">
+                <thead className="table-dark sticky-top">
+                  <tr>
+                    <th>Customer</th>
+                    <th className="text-end">Balance</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {(data.customers || []).length === 0 ? (
+                    <tr>
+                      <td colSpan="2" className="text-center text-muted py-2">No customer balances found.</td>
+                    </tr>
+                  ) : (
+                    (data.customers || []).map((x) => (
+                      <tr key={x.id || x.ref_no}>
+                        <td>{x.name || x.customer_name}</td>
+                        <td className="text-end fw-bold text-success">{money(x.balance)}</td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
             </div>
           </div>
         </div>
 
+        {/* SUPPLIERS BALANCES TABLE */}
         <div className="col-md-6">
-          <div className="card border-0 p-3 shadow" style={{ backgroundColor: "#212534", borderRadius: "15px" }}>
-            <h5 className="fw-bold text-danger border-bottom border-secondary pb-2 mb-3">🏢 SUPPLIER BALANCES LOG ({suppliers?.length || 0})</h5>
-            <div style={{ maxHeight: "400px", overflowY: "auto" }}>
-              {suppliers?.length === 0 ? <p className="text-muted text-center py-3">No suppliers found.</p> : 
-                suppliers?.map((s, idx) => (
-                  <div key={idx} className="d-flex justify-content-between align-items-center p-2 mb-2 rounded shadow-sm" style={{ backgroundColor: "#1a1d29", borderLeft: "4px solid #f43f5e" }}>
-                    <div><span className="fw-bold d-block text-white">{s.name || s.supplier_name}</span></div>
-                    <span className="badge bg-dark text-danger border border-secondary">{formatNumber(s.balance)}</span>
-                  </div>
-                ))
-              }
+          <div className="card shadow border-0 h-100">
+            <div className="card-header bg-dark text-white fw-bold">🏪 Supplier Balances</div>
+            <div className="table-responsive" style={{ maxHeight: "350px", overflowY: "auto" }}>
+              <table className="table table-hover mb-0">
+                <thead className="table-dark sticky-top">
+                  <tr>
+                    <th>Supplier</th>
+                    <th className="text-end">Balance</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {(data.suppliers || []).length === 0 ? (
+                    <tr>
+                      <td colSpan="2" className="text-center text-muted py-2">No supplier balances found.</td>
+                    </tr>
+                  ) : (
+                    (data.suppliers || []).map((x) => (
+                      <tr key={x.id || x.supplier_code}>
+                        <td>{x.name || x.supplier_name}</td>
+                        <td className="text-end fw-bold text-danger">{money(x.balance)}</td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
             </div>
           </div>
         </div>
       </div>
 
+      {/* PROFIT DETAILED LOGS */}
+      <div className="card shadow border-0">
+        <div className="card-header bg-success text-white fw-bold">📊 Monthly Profit Detail</div>
+        <div className="table-responsive">
+          <table className="table table-hover mb-0">
+            <thead className="table-success">
+              <tr>
+                <th>Month</th>
+                <th className="text-end">Sales</th>
+                <th className="text-end">Purchase</th>
+                <th className="text-end">Net Profit</th>
+              </tr>
+            </thead>
+            <tbody>
+              {(data.profit || []).map((p) => (
+                <tr key={p.id}>
+                  <td>{p.report_month}/{p.report_year}</td>
+                  <td className="text-end text-success">{money(p.total_sales)}</td>
+                  <td className="text-end text-danger">{money(p.total_purchase)}</td>
+                  <td className="text-end">
+                    <span className="badge bg-success fs-6">{money(p.net_profit)}</span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function Card({ title, value, icon, color, money }) {
+  return (
+    <div className="col-md-3">
+      <div className={`card shadow-sm border-${color} h-100`}>
+        <div className="card-body text-center">
+          <h2>{icon}</h2>
+          <h6 className="text-muted">{title}</h6>
+          <h4 className="fw-bold">{money(value)}</h4>
+        </div>
+      </div>
     </div>
   );
 }
