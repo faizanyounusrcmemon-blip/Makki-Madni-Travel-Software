@@ -285,13 +285,15 @@ export default function ArchiveManager({ onNavigate }) {
 
   return (
     <div style={styles.container}>
-      <div style={{ marginBottom: "20px" }}>
-        <ArchiveDashboard />
-      </div>
+
 
       <div style={styles.headerBar}>
         <h2 style={{ margin: 0, fontSize: "24px", fontWeight: "900", letterSpacing: "1px" }}>🚀 ARCHIVE CONTROL CENTER</h2>
         <button onClick={() => onNavigate("dashboard")} style={styles.btnBack}>← BACK TO MAIN</button>
+      </div>
+
+            <div style={{ marginBottom: "20px" }}>
+        <ArchiveDashboard />
       </div>
 
       <div style={styles.cardMain}>
