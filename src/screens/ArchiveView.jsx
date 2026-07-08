@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from "react";
-// Centralized configuration wrapper
 import API from "../api"; 
 import Swal from "sweetalert2";
 
@@ -8,16 +7,22 @@ export default function ArchiveView({ id, onBack }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (id) {
-      fetchViewData();
+    // Agar id hi undefined ya null ho to foran loading band karein aur alert dein
+    if (!id) {
+      console.error("ArchiveView Error: received id is undefined or null");
+      Swal.fire("Error", "Invalid Snapshot ID provided", "error");
+      setLoading(false);
+      return;
     }
+    fetchViewData();
   }, [id]);
 
   const fetchViewData = async () => {
     try {
       setLoading(true);
-      // Base URL check bypass prefix alignment fixed here
-      const res = await API.get(`/api/archive/view/${id}`);
+      // Backend router ke mutabik direct view controller execution link
+      const res = await API.get(`/view/${id}`); 
+      
       if (res.data.success) {
         setData(res.data);
       } else {
@@ -25,8 +30,9 @@ export default function ArchiveView({ id, onBack }) {
       }
     } catch (err) {
       console.error("Error fetching archive view:", err);
-      Swal.fire("Error", "Server error while fetching data", "error");
+      Swal.fire("Error", "Server error while fetching data or route not found", "error");
     } finally {
+      // Yeh block har haal me chalega taaki endless loading spinner ruk jaye
       setLoading(false);
     }
   };
@@ -57,6 +63,7 @@ export default function ArchiveView({ id, onBack }) {
     return (
       <div className="container p-4 text-center" style={{ color: "#fff" }}>
         <h3>No Data Found</h3>
+        <p className="text-muted">Requested data structure is empty or route broken.</p>
         <button className="btn btn-warning mt-3" onClick={onBack}>← Back</button>
       </div>
     );
@@ -67,7 +74,7 @@ export default function ArchiveView({ id, onBack }) {
   return (
     <div className="container-fluid p-4" style={{ backgroundColor: "#1a1d29", minHeight: "100vh", color: "#fff" }}>
       
-      {/* HEADER CONTROL BAR */}
+      {/* HEADER BAR */}
       <div className="card mb-4 border-0 shadow" style={{ background: "linear-gradient(90deg, #111827, #1f2937)", borderRadius: "15px" }}>
         <div className="card-body p-4 d-flex justify-content-between align-items-center">
           <div>
@@ -82,7 +89,7 @@ export default function ArchiveView({ id, onBack }) {
         </div>
       </div>
 
-      {/* METRICS METERS */}
+      {/* METRICS GRID */}
       <div className="row g-3 mb-4">
         <div className="col-md-4">
           <div className="card border-0 p-3 shadow-sm" style={{ background: "linear-gradient(135deg, #059669, #10b981)", borderRadius: "14px" }}>
@@ -104,11 +111,11 @@ export default function ArchiveView({ id, onBack }) {
         </div>
       </div>
 
-      {/* TABLES DATAGRID */}
+      {/* CUSTOMERS & SUPPLIERS DATA ENGINE */}
       <div className="row g-4">
         <div className="col-md-6">
           <div className="card border-0 p-3 shadow" style={{ backgroundColor: "#212534", borderRadius: "15px" }}>
-            <h5 className="fw-bold text-info border-bottom border-secondary pb-2 mb-3">👤 CUSTOMER BALANCES ({customers?.length || 0})</h5>
+            <h5 className="fw-bold text-info border-bottom border-secondary pb-2 mb-3">👤 CUSTOMER BALANCES LOG ({customers?.length || 0})</h5>
             <div style={{ maxHeight: "400px", overflowY: "auto" }}>
               {customers?.length === 0 ? <p className="text-muted text-center py-3">No customers found.</p> : 
                 customers?.map((c, idx) => (
@@ -124,7 +131,7 @@ export default function ArchiveView({ id, onBack }) {
 
         <div className="col-md-6">
           <div className="card border-0 p-3 shadow" style={{ backgroundColor: "#212534", borderRadius: "15px" }}>
-            <h5 className="fw-bold text-danger border-bottom border-secondary pb-2 mb-3">🏢 SUPPLIER BALANCES ({suppliers?.length || 0})</h5>
+            <h5 className="fw-bold text-danger border-bottom border-secondary pb-2 mb-3">🏢 SUPPLIER BALANCES LOG ({suppliers?.length || 0})</h5>
             <div style={{ maxHeight: "400px", overflowY: "auto" }}>
               {suppliers?.length === 0 ? <p className="text-muted text-center py-3">No suppliers found.</p> : 
                 suppliers?.map((s, idx) => (
