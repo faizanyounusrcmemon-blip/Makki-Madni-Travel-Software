@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
-import axios from "axios";
+// Centralized API wrapper import kiya
+import API from "../api"; 
 import Swal from "sweetalert2";
 
 export default function ArchiveView({ id, onBack }) {
@@ -7,13 +8,16 @@ export default function ArchiveView({ id, onBack }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchViewData();
+    if (id) {
+      fetchViewData();
+    }
   }, [id]);
 
   const fetchViewData = async () => {
     try {
       setLoading(true);
-      const res = await axios.get(`/api/archive/view/${id}`);
+      // Path ko manager ke configuration ke mutabik badla
+      const res = await API.get(`/archive/view/${id}`);
       if (res.data.success) {
         setData(res.data);
       } else {
@@ -44,7 +48,7 @@ export default function ArchiveView({ id, onBack }) {
     return (
       <div className="text-center p-5" style={{ color: "#fff" }}>
         <div className="spinner-border text-primary"></div>
-        <p className="mt-2">Loading Archive Block details...</p>
+        <p className="mt-2">Loading Archive Details...</p>
       </div>
     );
   }
@@ -58,13 +62,12 @@ export default function ArchiveView({ id, onBack }) {
     );
   }
 
-  // I-destructure ang mga records mula sa backend packet para sa mas madaling paggamit
   const { snapshot, customers, suppliers, profit } = data;
 
   return (
     <div className="container-fluid p-4" style={{ backgroundColor: "#1a1d29", minHeight: "100vh", color: "#fff" }}>
       
-      {/* 🟣 HEADER CONTROL BAR */}
+      {/* HEADER CONTROL BAR */}
       <div className="card mb-4 border-0 shadow" style={{ background: "linear-gradient(90deg, #111827, #1f2937)", borderRadius: "15px" }}>
         <div className="card-body p-4 d-flex justify-content-between align-items-center">
           <div>
@@ -79,7 +82,7 @@ export default function ArchiveView({ id, onBack }) {
         </div>
       </div>
 
-      {/* 📊 CASH, BANK, PROFIT VISUAL COUNTERS */}
+      {/* METRICS METERS */}
       <div className="row g-3 mb-4">
         <div className="col-md-4">
           <div className="card border-0 p-3 shadow-sm" style={{ background: "linear-gradient(135deg, #059669, #10b981)", borderRadius: "14px" }}>
@@ -101,93 +104,38 @@ export default function ArchiveView({ id, onBack }) {
         </div>
       </div>
 
-      {/* 👥 DOUBLE GRID: CUSTOMERS & SUPPLIERS DATA ENGINE */}
+      {/* TABLES DATAGRID */}
       <div className="row g-4">
-        
-        {/* CUSTOMERS COLUMN */}
         <div className="col-md-6">
           <div className="card border-0 p-3 shadow" style={{ backgroundColor: "#212534", borderRadius: "15px" }}>
-            <h5 className="fw-bold text-info border-bottom border-secondary pb-2 mb-3">
-              👤 CUSTOMER BALANCES LOG ({customers?.length || 0})
-            </h5>
-            <div style={{ maxHeight: "400px", overflowY: "auto", paddingRight: "5px" }}>
-              {customers?.length === 0 ? (
-                <p className="text-muted text-center py-3">Walang customer records sa snapshot na ito.</p>
-              ) : (
+            <h5 className="fw-bold text-info border-bottom border-secondary pb-2 mb-3">👤 CUSTOMER BALANCES ({customers?.length || 0})</h5>
+            <div style={{ maxHeight: "400px", overflowY: "auto" }}>
+              {customers?.length === 0 ? <p className="text-muted text-center py-3">No customers found.</p> : 
                 customers?.map((c, idx) => (
-                  <div key={c.id || idx} className="d-flex justify-content-between align-items-center p-2 mb-2 rounded shadow-sm" style={{ backgroundColor: "#1a1d29", borderLeft: "4px solid #06b6d4" }}>
-                    <div>
-                      <span className="fw-bold d-block text-white" style={{ fontSize: "14px" }}>{c.name}</span>
-                      <small className="text-muted" style={{ fontSize: "11px" }}>Record Ref ID: #{c.id}</small>
-                    </div>
-                    <span className="badge bg-dark fs-6 text-info border border-secondary">{formatNumber(c.balance)}</span>
+                  <div key={idx} className="d-flex justify-content-between align-items-center p-2 mb-2 rounded shadow-sm" style={{ backgroundColor: "#1a1d29", borderLeft: "4px solid #06b6d4" }}>
+                    <div><span className="fw-bold d-block text-white">{c.name || c.customer_name}</span></div>
+                    <span className="badge bg-dark text-info border border-secondary">{formatNumber(c.balance)}</span>
                   </div>
                 ))
-              )}
+              }
             </div>
           </div>
         </div>
 
-        {/* SUPPLIERS COLUMN */}
         <div className="col-md-6">
           <div className="card border-0 p-3 shadow" style={{ backgroundColor: "#212534", borderRadius: "15px" }}>
-            <h5 className="fw-bold text-danger border-bottom border-secondary pb-2 mb-3">
-              🏢 SUPPLIER BALANCES LOG ({suppliers?.length || 0})
-            </h5>
-            <div style={{ maxHeight: "400px", overflowY: "auto", paddingRight: "5px" }}>
-              {suppliers?.length === 0 ? (
-                <p className="text-muted text-center py-3">Walang supplier records sa snapshot na ito.</p>
-              ) : (
+            <h5 className="fw-bold text-danger border-bottom border-secondary pb-2 mb-3">🏢 SUPPLIER BALANCES ({suppliers?.length || 0})</h5>
+            <div style={{ maxHeight: "400px", overflowY: "auto" }}>
+              {suppliers?.length === 0 ? <p className="text-muted text-center py-3">No suppliers found.</p> : 
                 suppliers?.map((s, idx) => (
-                  <div key={s.id || idx} className="d-flex justify-content-between align-items-center p-2 mb-2 rounded shadow-sm" style={{ backgroundColor: "#1a1d29", borderLeft: "4px solid #f43f5e" }}>
-                    <div>
-                      <span className="fw-bold d-block text-white" style={{ fontSize: "14px" }}>{s.name}</span>
-                      <small className="text-muted" style={{ fontSize: "11px" }}>Record Ref ID: #{s.id}</small>
-                    </div>
-                    <span className="badge bg-dark fs-6 text-danger border border-secondary">{formatNumber(s.balance)}</span>
+                  <div key={idx} className="d-flex justify-content-between align-items-center p-2 mb-2 rounded shadow-sm" style={{ backgroundColor: "#1a1d29", borderLeft: "4px solid #f43f5e" }}>
+                    <div><span className="fw-bold d-block text-white">{s.name || s.supplier_name}</span></div>
+                    <span className="badge bg-dark text-danger border border-secondary">{formatNumber(s.balance)}</span>
                   </div>
                 ))
-              )}
+              }
             </div>
           </div>
-        </div>
-
-      </div>
-
-      {/* 📈 MONTHLY PROFIT BREAKDOWN REPORT MODULE */}
-      <div className="card mt-4 border-0 p-4 shadow" style={{ backgroundColor: "#212534", borderRadius: "15px" }}>
-        <h5 className="fw-bold text-warning mb-3">📈 ARCHIVED MONTHLY PROFIT MODULE STACK</h5>
-        <div className="table-responsive">
-          <table className="table table-dark table-hover align-middle mb-0">
-            <thead>
-              <tr className="text-muted" style={{ fontSize: "12px" }}>
-                <th>REPORT TIMELINE</th>
-                <th>TOTAL SALES VOLUME</th>
-                <th>TOTAL PURCHASE ENTRIES</th>
-                <th>NET PROFIT ACCRUED</th>
-              </tr>
-            </thead>
-            <tbody>
-              {profit?.length === 0 ? (
-                <tr>
-                  <td colSpan="4" className="text-center text-muted py-3">Walang monthly profit breakdown data sa block na ito.</td>
-                </tr>
-              ) : (
-                profit?.map((p, idx) => (
-                  <tr key={p.id || idx}>
-                    <td className="fw-bold text-info">📅 Month {p.report_month} / {p.report_year}</td>
-                    <td>{formatNumber(p.total_sales)} PKR</td>
-                    <td>{formatNumber(p.total_purchase)} PKR</td>
-                    <td>
-                      <span className="badge bg-success-subtle text-success border border-success px-3 py-2 fw-bold">
-                        {formatNumber(p.net_profit)} PKR
-                      </span>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
         </div>
       </div>
 
