@@ -2,6 +2,7 @@ import React, { useState, useRef } from "react";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 import Header from "../components/Header";
+import Swal from "sweetalert2"; // ✅ SweetAlert Import Kiya
 
 /* ================= HELPERS ================= */
 const showDate = (val) => {
@@ -45,24 +46,51 @@ export default function HotelVoucher({ onNavigate }) {
 
   /* ================= LOAD VOUCHER ================= */
   const loadVoucher = async () => {
+    const upperRef = ref.toUpperCase();
+
+    if (!upperRef.startsWith("PKG-") && !upperRef.startsWith("HOT-")) {
+      Swal.fire({
+        icon: "warning",
+        title: "Invalid Ref No",
+        text: "Please enter a valid reference number starting with PKG- or HOT-.",
+        confirmButtonColor: "#0d6efd",
+      });
+      return;
+    }
+
+    // Loader starting
+    Swal.fire({
+      title: "Fetching Voucher...",
+      text: "Please wait while we load the data.",
+      allowOutsideClick: false,
+      didOpen: () => {
+        Swal.showLoading();
+      },
+    });
+
     try {
       let url = "";
       let isPkg = false;
-
-      const upperRef = ref.toUpperCase();
 
       if (upperRef.startsWith("PKG-")) {
         url = `${import.meta.env.VITE_BACKEND_URL}/api/bookings/voucher/${upperRef}`;
         isPkg = true;
       } else if (upperRef.startsWith("HOT-")) {
         url = `${import.meta.env.VITE_BACKEND_URL}/api/hotels/get/${upperRef}`;
-      } else {
-        return alert("Invalid Ref No");
       }
 
       const res = await fetch(url);
       const d = await res.json();
-      if (!d.success) return alert("Voucher not found");
+      
+      if (!d.success) {
+        Swal.fire({
+          icon: "error",
+          title: "Not Found",
+          text: "Voucher not found!",
+          confirmButtonColor: "#0d6efd",
+        });
+        return;
+      }
 
       const row = isPkg ? d : d.row;
       const rawHotels = row.hotels;
@@ -74,89 +102,114 @@ export default function HotelVoucher({ onNavigate }) {
         booking_date: row.booking_date,
         hotels: (rawHotels || []).map(normalizeHotel),
       });
+
+      // Close loading alert on success
+      Swal.close();
     } catch (e) {
-      alert("Failed to load voucher");
+      Swal.fire({
+        icon: "error",
+        title: "Failed",
+        text: "Failed to load voucher from server.",
+        confirmButtonColor: "#dc3545",
+      });
     }
   };
 
   /* ================= PDF ================= */
-const exportPDF = async () => {
-  if (!voucherRef.current || !data) return;
+  const exportPDF = async () => {
+    if (!voucherRef.current || !data) return;
 
-  const pdf = new jsPDF("p", "mm", "a4");
-  const pageWidth = 210;
-  const pageHeight = 297;
-  const margin = 10;
-  const usableWidth = pageWidth - margin * 2;
-  let y = margin;
-
-  const addCanvas = async (el) => {
-    if (!el) return;
-    const canvas = await html2canvas(el, {
-  scale: 3,
-  useCORS: true,
-
-  backgroundColor: "#ffffff",
-
-  ignoreElements: (el) =>
-    el.tagName === "CANVAS",
-
-  onclone: (doc) => {
-    doc.querySelectorAll("*").forEach((el) => {
-      const bg = el.style.backgroundImage;
-
-      if (
-        bg &&
-        bg.includes("gradient")
-      ) {
-        el.style.backgroundImage = "none";
-      }
+    // Show Loader for PDF Generation
+    Swal.fire({
+      title: "Generating PDF...",
+      text: "Please wait while your PDF is being compiled.",
+      allowOutsideClick: false,
+      didOpen: () => {
+        Swal.showLoading();
+      },
     });
-  },
-});
 
-    const img = canvas.toDataURL("image/png");
-    const height = (canvas.height * usableWidth) / canvas.width * 0.95;
+    try {
+      const pdf = new jsPDF("p", "mm", "a4");
+      const pageWidth = 210;
+      const pageHeight = 297;
+      const margin = 10;
+      const usableWidth = pageWidth - margin * 2;
+      let y = margin;
 
-    if (y + height > pageHeight - margin) {
-      pdf.addPage();
-      y = margin;
+      const addCanvas = async (el) => {
+        if (!el) return;
+        const canvas = await html2canvas(el, {
+          scale: 3,
+          useCORS: true,
+          backgroundColor: "#ffffff",
+          ignoreElements: (el) => el.tagName === "CANVAS",
+          onclone: (doc) => {
+            doc.querySelectorAll("*").forEach((el) => {
+              const bg = el.style.backgroundImage;
+              if (bg && bg.includes("gradient")) {
+                el.style.backgroundImage = "none";
+              }
+            });
+          },
+        });
+
+        const img = canvas.toDataURL("image/png");
+        const height = (canvas.height * usableWidth) / canvas.width * 0.95;
+
+        if (y + height > pageHeight - margin) {
+          pdf.addPage();
+          y = margin;
+        }
+
+        pdf.addImage(img, "PNG", margin, y, usableWidth, height);
+        y += height + 4;
+      };
+
+      // HEADER, REF, AGENT, CUSTOMER
+      await addCanvas(voucherRef.current.querySelector(".pdf-header"));
+      await addCanvas(voucherRef.current.querySelector(".pdf-ref-row"));
+      await addCanvas(voucherRef.current.querySelector(".pdf-agent"));
+      await addCanvas(voucherRef.current.querySelector(".pdf-customer"));
+
+      const hotels = voucherRef.current.querySelectorAll(".pdf-hotel-block");
+      for (let h of hotels) {
+        const canvasBlock = await html2canvas(h, { scale: 3 });
+        const imgBlock = canvasBlock.toDataURL("image/png");
+        const heightBlock = (canvasBlock.height * usableWidth) / canvasBlock.width * 0.95;
+
+        if (y + heightBlock > pageHeight - margin) {
+          pdf.addPage();
+          y = margin;
+        }
+
+        pdf.addImage(imgBlock, "PNG", margin, y, usableWidth, heightBlock);
+        y += heightBlock + 4;
+      }
+
+      // TIMING AND FOOTER
+      await addCanvas(voucherRef.current.querySelector(".pdf-timing"));
+      await addCanvas(voucherRef.current.querySelector(".pdf-footer"));
+
+      pdf.save(`Hotel-Voucher-${data.ref_no}.pdf`);
+
+      // Success Alert
+      Swal.fire({
+        icon: "success",
+        title: "Downloaded!",
+        text: "Your PDF has been downloaded successfully.",
+        timer: 2000,
+        showConfirmButton: false,
+      });
+    } catch (err) {
+      Swal.fire({
+        icon: "error",
+        title: "Error",
+        text: "Something went wrong while generating the PDF.",
+        confirmButtonColor: "#dc3545",
+      });
     }
-
-    pdf.addImage(img, "PNG", margin, y, usableWidth, height);
-    y += height + 4;
   };
-
-  // HEADER, REF, AGENT, CUSTOMER
-  await addCanvas(voucherRef.current.querySelector(".pdf-header"));
-  await addCanvas(voucherRef.current.querySelector(".pdf-ref-row"));
-  await addCanvas(voucherRef.current.querySelector(".pdf-agent"));
-  await addCanvas(voucherRef.current.querySelector(".pdf-customer"));
-
-const hotels = voucherRef.current.querySelectorAll(".pdf-hotel-block");
-for (let h of hotels) {
-  const canvasBlock = await html2canvas(h, { scale: 3 });
-  const imgBlock = canvasBlock.toDataURL("image/png");
-  const heightBlock = (canvasBlock.height * usableWidth) / canvasBlock.width * 0.95;
-
-  if (y + heightBlock > pageHeight - margin) {
-    pdf.addPage();
-    y = margin;
-  }
-
-  pdf.addImage(imgBlock, "PNG", margin, y, usableWidth, heightBlock);
-  y += heightBlock + 4;
-}
-
-
-
-  // TIMING AND FOOTER
-  await addCanvas(voucherRef.current.querySelector(".pdf-timing"));
-  await addCanvas(voucherRef.current.querySelector(".pdf-footer"));
-
-  pdf.save(`Hotel-Voucher-${data.ref_no}.pdf`);
-};
-
 
   const handleHotelChange = (i, field, val) => {
     const hotels = [...data.hotels];
@@ -186,140 +239,106 @@ for (let h of hotels) {
           Load Voucher
         </button>
 
-{data && (
-  <>
-    <button
-      className="btn btn-success btn-sm"
-      onClick={exportPDF}
-    >
-      📄 Download PDF
-    </button>
+        {data && (
+          <>
+            <button className="btn btn-success btn-sm" onClick={exportPDF}>
+              📄 Download PDF
+            </button>
 
-    <button
-      className="btn btn-secondary btn-sm"
-      onClick={async () => {
-        if (!voucherRef.current || !data) return;
+            <button
+              className="btn btn-secondary btn-sm"
+              onClick={async () => {
+                if (!voucherRef.current || !data) return;
 
-        const pdf = new jsPDF("p", "mm", "a4");
-        const pageWidth = 210;
-        const pageHeight = 297;
-        const margin = 10;
-        const usableWidth = pageWidth - margin * 2;
+                // Show Print Processing Alert
+                Swal.fire({
+                  title: "Preparing Print Layout...",
+                  text: "Please wait a moment.",
+                  allowOutsideClick: false,
+                  didOpen: () => {
+                    Swal.showLoading();
+                  },
+                });
 
-        let y = margin;
+                try {
+                  const pdf = new jsPDF("p", "mm", "a4");
+                  const pageWidth = 210;
+                  const pageHeight = 297;
+                  const margin = 10;
+                  const usableWidth = pageWidth - margin * 2;
+                  let y = margin;
 
-        const addCanvas = async (el) => {
-          if (!el) return;
+                  const addCanvas = async (el) => {
+                    if (!el) return;
 
-          const canvas = await html2canvas(el, {
-  scale: 3,
-  useCORS: true,
-  backgroundColor: "#ffffff",
+                    const canvas = await html2canvas(el, {
+                      scale: 3,
+                      useCORS: true,
+                      backgroundColor: "#ffffff",
+                      ignoreElements: (el) => el.tagName === "CANVAS",
+                      onclone: (doc) => {
+                        doc.querySelectorAll("*").forEach((el) => {
+                          const bg = el.style.backgroundImage;
+                          if (bg && bg.includes("gradient")) {
+                            el.style.backgroundImage = "none";
+                          }
+                        });
+                      },
+                    });
 
-  ignoreElements: (el) =>
-    el.tagName === "CANVAS",
+                    const img = canvas.toDataURL("image/png");
+                    const height = (canvas.height * usableWidth) / canvas.width * 0.95;
 
-  onclone: (doc) => {
-    doc.querySelectorAll("*").forEach((el) => {
-      const bg = el.style.backgroundImage;
+                    if (y + height > pageHeight - margin) {
+                      pdf.addPage();
+                      y = margin;
+                    }
 
-      if (
-        bg &&
-        bg.includes("gradient")
-      ) {
-        el.style.backgroundImage = "none";
-      }
-    });
-  },
-});
+                    pdf.addImage(img, "PNG", margin, y, usableWidth, height);
+                    y += height + 4;
+                  };
 
-          const img = canvas.toDataURL("image/png");
+                  await addCanvas(voucherRef.current.querySelector(".pdf-header"));
+                  await addCanvas(voucherRef.current.querySelector(".pdf-ref-row"));
+                  await addCanvas(voucherRef.current.querySelector(".pdf-agent"));
+                  await addCanvas(voucherRef.current.querySelector(".pdf-customer"));
 
-          const height =
-            (canvas.height * usableWidth) / canvas.width * 0.95;
+                  const hotels = voucherRef.current.querySelectorAll(".pdf-hotel-block");
+                  for (let h of hotels) {
+                    const canvasBlock = await html2canvas(h, { scale: 3, useCORS: true });
+                    const imgBlock = canvasBlock.toDataURL("image/png");
+                    const heightBlock = (canvasBlock.height * usableWidth) / canvasBlock.width * 0.95;
 
-          if (y + height > pageHeight - margin) {
-            pdf.addPage();
-            y = margin;
-          }
+                    if (y + heightBlock > pageHeight - margin) {
+                      pdf.addPage();
+                      y = margin;
+                    }
 
-          pdf.addImage(
-            img,
-            "PNG",
-            margin,
-            y,
-            usableWidth,
-            height
-          );
+                    pdf.addImage(imgBlock, "PNG", margin, y, usableWidth, heightBlock);
+                    y += heightBlock + 4;
+                  }
 
-          y += height + 4;
-        };
+                  await addCanvas(voucherRef.current.querySelector(".pdf-timing"));
+                  await addCanvas(voucherRef.current.querySelector(".pdf-footer"));
 
-        await addCanvas(
-          voucherRef.current.querySelector(".pdf-header")
-        );
-
-        await addCanvas(
-          voucherRef.current.querySelector(".pdf-ref-row")
-        );
-
-        await addCanvas(
-          voucherRef.current.querySelector(".pdf-agent")
-        );
-
-        await addCanvas(
-          voucherRef.current.querySelector(".pdf-customer")
-        );
-
-        const hotels =
-          voucherRef.current.querySelectorAll(".pdf-hotel-block");
-
-        for (let h of hotels) {
-          const canvasBlock = await html2canvas(h, {
-            scale: 3,
-            useCORS: true,
-          });
-
-          const imgBlock =
-            canvasBlock.toDataURL("image/png");
-
-          const heightBlock =
-            (canvasBlock.height * usableWidth) /
-            canvasBlock.width *
-            0.95;
-
-          if (y + heightBlock > pageHeight - margin) {
-            pdf.addPage();
-            y = margin;
-          }
-
-          pdf.addImage(
-            imgBlock,
-            "PNG",
-            margin,
-            y,
-            usableWidth,
-            heightBlock
-          );
-
-          y += heightBlock + 4;
-        }
-
-        await addCanvas(
-          voucherRef.current.querySelector(".pdf-timing")
-        );
-
-        await addCanvas(
-          voucherRef.current.querySelector(".pdf-footer")
-        );
-
-        window.open(pdf.output("bloburl"), "_blank");
-      }}
-    >
-      🖨️ Print
-    </button>
-  </>
-)}
+                  window.open(pdf.output("bloburl"), "_blank");
+                  
+                  // Close printing alert
+                  Swal.close();
+                } catch (err) {
+                  Swal.fire({
+                    icon: "error",
+                    title: "Print Failed",
+                    text: "Could not generate print view.",
+                    confirmButtonColor: "#dc3545",
+                  });
+                }
+              }}
+            >
+              🖨️ Print
+            </button>
+          </>
+        )}
       </div>
 
       {/* ================= VOUCHER ================= */}
@@ -335,9 +354,7 @@ for (let h of hotels) {
             padding: "20px",
           }}
         >
-
-            <Header title="HOTEL VOUCHER" />
-
+          <Header title="HOTEL VOUCHER" />
 
           {/* INFO */}
           <div className="row mb-2 pdf-ref-row">
@@ -367,72 +384,66 @@ for (let h of hotels) {
             <b>Customer Name:</b> {data.customer_name}
           </div>
 
-{data.hotels.map((h, i) => (
-  <div key={i} className="pdf-hotel-block mb-3 p-2 bg-light rounded">
-    {/* Heading inside the hotel block */}
-    <h6 className="bg-primary text-white p-2 rounded mb-2">
-      {i + 1 } 🏨 Hotel Details
-    </h6>
+          {data.hotels.map((h, i) => (
+            <div key={i} className="pdf-hotel-block mb-3 p-2 bg-light rounded">
+              <h6 className="bg-primary text-white p-2 rounded mb-2">
+                {i + 1} 🏨 Hotel Details
+              </h6>
 
-    {/* Hotel details */}
-    <label className="fw-bold">Confirm No</label>
-    <input
-      className="form-control form-control-sm mb-2 fw-bold"
-      placeholder=""
-      value={h.confirmNo}
-      onChange={(e) => handleHotelChange(i, "confirmNo", e.target.value)}
-    />
-    <b>🏨 Hotel:</b> {h.hotel}
-    <br />
-    <b>📍 Address:</b> {h.location}
+              <label className="fw-bold">Confirm No</label>
+              <input
+                className="form-control form-control-sm mb-2 fw-bold"
+                placeholder=""
+                value={h.confirmNo}
+                onChange={(e) => handleHotelChange(i, "confirmNo", e.target.value)}
+              />
+              <b>🏨 Hotel:</b> {h.hotel}
+              <br />
+              <b>📍 Address:</b> {h.location}
 
-    <div className="row mt-2">
-      <div className="col">
-        <b>🚪 Room:</b> {h.room}
-      </div>
-      <div className="col">
-        <b>🛏️ Room Type:</b> {h.room_type}
-      </div>
-    </div>
+              <div className="row mt-2">
+                <div className="col">
+                  <b>🚪 Room:</b> {h.room}
+                </div>
+                <div className="col">
+                  <b>🛏️ Room Type:</b> {h.room_type}
+                </div>
+              </div>
 
-    <div className="row mt-2">
-      <div className="col bg-warning p-2">
-        <b>Check-In:</b> {showDate(h.checkIn)}
-      </div>
-      <div className="col bg-success text-white p-2">
-        <b>Check-Out:</b> {showDate(h.checkOut)}
-      </div>
-      <div className="col">
-        <b>Nights:</b> {h.nights}
-      </div>
-    </div>
+              <div className="row mt-2">
+                <div className="col bg-warning p-2">
+                  <b>Check-In:</b> {showDate(h.checkIn)}
+                </div>
+                <div className="col bg-success text-white p-2">
+                  <b>Check-Out:</b> {showDate(h.checkOut)}
+                </div>
+                <div className="col">
+                  <b>Nights:</b> {h.nights}
+                </div>
+              </div>
 
-    <div className="row mt-2">
-      <div className="col">
-        <label className="fw-bold">CONTACT 1</label>
-        <input
-          className="form-control form-control-sm fw-bold"
-          placeholder=""
-          value={h.contact1}
-          onChange={(e) => handleHotelChange(i, "contact1", e.target.value)}
-        />
-      </div>
-      <div className="col">
-        <label className="fw-bold">CONTACT 2</label>
-        <input
-          className="form-control form-control-sm fw-bold"
-          placeholder=""
-          value={h.contact2}
-          onChange={(e) => handleHotelChange(i, "contact2", e.target.value)}
-        />
-      </div>
-    </div>
-  </div>
-))}
-
-
-
-
+              <div className="row mt-2">
+                <div className="col">
+                  <label className="fw-bold">CONTACT 1</label>
+                  <input
+                    className="form-control form-control-sm fw-bold"
+                    placeholder=""
+                    value={h.contact1}
+                    onChange={(e) => handleHotelChange(i, "contact1", e.target.value)}
+                  />
+                </div>
+                <div className="col">
+                  <label className="fw-bold">CONTACT 2</label>
+                  <input
+                    className="form-control form-control-sm fw-bold"
+                    placeholder=""
+                    value={h.contact2}
+                    onChange={(e) => handleHotelChange(i, "contact2", e.target.value)}
+                  />
+                </div>
+              </div>
+            </div>
+          ))}
 
           {/* CHECK IN / OUT TIME */}
           <div
