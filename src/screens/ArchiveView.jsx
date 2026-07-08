@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-// Centralized API wrapper import kiya
+// Centralized configuration wrapper
 import API from "../api"; 
 import Swal from "sweetalert2";
 
@@ -16,8 +16,8 @@ export default function ArchiveView({ id, onBack }) {
   const fetchViewData = async () => {
     try {
       setLoading(true);
-      // Path ko manager ke configuration ke mutabik badla
-      const res = await API.get(`/archive/view/${id}`);
+      // Base URL check bypass prefix alignment fixed here
+      const res = await API.get(`/api/archive/view/${id}`);
       if (res.data.success) {
         setData(res.data);
       } else {
@@ -47,8 +47,8 @@ export default function ArchiveView({ id, onBack }) {
   if (loading) {
     return (
       <div className="text-center p-5" style={{ color: "#fff" }}>
-        <div className="spinner-border text-primary"></div>
-        <p className="mt-2">Loading Archive Details...</p>
+        <div className="spinner-border text-primary mb-2"></div>
+        <p>Loading Archive Details...</p>
       </div>
     );
   }
