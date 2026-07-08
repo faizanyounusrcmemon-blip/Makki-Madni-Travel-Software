@@ -107,7 +107,7 @@ export default function Header({ title }) {
               wordBreak: "break-word",
             }}
           >
-            Shop #4 Diamond City Building,
+            Shop #10 Diamond City Building,
             Near Zeenat-ul-Islam Masjid
             <br />
             Garden West, Karachi
