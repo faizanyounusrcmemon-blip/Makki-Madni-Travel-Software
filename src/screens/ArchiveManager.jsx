@@ -246,16 +246,29 @@ export default function ArchiveManager({ onNavigate }) {
     }
   };
 
+/* =========================
+      VIEW / INSPECT SNAPSHOT FIX
+  ========================= */
   const handleView = async (id) => {
+    if (!id) {
+      return Swal.fire("Error", "Invalid Snapshot ID triggered", "error");
+    }
     if (!(await checkPassword())) return;
-    try {
-      const res = await API.get(`/archive/view/${id}`);
-      if (res.data.success) {
-        setViewData(res.data);
-        setSnapshotId(id);
+
+    // Agar aap screen parent level par manage kar rahe hain, to callback trigger hoga:
+    if (typeof onNavigate === "function") {
+      onNavigate("view", id); // Yeh direct standard route state badlega
+    } else {
+      // Internal custom fallback
+      try {
+        const res = await api.get(`/view/${id}`);
+        if (res.data.success) {
+          setViewData(res.data);
+          setSnapshotId(id);
+        }
+      } catch (err) {
+        Swal.fire("Error", "Failed to fetch archive view data", "error");
       }
-    } catch (err) {
-      Swal.fire("Error", "Failed to fetch archive view data", "error");
     }
   };
 
