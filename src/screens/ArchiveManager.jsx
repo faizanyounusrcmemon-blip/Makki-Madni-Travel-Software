@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import API from "../api"; // ✅ Central configuration setup untouched
+import API from "../api"; 
 import Swal from "sweetalert2";
 import ArchiveDashboard from "../components/ArchiveDashboard";
 
@@ -9,8 +9,15 @@ export default function ArchiveManager({ onNavigate }) {
   const [loading, setLoading] = useState(false);
   const [preview, setPreview] = useState(null);
   const [list, setList] = useState([]);
-  const [viewData, setViewData] = useState(null);
-  const [snapshotId, setSnapshotId] = useState(null);
+  const [activeTab, setActiveTab] = useState("manager"); // manager | reports
+
+  // Reports States
+  const [yoyData, setYoyData] = useState([]);
+  const [searchKeyword, setSearchKeyword] = useState("");
+  const [searchResults, setSearchResults] = useState([]);
+  const [searching, setSearching] = useState(false);
+  const [auditLogs, setAuditLogs] = useState([]);
+  const [auditing, setAuditing] = useState(false);
 
   const loadList = async () => {
     try {
@@ -27,420 +34,420 @@ export default function ArchiveManager({ onNavigate }) {
     loadList();
   }, []);
 
+  // Fetch Reports Data
+  const loadYoYReport = async () => {
+    try {
+      const res = await API.get("/archive/analytics/yoy");
+      if (res.data.success) setYoyData(res.data.data || []);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const runIntegrityAudit = async () => {
+    try {
+      setAuditing(true);
+      const res = await API.get("/archive/analytics/integrity-check");
+      if (res.data.success) {
+        setAuditLogs(res.data.audit || []);
+        Swal.fire("Audit Complete", "Database snapshots checked successfully.", "success");
+      }
+    } catch (err) {
+      Swal.fire("Audit Failed", err.message, "error");
+    } finally {
+      setAuditing(false);
+    }
+  };
+
+  const handleGlobalSearch = async (e) => {
+    e.preventDefault();
+    if (!searchKeyword.trim()) return;
+    try {
+      setSearching(true);
+      const res = await API.get(`/archive/analytics/global-search?keyword=${searchKeyword}`);
+      if (res.data.success) {
+        setSearchResults(res.data.balances || []);
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setSearching(false);
+    }
+  };
+
+  useEffect(() => {
+    if (activeTab === "reports") {
+      loadYoYReport();
+      runIntegrityAudit();
+    }
+  }, [activeTab]);
+
   const checkPassword = async () => {
     let showPassword = false;
     const result = await Swal.fire({
       title: "🔐 Archive Access",
       html: `
         <div style="position:relative">
-          <input id="archive-password" type="password" class="swal2-input" placeholder="Enter Password" style="margin:0;width:100%;padding-right:45px" />
-          <button id="toggle-password" type="button" style="position:absolute;right:8px;top:8px;border:none;background:none;cursor:pointer;font-size:18px;">👁️</button>
+          <input id="archive-password" type="password" class="swal2-input" placeholder="Enter Password" style="margin:0;width:100%;padding-right:40px;">
+          <button id="toggle-pass-btn" type="button" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);border:none;background:transparent;cursor:pointer;font-size:18px;">👁️</button>
         </div>
       `,
-      width: 350,
       showCancelButton: true,
-      confirmButtonText: "Login",
-      focusConfirm: false,
+      confirmButtonText: "Generate Snapshot",
       didOpen: () => {
         const input = document.getElementById("archive-password");
-        const btn = document.getElementById("toggle-password");
+        const btn = document.getElementById("toggle-pass-btn");
         btn.addEventListener("click", () => {
           showPassword = !showPassword;
           input.type = showPassword ? "text" : "password";
-          btn.innerHTML = showPassword ? "🙈" : "👁️";
+          btn.textContent = showPassword ? "🙈" : "👁️";
         });
       },
-      preConfirm: () => document.getElementById("archive-password").value
+      preConfirm: () => {
+        const pass = document.getElementById("archive-password").value;
+        if (!pass) {
+          Swal.showValidationMessage("Password required");
+        }
+        return pass;
+      }
     });
 
-    const password = result.value;
-    if (!password) return false;
-    if (password === "faizan") return true;
-
-    Swal.close();
-    await Swal.fire({ icon: "error", title: "Wrong Password", text: "Access Denied", width: 320 });
+    if (result.isConfirmed) {
+      if (result.value !== "8515") {
+        Swal.fire("Access Denied", "Incorrect Security Password", "error");
+        return false;
+      }
+      return true;
+    }
     return false;
   };
 
-  const showLoading = (text = "Processing...") => {
-    Swal.close();
-    Swal.fire({
-      title: text,
-      html: `<div style="margin-top:15px; font-size:18px;">⏳ Please wait...<br/>System is working</div>`,
-      width: 320,
-      allowOutsideClick: false,
-      allowEscapeKey: false,
-      didOpen: () => { Swal.showLoading(); }
-    });
-  };
-
-  const handlePreview = async () => {
-    if (!from || !to) {
-      return Swal.fire("Error", "Date range required", "error");
-    }
+  const handlePreview = async (e) => {
+    e.preventDefault();
+    if (!from || !to) return Swal.fire("Fields Missing", "Select From & To Date", "warning");
+    
+    setLoading(true);
     try {
-      setLoading(true);
-      const res = await API.post("/archive/preview", { date_from: from, date_to: to });
+      const res = await API.post("/archive/preview", { fromDate: from, toDate: to });
       if (res.data.success) {
         setPreview(res.data);
+      } else {
+        Swal.fire("Error", res.data.error || "Preview failed", "error");
       }
     } catch (err) {
-      Swal.fire("Error", err.response?.data?.error || err.message, "error");
+      Swal.fire("Error", err.response?.data?.error || "Server connection error", "error");
     } finally {
       setLoading(false);
     }
   };
 
-  const handleSnapshot = async () => {
-    if (!(await checkPassword())) return;
-    if (!from || !to) {
-      Swal.close();
-      return Swal.fire({ icon: "error", title: "Date Required", text: "Please select dates", width: 320 });
-    }
+  const handleConfirmArchive = async () => {
+    const authenticated = await checkPassword();
+    if (!authenticated) return;
 
-    const confirm = await Swal.fire({
-      title: "Create Snapshot?",
-      text: "Archive snapshot will be created",
-      icon: "warning",
-      width: 320,
-      showCancelButton: true,
-      confirmButtonText: "Create"
+    Swal.fire({
+      title: "🚀 Compiling Master Snapshot...",
+      html: `
+        <div style="margin-top:15px; text-align: left;">
+          <div style="width:100%; height:20px; background:#e5e7eb; border-radius:50px; overflow:hidden; margin-bottom: 15px;">
+            <div id="archiveBar" style="width:5%; height:100%; background:linear-gradient(90deg, #ec4899, #be123c); transition:width 0.4s ease;"></div>
+          </div>
+          <div style="display:flex; justify-content:space-between; font-weight:800; font-size:16px; margin-bottom:15px;">
+            <span>Status: <span id="archiveStatus" style="color:#be123c;">Compressing...</span></span>
+            <span id="archivePercent">5%</span>
+          </div>
+          <div style="font-size:13px; line-height: 2;">
+            <div id="arcStep1" style="color:#be123c; font-weight:bold;">⏳ Step 1: Querying Financial Ledgers...</div>
+            <div id="arcStep2" style="color:#94a3b8;">⚪ Step 2: Extracting Rows to ZIP Block Stream...</div>
+            <div id="arcStep3" style="color:#94a3b8;">⚪ Step 3: Generating Balance & Profit Snapshot...</div>
+          </div>
+        </div>
+      `,
+      showConfirmButton: false,
+      allowOutsideClick: false,
     });
-    if (!confirm.isConfirmed) return;
 
-    try {
-      setLoading(true);
-      showLoading("Creating Snapshot...");
-      const res = await API.post("/archive/snapshot", { from_date: from, to_date: to });
-      if (res.data.success) {
-        const newSnapshotId = res.data.snapshotId;
-        setSnapshotId(newSnapshotId);
-        
-        setPreview((prev) => ({
-          ...(prev || {}),
-          snapshotId: newSnapshotId,
-          customer_count: res.data.customerCount || res.data.customer_count,
-          supplier_count: res.data.supplierCount || res.data.supplier_count,
-          opening_cash: res.data.opening_cash !== undefined ? res.data.opening_cash : prev?.opening_cash,
-          opening_bank: res.data.opening_bank !== undefined ? res.data.opening_bank : prev?.opening_bank,
-          opening_profit: res.data.opening_profit !== undefined ? res.data.opening_profit : prev?.opening_profit,
-          customers: res.data.customers || prev?.customers || [],
-          suppliers: res.data.suppliers || prev?.suppliers || []
-        }));
+    const updateArcDOM = (pct, text, step) => {
+      const bar = document.getElementById("archiveBar");
+      const txt = document.getElementById("archivePercent");
+      const st = document.getElementById("archiveStatus");
+      if (bar) bar.style.width = `${pct}%`;
+      if (txt) txt.innerHTML = `${pct}%`;
+      if (st) st.innerHTML = text;
 
-        Swal.close();
-        await Swal.fire({
-          icon: "success",
-          title: "Snapshot Created",
-          width: 320,
-          html: `<div style="text-align:left"><b>ID:</b> ${newSnapshotId}<br><b>Cash:</b> ${Number(res.data.opening_cash || 0).toLocaleString()}</div>`
-        });
-        loadList();
+      for (let i = 1; i <= 3; i++) {
+        const el = document.getElementById(`arcStep${i}`);
+        if (el) {
+          if (i < step) { el.innerHTML = el.innerHTML.replace(/[⏳⚪✅]/, "✅"); el.style.color = "#16a34a"; el.style.fontWeight = "normal"; }
+          else if (i === step) { el.innerHTML = el.innerHTML.replace(/[⏳⚪✅]/, "⏳"); el.style.color = "#be123c"; el.style.fontWeight = "bold"; }
+          else { el.style.color = "#94a3b8"; }
+        }
       }
-    } catch (err) {
-      Swal.close();
-      Swal.fire({ icon: "error", title: "Server Error", text: err.response?.data?.error || err.message, width: 320 });
-    } finally {
-      setLoading(false);
-    }
-  };
+    };
 
-  const handleBackup = async () => {
-    if (!(await checkPassword())) return;
-    if (!from || !to) {
-      Swal.close();
-      return Swal.fire({ icon: "error", title: "Date Required", text: "Select dates", width: 320 });
-    }
-
-    const confirm = await Swal.fire({
-      title: "Create Backup?",
-      text: "ZIP backup stream will start.",
-      icon: "question",
-      width: 320,
-      showCancelButton: true,
-      confirmButtonText: "Download"
-    });
-    if (!confirm.isConfirmed) return;
+    let pct = 5;
+    const interval = setInterval(() => {
+      if (pct < 40) { pct += 4; updateArcDOM(pct, "Calculating totals...", 1); }
+      else if (pct >= 40 && pct < 85) { pct += 2; updateArcDOM(pct, "Packaging dump files...", 2); }
+    }, 200);
 
     try {
-      setLoading(true);
-      showLoading("Streaming ZIP Backup from Server...");
-      const response = await API.get(`/archive/download-stream?fromDate=${from}&toDate=${to}`, { responseType: "blob" });
-      const blob = new Blob([response.data], { type: "application/zip" });
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `archive-${from}-to-${to}.zip`;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      window.URL.revokeObjectURL(url);
+      const res = await API.post("/archive/confirm", { fromDate: from, toDate: to }, { responseType: "blob" });
+      clearInterval(interval);
+
+      updateArcDOM(95, "Saving snapshots safely...", 3);
+      await new Promise(r => setTimeout(r, 600));
+      updateArcDOM(100, "Done!", 4);
+      await new Promise(r => setTimeout(r, 400));
       Swal.close();
+
+      const blob = new Blob([res.data], { type: "application/zip" });
+      const downloadUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = downloadUrl;
+      link.download = `archive_backup_${from}_to_${to}.zip`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      Swal.fire("Archived & Secured", "Data snapshot compiled and exported successfully.", "success");
+      setPreview(null);
+      setFrom("");
+      setTo("");
       loadList();
     } catch (err) {
+      clearInterval(interval);
       Swal.close();
-      Swal.fire({ icon: "error", title: "Streaming Error", text: err.message, width: 320 });
-    } finally {
-      setLoading(false);
+      Swal.fire("Archive Failed", "Could not generate financial closing snapshot.", "error");
     }
   };
 
-  const handleRestore = async () => {
-    if (!(await checkPassword())) return;
-    const { value: file } = await Swal.fire({
-      title: "📤 Upload Backup ZIP",
-      input: "file",
-      inputAttributes: { accept: ".zip" },
-      showCancelButton: true
-    });
-    if (!file) return;
-
-    const confirm = await Swal.fire({ title: "⚠️ ARE YOU SURE?", text: "This will restore data!", icon: "warning", showCancelButton: true });
-    if (!confirm.isConfirmed) return;
-
-    try {
-      setLoading(true);
-      showLoading("Restoring Database...");
-      const formData = new FormData();
-      formData.append("backup_file", file);
-      const res = await API.post("/archive/restore", formData, { headers: { "Content-Type": "multipart/form-data" } });
-      Swal.close();
-      if (res.data.success) {
-        await Swal.fire({ icon: "success", title: "System Restored!", width: 320 });
-        loadList();
-      }
-    } catch (err) {
-      Swal.close();
-      Swal.fire({ icon: "error", title: "Server Error", text: err.message, width: 320 });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleDelete = async () => {
-    if (!(await checkPassword())) return;
-    Swal.close();
-    const confirm = await Swal.fire({ 
-      title: "Delete Live Data?", 
-      text: "Warning: This will clear the live operational data. Make sure backup is created first!", 
-      icon: "warning", 
-      showCancelButton: true 
-    });
-    if (!confirm.isConfirmed) return;
-
-    try {
-      showLoading("Wiping Live System Data...");
-      const res = await API.post("/archive/live-data-start", { 
-        from_date: from, 
-        to_date: to 
-      });
-      
-      if (res.data.success) {
-        Swal.close();
-        await Swal.fire({ icon: "success", title: "Wiped Successfully", text: "Live data has been cleared.", width: 320 });
-        loadList();
-      }
-    } catch (err) {
-      Swal.close();
-      Swal.fire("Error", err.response?.data?.error || err.message, "error");
-    }
-  };
-
-  const handleView = async (id) => {
-    if (!(await checkPassword())) return;
-    try {
-      const res = await API.get(`/archive/view/${id}`);
-      if (res.data.success) {
-        setViewData(res.data);
-        setSnapshotId(id);
-      }
-    } catch (err) {
-      Swal.fire("Error", "Failed to fetch archive view data", "error");
-    }
-  };
-
-  const handleDownload = async (id) => {
-    if (!(await checkPassword())) return;
-    const targetItem = list.find(item => item.id === id);
-    if (!targetItem) return Swal.fire("Error", "Snapshot not found", "error");
-
-    try {
-      showLoading("Pulling ZIP File Stream...");
-      const res = await API.get(`/archive/download-stream?fromDate=${targetItem.date_from}&toDate=${targetItem.date_to}`, { responseType: "blob" });
-      const blob = new Blob([res.data], { type: "application/zip" });
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `archive-backup-#${id}-${targetItem.date_from}.zip`;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      window.URL.revokeObjectURL(url);
-      Swal.close();
-    } catch (err) {
-      Swal.close();
-      Swal.fire({ icon: "error", title: "Download Failed", text: err.message, width: 320 });
-    }
-  };
+  const fmtMoney = (v) => Number(v || 0).toLocaleString("en-PK", { minimumFractionDigits: 0 });
 
   return (
-    <div style={styles.container}>
-
-
-      <div style={styles.headerBar}>
-        <h2 style={{ margin: 0, fontSize: "24px", fontWeight: "900", letterSpacing: "1px" }}>🚀 ARCHIVE CONTROL CENTER</h2>
-        <button onClick={() => onNavigate("dashboard")} style={styles.btnBack}>← BACK TO MAIN</button>
-      </div>
-
-            <div style={{ marginBottom: "20px" }}>
-        <ArchiveDashboard />
-      </div>
-
-      <div style={styles.cardMain}>
-        <div style={styles.row}>
-          <div style={{ flex: 1 }}>
-            <label style={styles.labelCyan}>⚡ START DATE</label>
-            <input type="date" value={from} onChange={(e) => setFrom(e.target.value)} style={styles.inputCyan} />
-          </div>
-          <div style={{ flex: 1 }}>
-            <label style={styles.labelPink}>⚡ END DATE</label>
-            <input type="date" value={to} onChange={(e) => setTo(e.target.value)} style={styles.inputPink} />
-          </div>
+    <div style={styles.wrapper}>
+      {/* TABS HEADER */}
+      <div className="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+        <div className="btn-group shadow-sm">
+          <button 
+            className={`btn px-4 fw-bold ${activeTab === "manager" ? "btn-primary" : "btn-outline-light text-white"}`}
+            onClick={() => setActiveTab("manager")}
+          >
+            ⚙️ Archive Master Console
+          </button>
+          <button 
+            className={`btn px-4 fw-bold ${activeTab === "reports" ? "btn-info text-dark" : "btn-outline-light text-white"}`}
+            onClick={() => setActiveTab("reports")}
+          >
+            📊 Advanced Audit & YoY Reports
+          </button>
         </div>
-        <div style={styles.buttonRow}>
-          <button style={styles.btnBlue} onClick={handlePreview}>🔍 LOAD PREVIEW</button>
-          <button style={styles.btnPurple} onClick={handleBackup}>📦 COMPILE ZIP</button>
-          <button style={styles.btnGreen} onClick={handleSnapshot}>💾 SAVE SNAPSHOT</button>
-          <button style={styles.btnOrange} onClick={handleRestore}>📤 RESTORE ZIP</button>
-          <button style={styles.btnRed} onClick={handleDelete}>🔥 WIPE LIVE DATA</button>
-        </div>
+        <button className="btn btn-secondary fw-bold shadow-sm" onClick={() => onNavigate("archiveList")}>
+          📋 Saved Snapshots List
+        </button>
       </div>
 
-      {/* 📊 FIXED: Added complete visual layout for Customers and Suppliers under Preview */}
-      {preview && (
-        <div style={styles.cardPreview}>
-          <h3 style={{ color: "#fff", textTransform: "uppercase", fontWeight: "900", marginBottom: "20px", borderBottom: "2px dashed #f1c40f", paddingBottom: "10px" }}>📊 Live System Data Preview</h3>
+      {activeTab === "manager" ? (
+        <>
+          <ArchiveDashboard />
+
+          <div style={styles.container}>
+            <div style={styles.header}>
+              <h4 style={{ margin: 0, fontWeight: "900" }}>🔒 Create Historical Closing Archive</h4>
+              <p style={{ margin: "5px 0 0 0", opacity: 0.8, fontSize: "12px" }}>
+                This routine wraps transactions into cold storage metadata snapshots.
+              </p>
+            </div>
+
+            <form onSubmit={handlePreview} style={styles.formContainer}>
+              <div style={styles.inputGroup}>
+                <label style={styles.label}>📅 Target Start Date</label>
+                <input type="date" value={from} onChange={(e) => setFrom(e.target.value)} style={styles.input} />
+              </div>
+              <div style={styles.inputGroup}>
+                <label style={styles.label}>📅 Target End Date (Lock Limit)</label>
+                <input type="date" value={to} onChange={(e) => setTo(e.target.value)} style={styles.input} />
+              </div>
+              <button type="submit" disabled={loading} style={styles.btnPreview}>
+                {loading ? "Analyzing Data Streams..." : "🔍 Run Pre-Archive Analysis"}
+              </button>
+            </form>
+
+            {preview && (
+              <div style={{ marginTop: "30px", animation: "fadeIn 0.5s ease" }}>
+                <h5 style={{ color: "#38bdf8", fontWeight: "800", marginBottom: "15px" }}>
+                  📊 Pre-Archive Data Stream Preview Summary
+                </h5>
+                
+                <div style={styles.tableGrid}>
+                  <div style={styles.panelBox}>
+                    <div style={styles.panelHeaderCyan}>💵 Calculated Closing Balances ({preview.balances?.length || 0})</div>
+                    <div style={styles.panelBody}>
+                      {preview.balances?.map((b, idx) => (
+                        <div key={idx} style={styles.listItemSub}>
+                          <span style={{ fontSize: "13px" }}>{b.account_name} <small style={{ color: "#94a3b8" }}>({b.account_type})</small></span>
+                          <span className="fw-bold text-cyan">Rs. {fmtMoney(b.closing_balance)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div style={styles.panelBox}>
+                    <div style={styles.panelHeaderPink}>📈 Estimated Net Profit Metrics ({preview.profit?.length || 0})</div>
+                    <div style={styles.panelBody}>
+                      {preview.profit?.map((p, idx) => (
+                        <div key={idx} style={styles.listItemSub}>
+                          <span style={{ fontSize: "13px" }}>{p.month}</span>
+                          <span className="fw-bold text-success">Net: Rs. {fmtMoney(p.net_profit)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="alert alert-warning border border-warning bg-dark text-warning mt-4 p-3 rounded">
+                  ⚠️ <b>Crucial Operational Warning:</b> Executing this command will write all assets, liabilities, and monthly profits into permanent snapshots. Please verify all ledger balances match before confirmation.
+                </div>
+
+                <button onClick={handleConfirmArchive} style={styles.btnConfirm}>
+                  🚀 Lock Data & Generate Secured Archive Download
+                </button>
+              </div>
+            )}
+          </div>
+        </>
+      ) : (
+        /* ADVANCED AUDIT & YOY REPORTS VIEW */
+        <div style={{ display: "flex", flexDirection: "column", gap: "25px" }}>
           
-          <div style={{ display: "flex", gap: 15, marginBottom: 20 }}>
-            <div style={styles.blockCash}>
-              <span style={styles.blockLabel}>Opening Cash</span>
-              <h2 style={styles.blockValue}>{Number(preview.opening_cash || 0).toLocaleString()}</h2>
-            </div>
-            <div style={styles.blockBank}>
-              <span style={styles.blockLabel}>Opening Bank</span>
-              <h2 style={styles.blockValue}>{Number(preview.opening_bank || 0).toLocaleString()}</h2>
-            </div>
-            <div style={styles.blockProfit}>
-              <span style={styles.blockLabel}>Opening Profit</span>
-              <h2 style={styles.blockValue}>{Number(preview.opening_profit || 0).toLocaleString()}</h2>
+          {/* YoY Sales & Profits Report */}
+          <div style={styles.container}>
+            <h4 className="text-info fw-bold mb-3">📊 Year-on-Year (YoY) Historical Comparison</h4>
+            <div className="table-responsive">
+              <table className="table table-dark table-striped align-middle rounded overflow-hidden">
+                <thead>
+                  <tr className="table-primary text-dark">
+                    <th>📅 Archived Period</th>
+                    <th className="text-end">💼 Total Volume Sales</th>
+                    <th className="text-end">📦 Total Purchases</th>
+                    <th className="text-end">💰 Net Snapshot Profit</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {yoyData.map((row, i) => (
+                    <tr key={i}>
+                      <td><b>{row.from_date}</b> to <b>{row.to_date}</b></td>
+                      <td className="text-end text-success fw-bold">Rs. {fmtMoney(row.total_sales)}</td>
+                      <td className="text-end text-warning">Rs. {fmtMoney(row.total_purchase)}</td>
+                      <td className="text-end text-info fw-bold">Rs. {fmtMoney(row.net_profit)}</td>
+                    </tr>
+                  ))}
+                  {yoyData.length === 0 && (
+                    <tr><td colSpan="4" className="text-center text-muted">No historical snapshot data found.</td></tr>
+                  )}
+                </tbody>
+              </table>
             </div>
           </div>
 
-          <div style={styles.tableGrid}>
-            {/* CUSTOMERS PANEL */}
-            <div style={styles.panelBox}>
-              <div style={styles.panelHeaderCyan}>
-                <span>👤 CUSTOMERS ({preview.customer_count || preview.customerCount || 0})</span>
+          {/* Cross-Archive Global Account Search */}
+          <div style={styles.container}>
+            <h4 className="text-warning fw-bold mb-2">🔍 Cross-Snapshot Historical Search</h4>
+            <p className="text-muted small mb-3">Dhoondye saalon puraane customer ya supplier accounts ka final closing snapshot status ek click par.</p>
+            <form onSubmit={handleGlobalSearch} className="d-flex gap-2 mb-3">
+              <input 
+                type="text" 
+                className="form-control bg-dark text-white border-secondary"
+                placeholder="Enter party name or ledger account title..."
+                value={searchKeyword}
+                onChange={(e) => setSearchKeyword(e.target.value)}
+              />
+              <button type="submit" className="btn btn-warning fw-bold px-4" disabled={searching}>
+                {searching ? "Searching..." : "Search"}
+              </button>
+            </form>
+            
+            {searchResults.length > 0 && (
+              <div className="table-responsive bg-dark p-2 rounded border border-secondary">
+                <table className="table table-dark table-hover m-0">
+                  <thead>
+                    <tr>
+                      <th>👤 Account Title</th>
+                      <th>🗂️ Type</th>
+                      <th>📅 Archive Period</th>
+                      <th className="text-end">💵 Closing Balance</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {searchResults.map((res, index) => (
+                      <tr key={index}>
+                        <td>{res.account_name}</td>
+                        <td><span className="badge bg-secondary">{res.account_type}</span></td>
+                        <td>{res.from_date} to {res.to_date}</td>
+                        <td className="text-end text-cyan fw-bold">Rs. {fmtMoney(res.closing_balance)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
-              <div style={styles.panelBody}>
-                {preview.customers && preview.customers.length > 0 ? (
-                  preview.customers.map((c, i) => (
-                    <div key={i} style={styles.listItemSub}>
-                      <div>
-                        <b style={{ color: "#06b6d4" }}>{c.ref_no || "N/A"}</b> — {c.customer_name}<br />
-                        <span style={{ fontSize: "12px", color: "#aaa" }}>Status: {c.payment_status || 'Pending'}</span>
-                      </div>
-                      <b style={{ color: "#fff" }}>{Number(c.balance || 0).toLocaleString()}</b>
-                    </div>
-                  ))
-                ) : (
-                  <div style={styles.emptyText}>No Customers Data Found</div>
-                )}
-              </div>
-            </div>
+            )}
+          </div>
 
-            {/* SUPPLIERS PANEL */}
-            <div style={styles.panelBox}>
-              <div style={styles.panelHeaderPink}>
-                <span>🏢 SUPPLIERS ({preview.supplier_count || preview.supplierCount || 0})</span>
-              </div>
-              <div style={styles.panelBody}>
-                {preview.suppliers && preview.suppliers.length > 0 ? (
-                  preview.suppliers.map((s, i) => (
-                    <div key={i} style={styles.listItemSub}>
-                      <div>
-                        <b style={{ color: "#f43f5e" }}>{s.supplier_name}</b><br />
-                        <span style={{ fontSize: "12px", color: "#aaa" }}>Code: {s.supplier_code || 'N/A'}</span>
+          {/* Archive Integrity Audit System */}
+          <div style={styles.container}>
+            <div className="d-flex justify-content-between align-items-center mb-3 flex-wrap">
+              <h4 className="text-danger fw-bold m-0">🛡️ Archive Data Integrity Auditor</h4>
+              <button className="btn btn-outline-danger btn-sm fw-bold" onClick={runIntegrityAudit} disabled={auditing}>
+                {auditing ? "Verifying..." : "🔄 Run Security Verification"}
+              </button>
+            </div>
+            <div className="row g-3">
+              {auditLogs.map((log, i) => (
+                <div className="col-md-4" key={i}>
+                  <div className="card bg-dark border border-secondary text-white h-100 shadow-sm">
+                    <div className="card-body">
+                      <div className="d-flex justify-content-between align-items-center mb-2">
+                        <span className="badge bg-danger">Snapshot ID: #{log.snapshot_id.substring(0,6)}</span>
+                        <span className={`fw-bold ${log.status.includes("SECURE") ? "text-success" : "text-warning"}`}>{log.status}</span>
                       </div>
-                      <b style={{ color: "#fff" }}>{Number(s.balance || 0).toLocaleString()}</b>
+                      <h6 className="mb-1 text-muted">Period:</h6>
+                      <p className="fw-bold small text-white mb-2">{log.period}</p>
+                      <hr className="bg-secondary" />
+                      <div className="d-flex justify-content-between small text-muted">
+                        <span>Total Ledgers:</span>
+                        <span className="text-white fw-bold">{log.total_accounts_archived} rows</span>
+                      </div>
+                      <div className="d-flex justify-content-between small text-muted mt-1">
+                        <span>Sum Profit:</span>
+                        <span className="text-success fw-bold">Rs. {fmtMoney(log.calculated_profit)}</span>
+                      </div>
                     </div>
-                  ))
-                ) : (
-                  <div style={styles.emptyText}>No Suppliers Data Found</div>
-                )}
-              </div>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
 
         </div>
       )}
-
-      <div style={styles.cardLogs}>
-        <h3 style={{ color: "#fff", letterSpacing: "1px", margin: "0 0 15px 0", fontWeight: "900" }}>📜 HISTORICAL SNAPSHOTS ENGINE</h3>
-        <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-          {(list || []).map((item) => (
-            <div key={item.id} style={styles.listItemLog}>
-              <div>
-                <span style={styles.badgeId}>BLOCK ID: #{item.id}</span>
-                <div style={{ marginTop: "5px", fontSize: "14px", fontWeight: "bold" }}>Timeline: <span style={{ color: "#00f2fe" }}>{item.date_from}</span> to <span style={{ color: "#ff758c" }}>{item.date_to}</span></div>
-              </div>
-              <div style={{ display: "flex", gap: "8px" }}>
-                <button style={styles.smallBtnInspect} onClick={() => handleView(item.id)}>INSPECT</button>
-                <button style={styles.smallBtnPull} onClick={() => handleDownload(item.id)}>PULL ZIP</button>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
     </div>
   );
 }
 
 const styles = {
-  container: { padding: "25px", background: "linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%)", minHeight: "100vh", color: "#fff" },
-  headerBar: { display: "flex", justifyContent: "space-between", alignItems: "center", background: "linear-gradient(90deg, #ec4899 0%, #8b5cf6 50%, #6366f1 100%)", padding: "20px", borderRadius: "20px", marginBottom: "25px" },
-  btnBack: { background: "#f59e0b", color: "#000", border: "none", padding: "10px 20px", borderRadius: "12px", cursor: "pointer", fontWeight: "900" },
-  cardMain: { background: "#1e293b", padding: "25px", borderRadius: "24px", marginBottom: "25px" },
-  row: { display: "flex", gap: "20px" },
-  labelCyan: { display: "block", fontSize: "12px", fontWeight: "900", color: "#06b6d4" },
-  labelPink: { display: "block", fontSize: "12px", fontWeight: "900", color: "#f43f5e" },
-  inputCyan: { width: "100%", padding: "12px", background: "#0f172a", border: "2px solid #06b6d4", borderRadius: "14px", color: "#06b6d4" },
-  inputPink: { width: "100%", padding: "12px", background: "#0f172a", border: "2px solid #f43f5e", borderRadius: "14px", color: "#f43f5e" },
-  buttonRow: { marginTop: "20px", display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: "12px" },
-  btnBlue: { padding: "15px", background: "#0284c7", color: "#fff", border: "none", borderRadius: "14px", fontWeight: "900" },
-  btnPurple: { padding: "15px", background: "#9333ea", color: "#fff", border: "none", borderRadius: "14px", fontWeight: "900" },
-  btnGreen: { padding: "15px", background: "#16a34a", color: "#000", border: "none", borderRadius: "14px", fontWeight: "900" },
-  btnRed: { padding: "15px", background: "#dc2626", color: "#fff", border: "none", borderRadius: "14px", fontWeight: "900" },
-  btnOrange: { padding: "15px", background: "#ea580c", color: "#fff", border: "none", borderRadius: "14px", fontWeight: "900" },
-  cardPreview: { background: "#0f172a", padding: "25px", borderRadius: "24px" },
-  blockCash: { background: "#059669", padding: "15px", borderRadius: "16px", flex: 1 },
-  blockBank: { background: "#2563eb", padding: "15px", borderRadius: "16px", flex: 1 },
-  blockProfit: { background: "#7e3af2", padding: "15px", borderRadius: "16px", flex: 1 },
-  blockLabel: { display: "block", fontSize: "11px", color: "#fff" },
-  blockValue: { margin: "5px 0 0 0", fontSize: "24px", fontWeight: "900" },
-  
-  // New Layout Style Engine
+  wrapper: { padding: "20px", color: "#fff", background: "#0f172a", minHeight: "100vh" },
+  container: { background: "#1e293b", borderRadius: "16px", padding: "30px", boxShadow: "0 10px 30px rgba(0,0,0,0.25)", border: "1px solid #334155" },
+  header: { borderBottom: "2px solid #334155", paddingBottom: "15px", marginBottom: "25px" },
+  formContainer: { display: "flex", gap: "20px", flexWrap: "wrap", alignItems: "flex-end" },
+  inputGroup: { display: "flex", flexDirection: "column", gap: "8px", flex: "1", minWidth: "200px" },
+  label: { fontSize: "13px", fontWeight: "700", color: "#94a3b8" },
+  input: { padding: "12px", borderRadius: "10px", border: "1px solid #475569", background: "#0f172a", color: "#fff", fontSize: "14px", outline: "none" },
+  btnPreview: { background: "linear-gradient(135deg, #2563eb, #1d4ed8)", color: "#fff", border: "none", borderRadius: "10px", padding: "13px 25px", fontWeight: "700", fontSize: "14px", cursor: "pointer", transition: "all 0.3s ease", boxShadow: "0 4px 15px rgba(37,99,235,0.3)" },
+  btnConfirm: { width: "100%", background: "linear-gradient(135deg, #db2777, #be123c)", color: "#fff", border: "none", borderRadius: "12px", padding: "15px", fontWeight: "800", fontSize: "16px", cursor: "pointer", marginTop: "25px", transition: "all 0.3s ease", boxShadow: "0 6px 20px rgba(219,39,119,0.3)" },
   tableGrid: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "20px", marginTop: "20px" },
-  panelBox: { background: "#1e293b", borderRadius: "16px", overflow: "hidden", border: "1px solid #334155" },
-  panelHeaderCyan: { background: "linear-gradient(90deg, #06b6d4, #0284c7)", padding: "12px 15px", fontWeight: "900", fontSize: "14px" },
-  panelHeaderPink: { background: "linear-gradient(90deg, #f43f5e, #be123c)", padding: "12px 15px", fontWeight: "900", fontSize: "14px" },
+  panelBox: { background: "#0f172a", borderRadius: "16px", overflow: "hidden", border: "1px solid #334155" },
+  panelHeaderCyan: { background: "linear-gradient(90deg, #06b6d4, #0284c7)", padding: "12px 15px", fontWeight: "900", fontSize: "14px", color: "#fff" },
+  panelHeaderPink: { background: "linear-gradient(90deg, #f43f5e, #be123c)", padding: "12px 15px", fontWeight: "900", fontSize: "14px", color: "#fff" },
   panelBody: { maxHeight: "200px", overflowY: "auto", padding: "5px" },
-  listItemSub: { display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 15px", borderBottom: "1px solid #334155" },
-  emptyText: { padding: "20px", color: "#64748b", textAlign: "center", fontSize: "13px" },
-
-  cardLogs: { background: "#1e293b", padding: "25px", borderRadius: "24px" },
-  listItemLog: { display: "flex", justifyContent: "space-between", alignItems: "center", padding: "15px", background: "#0f172a", borderRadius: "16px" },
-  badgeId: { background: "#4f46e5", padding: "4px 8px", borderRadius: "6px", fontSize: "11px" },
-  smallBtnInspect: { padding: "8px 15px", background: "#a21caf", color: "#fff", border: "none", borderRadius: "10px" },
-  smallBtnPull: { padding: "8px 15px", background: "#d97706", color: "#000", border: "none", borderRadius: "10px" }
+  listItemSub: { display: "flex", justifyBetween: "space-between", justifyContent: "space-between", alignItems: "center", padding: "10px 15px", borderBottom: "1px solid #334155" }
 };
