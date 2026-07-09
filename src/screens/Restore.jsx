@@ -190,7 +190,7 @@ export default function Restore({ onNavigate }) {
     return password;
   };
 
-/* ================= RESTORE (SMART LIVE ANIMATED STEPS) ================= */
+  /* ================= RESTORE ================= */
   const restore = async (file, mode) => {
     const fileObj = files.find(f => f.name === file);
 
@@ -201,13 +201,12 @@ export default function Restore({ onNavigate }) {
       return Swal.fire("Error", "Table select karo", "error");
     }
 
-    // Modern Stepper Loader layout initializing
     Swal.fire({
       title: "🔄 Database Restore Engine",
       html: `
         <div style="margin-top:15px; text-align: left;">
           <div style="width:100%; height:20px; background:#e5e7eb; border-radius:50px; overflow:hidden; margin-bottom: 15px;">
-            <div id="restoreBar" style="width:5%; height:100%; background:linear-gradient(90deg, #3b82f6, #2563eb); transition:width 0.4s ease-to-smooth;"></div>
+            <div id="restoreBar" style="width:5%; height:100%; background:linear-gradient(90deg, #3b82f6, #2563eb); transition:width 0.4s ease;"></div>
           </div>
           <div style="display:flex; justify-content:space-between; font-weight:800; font-size:16px; margin-bottom:15px;">
             <span>Status: <span id="restoreStatus" style="color:#2563eb;">Authenticating...</span></span>
@@ -226,7 +225,6 @@ export default function Restore({ onNavigate }) {
       allowOutsideClick: false,
     });
 
-    // Helper functions to change popup content smoothly
     const updateProgress = (pct, statusText, currentStep) => {
       const bar = document.getElementById("restoreBar");
       const txt = document.getElementById("restorePercent");
@@ -248,12 +246,12 @@ export default function Restore({ onNavigate }) {
             el.style.fontWeight = "bold";
           } else {
             el.style.color = "#94a3b8";
+            el.style.fontWeight = "normal";
           }
         }
       }
     };
 
-    // Smooth step animation controller
     let currentPct = 5;
     const interval = setInterval(() => {
       if (currentPct < 25) {
@@ -266,7 +264,7 @@ export default function Restore({ onNavigate }) {
         currentPct += 1;
         updateProgress(Math.floor(currentPct), "Clearing constraints & tables...", 3);
       } else if (currentPct >= 70 && currentPct < 92) {
-        currentPct += 0.5; // Slow down near the end until server responds
+        currentPct += 0.5;
         updateProgress(Math.floor(currentPct), "Executing SQL rows into Database...", 4);
       }
     }, 200);
@@ -284,7 +282,6 @@ export default function Restore({ onNavigate }) {
 
       clearInterval(interval);
       
-      // Instantly run sequence steps after server answers true success
       updateProgress(95, "Fixing Database Sequences...", 5);
       await new Promise(r => setTimeout(r, 600));
       updateProgress(100, "Done!", 6);
@@ -304,7 +301,7 @@ export default function Restore({ onNavigate }) {
     }
   };
 
-  /* ================= DOWNLOAD (SMART LIVE STEPPER) ================= */
+  /* ================= DOWNLOAD ================= */
   const downloadBackup = async (file) => {
     const fileObj = files.find(f => f.name === file);
 
@@ -326,7 +323,7 @@ export default function Restore({ onNavigate }) {
       `,
       allowOutsideClick: false,
       showConfirmButton: false
-    };
+    }); // ✅ Fixed syntax closing bracket here
 
     let dlPct = 5;
     const dlInterval = setInterval(() => {
