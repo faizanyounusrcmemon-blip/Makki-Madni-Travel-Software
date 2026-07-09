@@ -190,7 +190,7 @@ export default function Restore({ onNavigate }) {
     return password;
   };
 
-  /* ================= RESTORE (SMART LIVE STEPPER) ================= */
+/* ================= RESTORE (SMART LIVE ANIMATED STEPS) ================= */
   const restore = async (file, mode) => {
     const fileObj = files.find(f => f.name === file);
 
@@ -207,7 +207,7 @@ export default function Restore({ onNavigate }) {
       html: `
         <div style="margin-top:15px; text-align: left;">
           <div style="width:100%; height:20px; background:#e5e7eb; border-radius:50px; overflow:hidden; margin-bottom: 15px;">
-            <div id="restoreBar" style="width:5%; height:100%; background:linear-gradient(90deg, #3b82f6, #2563eb); transition:width 0.5s ease;"></div>
+            <div id="restoreBar" style="width:5%; height:100%; background:linear-gradient(90deg, #3b82f6, #2563eb); transition:width 0.4s ease-to-smooth;"></div>
           </div>
           <div style="display:flex; justify-content:space-between; font-weight:800; font-size:16px; margin-bottom:15px;">
             <span>Status: <span id="restoreStatus" style="color:#2563eb;">Authenticating...</span></span>
@@ -253,23 +253,23 @@ export default function Restore({ onNavigate }) {
       }
     };
 
-    // Simulated intervals that map closely with server events
+    // Smooth step animation controller
     let currentPct = 5;
     const interval = setInterval(() => {
       if (currentPct < 25) {
-        currentPct += 4;
-        updateProgress(currentPct, "Uploading dump...", 1);
-      } else if (currentPct >= 25 && currentPct < 45) {
-        currentPct += 3;
-        updateProgress(currentPct, "Extracting backup contents...", 2);
-      } else if (currentPct >= 45 && currentPct < 65) {
         currentPct += 2;
-        updateProgress(currentPct, "Clearing constraints...", 3);
-      } else if (currentPct >= 65 && currentPct < 92) {
+        updateProgress(currentPct, "Uploading dump...", 1);
+      } else if (currentPct >= 25 && currentPct < 50) {
+        currentPct += 1.5;
+        updateProgress(Math.floor(currentPct), "Extracting backup contents...", 2);
+      } else if (currentPct >= 50 && currentPct < 70) {
         currentPct += 1;
-        updateProgress(currentPct, "Executing SQL rows...", 4);
+        updateProgress(Math.floor(currentPct), "Clearing constraints & tables...", 3);
+      } else if (currentPct >= 70 && currentPct < 92) {
+        currentPct += 0.5; // Slow down near the end until server responds
+        updateProgress(Math.floor(currentPct), "Executing SQL rows into Database...", 4);
       }
-    }, 400);
+    }, 200);
 
     try {
       const url = `${import.meta.env.VITE_BACKEND_URL}${
