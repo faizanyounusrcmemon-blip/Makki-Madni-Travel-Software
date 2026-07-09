@@ -11,7 +11,7 @@ export default function ArchiveManager({ onNavigate }) {
   const [list, setList] = useState([]);
   const [activeTab, setActiveTab] = useState("manager"); // manager | reports
 
-  // Reports States
+  // Advanced Reports States
   const [yoyData, setYoyData] = useState([]);
   const [searchKeyword, setSearchKeyword] = useState("");
   const [searchResults, setSearchResults] = useState([]);
@@ -34,7 +34,6 @@ export default function ArchiveManager({ onNavigate }) {
     loadList();
   }, []);
 
-  // Fetch Reports Data
   const loadYoYReport = async () => {
     try {
       const res = await API.get("/archive/analytics/yoy");
@@ -50,10 +49,9 @@ export default function ArchiveManager({ onNavigate }) {
       const res = await API.get("/archive/analytics/integrity-check");
       if (res.data.success) {
         setAuditLogs(res.data.audit || []);
-        Swal.fire("Audit Complete", "Database snapshots checked successfully.", "success");
       }
     } catch (err) {
-      Swal.fire("Audit Failed", err.message, "error");
+      console.error(err);
     } finally {
       setAuditing(false);
     }
@@ -85,7 +83,7 @@ export default function ArchiveManager({ onNavigate }) {
   const checkPassword = async () => {
     let showPassword = false;
     const result = await Swal.fire({
-      title: "🔐 Archive Access",
+      title: "🔐 Archive Access Verification",
       html: `
         <div style="position:relative">
           <input id="archive-password" type="password" class="swal2-input" placeholder="Enter Password" style="margin:0;width:100%;padding-right:40px;">
@@ -93,7 +91,7 @@ export default function ArchiveManager({ onNavigate }) {
         </div>
       `,
       showCancelButton: true,
-      confirmButtonText: "Generate Snapshot",
+      confirmButtonText: "Confirm Password",
       didOpen: () => {
         const input = document.getElementById("archive-password");
         const btn = document.getElementById("toggle-pass-btn");
@@ -222,11 +220,36 @@ export default function ArchiveManager({ onNavigate }) {
     }
   };
 
+  const handleDelete = async (id) => {
+    const confirm = await Swal.fire({
+      title: "Delete Archive Snapshot?",
+      text: "This action cannot be undone!",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#d33",
+      confirmButtonText: "Yes, Delete It",
+    });
+
+    if (!confirm.isConfirmed) return;
+
+    try {
+      const res = await API.delete(`/archive/delete-snapshot/${id}`);
+      if (res.data.success) {
+        Swal.fire("Deleted", "Snapshot deleted successfully", "success");
+        loadList();
+      } else {
+        Swal.fire("Error", res.data.error || "Delete failed", "error");
+      }
+    } catch (err) {
+      Swal.fire("Error", "Server delete request failed", "error");
+    }
+  };
+
   const fmtMoney = (v) => Number(v || 0).toLocaleString("en-PK", { minimumFractionDigits: 0 });
 
   return (
     <div style={styles.wrapper}>
-      {/* TABS HEADER */}
+      {/* TABS NAVBAR */}
       <div className="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
         <div className="btn-group shadow-sm">
           <button 
@@ -243,7 +266,7 @@ export default function ArchiveManager({ onNavigate }) {
           </button>
         </div>
         <button className="btn btn-secondary fw-bold shadow-sm" onClick={() => onNavigate("archiveList")}>
-          📋 Saved Snapshots List
+          📋 Go To Saved Snapshots List →
         </button>
       </div>
 
@@ -253,9 +276,9 @@ export default function ArchiveManager({ onNavigate }) {
 
           <div style={styles.container}>
             <div style={styles.header}>
-              <h4 style={{ margin: 0, fontWeight: "900" }}>🔒 Create Historical Closing Archive</h4>
+              <h4 style={{ margin: 0, fontWeight: "900", color: "#38bdf8" }}>🔒 Create Historical Closing Archive</h4>
               <p style={{ margin: "5px 0 0 0", opacity: 0.8, fontSize: "12px" }}>
-                This routine wraps transactions into cold storage metadata snapshots.
+                Select your targeted dates range below to run pre-archive data streaming analysis.
               </p>
             </div>
 
@@ -269,10 +292,11 @@ export default function ArchiveManager({ onNavigate }) {
                 <input type="date" value={to} onChange={(e) => setTo(e.target.value)} style={styles.input} />
               </div>
               <button type="submit" disabled={loading} style={styles.btnPreview}>
-                {loading ? "Analyzing Data Streams..." : "🔍 Run Pre-Archive Analysis"}
+                {loading ? "Analyzing Data Streams..." : "🔍 Run Pre-Archive Analysis (Preview)"}
               </button>
             </form>
 
+            {/* PREVIEW CONTAINER (ORIGINAL BALANCES DESIGN REINSTATED) */}
             {preview && (
               <div style={{ marginTop: "30px", animation: "fadeIn 0.5s ease" }}>
                 <h5 style={{ color: "#38bdf8", fontWeight: "800", marginBottom: "15px" }}>
@@ -310,21 +334,54 @@ export default function ArchiveManager({ onNavigate }) {
                 </div>
 
                 <button onClick={handleConfirmArchive} style={styles.btnConfirm}>
-                  🚀 Lock Data & Generate Secured Archive Download
+                  🚀 Lock Data & Generate Secured Archive Download (Snapshot)
                 </button>
               </div>
             )}
           </div>
+
+          {/* HISTORICAL SAVED SNAPSHOTS TABLE BLOCK (DIRECTLY IN CONSOLE) */}
+          <div style={{ ...styles.container, marginTop: "30px" }}>
+            <h4 className="fw-bold mb-3 text-white">📋 Quick View: Saved System Snapshots</h4>
+            <div className="table-responsive">
+              <table className="table table-dark table-striped align-middle">
+                <thead>
+                  <tr>
+                    <th>Snapshot Reference ID</th>
+                    <th>📅 Closed Range</th>
+                    <th>🕒 Archived On</th>
+                    <th className="text-center">Action Control</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {list.map((r) => (
+                    <tr key={r.id}>
+                      <td className="text-cyan font-monospace">{r.id.substring(0, 8)}...</td>
+                      <td><b>{r.from_date}</b> to <b>{r.to_date}</b></td>
+                      <td>{new Date(r.created_at).toLocaleString()}</td>
+                      <td className="text-center">
+                        <button className="btn btn-sm btn-info me-2 fw-bold" onClick={() => onNavigate("archiveView", r.id)}>👁️ View</button>
+                        <button className="btn btn-sm btn-warning me-2 fw-bold" onClick={() => onNavigate("archiveLogs", r.id)}>📋 Logs</button>
+                        <button className="btn btn-sm btn-danger fw-bold" onClick={() => handleDelete(r.id)}>❌ Delete</button>
+                      </td>
+                    </tr>
+                  ))}
+                  {list.length === 0 && (
+                    <tr><td colSpan="4" className="text-center text-muted">No system snapshots compiled yet.</td></tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
         </>
       ) : (
-        /* ADVANCED AUDIT & YOY REPORTS VIEW */
+        /* ADVANCED AUDIT & YOY REPORTS VIEW TAB */
         <div style={{ display: "flex", flexDirection: "column", gap: "25px" }}>
           
-          {/* YoY Sales & Profits Report */}
           <div style={styles.container}>
             <h4 className="text-info fw-bold mb-3">📊 Year-on-Year (YoY) Historical Comparison</h4>
             <div className="table-responsive">
-              <table className="table table-dark table-striped align-middle rounded overflow-hidden">
+              <table className="table table-dark table-striped align-middle">
                 <thead>
                   <tr className="table-primary text-dark">
                     <th>📅 Archived Period</th>
@@ -350,7 +407,6 @@ export default function ArchiveManager({ onNavigate }) {
             </div>
           </div>
 
-          {/* Cross-Archive Global Account Search */}
           <div style={styles.container}>
             <h4 className="text-warning fw-bold mb-2">🔍 Cross-Snapshot Historical Search</h4>
             <p className="text-muted small mb-3">Dhoondye saalon puraane customer ya supplier accounts ka final closing snapshot status ek click par.</p>
@@ -393,7 +449,6 @@ export default function ArchiveManager({ onNavigate }) {
             )}
           </div>
 
-          {/* Archive Integrity Audit System */}
           <div style={styles.container}>
             <div className="d-flex justify-content-between align-items-center mb-3 flex-wrap">
               <h4 className="text-danger fw-bold m-0">🛡️ Archive Data Integrity Auditor</h4>
@@ -410,9 +465,9 @@ export default function ArchiveManager({ onNavigate }) {
                         <span className="badge bg-danger">Snapshot ID: #{log.snapshot_id.substring(0,6)}</span>
                         <span className={`fw-bold ${log.status.includes("SECURE") ? "text-success" : "text-warning"}`}>{log.status}</span>
                       </div>
-                      <h6 className="mb-1 text-muted">Period:</h6>
+                      <h6 className="mb-1 text-muted small">Period:</h6>
                       <p className="fw-bold small text-white mb-2">{log.period}</p>
-                      <hr className="bg-secondary" />
+                      <hr className="bg-secondary my-2" />
                       <div className="d-flex justify-content-between small text-muted">
                         <span>Total Ledgers:</span>
                         <span className="text-white fw-bold">{log.total_accounts_archived} rows</span>
@@ -449,5 +504,5 @@ const styles = {
   panelHeaderCyan: { background: "linear-gradient(90deg, #06b6d4, #0284c7)", padding: "12px 15px", fontWeight: "900", fontSize: "14px", color: "#fff" },
   panelHeaderPink: { background: "linear-gradient(90deg, #f43f5e, #be123c)", padding: "12px 15px", fontWeight: "900", fontSize: "14px", color: "#fff" },
   panelBody: { maxHeight: "200px", overflowY: "auto", padding: "5px" },
-  listItemSub: { display: "flex", justifyBetween: "space-between", justifyContent: "space-between", alignItems: "center", padding: "10px 15px", borderBottom: "1px solid #334155" }
+  listItemSub: { display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 15px", borderBottom: "1px solid #334155" }
 };
