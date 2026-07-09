@@ -120,13 +120,20 @@ export default function ArchiveManager({ onNavigate }) {
     return false;
   };
 
+  // FIXED: Native HTML fallback mechanism added to completely bypass state sync delays
   const handlePreview = async (e) => {
-    e.preventDefault();
-    if (!from || !to) return Swal.fire("Fields Missing", "Select From & To Date", "warning");
+    if (e) e.preventDefault();
+    
+    const nativeFrom = document.getElementById("archive-from-date")?.value || from;
+    const nativeTo = document.getElementById("archive-to-date")?.value || to;
+
+    if (!nativeFrom || !nativeTo) {
+      return Swal.fire("Fields Missing", "Select From & To Date", "warning");
+    }
     
     setLoading(true);
     try {
-      const res = await API.post("/archive/preview", { fromDate: from, toDate: to });
+      const res = await API.post("/archive/preview", { fromDate: nativeFrom, toDate: nativeTo });
       if (res.data.success) {
         setPreview(res.data);
       } else {
@@ -140,6 +147,11 @@ export default function ArchiveManager({ onNavigate }) {
   };
 
   const handleConfirmArchive = async () => {
+    const nativeFrom = document.getElementById("archive-from-date")?.value || from;
+    const nativeTo = document.getElementById("archive-to-date")?.value || to;
+
+    if (!nativeFrom || !nativeTo) return Swal.fire("Fields Missing", "Dates are missing.", "error");
+
     const authenticated = await checkPassword();
     if (!authenticated) return;
 
@@ -190,7 +202,7 @@ export default function ArchiveManager({ onNavigate }) {
     }, 200);
 
     try {
-      const res = await API.post("/archive/confirm", { fromDate: from, toDate: to }, { responseType: "blob" });
+      const res = await API.post("/archive/confirm", { fromDate: nativeFrom, toDate: nativeTo }, { responseType: "blob" });
       clearInterval(interval);
 
       updateArcDOM(95, "Saving snapshots safely...", 3);
@@ -203,7 +215,7 @@ export default function ArchiveManager({ onNavigate }) {
       const downloadUrl = window.URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = downloadUrl;
-      link.download = `archive_backup_${from}_to_${to}.zip`;
+      link.download = `archive_backup_${nativeFrom}_to_${nativeTo}.zip`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -282,21 +294,33 @@ export default function ArchiveManager({ onNavigate }) {
               </p>
             </div>
 
-            <form onSubmit={handlePreview} style={styles.formContainer}>
+            <div style={styles.formContainer}>
               <div style={styles.inputGroup}>
                 <label style={styles.label}>📅 Target Start Date</label>
-                <input type="date" value={from} onChange={(e) => setFrom(e.target.value)} style={styles.input} />
+                <input 
+                  id="archive-from-date"
+                  type="date" 
+                  value={from} 
+                  onChange={(e) => setFrom(e.target.value)} 
+                  style={styles.input} 
+                />
               </div>
               <div style={styles.inputGroup}>
                 <label style={styles.label}>📅 Target End Date (Lock Limit)</label>
-                <input type="date" value={to} onChange={(e) => setTo(e.target.value)} style={styles.input} />
+                <input 
+                  id="archive-to-date"
+                  type="date" 
+                  value={to} 
+                  onChange={(e) => setTo(e.target.value)} 
+                  style={styles.input} 
+                />
               </div>
-              <button type="submit" disabled={loading} style={styles.btnPreview}>
+              <button type="button" onClick={() => handlePreview()} disabled={loading} style={styles.btnPreview}>
                 {loading ? "Analyzing Data Streams..." : "🔍 Run Pre-Archive Analysis (Preview)"}
               </button>
-            </form>
+            </div>
 
-            {/* PREVIEW CONTAINER (ORIGINAL BALANCES DESIGN REINSTATED) */}
+            {/* PREVIEW CONTAINER */}
             {preview && (
               <div style={{ marginTop: "30px", animation: "fadeIn 0.5s ease" }}>
                 <h5 style={{ color: "#38bdf8", fontWeight: "800", marginBottom: "15px" }}>
@@ -340,7 +364,7 @@ export default function ArchiveManager({ onNavigate }) {
             )}
           </div>
 
-          {/* HISTORICAL SAVED SNAPSHOTS TABLE BLOCK (DIRECTLY IN CONSOLE) */}
+          {/* HISTORICAL SAVED SNAPSHOTS TABLE BLOCK */}
           <div style={{ ...styles.container, marginTop: "30px" }}>
             <h4 className="fw-bold mb-3 text-white">📋 Quick View: Saved System Snapshots</h4>
             <div className="table-responsive">
