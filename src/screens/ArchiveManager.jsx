@@ -121,9 +121,10 @@ export default function ArchiveManager({ onNavigate }) {
   };
 
   // FIXED: Native HTML fallback mechanism added to completely bypass state sync delays
-  const handlePreview = async (e) => {
+const handlePreview = async (e) => {
     if (e) e.preventDefault();
     
+    // Direct DOM se dates uthayein taake state delay ka masla hi na rahe
     const nativeFrom = document.getElementById("archive-from-date")?.value || from;
     const nativeTo = document.getElementById("archive-to-date")?.value || to;
 
@@ -297,24 +298,21 @@ export default function ArchiveManager({ onNavigate }) {
             <div style={styles.formContainer}>
               <div style={styles.inputGroup}>
                 <label style={styles.label}>📅 Target Start Date</label>
-                <input 
-                  id="archive-from-date"
-                  type="date" 
-                  value={from} 
-                  onChange={(e) => setFrom(e.target.value)} 
-                  style={styles.input} 
-                />
-              </div>
-              <div style={styles.inputGroup}>
-                <label style={styles.label}>📅 Target End Date (Lock Limit)</label>
-                <input 
-                  id="archive-to-date"
-                  type="date" 
-                  value={to} 
-                  onChange={(e) => setTo(e.target.value)} 
-                  style={styles.input} 
-                />
-              </div>
+<input 
+  id="archive-from-date"
+  type="date" 
+  value={from} 
+  onChange={(e) => setFrom(e.target.value)} 
+  style={styles.input} 
+/>
+
+<input 
+  id="archive-to-date"
+  type="date" 
+  value={to} 
+  onChange={(e) => setTo(e.target.value)} 
+  style={styles.input} 
+/>              </div>
               <button type="button" onClick={() => handlePreview()} disabled={loading} style={styles.btnPreview}>
                 {loading ? "Analyzing Data Streams..." : "🔍 Run Pre-Archive Analysis (Preview)"}
               </button>
