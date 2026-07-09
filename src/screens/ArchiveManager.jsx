@@ -9,7 +9,7 @@ export default function ArchiveManager({ onNavigate }) {
   const [loading, setLoading] = useState(false);
   const [preview, setPreview] = useState(null);
   const [list, setList] = useState([]);
-  const [activeTab, setActiveTab] = useState("manager"); // manager | reports
+  const [activeTab, setActiveTab] = useState("manager");
 
   // Advanced Reports States
   const [yoyData, setYoyData] = useState([]);
@@ -120,16 +120,18 @@ export default function ArchiveManager({ onNavigate }) {
     return false;
   };
 
-  // FIXED: Native HTML fallback mechanism added to completely bypass state sync delays
-const handlePreview = async (e) => {
-    if (e) e.preventDefault();
+  // FIXED: Pure Dynamic Extraction to ensure fields are never missed
+  const handlePreviewSubmit = async (e) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
     
-    // Direct DOM se dates uthayein taake state delay ka masla hi na rahe
     const nativeFrom = document.getElementById("archive-from-date")?.value || from;
     const nativeTo = document.getElementById("archive-to-date")?.value || to;
 
     if (!nativeFrom || !nativeTo) {
-      return Swal.fire("Fields Missing", "Select From & To Date", "warning");
+      return Swal.fire("Fields Missing", "Please select both From and To Dates.", "warning");
     }
     
     setLoading(true);
@@ -295,28 +297,36 @@ const handlePreview = async (e) => {
               </p>
             </div>
 
-            <div style={styles.formContainer}>
+            {/* FORM WRAPPER FIXED */}
+            <form onSubmit={handlePreviewSubmit} style={styles.formContainer}>
               <div style={styles.inputGroup}>
                 <label style={styles.label}>📅 Target Start Date</label>
-<input 
-  id="archive-from-date"
-  type="date" 
-  value={from} 
-  onChange={(e) => setFrom(e.target.value)} 
-  style={styles.input} 
-/>
-
-<input 
-  id="archive-to-date"
-  type="date" 
-  value={to} 
-  onChange={(e) => setTo(e.target.value)} 
-  style={styles.input} 
-/>              </div>
-              <button type="button" onClick={() => handlePreview()} disabled={loading} style={styles.btnPreview}>
-                {loading ? "Analyzing Data Streams..." : "🔍 Run Pre-Archive Analysis (Preview)"}
-              </button>
-            </div>
+                <input 
+                  id="archive-from-date"
+                  type="date" 
+                  value={from} 
+                  onChange={(e) => setFrom(e.target.value)} 
+                  style={styles.input} 
+                  required
+                />
+              </div>
+              <div style={styles.inputGroup}>
+                <label style={styles.label}>📅 Target End Date (Lock Limit)</label>
+                <input 
+                  id="archive-to-date"
+                  type="date" 
+                  value={to} 
+                  onChange={(e) => setTo(e.target.value)} 
+                  style={styles.input} 
+                  required
+                />
+              </div>
+              <div style={{ width: "100%", marginTop: "10px" }}>
+                <button type="submit" disabled={loading} style={styles.btnPreview}>
+                  {loading ? "Analyzing Data Streams..." : "🔍 Run Pre-Archive Analysis (Preview)"}
+                </button>
+              </div>
+            </form>
 
             {/* PREVIEW CONTAINER */}
             {preview && (
@@ -355,7 +365,7 @@ const handlePreview = async (e) => {
                   ⚠️ <b>Crucial Operational Warning:</b> Executing this command will write all assets, liabilities, and monthly profits into permanent snapshots. Please verify all ledger balances match before confirmation.
                 </div>
 
-                <button onClick={handleConfirmArchive} style={styles.btnConfirm}>
+                <button type="button" onClick={handleConfirmArchive} style={styles.btnConfirm}>
                   🚀 Lock Data & Generate Secured Archive Download (Snapshot)
                 </button>
               </div>
@@ -515,11 +525,11 @@ const styles = {
   wrapper: { padding: "20px", color: "#fff", background: "#0f172a", minHeight: "100vh" },
   container: { background: "#1e293b", borderRadius: "16px", padding: "30px", boxShadow: "0 10px 30px rgba(0,0,0,0.25)", border: "1px solid #334155" },
   header: { borderBottom: "2px solid #334155", paddingBottom: "15px", marginBottom: "25px" },
-  formContainer: { display: "flex", gap: "20px", flexWrap: "wrap", alignItems: "flex-end" },
-  inputGroup: { display: "flex", flexDirection: "column", gap: "8px", flex: "1", minWidth: "200px" },
+  formContainer: { display: "flex", flexDirection: "column", gap: "15px", width: "100%" },
+  inputGroup: { display: "flex", flexDirection: "column", gap: "8px", width: "100%", maxWidth: "400px" },
   label: { fontSize: "13px", fontWeight: "700", color: "#94a3b8" },
-  input: { padding: "12px", borderRadius: "10px", border: "1px solid #475569", background: "#0f172a", color: "#fff", fontSize: "14px", outline: "none" },
-  btnPreview: { background: "linear-gradient(135deg, #2563eb, #1d4ed8)", color: "#fff", border: "none", borderRadius: "10px", padding: "13px 25px", fontWeight: "700", fontSize: "14px", cursor: "pointer", transition: "all 0.3s ease", boxShadow: "0 4px 15px rgba(37,99,235,0.3)" },
+  input: { padding: "12px", borderRadius: "10px", border: "1px solid #475569", background: "#0f172a", color: "#fff", fontSize: "14px", outline: "none", width: "100%" },
+  btnPreview: { background: "linear-gradient(135deg, #2563eb, #1d4ed8)", color: "#fff", border: "none", borderRadius: "10px", padding: "13px 35px", fontWeight: "700", fontSize: "14px", cursor: "pointer", transition: "all 0.3s ease", boxShadow: "0 4px 15px rgba(37,99,235,0.3)" },
   btnConfirm: { width: "100%", background: "linear-gradient(135deg, #db2777, #be123c)", color: "#fff", border: "none", borderRadius: "12px", padding: "15px", fontWeight: "800", fontSize: "16px", cursor: "pointer", marginTop: "25px", transition: "all 0.3s ease", boxShadow: "0 6px 20px rgba(219,39,119,0.3)" },
   tableGrid: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "20px", marginTop: "20px" },
   panelBox: { background: "#0f172a", borderRadius: "16px", overflow: "hidden", border: "1px solid #334155" },
