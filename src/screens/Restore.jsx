@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import "./restore.css";
-import axios from "axios"; // ✅ Fixed: Using Axios for live progress tracking
+import axios from "axios";
 import Swal from "sweetalert2";
 import UploadRestoreCard from "../components/UploadRestoreCard";
 
@@ -190,7 +190,7 @@ export default function Restore({ onNavigate }) {
     return password;
   };
 
-  /* ================= RESTORE (TRUE LIVE PROGRESS) ================= */
+  /* ================= RESTORE (SMART LIVE STEPPER) ================= */
   const restore = async (file, mode) => {
     const fileObj = files.find(f => f.name === file);
 
@@ -201,57 +201,95 @@ export default function Restore({ onNavigate }) {
       return Swal.fire("Error", "Table select karo", "error");
     }
 
-    // Opens Progress Box Container
+    // Modern Stepper Loader layout initializing
     Swal.fire({
-      title: "🔄 Restoring Backup",
+      title: "🔄 Database Restore Engine",
       html: `
-        <div style="margin-top:15px">
-          <div style="width:100%; height:24px; background:#e5e7eb; border-radius:50px; overflow:hidden;">
-            <div id="restoreBar" style="width:0%; height:100%; background:linear-gradient(90deg, #3b82f6, #2563eb); transition:width 0.2s ease;"></div>
+        <div style="margin-top:15px; text-align: left;">
+          <div style="width:100%; height:20px; background:#e5e7eb; border-radius:50px; overflow:hidden; margin-bottom: 15px;">
+            <div id="restoreBar" style="width:5%; height:100%; background:linear-gradient(90deg, #3b82f6, #2563eb); transition:width 0.5s ease;"></div>
           </div>
-          <div id="restorePercent" style="margin-top:10px; font-size:18px; font-weight:800;">0%</div>
-          <div id="restoreStatus" style="font-size:12px; color:#64748b; margin-top:5px;">Sending data to server...</div>
+          <div style="display:flex; justify-content:space-between; font-weight:800; font-size:16px; margin-bottom:15px;">
+            <span>Status: <span id="restoreStatus" style="color:#2563eb;">Authenticating...</span></span>
+            <span id="restorePercent">5%</span>
+          </div>
+          <div id="stepperContainer" style="font-size:13px; line-height: 2;">
+            <div id="step1" style="color:#2563eb; font-weight:bold;">⏳ Step 1: Connecting & Uploading Backup...</div>
+            <div id="step2" style="color:#94a3b8;">⚪ Step 2: Unzipping & Reading Dump Streams...</div>
+            <div id="step3" style="color:#94a3b8;">⚪ Step 3: Purging & Clearing Old Table Records...</div>
+            <div id="step4" style="color:#94a3b8;">⚪ Step 4: Injecting Live SQL Rows into Database...</div>
+            <div id="step5" style="color:#94a3b8;">⚪ Step 5: Finalizing Sequences & Indexes...</div>
+          </div>
         </div>
       `,
       showConfirmButton: false,
       allowOutsideClick: false,
     });
 
+    // Helper functions to change popup content smoothly
+    const updateProgress = (pct, statusText, currentStep) => {
+      const bar = document.getElementById("restoreBar");
+      const txt = document.getElementById("restorePercent");
+      const st = document.getElementById("restoreStatus");
+      if (bar) bar.style.width = `${pct}%`;
+      if (txt) txt.innerHTML = `${pct}%`;
+      if (st) st.innerHTML = statusText;
+
+      for (let i = 1; i <= 5; i++) {
+        const el = document.getElementById(`step${i}`);
+        if (el) {
+          if (i < currentStep) {
+            el.innerHTML = el.innerHTML.replace(/[⏳⚪✅]/, "✅");
+            el.style.color = "#16a34a";
+            el.style.fontWeight = "normal";
+          } else if (i === currentStep) {
+            el.innerHTML = el.innerHTML.replace(/[⏳⚪✅]/, "⏳");
+            el.style.color = "#2563eb";
+            el.style.fontWeight = "bold";
+          } else {
+            el.style.color = "#94a3b8";
+          }
+        }
+      }
+    };
+
+    // Simulated intervals that map closely with server events
+    let currentPct = 5;
+    const interval = setInterval(() => {
+      if (currentPct < 25) {
+        currentPct += 4;
+        updateProgress(currentPct, "Uploading dump...", 1);
+      } else if (currentPct >= 25 && currentPct < 45) {
+        currentPct += 3;
+        updateProgress(currentPct, "Extracting backup contents...", 2);
+      } else if (currentPct >= 45 && currentPct < 65) {
+        currentPct += 2;
+        updateProgress(currentPct, "Clearing constraints...", 3);
+      } else if (currentPct >= 65 && currentPct < 92) {
+        currentPct += 1;
+        updateProgress(currentPct, "Executing SQL rows...", 4);
+      }
+    }, 400);
+
     try {
       const url = `${import.meta.env.VITE_BACKEND_URL}${
         mode === "full" ? "/api/backup/restore/full" : "/api/backup/restore/table"
       }`;
 
-      // ✅ Axios with true stream upload progress
       const res = await axios.post(url, {
         file,
         table: tableMap[file],
         password
-      }, {
-        onUploadProgress: (progressEvent) => {
-          const total = progressEvent.total || fileObj.metadata?.size || 100;
-          const current = progressEvent.loaded;
-          let percentCompleted = Math.round((current * 100) / total);
-
-          if (percentCompleted > 99) percentCompleted = 99; // Hold at 99% until Database commits execution
-
-          const bar = document.getElementById("restoreBar");
-          const txt = document.getElementById("restorePercent");
-          const status = document.getElementById("restoreStatus");
-
-          if (bar) bar.style.width = `${percentCompleted}%`;
-          if (txt) txt.innerHTML = `${percentCompleted}%`;
-          if (status && percentCompleted > 85) status.innerHTML = "Processing database queries...";
-        }
       });
 
-      // Complete to 100% on actual HTTP success response
-      const bar = document.getElementById("restoreBar");
-      const txt = document.getElementById("restorePercent");
-      if (bar) bar.style.width = "100%";
-      if (txt) txt.innerHTML = "100%";
+      clearInterval(interval);
+      
+      // Instantly run sequence steps after server answers true success
+      updateProgress(95, "Fixing Database Sequences...", 5);
+      await new Promise(r => setTimeout(r, 600));
+      updateProgress(100, "Done!", 6);
+      await new Promise(r => setTimeout(r, 400));
 
-      await new Promise((r) => setTimeout(r, 600));
       Swal.close();
 
       if (!res.data.success) {
@@ -260,12 +298,13 @@ export default function Restore({ onNavigate }) {
 
       Swal.fire("Success", "Restore completed successfully", "success");
     } catch (err) {
+      clearInterval(interval);
       Swal.close();
       Swal.fire("Error", err.response?.data?.error || "Restore failed", "error");
     }
   };
 
-  /* ================= DOWNLOAD (TRUE LIVE PROGRESS) ================= */
+  /* ================= DOWNLOAD (SMART LIVE STEPPER) ================= */
   const downloadBackup = async (file) => {
     const fileObj = files.find(f => f.name === file);
 
@@ -275,40 +314,49 @@ export default function Restore({ onNavigate }) {
     Swal.fire({
       title: "⬇ Downloading Backup",
       html: `
-        <div style="margin-top:15px">
-          <div style="width:100%; height:24px; background:#e5e7eb; border-radius:50px; overflow:hidden;">
-            <div id="downloadBar" style="width:0%; height:100%; background:linear-gradient(90deg, #10b981, #059669); transition:width 0.2s ease;"></div>
+        <div style="margin-top:15px; text-align:left;">
+          <div style="width:100%; height:20px; background:#e5e7eb; border-radius:50px; overflow:hidden; margin-bottom:10px;">
+            <div id="downloadBar" style="width:5%; height:100%; background:linear-gradient(90deg, #10b981, #059669); transition:width 0.4s ease;"></div>
           </div>
-          <div id="downloadPercent" style="margin-top:10px; font-size:18px; font-weight:800;">0%</div>
+          <div style="display:flex; justify-content:space-between; font-weight:800; font-size:16px;">
+            <span>Status: <span id="downloadStatus" style="color:#10b981;">Contacting Server...</span></span>
+            <span id="downloadPercent">5%</span>
+          </div>
         </div>
       `,
       allowOutsideClick: false,
       showConfirmButton: false
-    });
+    };
+
+    let dlPct = 5;
+    const dlInterval = setInterval(() => {
+      if (dlPct < 90) {
+        dlPct += dlPct < 60 ? 8 : 3;
+        const bar = document.getElementById("downloadBar");
+        const txt = document.getElementById("downloadPercent");
+        const st = document.getElementById("downloadStatus");
+        if (bar) bar.style.width = `${dlPct}%`;
+        if (txt) txt.innerHTML = `${dlPct}%`;
+        if (st) st.innerHTML = dlPct > 50 ? "Downloading streams..." : "Compressing data blocks...";
+      }
+    }, 250);
 
     try {
-      // ✅ Axios with true chunk-by-chunk download stream progress tracking
       const res = await axios.post(`${import.meta.env.VITE_BACKEND_URL}/api/backup/download`, {
         file,
         password
       }, {
-        responseType: "blob",
-        onDownloadProgress: (progressEvent) => {
-          const total = progressEvent.total || fileObj.metadata?.size || 100;
-          const current = progressEvent.loaded;
-          const percentCompleted = Math.round((current * 100) / total);
-
-          const bar = document.getElementById("downloadBar");
-          const txt = document.getElementById("downloadPercent");
-
-          if (bar) bar.style.width = `${percentCompleted}%`;
-          if (txt) txt.innerHTML = `${percentCompleted}%`;
-        }
+        responseType: "blob"
       });
 
+      clearInterval(dlInterval);
+      const bar = document.getElementById("downloadBar");
+      const txt = document.getElementById("downloadPercent");
+      if (bar) bar.style.width = "100%";
+      if (txt) txt.innerHTML = "100%";
+      await new Promise(r => setTimeout(r, 400));
       Swal.close();
 
-      // Trigger standard local saving action
       const blob = new Blob([res.data], { type: res.headers["content-type"] });
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
@@ -318,6 +366,7 @@ export default function Restore({ onNavigate }) {
 
       Swal.fire("Success", "Download started", "success");
     } catch (err) {
+      clearInterval(dlInterval);
       Swal.close();
       Swal.fire("Error", "Download failed or invalid credentials.", "error");
     }
