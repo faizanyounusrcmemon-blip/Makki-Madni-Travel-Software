@@ -331,81 +331,96 @@ export default function AllReports({ onNavigate }) {
               🔒 Current Rule: {currentAuthorityDays} Days
             </span>
 
-            <button
-              className="btn btn-warning btn-sm fw-bold"
-              onClick={async () => {
-                const { value: formValues } = await Swal.fire({
-                  title: "🛡️ Change Employee Access Authority",
-                  html: `
-                    <div style="position:relative; margin-bottom: 12px;">
-                      <input id="auth-pass" type="password" class="swal2-input" style="width: 80%;" placeholder="Enter Admin Password"/>
-                      <span id="toggle-auth-pass" style="
-                        position:absolute;
-                        right:12%;
-                        top:50%;
-                        transform:translateY(-20%);
-                        cursor:pointer;
-                        font-size:16px;
-                        z-index: 10;
-                      ">👁</span>
-                    </div>
-                    <input id="auth-days" type="number" class="swal2-input" style="width: 80%;" placeholder="Number of Days Access (e.g. 1, 3, 7)"/>
-                  `,
-                  focusConfirm: false,
-                  showCancelButton: true,
-                  confirmButtonText: "Save Rule",
-                  didOpen: () => {
-                    const input = document.getElementById("auth-pass");
-                    const toggle = document.getElementById("toggle-auth-pass");
-                    let show = false;
-                    toggle.addEventListener("click", () => {
-                      show = !show;
-                      input.type = show ? "text" : "password";
-                      toggle.textContent = show ? "🙈" : "👁";
-                    });
-                  },
-                  preConfirm: () => {
-                    const pass = document.getElementById("auth-pass").value;
-                    const days = document.getElementById("auth-days").value;
-                    if (!pass || !days) {
-                      Swal.showValidationMessage("Both fields are required!");
-                      return false;
-                    }
-                    if (pass !== "786f") {
-                      const popup = document.querySelector(".swal2-popup");
-                      if (popup) {
-                        popup.classList.add("shake");
-                        setTimeout(() => popup.classList.remove("shake"), 500);
-                      }
-                      Swal.showValidationMessage("Wrong Password 😎");
-                      return false;
-                    }
-                    return { pass, days };
-                  },
-                });
+<button
+  className="btn btn-warning btn-sm fw-bold"
+  onClick={async () => {
+    const { value: formValues } = await Swal.fire({
+      width: "350px", // ✅ Popup size ko chota kar diya
+      padding: "1em", // ✅ Spacing compact kar di
+      title: "🛡️ Access Authority",
+      html: `
+        <div style="text-align: left; font-size: 13px; line-height: 1.5; margin-top: 10px;">
+          <div style="position: relative; margin-bottom: 8px;">
+            <input id="auth-pass" type="password" class="swal2-input" 
+              style="width: 100%; height: 35px; font-size: 13px; margin: 0; padding: 0 10px;" 
+              placeholder="Enter Admin Password"/>
+            <span id="toggle-auth-pass" style="
+              position: absolute;
+              right: 12px;
+              top: 50%;
+              transform: translateY(-50%);
+              cursor: pointer;
+              font-size: 14px;
+              z-index: 10;
+            ">👁</span>
+          </div>
+          <div>
+            <input id="auth-days" type="number" class="swal2-input" 
+              style="width: 100%; height: 35px; font-size: 13px; margin: 0; padding: 0 10px;" 
+              placeholder="Number of Days Access (e.g. 1, 3, 7)"/>
+          </div>
+        </div>
+      `,
+      focusConfirm: false,
+      showCancelButton: true,
+      confirmButtonText: "Save Rule",
+      preConfirm: () => {
+        const pass = document.getElementById("auth-pass").value;
+        const days = document.getElementById("auth-days").value;
+        if (!pass || !days) {
+          Swal.showValidationMessage("Both fields are required!");
+          return false;
+        }
+        if (pass !== "786f") {
+          const popup = document.querySelector(".swal2-popup");
+          if (popup) {
+            popup.classList.add("shake");
+            setTimeout(() => popup.classList.remove("shake"), 500);
+          }
+          Swal.showValidationMessage("Wrong Password 😎");
+          return false;
+        }
+        return { pass, days };
+      },
+      didOpen: () => {
+        const input = document.getElementById("auth-pass");
+        const toggle = document.getElementById("toggle-auth-pass");
+        let show = false;
+        toggle.addEventListener("click", () => {
+          show = !show;
+          input.type = show ? "text" : "password";
+          toggle.textContent = show ? "🙈" : "👁";
+        });
+      },
+    });
 
-                if (formValues) {
-                  try {
-                    const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/reports/authority/set-days`, {
-                      method: "POST",
-                      headers: { "Content-Type": "application/json" },
-                      body: JSON.stringify({ password: formValues.pass, days: formValues.days }),
-                    });
-                    const data = await res.json();
-                    if (data.success) {
-                      Swal.fire("Saved", `Employee system updated to show last ${formValues.days} days only.`, "success");
-                      setCurrentAuthorityDays(formValues.days); // Instant UI state update
-                    } else {
-                      Swal.fire("Error", data.message, "error");
-                    }
-                  } catch {
-                    Swal.fire("Error", "Server network error", "error");
-                  }
-                }
-              }}
-            >
-              🛡️ Access Authority Limit
-            </button>
+    if (formValues) {
+      try {
+        const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/reports/authority/set-days`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ password: formValues.pass, days: formValues.days }),
+        });
+        const data = await res.json();
+        if (data.success) {
+          Swal.fire({
+            width: "300px",
+            title: "Saved",
+            text: `System updated to ${formValues.days} days.`,
+            icon: "success"
+          });
+          setCurrentAuthorityDays(formValues.days); // Instant UI state update
+        } else {
+          Swal.fire("Error", data.message, "error");
+        }
+      } catch {
+        Swal.fire("Error", "Server network error", "error");
+      }
+    }
+  }}
+>
+  🛡️ Access Authority Limit
+</button>
 
             <button className="btn btn-light btn-sm" onClick={() => onNavigate("dashboard")}>
               ← Back
