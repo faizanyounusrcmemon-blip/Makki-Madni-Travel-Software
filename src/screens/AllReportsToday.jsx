@@ -1,44 +1,42 @@
 import React, { useEffect, useState, useMemo } from "react";
 import Swal from "sweetalert2";
 
-export default function AllReports({ onNavigate }) {
+export default function AllReportsToday({ onNavigate }) {
   const [rows, setRows] = useState([]);
   const [filtered, setFiltered] = useState([]);
   const [search, setSearch] = useState("");
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
   const [typeFilter, setTypeFilter] = useState("");
-  const [currentAuthorityDays, setCurrentAuthorityDays] = useState("-"); // Live days status state
+  const [currentAuthorityDays, setCurrentAuthorityDays] = useState("-");
 
   const [loading, setLoading] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(25);
 
-  /* ================= LOAD ================= */
+/* ================= LOAD DATA & SYSTEM ACCESS (FIXED) ================= */
   const loadData = async () => {
     try {
       setLoading(true);
-
-      // 1. Fetch current lock days authority for manager status badge
-      try {
-        const setRes = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/reports/authority/get-days`);
-        if (setRes.ok) {
-          const setData = await setRes.json();
-          if (setData.success) {
-            setCurrentAuthorityDays(setData.days);
-          }
-        }
-      } catch (err) {
-        console.error("Error fetching authority days:", err);
+      
+      // Check 1: Get Days Authority (Double /api/reports fix)
+      const setRes = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/reports/authority/get-days`);
+      if (!setRes.ok) throw new Error("Authority route missing");
+      const setData = await setRes.json();
+      if(setData.success) {
+        setCurrentAuthorityDays(setData.days);
       }
 
-      // 2. Load all records
-      const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/reports/all`);
+      // Check 2: Get Restricted Data (Double /api/reports fix)
+      const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/reports/today-restricted`);
+      if (!res.ok) throw new Error("Data route missing");
       const data = await res.json();
+      
       setRows(data || []);
       setFiltered(data || []);
-    } catch {
-      alert("Server error");
+    } catch (err) {
+      console.error("Fetch error details:", err);
+      Swal.fire("Server Error", "Could not synchronize secure data block", "error");
     } finally {
       setLoading(false);
     }
@@ -86,23 +84,14 @@ export default function AllReports({ onNavigate }) {
       padding: "1em",
       html: `
         <div style="text-align:left;font-size:13px;line-height:1.5">
-          <div style="margin-bottom:8px">
-            <b style="color:#dc3545">🗑 DELETE SALE</b>
-          </div>
+          <div style="margin-bottom:8px"><b style="color:#dc3545">🗑 DELETE SALE</b></div>
           <div style="font-size:12px;margin-bottom:6px"><b>Type:</b> ${type}</div>
           <div style="font-size:12px;margin-bottom:6px"><b>REF NO:</b> ${ref_no}</div>
           <div style="font-size:12px;margin-bottom:6px"><b>Customer:</b> ${customer_name}</div>
           <div style="font-size:12px;margin-bottom:8px">💰 <b>Amount:</b> ${total_pkr}</div>
           <div style="position:relative;margin-top:8px">
             <input id="swal-pass" type="password" class="swal2-input" style="height:34px;font-size:13px" placeholder="Enter password"/>
-            <span id="toggle-pass" style="
-              position:absolute;
-              right:12px;
-              top:50%;
-              transform:translateY(-50%);
-              cursor:pointer;
-              font-size:14px;
-            ">👁</span>
+            <span id="toggle-pass" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);cursor:pointer;font-size:14px;">👁</span>
           </div>
         </div>
       `,
@@ -110,10 +99,7 @@ export default function AllReports({ onNavigate }) {
       confirmButtonText: "Delete",
       focusConfirm: false,
       buttonsStyling: false,
-      customClass: { 
-        confirmButton: "swal-btn-delete",
-        cancelButton: "swal-btn-cancel"
-      },
+      customClass: { confirmButton: "swal-btn-delete", cancelButton: "swal-btn-cancel" },
       preConfirm: () => {
         const val = document.getElementById("swal-pass").value;
         if (!val || val.trim() === "") {
@@ -145,29 +131,14 @@ export default function AllReports({ onNavigate }) {
     return password;
   };
 
-  /* ================= LOADER ================= */
   const showLoader = (text = "Processing...") => {
-    Swal.fire({
-      width: "300px",
-      title: text,
-      allowOutsideClick: false,
-      didOpen: () => Swal.showLoading(),
-    });
+    Swal.fire({ width: "300px", title: text, allowOutsideClick: false, didOpen: () => Swal.showLoading() });
   };
 
-  /* ================= DELETE ================= */
+  /* ================= DELETE ACTION ================= */
   const handleDelete = async (type, ref_no, customer_name, total_pkr) => {
     const password = await askPassword(type, ref_no, customer_name, total_pkr);
     if (!password) return;
-
-    if (password !== "786") {
-      const popup = document.querySelector(".swal2-popup");
-      if (popup) {
-        popup.classList.add("shake");
-        setTimeout(() => popup.classList.remove("shake"), 500);
-      }
-      return Swal.showValidationMessage("Wrong Password 😎");
-    }
 
     const confirm = await Swal.fire({
       width: "320px",
@@ -195,10 +166,7 @@ export default function AllReports({ onNavigate }) {
     showLoader("Deleting...");
 
     try {
-      const res = await fetch(
-        `${import.meta.env.VITE_BACKEND_URL}/api/${endpoint}/delete/${ref_no}`,
-        { method: "DELETE" }
-      );
+      const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/${endpoint}/delete/${ref_no}`, { method: "DELETE" });
       const data = await res.json();
       Swal.close();
 
@@ -214,7 +182,7 @@ export default function AllReports({ onNavigate }) {
     }
   };
 
-  /* ================= VIEW ================= */
+  /* ================= NAVIGATION VIEWS ================= */
   const handleView = (type, ref_no) => {
     const map = {
       Packages: "packages_view",
@@ -229,13 +197,12 @@ export default function AllReports({ onNavigate }) {
     onNavigate(map[type], ref_no);
   };
 
-  /* ================= SUMMARY ================= */
   const handleSumry = (type, ref_no) => {
     if (type !== "Packages") return;
     onNavigate("packages_summary_view", ref_no);
   };
 
-  /* ================= FILTER ================= */
+  /* ================= FILTERS EFFECT ================= */
   useEffect(() => {
     let temp = [...rows];
     if (search)
@@ -248,13 +215,14 @@ export default function AllReports({ onNavigate }) {
       temp = temp.filter((r) => new Date(r.booking_date) >= new Date(fromDate));
     if (toDate)
       temp = temp.filter((r) => new Date(r.booking_date) <= new Date(toDate));
-    if (typeFilter) temp = temp.filter((r) => r.type === typeFilter);
+    if (typeFilter)
+      temp = temp.filter((r) => r.type === typeFilter);
 
     setFiltered(temp);
     setCurrentPage(1);
   }, [search, fromDate, toDate, typeFilter, rows]);
 
-  /* ================= PAGINATION ================= */
+  /* ================= PAGINATION LOGIC ================= */
   const totalPages = Math.ceil(filtered.length / rowsPerPage);
   const indexOfLast = currentPage * rowsPerPage;
   const indexOfFirst = indexOfLast - rowsPerPage;
@@ -281,136 +249,40 @@ export default function AllReports({ onNavigate }) {
     return rangeWithDots;
   };
 
-  /* ================= TOTAL ================= */
+  /* ================= MATHS SUMMATION ================= */
   const totalPKR = useMemo(() => {
     return filtered.reduce((sum, r) => sum + Number(r.total_pkr || 0), 0);
   }, [filtered]);
 
   const formatDate = (dateStr) => {
     if (!dateStr) return "-";
-    return new Date(dateStr).toLocaleDateString("en-GB", {
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-    });
+    return new Date(dateStr).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
   };
 
   const fmtPKR = (v) => Number(v || 0).toLocaleString("en-PK");
 
   const typeIcon = (type) => {
-    const map = {
-      Packages: "📦",
-      Hotels: "🏨",
-      Ticketing: "✈️",
-      Transport: "🚐",
-      Ziyarat: "🕌",
-      Visa: "🛂",
-      Card: "💳",
-      Groups: "👨‍👩‍👧‍👦",
-    };
+    const map = { Packages: "📦", Hotels: "🏨", Ticketing: "✈️", Transport: "🚐", Ziyarat: "🕌", Visa: "🛂", Card: "💳", Groups: "👨‍👩‍👧‍👦" };
     return map[type] || "📄";
   };
 
   return (
     <div className="container py-4">
-      {/* HEADER WITH FIXED ACCESS STATUS DISPLAY */}
+      {/* SAME SAME UI HEADER */}
       <div className="card shadow-sm border-0 mb-3">
         <div
           className="card-body d-flex justify-content-between align-items-center"
-          style={{
-            background: "linear-gradient(135deg, #0d6efd, #6610f2)",
-            color: "#fff",
-            borderRadius: "12px",
-          }}
+          style={{ background: "linear-gradient(135deg, #e11d48, #9f1239)", color: "#fff", borderRadius: "12px" }}
         >
-          <h5 className="fw-bold mb-0">📊 All Reports</h5>
-          
-          {/* CONTROL SECTION WITH STATUS DISPLAY AND RULE BUTTON */}
-          <div className="d-flex align-items-center gap-2">
-            <span className="badge bg-light text-dark fw-bold px-2 py-1" style={{ fontSize: "12px", border: "1px solid #cbd5e1" }}>
-              🔒 Current Rule: {currentAuthorityDays} Days
-            </span>
-
-            <button
-              className="btn btn-warning btn-sm fw-bold"
-              onClick={async () => {
-                const { value: formValues } = await Swal.fire({
-                  title: "🛡️ Change Employee Access Authority",
-                  html: `
-                    <div style="position:relative; margin-bottom: 12px;">
-                      <input id="auth-pass" type="password" class="swal2-input" style="width: 80%;" placeholder="Enter Admin Password"/>
-                      <span id="toggle-auth-pass" style="
-                        position:absolute;
-                        right:12%;
-                        top:50%;
-                        transform:translateY(-20%);
-                        cursor:pointer;
-                        font-size:16px;
-                        z-index: 10;
-                      ">👁</span>
-                    </div>
-                    <input id="auth-days" type="number" class="swal2-input" style="width: 80%;" placeholder="Number of Days Access (e.g. 1, 3, 7)"/>
-                  `,
-                  focusConfirm: false,
-                  showCancelButton: true,
-                  confirmButtonText: "Save Rule",
-                  didOpen: () => {
-                    const input = document.getElementById("auth-pass");
-                    const toggle = document.getElementById("toggle-auth-pass");
-                    let show = false;
-                    toggle.addEventListener("click", () => {
-                      show = !show;
-                      input.type = show ? "text" : "password";
-                      toggle.textContent = show ? "🙈" : "👁";
-                    });
-                  },
-                  preConfirm: () => {
-                    const pass = document.getElementById("auth-pass").value;
-                    const days = document.getElementById("auth-days").value;
-                    if (!pass || !days) {
-                      Swal.showValidationMessage("Both fields are required!");
-                      return false;
-                    }
-                    if (pass !== "786f") {
-                      const popup = document.querySelector(".swal2-popup");
-                      if (popup) {
-                        popup.classList.add("shake");
-                        setTimeout(() => popup.classList.remove("shake"), 500);
-                      }
-                      Swal.showValidationMessage("Wrong Password 😎");
-                      return false;
-                    }
-                    return { pass, days };
-                  },
-                });
-
-                if (formValues) {
-                  try {
-                    const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/reports/authority/set-days`, {
-                      method: "POST",
-                      headers: { "Content-Type": "application/json" },
-                      body: JSON.stringify({ password: formValues.pass, days: formValues.days }),
-                    });
-                    const data = await res.json();
-                    if (data.success) {
-                      Swal.fire("Saved", `Employee system updated to show last ${formValues.days} days only.`, "success");
-                      setCurrentAuthorityDays(formValues.days); // Instant UI state update
-                    } else {
-                      Swal.fire("Error", data.message, "error");
-                    }
-                  } catch {
-                    Swal.fire("Error", "Server network error", "error");
-                  }
-                }
-              }}
-            >
-              🛡️ Access Authority Limit
-            </button>
-
-            <button className="btn btn-light btn-sm" onClick={() => onNavigate("dashboard")}>
-              ← Back
-            </button>
+          <div>
+            <h5 className="fw-bold mb-0">🕒 All Reports Today</h5>
+            <small style={{ fontSize: "11px", opacity: 0.9 }}>
+              🛡️ Restricted View: Locked to Last <b>{currentAuthorityDays} Days</b> by Manager
+            </small>
           </div>
+          <button className="btn btn-light btn-sm" onClick={() => onNavigate("dashboard")}>
+            ← Back
+          </button>
         </div>
       </div>
 
@@ -449,7 +321,7 @@ export default function AllReports({ onNavigate }) {
         </div>
       </div>
 
-      {/* DATE BUTTONS */}
+      {/* DATE PRESETS */}
       <div className="d-flex gap-2 mb-3 flex-wrap">
         <button className="btn btn-outline-primary btn-sm" onClick={setToday}>📅 Today</button>
         <button className="btn btn-outline-success btn-sm" onClick={setWeek}>📆 This Week</button>
@@ -457,7 +329,7 @@ export default function AllReports({ onNavigate }) {
         <button className="btn btn-outline-danger btn-sm" onClick={resetFilters}>♻ Reset</button>
       </div>
 
-      {/* TABLE */}
+      {/* TABLE DATA STRUCTURE */}
       <div className="card shadow-sm">
         <div className="table-responsive">
           <table className="table table-hover table-sm mb-0 align-middle">
@@ -478,7 +350,7 @@ export default function AllReports({ onNavigate }) {
             <tbody>
               {loading && (
                 <tr>
-                  <td colSpan={9} className="text-center py-3">Loading...</td>
+                  <td colSpan={9} className="text-center py-3">Loading secure channel...</td>
                 </tr>
               )}
 
@@ -490,7 +362,11 @@ export default function AllReports({ onNavigate }) {
                   <td className="fw-semibold text-primary text-nowrap small-cell">{r.customer_name || "-"}</td>
                   <td className="text-muted text-nowrap small-cell">{formatDate(r.booking_date)}</td>
                   <td><span className="badge bg-success">💰 {fmtPKR(r.total_pkr)}</span></td>
-                  <td className="text-center">{r.type === "Packages" && (<button className="btn btn-outline-warning btn-sm" onClick={() => handleSumry(r.type, r.ref_no)}>📊 SUMMARY</button>)}</td>
+                  <td className="text-center">
+                    {r.type === "Packages" && (
+                      <button className="btn btn-outline-warning btn-sm" onClick={() => handleSumry(r.type, r.ref_no)}>📊 SUMMARY</button>
+                    )}
+                  </td>
                   <td className="text-center"><button className="btn btn-outline-info btn-sm" onClick={() => handleView(r.type, r.ref_no)}>👁️ VIEW</button></td>
                   <td className="text-center"><button className="btn btn-outline-danger btn-sm" onClick={() => handleDelete(r.type, r.ref_no, r.customer_name, r.total_pkr)}>🗑 DELETE</button></td>
                 </tr>
@@ -498,7 +374,7 @@ export default function AllReports({ onNavigate }) {
 
               {!loading && filtered.length === 0 && (
                 <tr>
-                  <td colSpan={9} className="text-center py-3 text-muted">No Records Found</td>
+                  <td colSpan={9} className="text-center py-3 text-muted">No Authorized Records Found For Current Cycle</td>
                 </tr>
               )}
 
