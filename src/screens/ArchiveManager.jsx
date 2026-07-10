@@ -133,7 +133,16 @@ export default function ArchiveManager({ onNavigate }) {
           icon: "success",
           title: "Snapshot Created",
           width: 320,
-          html: `<div style="text-align:left"><b>ID:</b> ${newSnapshotId}<br><b>Cash:</b> ${Number(res.data.opening_cash || 0).toLocaleString()}</div>`
+          html: `
+            <div style="text-align:left">
+              <b>ID:</b> ${newSnapshotId}<br><br>
+              <b>Customers:</b> ${res.data.customerCount || 0}<br>
+              <b>Suppliers:</b> ${res.data.supplierCount || 0}<br>
+              <b>Cash:</b> ${Number(res.data.opening_cash || 0).toLocaleString()}<br>
+              <b>Bank:</b> ${Number(res.data.opening_bank || 0).toLocaleString()}<br>
+              <b>Profit:</b> ${Number(res.data.opening_profit || 0).toLocaleString()}
+            </div>
+          `
         });
         loadList();
       }
