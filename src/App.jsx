@@ -39,6 +39,7 @@ import ExpenseLedger from "./screens/ExpenseLedger";
 
 // REPORTS / MASTER
 import AllReports from "./screens/AllReports";
+import AllReportsToday from "./screens/AllReportsToday";
 import ProfitReport from "./screens/ProfitReport";
 import SaleAdjustmentReport from "./screens/SaleAdjustmentReport";
 import SupplierAdjustmentOnly from "./screens/SupplierAdjustmentOnly";
@@ -169,6 +170,7 @@ export default function App() {
 
       {/* ================= REPORTS / MASTER ================= */}
       {page === "allreports" && <AllReports onNavigate={navigate} />}
+      {page === "allreportstoday" && <AllReportsToday onNavigate={navigate} />}
       {page === "profitReport" && <ProfitReport onNavigate={navigate} />}
       {page === "saleAdjustmentReport" && <SaleAdjustmentReport onNavigate={navigate} />}
       {page === "supplierAdjustmentOnly" && <SupplierAdjustmentOnly onNavigate={navigate} />}
