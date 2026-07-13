@@ -28,7 +28,7 @@ export default function ManageUsers({ onNavigate }) {
     "all_reports", "all_reports_today", "profit_report", "monthly_profit_dashboard", "sale_adjustment_report", "supplier_adjustment_only", "supplier_purchase_detail_report", "item_loss_zero_report", "sale_change_check_report",
 
     // MASTER
-    "create_user", "manage_users", "supplier", "deleted_reports", "restore", "system_storage",
+    "create_user", "manage_users", "supplier", "deleted_reports", "restore", "system_storage", "password_settings",
    // ARCHIVE
     "archive_manager", "archive_list"
 
