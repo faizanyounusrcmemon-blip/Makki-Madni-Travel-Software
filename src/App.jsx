@@ -10,6 +10,7 @@ import ArchiveManager from "./screens/ArchiveManager";
 import ArchiveList from "./screens/ArchiveList";
 import ArchiveView from "./screens/ArchiveView";
 import ArchiveLogs from "./screens/ArchiveLogs";
+import PasswordSettings from "./screens/PasswordSettings";
 
 // SALES
 import Packages from "./screens/Packages";
@@ -114,6 +115,7 @@ export default function App() {
 
       {/* ================= ARCHIVE ================= */}
       {page === "archiveManager" && <ArchiveManager onNavigate={navigate} />}
+      {page === "passwordSettings" && <PasswordSettings onNavigate={navigate} />}
       
       {/* Case matching validation secured */}
       {(page === "archiveList" || page === "dashboard/archiveList") && (
