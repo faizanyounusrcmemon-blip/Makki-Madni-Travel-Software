@@ -44,7 +44,7 @@ export default function ExpenseLedger({ onNavigate }) {
     load();
   }, []);
 
-/* ================= PASSWORD POPUP ================= */
+/* ================= PASSWORD POPUP (DYNAMIC) ================= */
 const askPassword = async (title = "Enter Password") => {
   const { value } = await Swal.fire({
     width: "300px",
@@ -57,7 +57,7 @@ const askPassword = async (title = "Enter Password") => {
             id="swal-pass" 
             type="password" 
             class="swal2-input"
-            style="height:34px;font-size:13px;padding-right:40px"
+            style="height:34px;font-size:13px;width:100%;margin:0;padding-right:40px"
             placeholder="Enter password"
           />
 
@@ -82,29 +82,14 @@ const askPassword = async (title = "Enter Password") => {
       const input = document.getElementById("swal-pass");
       const val = input.value.trim();
 
+      // Khaali input check karega
       if (!val) {
         Swal.showValidationMessage("Password required");
         return false;
       }
 
-      // ✅ PASSWORD CHECK
-      if (val !== "786") {
-
-        // 🔥 SHAKE EFFECT
-        const popup = Swal.getPopup();
-
-        if (popup) {
-          popup.classList.add("shake");
-
-          setTimeout(() => {
-            popup.classList.remove("shake");
-          }, 400);
-        }
-
-        Swal.showValidationMessage("Wrong Password 😎");
-        return false;
-      }
-
+      // ❌ LOCAL HARDCODED "786" CHECK REMOVED
+      // Ab value direct return hogi aur match/mismatch backend handle karega
       return val;
     },
 
@@ -114,7 +99,7 @@ const askPassword = async (title = "Enter Password") => {
 
       let show = false;
 
-      // 👁 SHOW / HIDE
+      // 👁 SHOW / HIDE TOGGLE
       toggle.onclick = () => {
         show = !show;
         input.type = show ? "text" : "password";
@@ -128,12 +113,14 @@ const askPassword = async (title = "Enter Password") => {
       const handleEnter = (e) => {
         if (e.key === "Enter") {
           e.preventDefault();
-          document.querySelector(".swal2-confirm").click();
+          const confirmBtn = document.querySelector(".swal2-confirm");
+          if (confirmBtn) confirmBtn.click();
         }
       };
 
       document.addEventListener("keydown", handleEnter);
 
+      // Cleanup listener when popup closes
       Swal.getPopup().addEventListener("remove", () => {
         document.removeEventListener("keydown", handleEnter);
       });
@@ -219,7 +206,7 @@ const save = async () => {
 };
 
 
-/* ================= DELETE ================= */
+/* ======================== DELETE ======================== */
 const del = async (id) => {
 
   const confirmDelete = await Swal.fire({
@@ -232,7 +219,7 @@ const del = async (id) => {
 
   if (!confirmDelete.isConfirmed) return;
 
-  // ✅ PASSWORD POPUP
+  // ✅ PASSWORD POPUP (Ab yeh direct user input bina hardcoding ke return karega)
   const pass = await askPassword("Enter Delete Password");
 
   if (!pass) return;
@@ -245,7 +232,6 @@ const del = async (id) => {
   });
 
   try {
-
     const r = await fetch(
       `${import.meta.env.VITE_BACKEND_URL}/api/expense-ledger/delete/${id}`,
       {
@@ -256,11 +242,9 @@ const del = async (id) => {
     );
 
     const d = await r.json();
-
     Swal.close();
 
     if (d.success) {
-
       load();
 
       Swal.fire({
@@ -270,7 +254,7 @@ const del = async (id) => {
       });
 
     } else {
-
+      // Wrong password ka catch backend se direct yahan handler me display hoga
       Swal.fire({
         width: "300px",
         icon: "error",
@@ -279,9 +263,7 @@ const del = async (id) => {
     }
 
   } catch (err) {
-
     Swal.close();
-
     Swal.fire({
       width: "300px",
       icon: "error",

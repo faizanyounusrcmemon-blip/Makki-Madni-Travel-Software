@@ -336,10 +336,9 @@ const saveEntry = async () => {
 };
 
 
-  /* =========================
-     DELETE ENTRY
-  ========================== */
-
+/* ====================================================
+   DELETE ENTRY POPUP FUNCTIONS
+==================================================== */
 const askPassword = async (title = "Enter Password") => {
   const { value } = await Swal.fire({
     width: "300px",
@@ -349,7 +348,7 @@ const askPassword = async (title = "Enter Password") => {
 
         <div style="position:relative;margin-top:10px">
           <input id="swal-pass" type="password" class="swal2-input"
-            style="height:34px;font-size:13px" placeholder="Enter password"/>
+            style="height:34px;font-size:13px;width:100%;margin:0;padding-right:35px;" placeholder="Enter password"/>
 
           <span id="toggle-pass" style="
             position:absolute;
@@ -376,16 +375,8 @@ const askPassword = async (title = "Enter Password") => {
         return false;
       }
 
-      if (val !== "786") {
-        const popup = Swal.getPopup();
-        if (popup) {
-          popup.classList.add("shake");
-          setTimeout(() => popup.classList.remove("shake"), 400);
-        }
-        Swal.showValidationMessage("Wrong Password 😎");
-        return false;
-      }
-
+      // ❌ LOCAL "786" CHECK REMOVED
+      // Ab input direct value return karega aur validation backend se hogi
       return val;
     },
 
@@ -405,7 +396,7 @@ const askPassword = async (title = "Enter Password") => {
       // 🔥 auto focus
       setTimeout(() => input.focus(), 100);
 
-      // 🔥 ENTER KEY FIX (REAL WORKING)
+      // 🔥 ENTER KEY FIX
       const handleEnter = (e) => {
         if (e.key === "Enter") {
           e.preventDefault();
@@ -462,10 +453,10 @@ const deleteEntry = async (entry) => {
     );
 
     const d = await res.json();
-
     Swal.close();
 
     if (!d.success) {
+      // Wrong password ka catch backend se direct yahan handler me display hoga
       Swal.fire({
         icon: "error",
         text: d.error || "Delete failed"

@@ -155,92 +155,150 @@ const askPasswordPopup = async (
   return password;
 };
 
+/* ================= RESTORE ================= */
 const restore = async (type, ref_no, customer_name, amount) => {
-  const password = await askPasswordPopup(
-    "RESTORE RECORD",
-    type,
-    ref_no,
-    customer_name,
-    amount,
-    "restore"
-  );
+  const password = await (async () => {
+    const { value } = await Swal.fire({
+      width: "360px",
+      padding: "1em",
+      html: `
+        <div style="text-align:left;font-size:13px;line-height:1.5">
+          <div style="margin-bottom:8px"><b style="color:#198754">♻ RESTORE RECORD</b></div>
+          <div style="font-size:12px;margin-bottom:4px"><b>Type:</b> ${type}</div>
+          <div style="font-size:12px;margin-bottom:4px"><b>REF NO:</b> ${ref_no}</div>
+          <div style="font-size:12px;margin-bottom:4px"><b>Customer:</b> ${customer_name || "-"}</div>
+          <div style="font-size:12px;margin-bottom:8px"><b>Amount:</b> ${amount || 0}</div>
+          <div style="position:relative;margin-top:8px">
+            <input id="swal-pass" type="password" class="swal2-input" style="height:34px;font-size:13px;width:100%;box-sizing:border-box;margin:0;" placeholder="Enter Security Password"/>
+          </div>
+        </div>
+      `,
+      showCancelButton: true,
+      confirmButtonText: "Restore",
+      focusConfirm: false,
+      preConfirm: () => {
+        const val = document.getElementById("swal-pass").value.trim();
+        if (!val) {
+          Swal.showValidationMessage("Password required");
+          return false;
+        }
+        return val;
+      }
+    });
+    return value;
+  })();
 
   if (!password) return;
 
-  const confirmRestore = await Swal.fire({
-    title: "Confirm Restore",
-    text: `Restore REF NO: ${ref_no}?`,
-    icon: "question",
-    showCancelButton: true,
-    confirmButtonText: "Yes, Restore",
-  });
-
-  if (!confirmRestore.isConfirmed) return;
+  Swal.fire({ title: "Restoring...", allowOutsideClick: false, didOpen: () => Swal.showLoading() });
 
   try {
-    const res = await fetch(
-      `${import.meta.env.VITE_BACKEND_URL}/api/deleted/restore`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ type, ref_no, password }),
-      }
-    );
-
+    const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/deleted/restore`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ type, ref_no, password })
+    });
     const data = await res.json();
+    Swal.close();
 
     if (data.success) {
-      Swal.fire("Restored", `REF NO: ${ref_no}`, "success");
+      Swal.fire("Restored!", `Record ${ref_no} is active now.`, "success");
       load();
     } else {
-      Swal.fire("Error", data.error || "Restore failed", "error");
+      Swal.fire({
+        title: "Error",
+        text: data.error || "Failed",
+        icon: "error",
+        didOpen: () => {
+          const popup = document.querySelector(".swal2-popup");
+          if (popup) {
+            popup.classList.add("shake");
+            setTimeout(() => popup.classList.remove("shake"), 500);
+          }
+        }
+      });
     }
   } catch {
-    Swal.fire("Error", "Server error", "error");
+    Swal.close();
+    Swal.fire("Error", "Server network error", "error");
   }
 };
 
+/* ================= PERMANENT DELETE ================= */
 const permanentDelete = async (type, ref_no, customer_name, amount) => {
-  const password = await askPasswordPopup(
-    "PERMANENT DELETE",
-    type,
-    ref_no,
-    customer_name,
-    amount,
-    "delete"
-  );
+  const password = await (async () => {
+    const { value } = await Swal.fire({
+      width: "360px",
+      padding: "1em",
+      html: `
+        <div style="text-align:left;font-size:13px;line-height:1.5">
+          <div style="margin-bottom:8px"><b style="color:#dc3545">🚨 PERMANENT DELETE (🚨 CRITICAL)</b></div>
+          <div style="font-size:12px;margin-bottom:4px"><b>Type:</b> ${type}</div>
+          <div style="font-size:12px;margin-bottom:4px"><b>REF NO:</b> ${ref_no}</div>
+          <div style="font-size:12px;margin-bottom:4px"><b>Customer:</b> ${customer_name || "-"}</div>
+          <div style="font-size:12px;margin-bottom:8px"><b>Amount:</b> ${amount || 0}</div>
+          <div style="position:relative;margin-top:8px">
+            <input id="swal-pass" type="password" class="swal2-input" style="height:34px;font-size:13px;width:100%;box-sizing:border-box;margin:0;" placeholder="Enter Security Password"/>
+          </div>
+        </div>
+      `,
+      showCancelButton: true,
+      confirmButtonText: "DELETE FOREVER",
+      focusConfirm: false,
+      preConfirm: () => {
+        const val = document.getElementById("swal-pass").value.trim();
+        if (!val) {
+          Swal.showValidationMessage("Password required");
+          return false;
+        }
+        return val;
+      }
+    });
+    return value;
+  })();
 
   if (!password) return;
 
-  const confirmDelete = await Swal.fire({
-    title: "FINAL WARNING!",
-    text: `Delete REF NO: ${ref_no} permanently?`,
-    icon: "warning",
+  const finalConfirm = await Swal.fire({
+    title: "Are you absolutely sure?",
+    text: "This record will be erased forever from the system database!",
+    icon: "danger",
     showCancelButton: true,
-    confirmButtonText: "Yes, Delete",
+    confirmButtonText: "Yes, Erase Completely"
   });
 
-  if (!confirmDelete.isConfirmed) return;
+  if (!finalConfirm.isConfirmed) return;
+
+  Swal.fire({ title: "Erasing...", allowOutsideClick: false, didOpen: () => Swal.showLoading() });
 
   try {
-    const res = await fetch(
-      `${import.meta.env.VITE_BACKEND_URL}/api/deleted/permanent-delete`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ type, ref_no, password }),
-      }
-    );
-
+    const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/deleted/permanent-delete`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ type, ref_no, password })
+    });
     const data = await res.json();
+    Swal.close();
 
     if (data.success) {
-      Swal.fire("Deleted", `REF NO: ${ref_no}`, "success");
+      Swal.fire("Erased!", `Record ${ref_no} removed permanently.`, "success");
       load();
     } else {
-      Swal.fire("Error", data.error || "Delete failed", "error");
+      Swal.fire({
+        title: "Error",
+        text: data.error || "Failed",
+        icon: "error",
+        didOpen: () => {
+          const popup = document.querySelector(".swal2-popup");
+          if (popup) {
+            popup.classList.add("shake");
+            setTimeout(() => popup.classList.remove("shake"), 500);
+          }
+        }
+      });
     }
   } catch {
+    Swal.close();
     Swal.fire("Error", "Server error", "error");
   }
 };

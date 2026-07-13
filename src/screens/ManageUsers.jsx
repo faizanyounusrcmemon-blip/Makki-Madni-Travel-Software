@@ -55,195 +55,89 @@ export default function ManageUsers({ onNavigate }) {
     setUsers(copy);
   };
 
-/* ================= PASSWORD POPUP ================= */
-const askPassword = async (title = "Enter Password") => {
-
-  const { value } = await Swal.fire({
-    width: "300px",
-
-    html: `
-      <div style="text-align:left;font-size:13px">
-        <b>${title}</b>
-
-        <div style="position:relative;margin-top:10px">
-
-          <input
-            id="swal-pass"
-            type="password"
-            class="swal2-input"
-            style="height:34px;font-size:13px;padding-right:40px"
-            placeholder="Enter password"
-          />
-
-          <span id="toggle-pass" style="
-            position:absolute;
-            right:12px;
-            top:50%;
-            transform:translateY(-50%);
-            cursor:pointer;
-            user-select:none;
-            font-size:16px;
-          ">👁</span>
-
-        </div>
-      </div>
-    `,
-
-    showCancelButton: true,
-    confirmButtonText: "Save",
-    focusConfirm: false,
-
-    preConfirm: () => {
-
-      const input = document.getElementById("swal-pass");
-      const val = input.value.trim();
-
-      // EMPTY
-      if (!val) {
-        Swal.showValidationMessage("Password required");
-        return false;
-      }
-
-      // WRONG PASSWORD
-      if (val !== "786") {
-
-        const popup = Swal.getPopup();
-
-        // 😎 SHAKE EFFECT
-        if (popup) {
-
-          popup.classList.add("shake");
-
-          setTimeout(() => {
-            popup.classList.remove("shake");
-          }, 400);
-        }
-
-        Swal.showValidationMessage("Wrong Password 😎");
-
-        return false;
-      }
-
-      return val;
-    },
-
-    didOpen: () => {
-
-      const input = document.getElementById("swal-pass");
-      const toggle = document.getElementById("toggle-pass");
-
-      let show = false;
-
-      // 👁 SHOW / HIDE PASSWORD
-      toggle.onclick = () => {
-
-        show = !show;
-
-        input.type = show ? "text" : "password";
-        toggle.textContent = show ? "🙈" : "👁";
-      };
-
-      // AUTO FOCUS
-      setTimeout(() => input.focus(), 100);
-
-      // ENTER KEY SUPPORT
-      const handleEnter = (e) => {
-
-        if (e.key === "Enter") {
-
-          e.preventDefault();
-
-          document
-            .querySelector(".swal2-confirm")
-            ?.click();
-        }
-      };
-
-      document.addEventListener("keydown", handleEnter);
-
-      // CLEANUP
-      Swal.getPopup()?.addEventListener("remove", () => {
-        document.removeEventListener("keydown", handleEnter);
-      });
-    }
-  });
-
-  return value;
-};
 
 
-/* ================= SAVE ================= */
+/* ================= SAVE ALL PERMISSIONS ================= */
 const saveAll = async () => {
+  if (!isAdmin) return;
 
-  if (!isAdmin) {
-
-    return Swal.fire({
-      width: "300px",
-      icon: "warning",
-      text: "Admin only"
+  const enteredPassword = await (async () => {
+    const { value } = await Swal.fire({
+      width: "360px",
+      padding: "1em",
+      html: `
+        <div style="text-align:left;font-size:13px;line-height:1.5">
+          <div style="margin-bottom:8px"><b style="color:#10b981">🛡️ SAVE SYSTEM PERMISSIONS</b></div>
+          <div style="font-size:12px;margin-bottom:8px">This will overwrite configuration matrix rules for all users.</div>
+          <div style="position:relative;margin-top:8px">
+            <input id="swal-pass-perm" type="password" class="swal2-input" style="height:34px;font-size:13px;width:100%;box-sizing:border-box;margin:0;padding:0 35px 0 10px;" placeholder="Enter Security Password"/>
+            <span id="toggle-swal-pass-perm" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);cursor:pointer;font-size:14px;z-index:999;">👁</span>
+          </div>
+        </div>
+      `,
+      showCancelButton: true,
+      confirmButtonText: "Authorize Save",
+      focusConfirm: false,
+      didOpen: () => {
+        // Hide/Show fix for Save Permissions Swal Popup
+        const input = document.getElementById("swal-pass-perm");
+        const toggle = document.getElementById("toggle-swal-pass-perm");
+        if (input && toggle) {
+          let show = false;
+          toggle.addEventListener("click", () => {
+            show = !show;
+            input.type = show ? "text" : "password";
+            toggle.textContent = show ? "🙈" : "👁";
+          });
+        }
+      },
+      preConfirm: () => {
+        const val = document.getElementById("swal-pass-perm").value.trim();
+        if (!val) {
+          Swal.showValidationMessage("Password required");
+          return false;
+        }
+        return val;
+      }
     });
-  }
+    return value;
+  })();
 
-  // 🔐 PASSWORD
-  const pass = await askPassword("Enter Save Password");
+  if (!enteredPassword) return;
 
-  if (!pass) return;
-
-  Swal.fire({
-    width: "260px",
-    title: "Saving Permissions...",
-    allowOutsideClick: false,
-    didOpen: () => Swal.showLoading()
-  });
+  setSaving(true);
+  Swal.fire({ title: "Saving changes...", allowOutsideClick: false, didOpen: () => Swal.showLoading() });
 
   try {
-
-    setSaving(true);
-
-    const r = await fetch(
-      `${import.meta.env.VITE_BACKEND_URL}/api/users/permissions/update`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ users })
-      }
-    );
-
-    const d = await r.json();
-
-    Swal.close();
-
-    if (d.success) {
-
-      Swal.fire({
-        width: "300px",
-        icon: "success",
-        text: "✅ Permissions Saved Successfully"
-      });
-
-      loadUsers();
-
-    } else {
-
-      Swal.fire({
-        width: "300px",
-        icon: "error",
-        text: d.error || "Save failed"
-      });
-    }
-
-  } catch (err) {
-
-    Swal.close();
-
-    Swal.fire({
-      width: "300px",
-      icon: "error",
-      text: "Network Error"
+    const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/users/permissions/update`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ users, password: enteredPassword }),
     });
 
-  } finally {
+    const data = await res.json();
+    Swal.close();
 
+    if (data.success) {
+      Swal.fire("Success", "All user permissions updated successfully!", "success");
+    } else {
+      Swal.fire({
+        title: "Error",
+        text: data.error || "Failed to update permissions",
+        icon: "error",
+        didOpen: () => {
+          const popup = document.querySelector(".swal2-popup");
+          if (popup) {
+            popup.classList.add("shake");
+            setTimeout(() => popup.classList.remove("shake"), 500);
+          }
+        }
+      });
+    }
+  } catch {
+    Swal.close();
+    Swal.fire("Error", "Network connection failed", "error");
+  } finally {
     setSaving(false);
   }
 };

@@ -8,7 +8,7 @@ export default function AllReports({ onNavigate }) {
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
   const [typeFilter, setTypeFilter] = useState("");
-  const [currentAuthorityDays, setCurrentAuthorityDays] = useState("-"); // Live days status state
+  const [currentAuthorityDays, setCurrentAuthorityDays] = useState("-"); // Live authority status display state
 
   const [loading, setLoading] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
@@ -19,7 +19,7 @@ export default function AllReports({ onNavigate }) {
     try {
       setLoading(true);
 
-      // 1. Fetch current lock days authority for manager status badge
+      // 1. Fetch live database persistent authority days for status badge
       try {
         const setRes = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/reports/authority/get-days`);
         if (setRes.ok) {
@@ -94,7 +94,7 @@ export default function AllReports({ onNavigate }) {
           <div style="font-size:12px;margin-bottom:6px"><b>Customer:</b> ${customer_name}</div>
           <div style="font-size:12px;margin-bottom:8px">💰 <b>Amount:</b> ${total_pkr}</div>
           <div style="position:relative;margin-top:8px">
-            <input id="swal-pass" type="password" class="swal2-input" style="height:34px;font-size:13px" placeholder="Enter password"/>
+            <input id="swal-pass" type="password" class="swal2-input" style="height:34px;font-size:13px;width:100%;box-sizing:border-box;padding-right:40px;margin:0;" placeholder="Enter password"/>
             <span id="toggle-pass" style="
               position:absolute;
               right:12px;
@@ -102,6 +102,7 @@ export default function AllReports({ onNavigate }) {
               transform:translateY(-50%);
               cursor:pointer;
               font-size:14px;
+              user-select:none;
             ">👁</span>
           </div>
         </div>
@@ -118,15 +119,6 @@ export default function AllReports({ onNavigate }) {
         const val = document.getElementById("swal-pass").value;
         if (!val || val.trim() === "") {
           Swal.showValidationMessage("Password required");
-          return false;
-        }
-        if (val.trim() !== "786") {
-          const popup = document.querySelector(".swal2-popup");
-          if (popup) {
-            popup.classList.add("shake");
-            setTimeout(() => popup.classList.remove("shake"), 500);
-          }
-          Swal.showValidationMessage("Wrong Password 😎");
           return false;
         }
         return val.trim();
@@ -160,15 +152,6 @@ export default function AllReports({ onNavigate }) {
     const password = await askPassword(type, ref_no, customer_name, total_pkr);
     if (!password) return;
 
-    if (password !== "786") {
-      const popup = document.querySelector(".swal2-popup");
-      if (popup) {
-        popup.classList.add("shake");
-        setTimeout(() => popup.classList.remove("shake"), 500);
-      }
-      return Swal.showValidationMessage("Wrong Password 😎");
-    }
-
     const confirm = await Swal.fire({
       width: "320px",
       title: "Are you sure?",
@@ -176,6 +159,12 @@ export default function AllReports({ onNavigate }) {
       icon: "warning",
       showCancelButton: true,
       confirmButtonText: "Yes, Delete",
+      cancelButtonText: "Cancel",
+      buttonsStyling: false,
+      customClass: {
+        confirmButton: "swal-btn-delete",
+        cancelButton: "swal-btn-cancel"
+      }
     });
 
     if (!confirm.isConfirmed) return;
@@ -197,7 +186,13 @@ export default function AllReports({ onNavigate }) {
     try {
       const res = await fetch(
         `${import.meta.env.VITE_BACKEND_URL}/api/${endpoint}/delete/${ref_no}`,
-        { method: "DELETE" }
+        { 
+          method: "DELETE",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({ password: password })
+        }
       );
       const data = await res.json();
       Swal.close();
@@ -313,121 +308,135 @@ export default function AllReports({ onNavigate }) {
 
   return (
     <div className="container py-4">
-      {/* HEADER WITH FIXED ACCESS STATUS DISPLAY */}
-      <div className="card shadow-sm border-0 mb-3">
-        <div
-          className="card-body d-flex justify-content-between align-items-center"
-          style={{
-            background: "linear-gradient(135deg, #0d6efd, #6610f2)",
-            color: "#fff",
-            borderRadius: "12px",
-          }}
-        >
-          <h5 className="fw-bold mb-0">📊 All Reports</h5>
-          
-          {/* CONTROL SECTION WITH STATUS DISPLAY AND RULE BUTTON */}
-          <div className="d-flex align-items-center gap-2">
-            <span className="badge bg-light text-dark fw-bold px-2 py-1" style={{ fontSize: "12px", border: "1px solid #cbd5e1" }}>
-              🔒 Current Rule: {currentAuthorityDays} Days
-            </span>
+{/* HEADER SECTION WITH LOCK BADGE AND NEW COMPACT POPUP BUTTON */}
+<div className="card shadow-sm border-0 mb-3">
+  <div
+    className="card-body d-flex justify-content-between align-items-center"
+    style={{
+      background: "linear-gradient(135deg, #0d6efd, #6610f2)",
+      color: "#fff",
+      borderRadius: "12px",
+    }}
+  >
+    <h5 className="fw-bold mb-0">📊 All Reports</h5>
+    
+    <div className="d-flex align-items-center gap-2">
+      {/* Live Access Display Badge */}
+      <span className="badge bg-light text-dark fw-bold px-2 py-1" style={{ fontSize: "12px", border: "1px solid #cbd5e1" }}>
+        🔒 Current Rule: {currentAuthorityDays} Days
+      </span>
 
-<button
-  className="btn btn-warning btn-sm fw-bold"
-  onClick={async () => {
-    const { value: formValues } = await Swal.fire({
-      width: "350px", // ✅ Popup size ko chota kar diya
-      padding: "1em", // ✅ Spacing compact kar di
-      title: "🛡️ Access Authority",
-      html: `
-        <div style="text-align: left; font-size: 13px; line-height: 1.5; margin-top: 10px;">
-          <div style="position: relative; margin-bottom: 8px;">
-            <input id="auth-pass" type="password" class="swal2-input" 
-              style="width: 100%; height: 35px; font-size: 13px; margin: 0; padding: 0 10px;" 
-              placeholder="Enter Admin Password"/>
-            <span id="toggle-auth-pass" style="
-              position: absolute;
-              right: 12px;
-              top: 50%;
-              transform: translateY(-50%);
-              cursor: pointer;
-              font-size: 14px;
-              z-index: 10;
-            ">👁</span>
-          </div>
-          <div>
-            <input id="auth-days" type="number" class="swal2-input" 
-              style="width: 100%; height: 35px; font-size: 13px; margin: 0; padding: 0 10px;" 
-              placeholder="Number of Days Access (e.g. 1, 3, 7)"/>
-          </div>
-        </div>
-      `,
-      focusConfirm: false,
-      showCancelButton: true,
-      confirmButtonText: "Save Rule",
-      preConfirm: () => {
-        const pass = document.getElementById("auth-pass").value;
-        const days = document.getElementById("auth-days").value;
-        if (!pass || !days) {
-          Swal.showValidationMessage("Both fields are required!");
-          return false;
-        }
-        if (pass !== "786f") {
-          const popup = document.querySelector(".swal2-popup");
-          if (popup) {
-            popup.classList.add("shake");
-            setTimeout(() => popup.classList.remove("shake"), 500);
-          }
-          Swal.showValidationMessage("Wrong Password 😎");
-          return false;
-        }
-        return { pass, days };
-      },
-      didOpen: () => {
-        const input = document.getElementById("auth-pass");
-        const toggle = document.getElementById("toggle-auth-pass");
-        let show = false;
-        toggle.addEventListener("click", () => {
-          show = !show;
-          input.type = show ? "text" : "password";
-          toggle.textContent = show ? "🙈" : "👁";
-        });
-      },
-    });
-
-    if (formValues) {
-      try {
-        const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/reports/authority/set-days`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ password: formValues.pass, days: formValues.days }),
-        });
-        const data = await res.json();
-        if (data.success) {
-          Swal.fire({
-            width: "300px",
-            title: "Saved",
-            text: `System updated to ${formValues.days} days.`,
-            icon: "success"
+      {/* Compact Admin Settings Popup Button */}
+      <button
+        className="btn btn-warning btn-sm fw-bold"
+        onClick={async () => {
+          const { value: formValues } = await Swal.fire({
+            width: "350px", 
+            padding: "1em", 
+            title: "🛡️ Access Authority",
+            html: `
+              <div style="text-align: left; font-size: 13px; line-height: 1.5; margin-top: 10px;">
+                <div style="position: relative; margin-bottom: 8px;">
+                  <input id="auth-pass" type="password" class="swal2-input" 
+                    style="width: 100%; height: 35px; font-size: 13px; margin: 0; padding: 0 10px;" 
+                    placeholder="Enter Admin Password"/>
+                  <span id="toggle-auth-pass" style="
+                    position: absolute;
+                    right: 12px;
+                    top: 50%;
+                    transform: translateY(-50%);
+                    cursor: pointer;
+                    font-size: 14px;
+                    z-index: 10;
+                  ">👁</span>
+                </div>
+                <div>
+                  <input id="auth-days" type="number" class="swal2-input" 
+                    style="width: 100%; height: 35px; font-size: 13px; margin: 0; padding: 0 10px;" 
+                    placeholder="Number of Days Access (e.g. 1, 3, 7)"/>
+                </div>
+              </div>
+            `,
+            focusConfirm: false,
+            showCancelButton: true,
+            confirmButtonText: "Save Rule",
+            preConfirm: () => {
+              const pass = document.getElementById("auth-pass").value;
+              const days = document.getElementById("auth-days").value;
+              if (!pass || !days) {
+                Swal.showValidationMessage("Both fields are required!");
+                return false;
+              }
+              return { pass, days };
+            },
+            didOpen: () => {
+              const input = document.getElementById("auth-pass");
+              const toggle = document.getElementById("toggle-auth-pass");
+              let show = false;
+              toggle.addEventListener("click", () => {
+                show = !show;
+                input.type = show ? "text" : "password";
+                toggle.textContent = show ? "🙈" : "👁";
+              });
+            },
           });
-          setCurrentAuthorityDays(formValues.days); // Instant UI state update
-        } else {
-          Swal.fire("Error", data.message, "error");
-        }
-      } catch {
-        Swal.fire("Error", "Server network error", "error");
-      }
-    }
-  }}
->
-  🛡️ Access Authority Limit
-</button>
 
-            <button className="btn btn-light btn-sm" onClick={() => onNavigate("dashboard")}>
-              ← Back
-            </button>
-          </div>
-        </div>
-      </div>
+          if (formValues) {
+            try {
+              // Loader trigger dynamic user action context k liye
+              Swal.fire({
+                title: "Updating...",
+                allowOutsideClick: false,
+                didOpen: () => Swal.showLoading()
+              });
+
+              // 🔄 Dynamic endpoint call sync with updated public configurations rules
+              const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/reports/authority/update-days`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ password: formValues.pass, days: formValues.days }),
+              });
+              
+              const data = await res.json();
+              
+              if (data.success) {
+                Swal.fire({
+                  width: "300px",
+                  title: "Saved",
+                  text: `System updated to ${formValues.days} days.`,
+                  icon: "success"
+                });
+                setCurrentAuthorityDays(formValues.days); 
+              } else {
+                // Shake effect fallback error messages toggle rule
+                Swal.fire({
+                  title: "Error",
+                  text: data.message || "Something went wrong",
+                  icon: "error",
+                  didOpen: () => {
+                    const popup = document.querySelector(".swal2-popup");
+                    if (popup) {
+                      popup.classList.add("shake");
+                      setTimeout(() => popup.classList.remove("shake"), 500);
+                    }
+                  }
+                });
+              }
+            } catch {
+              Swal.fire("Error", "Server network error", "error");
+            }
+          }
+        }}
+      >
+        🛡️ Access Authority Limit
+      </button>
+
+      <button className="btn btn-light btn-sm" onClick={() => onNavigate("dashboard")}>
+        ← Back
+      </button>
+    </div>
+  </div>
+</div>
 
       {/* FILTER */}
       <div className="card shadow-sm mb-2">

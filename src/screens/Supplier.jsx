@@ -28,18 +28,13 @@ export default function Supplier({ onNavigate }) {
   }, []);
 
 /* ================= PASSWORD POPUP ================= */
-/* ================= PASSWORD POPUP ================= */
 const askPassword = async (title = "Enter Password") => {
-
   const { value } = await Swal.fire({
     width: "300px",
-
     html: `
       <div style="text-align:left;font-size:13px">
         <b>${title}</b>
-
         <div style="position:relative;margin-top:10px">
-
           <input
             id="swal-pass"
             type="password"
@@ -47,7 +42,6 @@ const askPassword = async (title = "Enter Password") => {
             style="height:34px;font-size:13px;padding-right:40px"
             placeholder="Enter password"
           />
-
           <span id="toggle-pass" style="
             position:absolute;
             right:12px;
@@ -57,88 +51,47 @@ const askPassword = async (title = "Enter Password") => {
             user-select:none;
             font-size:16px;
           ">👁</span>
-
         </div>
       </div>
     `,
-
     showCancelButton: true,
     confirmButtonText: "OK",
     focusConfirm: false,
-
     preConfirm: () => {
-
       const input = document.getElementById("swal-pass");
       const val = input.value.trim();
-
-      // ✅ EMPTY
       if (!val) {
         Swal.showValidationMessage("Password required");
         return false;
       }
-
-      // ✅ WRONG PASSWORD
-      if (val !== "786") {
-
-        const popup = Swal.getPopup();
-
-        // 😎 SHAKE EFFECT
-        if (popup) {
-
-          popup.classList.add("shake");
-
-          setTimeout(() => {
-            popup.classList.remove("shake");
-          }, 400);
-        }
-
-        Swal.showValidationMessage("Wrong Password 😎");
-
-        return false;
-      }
-
       return val;
     },
-
     didOpen: () => {
-
       const input = document.getElementById("swal-pass");
       const toggle = document.getElementById("toggle-pass");
-
       let show = false;
 
-      // 👁 SHOW / HIDE PASSWORD
       toggle.onclick = () => {
         show = !show;
-
         input.type = show ? "text" : "password";
         toggle.textContent = show ? "🙈" : "👁";
       };
 
-      // ✅ AUTO FOCUS
       setTimeout(() => input.focus(), 100);
 
-      // ✅ ENTER BUTTON SUPPORT
       const handleEnter = (e) => {
-
         if (e.key === "Enter") {
           e.preventDefault();
-
-          document
-            .querySelector(".swal2-confirm")
-            ?.click();
+          document.querySelector(".swal2-confirm")?.click();
         }
       };
-
       document.addEventListener("keydown", handleEnter);
 
-      // ✅ CLEANUP
       Swal.getPopup()?.addEventListener("remove", () => {
         document.removeEventListener("keydown", handleEnter);
       });
     }
   });
-
   return value;
 };
 
@@ -183,7 +136,6 @@ const save = async () => {
 
 /* ================= DELETE ================= */
 const del = async (id) => {
-
   const confirmDelete = await Swal.fire({
     width: "300px",
     icon: "warning",
@@ -215,7 +167,6 @@ const del = async (id) => {
   );
 
   const d = await r.json();
-
   Swal.close();
 
   if (d.success) {
@@ -229,7 +180,7 @@ const del = async (id) => {
     Swal.fire({
       width: "300px",
       icon: "error",
-      text: d.error
+      text: d.error || "Wrong Password 😎"
     });
   }
 };
@@ -384,30 +335,56 @@ const del = async (id) => {
                   </td>
                   <td>{r.contact_no}</td>
                   <td>
-<button
-  className="btn btn-sm btn-outline-warning me-1"
-  onClick={async () => {
+                    <button
+                      className="btn btn-sm btn-outline-warning me-1"
+                      onClick={async () => {
+                        const pass = await askPassword("Enter Edit Password");
+                        if (!pass) return;
 
-    const pass = await askPassword("Enter Edit Password");
-    if (!pass) return;
+                        // 🔍 Verify Edit Password from Database via API
+                        try {
+                          const checkRes = await fetch(
+                            `${import.meta.env.VITE_BACKEND_URL}/api/supplier/verify-edit-password`,
+                            {
+                              method: "POST",
+                              headers: { "Content-Type": "application/json" },
+                              body: JSON.stringify({ password: pass }),
+                            }
+                          );
+                          const checkData = await checkRes.json();
 
-    setForm({
-      supplier_name: r.supplier_name || "",
-      category: r.category || "",
-      contact_no: r.contact_no || "",
-    });
+                          if (!checkData.success) {
+                            return Swal.fire({
+                              width: "300px",
+                              icon: "error",
+                              text: checkData.error || "Wrong Password 😎"
+                            });
+                          }
 
-    setEditId(r.id);
+                          setForm({
+                            supplier_name: r.supplier_name || "",
+                            category: r.category || "",
+                            contact_no: r.contact_no || "",
+                          });
 
-    Swal.fire({
-      width: "280px",
-      icon: "success",
-      text: "Edit Mode Enabled 😎"
-    });
-  }}
->
-  ✏ Edit
-</button>
+                          setEditId(r.id);
+
+                          Swal.fire({
+                            width: "280px",
+                            icon: "success",
+                            text: "Edit Mode Enabled 😎"
+                          });
+                        } catch (err) {
+                          Swal.fire({
+                            width: "300px",
+                            icon: "error",
+                            text: "Failed to verify password"
+                          });
+                        }
+                      }}
+                    >
+                      ✏ Edit
+                    </button>
                     <button
                       className="btn btn-sm btn-outline-danger"
                       onClick={() => del(r.id)}
@@ -424,4 +401,3 @@ const del = async (id) => {
     </div>
   );
 }
-

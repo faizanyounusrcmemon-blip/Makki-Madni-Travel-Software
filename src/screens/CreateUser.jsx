@@ -53,13 +53,14 @@ export default function CreateUser({ onNavigate }) {
         <b>${title}</b>
         <div style="position:relative;margin-top:10px">
           <input id="swal-pass" type="password" class="swal2-input"
-            style="height:34px;font-size:13px" placeholder="Enter password"/>
+            style="height:34px;font-size:13px;width:100%;box-sizing:border-box;margin:0;padding-right:35px;" placeholder="Enter password"/>
           <span id="toggle-pass" style="
             position:absolute;
             right:12px;
             top:50%;
             transform:translateY(-50%);
             cursor:pointer;
+            z-index:999;
           ">👁</span>
         </div>
       </div>
@@ -77,17 +78,7 @@ export default function CreateUser({ onNavigate }) {
           return false;
         }
 
-        if (val !== "786") {
-          const popup = document.querySelector(".swal2-popup");
-          if (popup) {
-            popup.classList.add("shake");
-            setTimeout(() => popup.classList.remove("shake"), 400);
-          }
-
-          Swal.showValidationMessage("Wrong Password 😎");
-          return false;
-        }
-
+        // Static check yahan se hata diya hai taake dynamic validation API se ho sake
         return val;
       },
 
@@ -95,13 +86,14 @@ export default function CreateUser({ onNavigate }) {
         const input = document.getElementById("swal-pass");
         const toggle = document.getElementById("toggle-pass");
 
-        let show = false;
-
-        toggle.addEventListener("click", () => {
-          show = !show;
-          input.type = show ? "text" : "password";
-          toggle.textContent = show ? "🙈" : "👁";
-        });
+        if (input && toggle) {
+          let show = false;
+          toggle.addEventListener("click", () => {
+            show = !show;
+            input.type = show ? "text" : "password";
+            toggle.textContent = show ? "🙈" : "👁";
+          });
+        }
       }
     });
 
@@ -190,7 +182,7 @@ export default function CreateUser({ onNavigate }) {
     });
 
     try {
-      await fetch(
+      const res = await fetch(
         `${import.meta.env.VITE_BACKEND_URL}/api/users/delete/${u.id}`,
         {
           method: "DELETE",
@@ -198,8 +190,17 @@ export default function CreateUser({ onNavigate }) {
           body: JSON.stringify({ password: pass })
         }
       );
-
+      
+      const d = await res.json();
       Swal.close();
+
+      if (!d.success) {
+        return Swal.fire({
+          width: "300px",
+          icon: "error",
+          text: d.error || "Invalid security password"
+        });
+      }
 
       Swal.fire({
         width: "280px",
@@ -221,27 +222,67 @@ export default function CreateUser({ onNavigate }) {
   };
 
 
-  /* ================= EDIT ================= */
+  /* ================= EDIT (DYNAMIC DB PASSWORD LOOKUP) ================= */
   const editUser = async (u) => {
 
     const pass = await askPassword("Enter Edit Password");
     if (!pass) return;
 
-    setName(u.name);
-    setUsername(u.username);
-    setPassword(u.password);
-    setRole(u.role);
-    setIsActive(
-      u.is_active === true ||
-      u.is_active === "true"
-    );
-
-    setEditId(u.id);
-
-    window.scrollTo({
-      top: 0,
-      behavior: "smooth"
+    // Loading overlay taake jab tak backend respond kare user wait kare
+    Swal.fire({
+      width: "200px",
+      title: "Verifying...",
+      allowOutsideClick: false,
+      didOpen: () => Swal.showLoading()
     });
+
+    try {
+      // Backend api/users/verify-edit-password par check bhej rahe hain
+      const res = await fetch(
+        `${import.meta.env.VITE_BACKEND_URL}/api/users/verify-edit-password`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ password: pass })
+        }
+      );
+
+      const d = await res.json();
+      Swal.close();
+
+      if (!d.success) {
+        return Swal.fire({
+          width: "300px",
+          icon: "error",
+          text: d.error || "Invalid security password"
+        });
+      }
+
+      // Agar password DB se match ho gaya, tabhi niche ka state update code chalega
+      setName(u.name);
+      setUsername(u.username);
+      setPassword(u.password);
+      setRole(u.role);
+      setIsActive(
+        u.is_active === true ||
+        u.is_active === "true"
+      );
+
+      setEditId(u.id);
+
+      window.scrollTo({
+        top: 0,
+        behavior: "smooth"
+      });
+
+    } catch (err) {
+      Swal.close();
+      Swal.fire({
+        width: "300px",
+        icon: "error",
+        text: "Verification connection failed"
+      });
+    }
   };
 
   return (

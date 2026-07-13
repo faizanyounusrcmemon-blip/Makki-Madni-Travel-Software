@@ -84,14 +84,24 @@ export default function AllReportsToday({ onNavigate }) {
       padding: "1em",
       html: `
         <div style="text-align:left;font-size:13px;line-height:1.5">
-          <div style="margin-bottom:8px"><b style="color:#dc3545">🗑 DELETE SALE</b></div>
+          <div style="margin-bottom:8px">
+            <b style="color:#dc3545">🗑 DELETE SALE</b>
+          </div>
           <div style="font-size:12px;margin-bottom:6px"><b>Type:</b> ${type}</div>
           <div style="font-size:12px;margin-bottom:6px"><b>REF NO:</b> ${ref_no}</div>
           <div style="font-size:12px;margin-bottom:6px"><b>Customer:</b> ${customer_name}</div>
           <div style="font-size:12px;margin-bottom:8px">💰 <b>Amount:</b> ${total_pkr}</div>
           <div style="position:relative;margin-top:8px">
-            <input id="swal-pass" type="password" class="swal2-input" style="height:34px;font-size:13px" placeholder="Enter password"/>
-            <span id="toggle-pass" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);cursor:pointer;font-size:14px;">👁</span>
+            <input id="swal-pass" type="password" class="swal2-input" style="height:34px;font-size:13px;width:100%;box-sizing:border-box;padding-right:40px;margin:0;" placeholder="Enter password"/>
+            <span id="toggle-pass" style="
+              position:absolute;
+              right:12px;
+              top:50%;
+              transform:translateY(-50%);
+              cursor:pointer;
+              font-size:14px;
+              user-select:none;
+            ">👁</span>
           </div>
         </div>
       `,
@@ -99,20 +109,14 @@ export default function AllReportsToday({ onNavigate }) {
       confirmButtonText: "Delete",
       focusConfirm: false,
       buttonsStyling: false,
-      customClass: { confirmButton: "swal-btn-delete", cancelButton: "swal-btn-cancel" },
+      customClass: { 
+        confirmButton: "swal-btn-delete",
+        cancelButton: "swal-btn-cancel"
+      },
       preConfirm: () => {
         const val = document.getElementById("swal-pass").value;
         if (!val || val.trim() === "") {
           Swal.showValidationMessage("Password required");
-          return false;
-        }
-        if (val.trim() !== "786") {
-          const popup = document.querySelector(".swal2-popup");
-          if (popup) {
-            popup.classList.add("shake");
-            setTimeout(() => popup.classList.remove("shake"), 500);
-          }
-          Swal.showValidationMessage("Wrong Password 😎");
           return false;
         }
         return val.trim();
@@ -131,11 +135,17 @@ export default function AllReportsToday({ onNavigate }) {
     return password;
   };
 
+  /* ================= LOADER ================= */
   const showLoader = (text = "Processing...") => {
-    Swal.fire({ width: "300px", title: text, allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+    Swal.fire({
+      width: "300px",
+      title: text,
+      allowOutsideClick: false,
+      didOpen: () => Swal.showLoading(),
+    });
   };
 
-  /* ================= DELETE ACTION ================= */
+  /* ================= DELETE ================= */
   const handleDelete = async (type, ref_no, customer_name, total_pkr) => {
     const password = await askPassword(type, ref_no, customer_name, total_pkr);
     if (!password) return;
@@ -147,6 +157,12 @@ export default function AllReportsToday({ onNavigate }) {
       icon: "warning",
       showCancelButton: true,
       confirmButtonText: "Yes, Delete",
+      cancelButtonText: "Cancel",
+      buttonsStyling: false,
+      customClass: {
+        confirmButton: "swal-btn-delete",
+        cancelButton: "swal-btn-cancel"
+      }
     });
 
     if (!confirm.isConfirmed) return;
@@ -166,7 +182,16 @@ export default function AllReportsToday({ onNavigate }) {
     showLoader("Deleting...");
 
     try {
-      const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/${endpoint}/delete/${ref_no}`, { method: "DELETE" });
+      const res = await fetch(
+        `${import.meta.env.VITE_BACKEND_URL}/api/${endpoint}/delete/${ref_no}`,
+        { 
+          method: "DELETE",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({ password: password })
+        }
+      );
       const data = await res.json();
       Swal.close();
 

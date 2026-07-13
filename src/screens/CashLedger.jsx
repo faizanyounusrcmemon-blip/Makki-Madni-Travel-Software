@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useRef } from "react";
 import Swal from "sweetalert2";
 
+
 /* ================= COLOR PALETTE ================= */
 const colorPalette = ["#FF6B6B", "#4ECDC4", "#FFD93D", "#6A4C93", "#FF8C42", "#00A6ED", "#FF5D8F"];
 
@@ -179,25 +180,21 @@ const save = async () => {
   }
 };
 
-  /* ================= DELETE ================= */
 /* ================= PASSWORD POPUP ================= */
 const askPassword = async (title = "Enter Password") => {
-
   const { value } = await Swal.fire({
     width: "300px",
-
     html: `
       <div style="text-align:left;font-size:13px">
         <b>${title}</b>
 
         <div style="position:relative;margin-top:10px">
-
           <input 
             id="swal-pass"
             type="password"
             class="swal2-input"
             placeholder="Enter password"
-            style="height:34px;font-size:13px;padding-right:40px"
+            style="height:34px;font-size:13px;width:100%;margin:0;padding-right:40px"
           />
 
           <span id="toggle-pass" style="
@@ -209,7 +206,6 @@ const askPassword = async (title = "Enter Password") => {
             user-select:none;
             font-size:16px;
           ">👁</span>
-
         </div>
       </div>
     `,
@@ -219,7 +215,6 @@ const askPassword = async (title = "Enter Password") => {
     focusConfirm: false,
 
     preConfirm: () => {
-
       const input = document.getElementById("swal-pass");
       const val = input.value.trim();
 
@@ -228,30 +223,12 @@ const askPassword = async (title = "Enter Password") => {
         return false;
       }
 
-      // ✅ PASSWORD CHECK
-      if (val !== "786") {
-
-        // 🔥 SHAKE EFFECT
-        const popup = Swal.getPopup();
-
-        if (popup) {
-          popup.classList.add("shake");
-
-          setTimeout(() => {
-            popup.classList.remove("shake");
-          }, 400);
-        }
-
-        Swal.showValidationMessage("Wrong Password 😎");
-
-        return false;
-      }
-
+      // ❌ LOCAL HARDCODED "786" CHECK REMOVED
+      // Ab value direct return hogi aur match ya mismatch backend handle karega
       return val;
     },
 
     didOpen: () => {
-
       const input = document.getElementById("swal-pass");
       const toggle = document.getElementById("toggle-pass");
 
@@ -260,7 +237,6 @@ const askPassword = async (title = "Enter Password") => {
       // 👁 SHOW / HIDE
       toggle.onclick = () => {
         show = !show;
-
         input.type = show ? "text" : "password";
         toggle.textContent = show ? "🙈" : "👁";
       };
@@ -288,7 +264,6 @@ const askPassword = async (title = "Enter Password") => {
 };
 
 const del = async (id) => {
-
   const confirmDelete = await Swal.fire({
     width: "300px",
     icon: "warning",
@@ -300,7 +275,6 @@ const del = async (id) => {
   if (!confirmDelete.isConfirmed) return;
 
   const pass = await askPassword("Enter Delete Password");
-
   if (!pass) return;
 
   Swal.fire({
@@ -311,7 +285,6 @@ const del = async (id) => {
   });
 
   try {
-
     const r = await fetch(
       `${import.meta.env.VITE_BACKEND_URL}/api/cash-ledger/transaction/${id}`,
       {
@@ -322,11 +295,9 @@ const del = async (id) => {
     );
 
     const d = await r.json();
-
     Swal.close();
 
     if (d.success) {
-
       setMsg({
         type: "success",
         text: d.message
@@ -339,20 +310,16 @@ const del = async (id) => {
         icon: "success",
         text: d.message || "Transaction Deleted Successfully"
       });
-
     } else {
-
+      // Galat password daalne par backend ka response yahan trigger hoga
       Swal.fire({
         width: "300px",
         icon: "error",
         text: d.error || "Delete failed"
       });
     }
-
   } catch (err) {
-
     Swal.close();
-
     Swal.fire({
       width: "300px",
       icon: "error",

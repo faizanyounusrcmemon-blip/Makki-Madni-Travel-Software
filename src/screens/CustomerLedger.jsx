@@ -309,9 +309,9 @@ const saveEntry = async () => {
   }
 };
 
-  /* =========================
-     DELETE ENTRY
-  ========================== */
+/* =====================================================
+   PASSWORD POPUP (WITHOUT HARDCODED CHECKS)
+===================================================== */
 const askPassword = async (title = "Enter Password") => {
   const { value } = await Swal.fire({
     width: "300px",
@@ -321,7 +321,7 @@ const askPassword = async (title = "Enter Password") => {
 
         <div style="position:relative;margin-top:10px">
           <input id="swal-pass" type="password" class="swal2-input"
-            style="height:34px;font-size:13px" placeholder="Enter password"/>
+            style="height:34px;font-size:13px;width:100%;margin:0;padding-right:35px;" placeholder="Enter password"/>
 
           <span id="toggle-pass" style="
             position:absolute;
@@ -346,17 +346,9 @@ const askPassword = async (title = "Enter Password") => {
         Swal.showValidationMessage("Password required");
         return false;
       }
-
-      if (val !== "786") {
-        const popup = document.querySelector(".swal2-popup");
-        if (popup) {
-          popup.classList.add("shake");
-          setTimeout(() => popup.classList.remove("shake"), 400);
-        }
-        Swal.showValidationMessage("Wrong Password 😎");
-        return false;
-      }
-
+      
+      // ❌ HARDCODED "786" CHECK REMOVED FROM HERE
+      // Backend khud system_passwords se look up kar ke check karega
       return val;
     },
 
@@ -377,9 +369,10 @@ const askPassword = async (title = "Enter Password") => {
   return value;
 };
 
-
+/* =====================================================
+   DELETE ENTRY FUNCTION
+===================================================== */
 const del = async (id) => {
-
   if (id === "SALE" || id === "CUSTOMER") {
     return Swal.fire({
       width: "300px",
@@ -409,13 +402,12 @@ const del = async (id) => {
   });
 
   try {
-
     const r = await fetch(
       `${import.meta.env.VITE_BACKEND_URL}/api/customer-ledger/delete/${id}`,
       {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ password: pass }),
+        body: JSON.stringify({ password: pass }), // Frontend ka input backend ko jayega
       }
     );
 
@@ -423,29 +415,24 @@ const del = async (id) => {
     Swal.close();
 
     if (d.success) {
-
       await loadPending();
       await loadLedger(refNo);
-
 
       Swal.fire({
         width: "280px",
         icon: "success",
         text: "Entry Deleted Successfully"
       });
-
     } else {
+      // Agar backend se wrong password ka error aayega toh yahan display ho jayega
       Swal.fire({
         width: "300px",
         icon: "error",
         text: d.error || "Delete failed"
       });
     }
-
   } catch (err) {
-
     Swal.close();
-
     Swal.fire({
       width: "300px",
       icon: "error",
@@ -669,5 +656,4 @@ const exportPDF = async () => {
     </div>
   );
 }
-
 

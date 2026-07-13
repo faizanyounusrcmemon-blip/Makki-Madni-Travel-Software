@@ -86,7 +86,7 @@ const deletePurchase = async (refNo, customer_name, sale_pkr, purchase_pkr) => {
           <b>Sale Amount:</b> ${sale_pkr}<br>
           <b>Purchase Amount:</b> ${purchase_pkr}<br><br>
           <div style="position:relative">
-            <input type="password" id="swal-pass" class="swal2-input" placeholder="Enter password">
+            <input type="password" id="swal-pass" class="swal2-input" placeholder="Enter Security Password">
             <span id="toggle-pass" style="
               position:absolute;
               right:12px;
@@ -123,24 +123,15 @@ const deletePurchase = async (refNo, customer_name, sale_pkr, purchase_pkr) => {
           Swal.showValidationMessage("Password required");
           return false;
         }
-        if (val !== "786") {
-          const popup = document.querySelector(".swal2-popup");
-          if (popup) {
-            popup.classList.add("shake");
-            setTimeout(() => popup.classList.remove("shake"), 500);
-          }
-          Swal.showValidationMessage("Wrong Password 😎");
-          return false;
-        }
         return val;
       }
     });
     return value;
   })();
 
-  if (!password) return; // Cancel or wrong password
+  if (!password) return; 
 
-  // Confirm Delete
+  // Confirm Delete Dialog Box
   const confirmDelete = await Swal.fire({
     width: "320px",
     title: "Are you sure?",
@@ -161,7 +152,7 @@ const deletePurchase = async (refNo, customer_name, sale_pkr, purchase_pkr) => {
     const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/purchase/delete/${refNo}`, {
       method: "DELETE",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ password, customer_name }),
+      body: JSON.stringify({ password }), // Server ko direct payload password bhejega
     });
 
     const data = await res.json();
@@ -169,9 +160,21 @@ const deletePurchase = async (refNo, customer_name, sale_pkr, purchase_pkr) => {
 
     if (data.success) {
       Swal.fire("Deleted!", `REF NO: ${refNo} has been deleted.`, "success");
-      loadList();
+      loadList(); // Reload table row configurations
     } else {
-      Swal.fire("Error", data.error || "Delete failed", "error");
+      // 🔄 SHAKE EFFECT ON WRONG PASSWORD
+      Swal.fire({
+        title: "Error",
+        text: data.error || "Delete failed",
+        icon: "error",
+        didOpen: () => {
+          const popup = document.querySelector(".swal2-popup");
+          if (popup) {
+            popup.classList.add("shake");
+            setTimeout(() => popup.classList.remove("shake"), 500);
+          }
+        }
+      });
     }
   } catch {
     Swal.close();
