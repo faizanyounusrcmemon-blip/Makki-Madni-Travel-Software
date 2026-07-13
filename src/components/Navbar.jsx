@@ -174,7 +174,7 @@ export default function Navbar({ onNavigate }) {
         </div>
 
         {/* ==============================
-            MASTER DROPDOWN (Archive Items Removed)
+            MASTER DROPDOWN (Yahan wapis add kar diya hai)
         =============================== */}
         <div className="nav-item">
           <span className="nav-title" onClick={() => setOpen(open === "master" ? null : "master")}>
@@ -187,13 +187,14 @@ export default function Navbar({ onNavigate }) {
               {can("supplier") && <a onClick={() => go("supplier")}>🏷 Supplier Profile</a>}
               {can("deleted_reports") && <a onClick={() => go("deletedReports")}>🗑 Deleted Reports</a>}
               {can("system_storage") && <a onClick={() => go("systemStorage")}>💾 System Storage</a>}
+              {can("password_settings") && <a onClick={() => go("passwordSettings")}>🛠 Password Settings</a>}
               {can("restore") && <a onClick={() => go("restore")}>♻ Restore</a>}
             </div>
           )}
         </div>
 
         {/* ==============================
-            NEW: ARCHIVE DROPDOWN LIST 
+            ARCHIVE DROPDOWN
         =============================== */}
         <div className="nav-item">
           <span className="nav-title" onClick={() => setOpen(open === "archive" ? null : "archive")}>
