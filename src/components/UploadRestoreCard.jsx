@@ -33,6 +33,8 @@ export default function UploadRestoreCard() {
     "archive_balances",
     "archive_profit_monthly",
     "archive_logs",
+    "authority_settings",
+    "system_passwords",
   ];
 
   const uploadRequest = async (
