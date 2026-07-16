@@ -28,9 +28,11 @@ import PurchaseList from "./screens/PurchaseList";
 import PurchaseDetail from "./screens/PurchaseDetail";
 import PendingPurchase from "./screens/PendingPurchase";
 import Supplier from "./screens/Supplier";
+import CustomersList from "./screens/CustomersList";
 
 // LEDGERS
 import CustomerLedger from "./screens/CustomerLedger";
+import RegisteredCustomerLedger from "./screens/RegisteredCustomerLedger";
 import PurchaseLedger from "./screens/PurchaseLedger";
 import SupplierLedger from "./screens/SupplierLedger";
 import BankLedger from "./screens/BankLedger";
@@ -155,6 +157,7 @@ export default function App() {
       {/* ================= PURCHASE ================= */}
       {page === "purchase" && <Purchase onNavigate={navigate} />}
       {page === "supplier" && <Supplier onNavigate={navigate} />}
+      {page === "customersList" && <CustomersList onNavigate={navigate} />}
       {page === "purchaseList" && <PurchaseList onNavigate={navigate} />}
       {page === "pendingPurchase" && <PendingPurchase onNavigate={navigate} />}
       {page === "purchase_detail" && (
@@ -163,6 +166,7 @@ export default function App() {
 
       {/* ================= LEDGERS ================= */}
       {page === "customerLedger" && <CustomerLedger onNavigate={navigate} />}
+      {page === "registeredCustomerLedger" && <RegisteredCustomerLedger onNavigate={navigate} />}
       {page === "purchaseLedger" && <PurchaseLedger onNavigate={navigate} />}
       {page === "supplierLedger" && <SupplierLedger onNavigate={navigate} />}
       {page === "bankLedger" && <BankLedger onNavigate={navigate} />}
