@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import usePdf from "../hooks/usePdf";
 import Swal from "sweetalert2";
 import Header from "../components/Header";
@@ -16,7 +16,6 @@ const showDate = (val) => {
   return `${day}/${mon}/${year}`;
 };
 
-
 // VIP Ziyarat CSS Inline Styles (Green Theme)
 const styles = {
   container: {
@@ -33,28 +32,6 @@ const styles = {
     padding: 30,
     boxShadow: "0 8px 20px rgba(0,0,0,0.15)",
     border: "2px solid #ffd700",
-  },
-  mainHeader: {
-    textAlign: "center",
-    color: "#006400", // dark green
-    fontWeight: "bold",
-    fontSize: "2rem",
-    marginBottom: 0,
-    letterSpacing: 2,
-  },
-  subHeader: {
-    textAlign: "center",
-    color: "#8b4513",
-    fontSize: "1rem",
-    marginBottom: 3,
-  },
-  quoteHeader: {
-    textAlign: "center",
-    color: "#006400",
-    fontWeight: "bold",
-    fontSize: "1.4rem",
-    marginTop: 10,
-    marginBottom: 20,
   },
   sectionHeader: {
     background: "linear-gradient(to right, #006400, #32cd32)",
@@ -98,9 +75,17 @@ const styles = {
 };
 
 export default function Ziyarat({ onNavigate }) {
+  // ⚡ Load / Edit Ref States
   const [searchRef, setSearchRef] = useState("");
   const [refNo, setRefNo] = useState("");
+
+  // ⚡ Separated Customer States
   const [customerName, setCustomerName] = useState("");
+  const [customerCode, setCustomerCode] = useState("");
+  const [savedCustomers, setSavedCustomers] = useState([]);
+  const [showDropdown, setShowDropdown] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+
   const [bookingDate, setBookingDate] = useState(
     new Date().toISOString().split("T")[0]
   );
@@ -109,15 +94,42 @@ export default function Ziyarat({ onNavigate }) {
   const [isEdit, setIsEdit] = useState(false);
   const [saving, setSaving] = useState(false);
 
-
   const quoteRef = useRef(null);
+  const dropdownRef = useRef(null);
 
-const { exportPDF, printPDF } = usePdf(quoteRef, {
-  filePrefix: "Ziyarat",
-  customerName: customerName,
-  bookingDate: bookingDate,
-  orientation: "p",
-});
+  const { exportPDF, printPDF } = usePdf(quoteRef, {
+    filePrefix: "Ziyarat",
+    customerName: customerName,
+    bookingDate: bookingDate,
+    orientation: "p",
+  });
+
+  // Fetch registered customers list
+  useEffect(() => {
+    const fetchCustomers = async () => {
+      try {
+        const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/customers/list`);
+        const data = await res.json();
+        if (data.success) {
+          setSavedCustomers(data.rows || []);
+        }
+      } catch (err) {
+        console.error("Failed to fetch customer list:", err);
+      }
+    };
+    fetchCustomers();
+  }, []);
+
+  // Click-outside dropdown close hook
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setShowDropdown(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   const addRow = () => setRows([...rows, { description: "", sar: 0 }]);
   const updateRow = (i, field, value) => {
@@ -130,110 +142,106 @@ const { exportPDF, printPDF } = usePdf(quoteRef, {
   const totalSar = rows.reduce((s, r) => s + (Number(r.sar) || 0), 0);
   const totalPkr = totalSar * pkrRate;
 
-const loadZiyarat = async () => {
+  // Filter dropdown data
+  const filteredCustomers = savedCustomers.filter(c => {
+    const q = searchQuery.toLowerCase();
+    return (
+      (c.name && c.name.toLowerCase().includes(q)) ||
+      (c.customer_code && c.customer_code.toLowerCase().includes(q))
+    );
+  });
 
-  if (!searchRef) {
-    return Swal.fire({
-      width: "280px",
-      icon: "warning",
-      text: "Ref No likho"
-    });
-  }
-
-  try {
-
-    // 1️⃣ Fetch Ziyarat
-    const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/ziyarat/get/${searchRef}`);
-    const data = await res.json();
-
-    if (!data.success) {
+  const loadZiyarat = async () => {
+    if (!searchRef) {
       return Swal.fire({
         width: "280px",
-        icon: "error",
-        text: "Record not found"
+        icon: "warning",
+        text: "Ref No likho"
       });
     }
 
-    const d = data.row;
+    try {
+      // 1️⃣ Fetch Ziyarat
+      const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/ziyarat/get/${searchRef}`);
+      const data = await res.json();
 
-    // 2️⃣ Purchase Check
-    const purchaseRes = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/purchase/check/${d.ref_no}`);
-    const purchaseData = await purchaseRes.json();
+      if (!data.success) {
+        return Swal.fire({
+          width: "280px",
+          icon: "error",
+          text: "Record not found"
+        });
+      }
 
-    if (purchaseData.total > 0) {
+      const d = data.row;
+
+      // 2️⃣ Purchase Check
+      const purchaseRes = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/purchase/check/${d.ref_no}`);
+      const purchaseData = await purchaseRes.json();
+
+      if (purchaseData.total > 0) {
+        return Swal.fire({
+          width: "300px",
+          icon: "error",
+          text: "❌ Cannot edit. Purchase entries exist.\nDelete purchases first."
+        });
+      }
+
+      // 3️⃣ Load Data
+      setRefNo(d.ref_no);
+      setCustomerName(d.customer_name);
+      setCustomerCode(d.customer_code || "");
+
+      // Sync customer select UI on edit load
+      if (d.customer_code) {
+        setSearchQuery(`${d.customer_name} (${d.customer_code})`);
+      } else {
+        setSearchQuery("");
+      }
+
+      setBookingDate(d.booking_date);
+      setRows(d.rows || []);
+      setPkrRate(d.pkr_rate || 0);
+      setIsEdit(true);
+
+      Swal.fire({
+        width: "260px",
+        icon: "success",
+        text: "Ziyarat Edit Mode Loaded"
+      });
+
+    } catch (err) {
+      Swal.fire({
+        width: "300px",
+        icon: "error",
+        text: "Load failed"
+      });
+    }
+  };
+
+  const saveData = async () => {
+    if (saving) return;
+
+    if (!customerName || !bookingDate) {
       return Swal.fire({
         width: "300px",
         icon: "error",
-        text: "❌ Cannot edit. Purchase entries exist.\nDelete purchases first."
+        text: "Customer name & booking date required"
       });
     }
 
-    // 3️⃣ Load Data
-    setRefNo(d.ref_no);
-    setCustomerName(d.customer_name);
-    setBookingDate(d.booking_date);
-    setRows(d.rows || []);
-    setPkrRate(d.pkr_rate || 0);
-    setIsEdit(true);
-
-    Swal.fire({
-      width: "260px",
-      icon: "success",
-      text: "Ziyarat Edit Mode Loaded"
-    });
-
-  } catch (err) {
-    Swal.fire({
+    const confirm = await Swal.fire({
       width: "300px",
-      icon: "error",
-      text: "Load failed"
+      icon: "question",
+      text: "Do you want to save this Ziyarat?",
+      showCancelButton: true,
+      confirmButtonText: "Save",
+      cancelButtonText: "Cancel"
     });
-  }
-};
 
-const saveData = async () => {
+    if (!confirm.isConfirmed) return;
 
-  if (saving) return;
-
-  if (!customerName || !bookingDate) {
-    return Swal.fire({
-      width: "300px",
-      icon: "error",
-      text: "Customer name & booking date required"
-    });
-  }
-
-  const confirm = await Swal.fire({
-    width: "300px",
-    icon: "question",
-    text: "Do you want to save this Ziyarat?",
-    showCancelButton: true,
-    confirmButtonText: "Save",
-    cancelButtonText: "Cancel"
-  });
-
-  if (!confirm.isConfirmed) return;
-
-  setSaving(true);
-
-  Swal.fire({
-    width: "260px",
-    title: "Saving...",
-    allowOutsideClick: false,
-    didOpen: () => Swal.showLoading()
-  });
-
-  const payload = {
-    ref_no: refNo || null,
-    customer_name: customerName,
-    booking_date: bookingDate,
-    rows,
-    total_sar: totalSar,
-    pkr_rate: pkrRate,
-    total_pkr: totalPkr,
-  };
-
-  try {
+    setSaving(true);
 
     Swal.fire({
       width: "260px",
@@ -242,68 +250,70 @@ const saveData = async () => {
       didOpen: () => Swal.showLoading()
     });
 
-    const res = await fetch(
-      `${import.meta.env.VITE_BACKEND_URL}/api/ziyarat/save`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      }
-    );
+    const payload = {
+      ref_no: refNo || null,
+      customer_code: customerCode || null, // ⚡ Payload me customer_code bheja
+      customer_name: customerName,
+      booking_date: bookingDate,
+      rows,
+      total_sar: totalSar,
+      pkr_rate: pkrRate,
+      total_pkr: totalPkr,
+    };
 
-    const data = await res.json();
+    try {
+      const res = await fetch(
+        `${import.meta.env.VITE_BACKEND_URL}/api/ziyarat/save`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        }
+      );
 
-    Swal.close();
+      const data = await res.json();
+      Swal.close();
 
-if (data.success) {
-
-  await Swal.fire({
-    width: "320px",
-    icon: "success",
-    title: "Saved Successfully",
-    html: `
-      <div style="text-align:left">
-        <b>Ref#:</b> ${data.ref_no}<br/>
-        <b>Customer:</b> ${customerName}
-      </div>
-    `
-  });
-
-      onNavigate("dashboard");
-
-    } else {
-
-      if (data.error?.includes("Purchase entries exist")) {
-        Swal.fire({
-          width: "300px",
-          icon: "error",
-          text: "❌ Edit blocked! Purchase entries already exist."
+      if (data.success) {
+        await Swal.fire({
+          width: "320px",
+          icon: "success",
+          title: "Saved Successfully",
+          html: `
+            <div style="text-align:left">
+              <b>Ref#:</b> ${data.ref_no}<br/>
+              <b>Customer:</b> ${customerName} ${customerCode ? `(${customerCode})` : "(Walk-In)"}
+            </div>
+          `
         });
+        onNavigate("dashboard");
       } else {
-        Swal.fire({
-          width: "300px",
-          icon: "error",
-          text: data.error || "Save failed"
-        });
+        if (data.error?.includes("Purchase entries exist")) {
+          Swal.fire({
+            width: "300px",
+            icon: "error",
+            text: "❌ Edit blocked! Purchase entries already exist."
+          });
+        } else {
+          Swal.fire({
+            width: "300px",
+            icon: "error",
+            text: data.error || "Save failed"
+          });
+        }
       }
 
+    } catch (err) {
+      Swal.close();
+      Swal.fire({
+        width: "300px",
+        icon: "error",
+        text: "❌ Something went wrong while saving."
+      });
     }
 
-  } catch (err) {
-
-    Swal.close();
-
-    Swal.fire({
-      width: "300px",
-      icon: "error",
-      text: "❌ Something went wrong while saving."
-    });
-  }
-
-  setSaving(false);
-};
-
-
+    setSaving(false);
+  };
 
   return (
     <div style={styles.container}>
@@ -312,92 +322,173 @@ if (data.success) {
         <button className="btn btn-outline-success fw-bold" style={styles.button} onClick={() => onNavigate("dashboard")}>🕌 Back</button>
 
         <div className="d-flex gap-2">
-<button
-  className={`btn btn-sm ${
-    isEdit ? "btn-warning text-dark" : "btn-primary"
-  }`}
-  style={styles.button}
-  onClick={saveData}
-  disabled={saving}
->
-  {saving ? "Saving..." : isEdit ? "✏ Update Save" : "💾 Save"}
-</button>
+          <button
+            className={`btn btn-sm ${isEdit ? "btn-warning text-dark" : "btn-primary"}`}
+            style={styles.button}
+            onClick={saveData}
+            disabled={saving}
+          >
+            {saving ? "Saving..." : isEdit ? "✏ Update Save" : "💾 Save"}
+          </button>
 
           <input className="form-control" style={{ width: 150, borderRadius: 50 }} placeholder="Search Ref" value={searchRef} onChange={(e) => setSearchRef(e.target.value)} />
           <button className="btn btn-info fw-bold" style={styles.button} onClick={loadZiyarat}>🔄 Load / Edit</button>
-<button
-  className="btn fw-bold text-white shadow"
-  style={{
-    background: "linear-gradient(135deg,#28a745,#20c997)",
-    border: "none",
-    borderRadius: "12px",
-    padding: "8px 18px",
-    transition: "0.3s",
-  }}
-  onClick={exportPDF}
->
-  📄 Export PDF
-</button>
+          
+          <button
+            className="btn fw-bold text-white shadow"
+            style={{
+              background: "linear-gradient(135deg,#28a745,#20c997)",
+              border: "none",
+              borderRadius: "12px",
+              padding: "8px 18px",
+              transition: "0.3s",
+            }}
+            onClick={exportPDF}
+          >
+            📄 Export PDF
+          </button>
 
-<button
-  className="btn fw-bold text-white shadow"
-  style={{
-    background: "linear-gradient(135deg,#6c757d,#343a40)",
-    border: "none",
-    borderRadius: "12px",
-    padding: "8px 18px",
-    transition: "0.3s",
-  }}
-  onClick={printPDF}
->
-  🖨️ Print
-</button>
+          <button
+            className="btn fw-bold text-white shadow"
+            style={{
+              background: "linear-gradient(135deg,#6c757d,#343a40)",
+              border: "none",
+              borderRadius: "12px",
+              padding: "8px 18px",
+              transition: "0.3s",
+            }}
+            onClick={printPDF}
+          >
+            🖨️ Print
+          </button>
         </div>
       </div>
 
       {/* Ziyarat Card */}
       <div ref={quoteRef} style={styles.card}>
-
         <Header title="ZIYARAT QUOTATION" />
 
-        {/* Customer Info */}
-        {/* Customer Info */}
-<div className="d-flex gap-3 mb-3 flex-wrap">
+        {/* ⚡ CUSTOMER INFO WITH SMART SEPARATION DROPDOWN */}
+        <div className="row g-3 mb-4">
+          
+          {/* FIELD 1: Ref No Display */}
+          <div className="col-md-2">
+            <label className="fw-bold mb-1 d-block text-success">Ref No</label>
+            <input
+              className="form-control form-control-sm"
+              value={refNo}
+              readOnly
+            />
+          </div>
 
-  <div>
-    <label>Ref No</label>
-    <input
-      className="form-control form-control-sm"
-      value={refNo}
-      readOnly
-    />
-  </div>
+          {/* FIELD 2: SMART DROPDOWN FOR REGISTERED CLIENTS */}
+          <div className="col-md-4" ref={dropdownRef} style={{ position: "relative" }}>
+            <label className="fw-bold mb-1 text-primary">🔍 Select Registered Customer</label>
+            <div className="input-group input-group-sm">
+              <input
+                className="form-control"
+                placeholder="Type code or name to search..."
+                value={searchQuery}
+                onFocus={() => setShowDropdown(true)}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
+                  setShowDropdown(true);
+                }}
+              />
+              {searchQuery && (
+                <button 
+                  className="btn btn-outline-danger btn-sm" 
+                  type="button" 
+                  onClick={() => {
+                    setSearchQuery("");
+                    setCustomerCode("");
+                    setCustomerName("");
+                  }}
+                >
+                  ✕
+                </button>
+              )}
+            </div>
 
-  <div>
-    <label>Customer Name</label>
-    <input
-      className="form-control form-control-sm"
-      value={customerName}
-      onChange={(e) =>
-        setCustomerName(e.target.value)
-      }
-    />
-  </div>
+            {/* Selector Dropdown List */}
+            {showDropdown && (
+              <div 
+                className="dropdown-menu show shadow w-100 p-2" 
+                style={{ 
+                  maxHeight: "220px", 
+                  overflowY: "auto", 
+                  position: "absolute", 
+                  zIndex: 9999,
+                  background: "#fff"
+                }}
+              >
+                {filteredCustomers.length === 0 ? (
+                  <div className="dropdown-item text-muted text-center py-2">No customers found</div>
+                ) : (
+                  filteredCustomers.map((c, i) => (
+                    <button
+                      key={i}
+                      type="button"
+                      className="dropdown-item d-flex justify-content-between align-items-center py-2 border-bottom"
+                      onClick={() => {
+                        setCustomerName(c.name); 
+                        setCustomerCode(c.customer_code); 
+                        setSearchQuery(`${c.name} (${c.customer_code})`);
+                        setShowDropdown(false);
+                      }}
+                    >
+                      <span className="fw-bold text-dark">{c.name}</span>
+                      <span className="badge bg-success text-white">{c.customer_code}</span>
+                    </button>
+                  ))
+                )}
+              </div>
+            )}
+            <small className="text-muted d-block mt-1">Use ONLY for registered profiles</small>
+          </div>
 
-  <div>
-    <label>Booking Date</label>
-    <input
-      type="date"
-      className="form-control form-control-sm"
-      value={bookingDate}
-      onChange={(e) =>
-        setBookingDate(e.target.value)
-      }
-    />
-    <small className="text-muted">
-      {showDate(bookingDate)}
-    </small>
-  </div>
+          {/* FIELD 3: CUSTOMER NAME INPUT (AUTO-FILLED / MANUAL WRITING) */}
+          <div className="col-md-3">
+            <label className="fw-bold mb-1 text-dark">👤 Customer Name</label>
+            <input
+              type="text"
+              className="form-control form-control-sm"
+              placeholder="Enter customer name manually..."
+              value={customerName}
+              onChange={(e) => {
+                setCustomerName(e.target.value);
+                if (customerCode) {
+                  setCustomerCode("");
+                  setSearchQuery("");
+                }
+              }}
+            />
+            {customerCode ? (
+              <small className="text-success d-block mt-1 fw-bold">
+                ✓ Registered Linked ({customerCode})
+              </small>
+            ) : (
+              customerName && (
+                <small className="text-warning d-block mt-1 fw-bold">
+                  ⚠ Manual Walk-In (No Code)
+                </small>
+              )
+            )}
+          </div>
+
+          {/* FIELD 4: BOOKING DATE */}
+          <div className="col-md-3">
+            <label className="fw-bold mb-1 d-block text-success">Booking Date</label>
+            <input
+              type="date"
+              className="form-control form-control-sm"
+              value={bookingDate}
+              onChange={(e) => setBookingDate(e.target.value)}
+            />
+            <small className="text-muted d-block mt-1">
+              {showDate(bookingDate)}
+            </small>
+          </div>
         </div>
 
         {/* Ziyarat Table */}

@@ -19,7 +19,7 @@ export default function ManageUsers({ onNavigate }) {
     "purchase_entry", "purchase_list", "pending_purchase",
 
     // LEDGER
-    "customer_ledger", "supplier_ledger", "bank_ledger", "expense_ledger", "balance_sheet", "cash_ledger",
+    "registered_customer_ledger", "customer_ledger", "supplier_ledger", "bank_ledger", "expense_ledger", "balance_sheet", "cash_ledger",
 
     // VOUCHERS
     "hotel_voucher", "hotel_voucher3in1", "transport_voucher",
@@ -28,7 +28,7 @@ export default function ManageUsers({ onNavigate }) {
     "all_reports", "all_reports_today", "profit_report", "monthly_profit_dashboard", "sale_adjustment_report", "supplier_adjustment_only", "supplier_purchase_detail_report", "item_loss_zero_report", "sale_change_check_report",
 
     // MASTER
-    "create_user", "manage_users", "supplier", "deleted_reports", "restore", "system_storage", "password_settings",
+    "create_user", "manage_users", "supplier", "customers_list", "deleted_reports", "restore", "system_storage", "password_settings",
    // ARCHIVE
     "archive_manager", "archive_list"
 

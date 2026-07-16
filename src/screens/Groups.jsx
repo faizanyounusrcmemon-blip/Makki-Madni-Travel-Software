@@ -20,7 +20,6 @@ const styles = {
       "linear-gradient(135deg,#ecfdf5 0%,#f0fdfa 45%,#ffffff 100%)",
     fontFamily: "'Cairo', sans-serif",
   },
-
   group: {
     maxWidth: 1180,
     margin: "0 auto",
@@ -31,7 +30,6 @@ const styles = {
     boxShadow:
       "0 18px 45px rgba(0,0,0,.08)",
   },
-
   sectionHeader: {
     background:
       "linear-gradient(90deg,#065f46,#059669,#10b981)",
@@ -47,7 +45,6 @@ const styles = {
     boxShadow:
       "0 8px 20px rgba(16,185,129,.30)",
   },
-
   table: {
     width: "100%",
     borderCollapse: "separate",
@@ -59,7 +56,6 @@ const styles = {
     boxShadow:
       "0 8px 24px rgba(0,0,0,.06)",
   },
-
   th: {
     background:
       "linear-gradient(90deg,#065f46,#059669)",
@@ -69,14 +65,12 @@ const styles = {
     fontWeight: "700",
     fontSize: "14px",
   },
-
   td: {
     padding: "12px",
     borderBottom: "1px solid #ecfdf5",
     background: "#fff",
     transition: ".3s",
   },
-
   button: {
     borderRadius: "50px",
     padding: "10px 22px",
@@ -90,14 +84,12 @@ const styles = {
       "0 8px 18px rgba(16,185,129,.35)",
     transition: ".3s",
   },
-
   input: {
     borderRadius: "12px",
     border: "1px solid #bbf7d0",
     padding: "10px 12px",
     background: "#fff",
   },
-
   summaryCard: {
     background:
       "linear-gradient(135deg,#065f46,#10b981)",
@@ -112,10 +104,17 @@ const styles = {
 export default function Groups({ onNavigate }) {
   const [searchRef, setSearchRef] = useState("");
   const [refNo, setRefNo] = useState("");
+
+  // ⚡ CUSTOMER SEPARATION STATES
   const [customerName, setCustomerName] = useState("");
+  const [customerCode, setCustomerCode] = useState("");
+  const [savedCustomers, setSavedCustomers] = useState([]);
+  const [showDropdown, setShowDropdown] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+
   const [bookingDate, setBookingDate] = useState(new Date().toISOString().split("T")[0]);
   
-  // 🔹 NEW STATES FOR DATES & DURATION
+  // 🔹 STATES FOR DATES & DURATION
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [duration, setDuration] = useState(0);
@@ -124,7 +123,9 @@ export default function Groups({ onNavigate }) {
   const [pkrRate, setPkrRate] = useState(0);
   const [isEdit, setIsEdit] = useState(false);
   const [saving, setSaving] = useState(false);
+  
   const pdfRef = useRef(null);
+  const dropdownRef = useRef(null);
 
   const { exportPDF, printPDF } = usePdf(pdfRef, {
     filePrefix: "Groups",
@@ -132,6 +133,33 @@ export default function Groups({ onNavigate }) {
     bookingDate: bookingDate,
     orientation: "p",
   });
+
+  // Fetch registered customers list
+  useEffect(() => {
+    const fetchCustomers = async () => {
+      try {
+        const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/customers/list`);
+        const data = await res.json();
+        if (data.success) {
+          setSavedCustomers(data.rows || []);
+        }
+      } catch (err) {
+        console.error("Failed to fetch customer list:", err);
+      }
+    };
+    fetchCustomers();
+  }, []);
+
+  // Dropdown close on outside click hook
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setShowDropdown(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   // 🔹 AUTOMATIC DURATION CALCULATION EFFECT
   useEffect(() => {
@@ -158,43 +186,65 @@ export default function Groups({ onNavigate }) {
     setRows(copy);
   };
 
+  // Filter dropdown entries
+  const filteredCustomers = savedCustomers.filter(c => {
+    const q = searchQuery.toLowerCase();
+    return (
+      (c.name && c.name.toLowerCase().includes(q)) ||
+      (c.customer_code && c.customer_code.toLowerCase().includes(q))
+    );
+  });
+
   const loadGroups = async () => {
     if (!searchRef) {
       return Swal.fire({ width: "300px", icon: "error", text: "Ref No likho" });
     }
 
-    const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/groups/get/${searchRef}`);
-    const data = await res.json();
+    try {
+      const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/groups/get/${searchRef}`);
+      const data = await res.json();
 
-    if (!data.success) {
-      return Swal.fire({ width: "300px", icon: "error", text: "Record not found" });
+      if (!data.success) {
+        return Swal.fire({ width: "300px", icon: "error", text: "Record not found" });
+      }
+
+      const purchaseRes = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/purchase/check/${data.row.ref_no}`);
+      const purchaseData = await purchaseRes.json();
+
+      if (purchaseData.total > 0) {
+        return Swal.fire({
+          width: "300px",
+          icon: "error",
+          text: "❌ Cannot edit. Purchase exists. Delete purchases first."
+        });
+      }
+
+      const d = data.row;
+      setRefNo(d.ref_no);
+      setCustomerName(d.customer_name);
+      setCustomerCode(d.customer_code || "");
+
+      // Sync customer selection helper state
+      if (d.customer_code) {
+        setSearchQuery(`${d.customer_name} (${d.customer_code})`);
+      } else {
+        setSearchQuery("");
+      }
+
+      setBookingDate(d.booking_date);
+      
+      // 🔹 LOAD DATES FROM DB
+      setStartDate(d.start_date ? d.start_date.split("T")[0] : "");
+      setEndDate(d.end_date ? d.end_date.split("T")[0] : "");
+      
+      setRows(d.rows || []);
+      setPkrRate(d.pkr_rate || 0);
+      setIsEdit(true);
+
+      Swal.fire({ width: "300px", icon: "success", text: "Groups loaded for edit" });
+    } catch (err) {
+      Swal.fire({ width: "300px", icon: "error", text: "Load error occurred" });
     }
-
-    const purchaseRes = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/purchase/check/${data.row.ref_no}`);
-    const purchaseData = await purchaseRes.json();
-
-    if (purchaseData.total > 0) {
-      return Swal.fire({
-        width: "300px",
-        icon: "error",
-        text: "❌ Cannot edit. Purchase exists Delete purchases first."
-      });
-    }
-
-    const d = data.row;
-    setRefNo(d.ref_no);
-    setCustomerName(d.customer_name);
-    setBookingDate(d.booking_date);
-    
-    // 🔹 LOAD DATES FROM DB
-    setStartDate(d.start_date ? d.start_date.split("T")[0] : "");
-    setEndDate(d.end_date ? d.end_date.split("T")[0] : "");
-    
-    setRows(d.rows || []);
-    setPkrRate(d.pkr_rate || 0);
-    setIsEdit(true);
-
-    Swal.fire({ width: "300px", icon: "success", text: "Groups loaded for edit" });
   };
 
   const saveData = async () => {
@@ -218,9 +268,10 @@ export default function Groups({ onNavigate }) {
     setSaving(true);
     Swal.fire({ width: "260px", title: "Saving...", allowOutsideClick: false, didOpen: () => Swal.showLoading() });
 
-    // 🔹 ADDED DATES & DURATION IN PAYLOAD
+    // 🔹 PAYLOAD UPDATED WITH CUSTOMER CODE, DATES & DURATION
     const payload = {
       ref_no: refNo || null,
+      customer_code: customerCode || null, // ⚡ Payload update
       customer_name: customerName,
       booking_date: bookingDate,
       start_date: startDate || null,
@@ -245,7 +296,12 @@ export default function Groups({ onNavigate }) {
           width: "320px",
           icon: "success",
           title: "Saved Successfully",
-          html: `<div style="text-align:left"><b>Ref#:</b> ${data.ref_no}<br/><b>Customer:</b> ${customerName}</div>`
+          html: `
+            <div style="text-align:left">
+              <b>Ref#:</b> ${data.ref_no}<br/>
+              <b>Customer:</b> ${customerName} ${customerCode ? `(${customerCode})` : "(Walk-In)"}
+            </div>
+          `
         });
         onNavigate("dashboard");
       } else {
@@ -279,40 +335,133 @@ export default function Groups({ onNavigate }) {
       <div ref={pdfRef} style={styles.group}>
         <Header title="👨‍👩‍👧‍👦 GROUPS PACKAGE QUOTATION" />
 
-        {/* Customer & Package Info */}
-        <div className="d-flex gap-3 mb-3 flex-wrap align-items-end">
-          <div>
-            <label className="fw-bold">Ref No</label>
+        {/* ⚡ UPDATED CUSTOMER & PACKAGE INFO SECTION WITH AUTOCOMPLETE */}
+        <div className="row g-3 mb-4 align-items-end">
+          
+          {/* Field 1: Ref No */}
+          <div className="col-md-2">
+            <label className="fw-bold mb-1">Ref No</label>
             <input className="form-control form-control-sm" value={refNo} readOnly />
           </div>
 
-          <div>
-            <label className="fw-bold">Customer Name</label>
-            <input className="form-control form-control-sm" value={customerName} onChange={(e) => setCustomerName(e.target.value)} />
+          {/* Field 2: Smart Search Input Dropdown */}
+          <div className="col-md-4" ref={dropdownRef} style={{ position: "relative" }}>
+            <label className="fw-bold mb-1 text-success">🔍 Select Registered Customer</label>
+            <div className="input-group input-group-sm">
+              <input
+                className="form-control"
+                placeholder="Search by code or name..."
+                value={searchQuery}
+                onFocus={() => setShowDropdown(true)}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
+                  setShowDropdown(true);
+                }}
+              />
+              {searchQuery && (
+                <button 
+                  className="btn btn-outline-danger btn-sm" 
+                  type="button" 
+                  onClick={() => {
+                    setSearchQuery("");
+                    setCustomerCode("");
+                    setCustomerName("");
+                  }}
+                >
+                  ✕
+                </button>
+              )}
+            </div>
+
+            {showDropdown && (
+              <div 
+                className="dropdown-menu show shadow w-100 p-2" 
+                style={{ 
+                  maxHeight: "200px", 
+                  overflowY: "auto", 
+                  position: "absolute", 
+                  zIndex: 9999,
+                  background: "#fff"
+                }}
+              >
+                {filteredCustomers.length === 0 ? (
+                  <div className="dropdown-item text-muted text-center py-2">No customers found</div>
+                ) : (
+                  filteredCustomers.map((c, i) => (
+                    <button
+                      key={i}
+                      type="button"
+                      className="dropdown-item d-flex justify-content-between align-items-center py-2 border-bottom"
+                      onClick={() => {
+                        setCustomerName(c.name); 
+                        setCustomerCode(c.customer_code); 
+                        setSearchQuery(`${c.name} (${c.customer_code})`);
+                        setShowDropdown(false);
+                      }}
+                    >
+                      <span className="fw-bold text-dark">{c.name}</span>
+                      <span className="badge bg-success text-white">{c.customer_code}</span>
+                    </button>
+                  ))
+                )}
+              </div>
+            )}
+            <small className="text-muted d-block mt-1">Use ONLY for registered profiles</small>
           </div>
 
-          <div>
-            <label className="fw-bold">Booking Date</label>
+          {/* Field 3: Customer Name input (Editable/Auto-fill) */}
+          <div className="col-md-3">
+            <label className="fw-bold mb-1">👤 Customer Name</label>
+            <input 
+              className="form-control form-control-sm" 
+              placeholder="Or write manually here..."
+              value={customerName} 
+              onChange={(e) => {
+                setCustomerName(e.target.value);
+                if (customerCode) {
+                  setCustomerCode("");
+                  setSearchQuery("");
+                }
+              }} 
+            />
+            {customerCode ? (
+              <small className="text-success d-block mt-1 fw-bold">
+                ✓ Registered Linked ({customerCode})
+              </small>
+            ) : (
+              customerName && (
+                <small className="text-warning d-block mt-1 fw-bold">
+                  ⚠ Manual Walk-In (No Code)
+                </small>
+              )
+            )}
+          </div>
+
+          {/* Field 4: Booking Date */}
+          <div className="col-md-3">
+            <label className="fw-bold mb-1">Booking Date</label>
             <input type="date" className="form-control form-control-sm" value={bookingDate} onChange={(e) => setBookingDate(e.target.value)} />
             <small className="text-muted d-block">{showDate(bookingDate)}</small>
           </div>
+        </div>
 
-          {/* 🔹 NEW INPUT FIELDS FOR DATES & DURATION */}
-          <div>
+        {/* 🔹 SECOND ROW OF INFO (DATES & DURATION) */}
+        <div className="row g-3 mb-4">
+          <div className="col-md-4">
             <label className="fw-bold text-success">Start Date</label>
             <input type="date" className="form-control form-control-sm" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
             <small className="text-muted d-block">{showDate(startDate)}</small>
           </div>
 
-          <div>
+          <div className="col-md-4">
             <label className="fw-bold text-danger">End Date (Last Date)</label>
             <input type="date" className="form-control form-control-sm" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
             <small className="text-muted d-block">{showDate(endDate)}</small>
           </div>
 
-          <div>
+          <div className="col-md-4">
             <label className="fw-bold">Duration (Days)</label>
-            <input className="form-control form-control-sm text-center fw-bold bg-light" style={{ width: "90px" }} value={`${duration} Days`} readOnly />
+            <input className="form-control form-control-sm text-center fw-bold bg-light" value={`${duration} Days`} readOnly />
           </div>
         </div>
 

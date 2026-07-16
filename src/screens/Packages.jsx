@@ -1,6 +1,6 @@
 import Swal from "sweetalert2";
 import "./packages.css";
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import usePdf from "../hooks/usePdf";
 
 import Header from "../components/Header";
@@ -13,7 +13,14 @@ const calcNights = (inD, outD) => {
 
 export default function Packages({ onNavigate }) {
   const [refNo, setRefNo] = useState("");
+
+  // ⚡ CUSTOMER SELECTOR STATES
   const [customerName, setCustomerName] = useState("");
+  const [customerCode, setCustomerCode] = useState("");
+  const [savedCustomers, setSavedCustomers] = useState([]);
+  const [showDropdown, setShowDropdown] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+
   const [bookingDate, setBookingDate] = useState(
     new Date().toISOString().split("T")[0]
   );
@@ -22,7 +29,6 @@ export default function Packages({ onNavigate }) {
   const [isEdit, setIsEdit] = useState(false);
   const [saving, setSaving] = useState(false);
 
-
   const [adultCount, setAdultCount] = useState(0);
   const [adultRate, setAdultRate] = useState(0);
   const [childCount, setChildCount] = useState(0);
@@ -30,6 +36,7 @@ export default function Packages({ onNavigate }) {
   const [infantCount, setInfantCount] = useState(0);
   const [infantRate, setInfantRate] = useState(0);
 
+  const dropdownRef = useRef(null);
 
   const flightTotal = adultCount * adultRate + childCount * childRate + infantCount * infantRate;
 
@@ -100,6 +107,33 @@ export default function Packages({ onNavigate }) {
   const ziyaratPKR = ziyaratTotal * ziyaratRate;
   const grandPKR = flightPKR + hotelsPKR + visaPKR + transportPKR + ziyaratPKR;
 
+  // Fetch customers dynamic list
+  useEffect(() => {
+    const fetchCustomers = async () => {
+      try {
+        const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/customers/list`);
+        const data = await res.json();
+        if (data.success) {
+          setSavedCustomers(data.rows || []);
+        }
+      } catch (err) {
+        console.error("Failed to fetch customer list:", err);
+      }
+    };
+    fetchCustomers();
+  }, []);
+
+  // Click outside to close dropdown menu
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setShowDropdown(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
 // ================= PER PERSON LOGIC =================
 
 // Total flight in PKR per category
@@ -129,8 +163,6 @@ const infantPerPerson = infantCount > 0
   : 0;
 
 const totalPassengers = Number(adultCount || 0) + Number(childCount || 0) + Number(infantCount || 0);
-
-// ===================================================
 
 // ===================================================
 
@@ -177,7 +209,13 @@ if (validFlights.length >= 2) {
   packageNights = diffDays;
 }
 
-
+const filteredCustomers = savedCustomers.filter(c => {
+  const q = searchQuery.toLowerCase();
+  return (
+    (c.name && c.name.toLowerCase().includes(q)) ||
+    (c.customer_code && c.customer_code.toLowerCase().includes(q))
+  );
+});
 
 const loadPackage = async () => {
 
@@ -219,7 +257,15 @@ const loadPackage = async () => {
     // 🔹 Load data
     setRefNo(d.ref_no);
     setCustomerName(d.customer_name);
-    setContactNo(d.contact_no);
+    setCustomerCode(d.customer_code || "");
+
+    if (d.customer_code) {
+      setSearchQuery(`${d.customer_name} (${d.customer_code})`);
+    } else {
+      setSearchQuery("");
+    }
+
+    setContactNo(d.contact_no || "");
     setBookingDate(d.booking_date);
     setAdultCount(d.adult_count);
     setAdultRate(d.adult_rate);
@@ -342,6 +388,7 @@ const handleSavePackage = async () => {
 
   const payload = {
     ref_no: refNo || null,
+    customer_code: customerCode || null, // ⚡ Dynamic Customer Code mapping 
     customer_name: customerName,
     contact_no: contactNo,
     booking_date: bookingDate,
@@ -388,13 +435,6 @@ const handleSavePackage = async () => {
 
   try {
 
-    Swal.fire({
-      width: "260px",
-      title: "Saving...",
-      allowOutsideClick: false,
-      didOpen: () => Swal.showLoading()
-    });
-
     const res = await fetch(
       `${import.meta.env.VITE_BACKEND_URL}/api/bookings/save`,
       {
@@ -417,7 +457,7 @@ if (data.success) {
     html: `
       <div style="text-align:left">
         <b>Ref#:</b> ${data.ref_no}<br/>
-        <b>Customer:</b> ${customerName}
+        <b>Customer:</b> ${customerName} ${customerCode ? `(${customerCode})` : "(Walk-In)"}
       </div>
     `
   });
@@ -521,64 +561,154 @@ if (data.success) {
 
         <Header title="PACKAGE QUOTATION" />
 
-        {/* CUSTOMER INFO */}
-        <div className="d-flex gap-3 mb-3">
-          <div>
-            <label>Ref No</label>
+        {/* CUSTOMER INFO - WITH NEW AUTOCOMPLETE SEARCH DROPDOWN */}
+        <div className="row g-3 mb-3">
+          <div className="col-md-2">
+            <label className="fw-bold mb-1">Ref No</label>
             <input className="form-control form-control-sm" value={refNo} readOnly />
           </div>
-          <div>
-            <label>Customer Name</label>
-            <input className="form-control form-control-sm" value={customerName} onChange={(e) => setCustomerName(e.target.value)} />
+
+          {/* Autocomplete Dynamic Dropdown */}
+          <div className="col-md-3" ref={dropdownRef} style={{ position: "relative" }}>
+            <label className="fw-bold mb-1 text-primary">🔍 Registered Customer</label>
+            <div className="input-group input-group-sm">
+              <input
+                className="form-control"
+                placeholder="Search registered..."
+                value={searchQuery}
+                onFocus={() => setShowDropdown(true)}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
+                  setShowDropdown(true);
+                }}
+              />
+              {searchQuery && (
+                <button 
+                  className="btn btn-outline-danger btn-sm" 
+                  type="button" 
+                  onClick={() => {
+                    setSearchQuery("");
+                    setCustomerCode("");
+                    setCustomerName("");
+                  }}
+                >
+                  ✕
+                </button>
+              )}
+            </div>
+
+            {showDropdown && (
+              <div 
+                className="dropdown-menu show shadow w-100 p-2" 
+                style={{ 
+                  maxHeight: "200px", 
+                  overflowY: "auto", 
+                  position: "absolute", 
+                  zIndex: 9999,
+                  background: "#fff"
+                }}
+              >
+                {filteredCustomers.length === 0 ? (
+                  <div className="dropdown-item text-muted text-center py-2">No customers found</div>
+                ) : (
+                  filteredCustomers.map((c, i) => (
+                    <button
+                      key={i}
+                      type="button"
+                      className="dropdown-item d-flex justify-content-between align-items-center py-2 border-bottom"
+                      onClick={() => {
+                        setCustomerName(c.name); 
+                        setCustomerCode(c.customer_code); 
+                        setSearchQuery(`${c.name} (${c.customer_code})`);
+                        setShowDropdown(false);
+                      }}
+                    >
+                      <span className="fw-bold text-dark">{c.name}</span>
+                      <span className="badge bg-danger text-white">{c.customer_code}</span>
+                    </button>
+                  ))
+                )}
+              </div>
+            )}
           </div>
-          <div>
-            <label>Contact No</label>
+
+          {/* Customer Manual Fallback Textbox */}
+          <div className="col-md-3">
+            <label className="fw-bold mb-1">Customer Name</label>
+            <input 
+              className="form-control form-control-sm" 
+              placeholder="Or write manually here..."
+              value={customerName} 
+              onChange={(e) => {
+                setCustomerName(e.target.value);
+                if (customerCode) {
+                  setCustomerCode("");
+                  setSearchQuery("");
+                }
+              }} 
+            />
+            {customerCode ? (
+              <small className="text-success d-block mt-1 fw-bold">
+                ✓ Linked ({customerCode})
+              </small>
+            ) : (
+              customerName && (
+                <small className="text-warning d-block mt-1 fw-bold">
+                  Manual Walk-In
+                </small>
+              )
+            )}
+          </div>
+
+          <div className="col-md-2">
+            <label className="fw-bold mb-1">Contact No</label>
             <input type="text" className="form-control form-control-sm" value={contactNo} onChange={(e) => setContactNo(e.target.value)} />
           </div>
-          <div>
-            <label>Booking Date</label>
+
+          <div className="col-md-2">
+            <label className="fw-bold mb-1">Booking Date</label>
             <input type="date" className="form-control form-control-sm" value={bookingDate} onChange={(e) => setBookingDate(e.target.value)} />
-            <small className="text-muted">{showDate(bookingDate)}</small>
+            <small className="text-muted d-block mt-1">{showDate(bookingDate)}</small>
           </div>
-<div>
-  <label className="fw-bold text-muted mb-1 d-block">
-    📅 Package Duration
-  </label>
 
-  <div
-    style={{
-      minWidth: "230px",
-      padding: "10px 15px",
-      borderRadius: "12px",
-      background: "#f8f9fa",
-      border: "2px solid #20c997",
-      textAlign: "center",
-      boxShadow: "0 2px 10px rgba(0,0,0,.08)",
-    }}
-  >
-    <div
-      style={{
-        fontSize: "20px",
-        fontWeight: "800",
-        color: "#198754",
-      }}
-    >
-      {packageDays}
-      <span style={{ fontSize: "13px" }}> Days</span>
-    </div>
+          <div className="col-md-2">
+            <label className="fw-bold text-muted mb-1 d-block">
+              📅 Package Duration
+            </label>
 
-    <div
-      style={{
-        fontSize: "14px",
-        color: "#6c757d",
-        fontWeight: "600",
-      }}
-    >
-      🌙 {packageNights} Nights
-    </div>
-  </div>
-</div>
+            <div
+              style={{
+                minWidth: "200px",
+                padding: "8px 12px",
+                borderRadius: "12px",
+                background: "#f8f9fa",
+                border: "2px solid #20c997",
+                textAlign: "center",
+                boxShadow: "0 2px 10px rgba(0,0,0,.08)",
+              }}
+            >
+              <div
+                style={{
+                  fontSize: "18px",
+                  fontWeight: "800",
+                  color: "#198754",
+                }}
+              >
+                {packageDays}
+                <span style={{ fontSize: "12px" }}> Days</span>
+              </div>
 
+              <div
+                style={{
+                  fontSize: "13px",
+                  color: "#6c757d",
+                  fontWeight: "600",
+                }}
+              >
+                🌙 {packageNights} Nights
+              </div>
+            </div>
+          </div>
         </div>
 
 
