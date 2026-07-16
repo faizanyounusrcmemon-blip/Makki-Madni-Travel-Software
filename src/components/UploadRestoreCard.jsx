@@ -20,6 +20,7 @@ export default function UploadRestoreCard() {
     "visa",
     "card",
     "transport",
+    "customers",
     "purchase_entries",
     "users",
     "bank_transactions",

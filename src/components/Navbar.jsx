@@ -126,6 +126,7 @@ export default function Navbar({ onNavigate }) {
           {open === "ledger" && (
             <div className="menu-box">
               {can("customer_ledger") && <a onClick={() => go("customerLedger")}>📒 Customer Ledger</a>}
+              {can("registered_customer_ledger") && <a onClick={() => go("registeredCustomerLedger")}>📒 Registered Customer Ledger</a>}
               {can("supplier_ledger") && <a onClick={() => go("supplierLedger")}>📦 Supplier Ledger</a>}
               {can("bank_ledger") && <a onClick={() => go("bankLedger")}>🏦 Bank Ledger</a>}
               {can("cash_ledger") && <a onClick={() => go("cashLedger")}>💵 Cash Ledger</a>}
@@ -185,6 +186,7 @@ export default function Navbar({ onNavigate }) {
               {can("create_user") && <a onClick={() => go("createUser")}>👤 Create User</a>}
               {can("manage_users") && <a onClick={() => go("manageUsers")}>🛠 Manage Users</a>}
               {can("supplier") && <a onClick={() => go("supplier")}>🏷 Supplier Profile</a>}
+              {can("customers_list") && <a onClick={() => go("customersList")}>🏷 Customer Profile</a>}
               {can("deleted_reports") && <a onClick={() => go("deletedReports")}>🗑 Deleted Reports</a>}
               {can("system_storage") && <a onClick={() => go("systemStorage")}>💾 System Storage</a>}
               {can("password_settings") && <a onClick={() => go("passwordSettings")}>🛠 Password Settings</a>}
