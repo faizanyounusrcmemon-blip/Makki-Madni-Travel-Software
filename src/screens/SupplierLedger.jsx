@@ -59,7 +59,7 @@ export default function SupplierLedger({ onNavigate }) {
   const [amountDisp, setAmountDisp] = useState("");
   const [payDate, setPayDate] = useState(today);
   const [method, setMethod] = useState("Bank");
-  const [type, setType] = useState("Payment");
+  const [type, setType] = useState("payment"); // ✨ FIX: Capitalised 'Payment' ko lowercase kiya option match ke liye
   const [saving, setSaving] = useState(false);
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
@@ -130,22 +130,20 @@ export default function SupplierLedger({ onNavigate }) {
       setOpeningBalance(Number(d.openingBalance || 0));
 
       const mapped = (d.ledger || []).map(row => {
-        const t = (row.type || "").toLowerCase();
-        const isPay = t === "payment" || t === "adjustment";
         const debit = Math.round(normalizeZero(row.debit));
         const credit = Math.round(normalizeZero(row.credit));
         const balance = Math.round(normalizeZero(row.balance));
 
         return {
           ...row,
-          entry_type: isPay ? "payment" : "purchase",
-          id: isPay ? (row.id || row.payment_id) : null,
-          type: isPay ? t.charAt(0).toUpperCase() + t.slice(1) : "Purchase",
-          detail: row.item || "Purchase Entry",
+          entry_type: row.entry_type,
+          id: row.id,
+          type: row.type,
+          detail: row.description || row.item || "Purchase Entry",
           debit,
           credit,
           balance,
-          ref_no: row.ref_no || row.purchase_ref || row.invoice_no || "-"
+          ref_no: row.ref_no || "-"
         };
       });
 
@@ -389,7 +387,6 @@ export default function SupplierLedger({ onNavigate }) {
         for (let page = 0; page < totalPages; page++) {
           if (page > 0) pdf.addPage();
 
-          // Header
           pdf.setFillColor(18, 97, 160);
           pdf.rect(0, 0, pageWidth, 20, "F");
           pdf.setTextColor(255, 255, 255);
@@ -406,11 +403,9 @@ export default function SupplierLedger({ onNavigate }) {
           pdf.setFontSize(9);
           pdf.text(`Date Range: ${rangeText}`, pageWidth / 2, 31, { align: "center" });
 
-          // Image
           const yOffset = -(usableHeight * page);
           pdf.addImage(imgData, "PNG", margin, headerHeight + yOffset, imgWidth, imgHeight);
 
-          // Footer
           pdf.setFontSize(9);
           pdf.setTextColor(120);
           pdf.text(`Page ${page + 1} / ${totalPages}`, pageWidth - margin, pageHeight - 5, { align: "right" });
@@ -427,7 +422,7 @@ export default function SupplierLedger({ onNavigate }) {
   };
 
   /* ==========================================
-     ✨ NEW: EXPORT EXCEL (WITH LOADER)
+     EXPORT EXCEL (WITH LOADER)
   ========================================== */
   const exportExcel = () => {
     if (ledger.length === 0) return;
@@ -445,7 +440,6 @@ export default function SupplierLedger({ onNavigate }) {
         const supplierRow = ledger.find(r => r.supplier_name);
         const supplierName = supplierRow?.supplier_name || "Supplier";
 
-        // Header Rows Info
         const headerInfo = [
           ["MAKKI MADNI TRAVEL & TOURS"],
           ["SUPPLIER LEDGER STATEMENT"],
@@ -474,14 +468,7 @@ export default function SupplierLedger({ onNavigate }) {
         XLSX.utils.book_append_sheet(workbook, worksheet, "Supplier Ledger");
 
         worksheet["!cols"] = [
-          { wch: 15 }, // Date
-          { wch: 12 }, // Type
-          { wch: 15 }, // Ref No
-          { wch: 30 }, // Item Detail
-          { wch: 15 }, // Method
-          { wch: 15 }, // Debit
-          { wch: 15 }, // Credit
-          { wch: 18 }  // Balance
+          { wch: 15 }, { wch: 12 }, { wch: 15 }, { wch: 30 }, { wch: 15 }, { wch: 15 }, { wch: 15 }, { wch: 18 }
         ];
 
         const safeName = supplierName.replace(/[^a-zA-Z0-9]/g, "_");
@@ -496,9 +483,6 @@ export default function SupplierLedger({ onNavigate }) {
     }, 150);
   };
 
-  /* =========================
-     UI RENDER
-  ========================= */
   return (
     <div className="container-fluid p-3">
       {/* HEADER CARD */}
@@ -509,10 +493,8 @@ export default function SupplierLedger({ onNavigate }) {
         </div>
       </div>
 
-      {/* 2-COLUMN SIDE-BY-SIDE LAYOUT */}
       <div className="row g-3">
-        
-        {/* LEFT COLUMN: PENDING LIST (width 3) */}
+        {/* LEFT COLUMN */}
         <div className="col-lg-3 col-md-4 col-12">
           <div className="card shadow-sm" style={{ maxHeight: "calc(100vh - 120px)", overflowY: "auto" }}>
             <div className="card-header fw-bold text-danger bg-light sticky-top">⏳ Pending / Partial List</div>
@@ -546,10 +528,8 @@ export default function SupplierLedger({ onNavigate }) {
           </div>
         </div>
 
-        {/* RIGHT COLUMN: SEARCH, FORM & LEDGER TABLE (width 9) */}
+        {/* RIGHT COLUMN */}
         <div className="col-lg-9 col-md-8 col-12">
-          
-          {/* SEARCH & FILTER BAR */}
           <div className="card mb-3 shadow-sm">
             <div className="card-body p-2 d-flex flex-wrap gap-2">
               <div className="d-flex align-items-center gap-1 flex-grow-1">
@@ -571,7 +551,7 @@ export default function SupplierLedger({ onNavigate }) {
             </div>
           </div>
 
-          {/* PAYMENT / ADJUSTMENT ENTRY FORM */}
+          {/* ENTRY FORM */}
           <div className="card shadow-sm mb-3 bg-light">
             <div className="card-body py-2 px-3 row g-2 align-items-end">
               <div className="col-md-2">
@@ -593,11 +573,12 @@ export default function SupplierLedger({ onNavigate }) {
                   </span>
                 )}
               </div>
-              <div className="col-md-2">
-                <label className="form-label small fw-bold mb-1">Type</label>
-                <select className="form-control form-control-sm" value={type} onChange={e => setType(e.target.value)}>
-                  <option>Payment</option>
-                  <option>Adjustment</option>
+              <div className="col-md-3">
+                <label className="form-label small text-muted mb-1">Transaction Type</label>
+                <select className="form-select form-select-sm" value={type} onChange={(e) => setType(e.target.value)}>
+                  <option value="payment">Payment</option>
+                  <option value="adjustment">Adjustment</option>
+                  <option value="opening_balance">🔑 opening_balance (Debit)</option>
                 </select>
               </div>
               <div className="col-md-2">
@@ -607,15 +588,15 @@ export default function SupplierLedger({ onNavigate }) {
                   <option>Cash</option>
                 </select>
               </div>
-              <div className="col-md-3">
+              <div className="col-md-2">
                 <button className="btn btn-success btn-sm w-100" disabled={saving} onClick={saveEntry}>
-                  {saving ? "Saving..." : "💾 Save Entry"}
+                  {saving ? "Saving..." : "💾 Save"}
                 </button>
               </div>
             </div>
           </div>
 
-          {/* LEDGER TABLE */}
+          {/* LEDGER TABLE CARD */}
           <div ref={pdfRef} className="card shadow-sm">
             <div className="table-responsive">
               <table className="table table-bordered table-sm mb-0 text-end" style={{ fontSize: "0.85rem" }}>
@@ -635,59 +616,77 @@ export default function SupplierLedger({ onNavigate }) {
                 </thead>
                 <tbody>
                   {ledger.length === 0 && (
-                    <tr><td colSpan="10" className="text-center text-muted py-3">No ledger entries. Please load a supplier first.</td></tr>
-                  )}
-                  {ledgerView.map((r, i) => (
-                    <tr key={i}>
-                      <td className="text-center fw-bold small">{formatDate(r.date)}</td>
-                      <td className="text-center">
-                        <span className={`badge ${
-                          r.type?.toLowerCase() === "purchase" ? "bg-danger"
-                          : r.type?.toLowerCase() === "payment" ? "bg-success"
-                          : "bg-primary"
-                        }`} style={{ fontSize: "0.75rem" }}>
-                          {r.type}
-                        </span>
-                      </td>
-                      <td className="text-center fw-bold text-secondary small">{r.ref_no || "-"}</td>
-                      <td className="text-start fw-bold text-primary small">{r.entry_type === "purchase" ? r.supplier_name : "-"}</td>
-                      <td className="text-start fw-bold text-success small">{r.entry_type === "purchase" ? r.detail : "-"}</td>
-                      <td className="text-center small">
-                        {r.payment_method ? (
-                          <span className={`badge ${
-                            r.payment_method.toLowerCase() === "cash" ? "bg-success" : "bg-primary"
-                          }`}>{r.payment_method}</span>
-                        ) : "-"}
-                      </td>
-                      <td className={normalizeZero(r.debit) > 0 ? "text-danger fw-bold" : ""}>{fmtAmt(r.debit)}</td>
-                      <td className={normalizeZero(r.credit) > 0 ? "text-success fw-bold" : ""}>{fmtAmt(r.credit)}</td>
-                      <td className="fw-bold">{fmtAmt(r.balance)}</td>
-                      <td className="text-center">
-                        {r.entry_type === "payment" && r.id ? (
-                          <button className="btn btn-xs btn-outline-danger py-0 px-1" onClick={() => deleteEntry(r)}>Delete</button>
-                        ) : "-"}
+                    <tr>
+                      <td colSpan="10" className="text-center text-muted py-3">
+                        No ledger entries. Please load a supplier first.
                       </td>
                     </tr>
-                  ))}
+                  )}
+                  {ledgerView.map((r, i) => {
+                    const currentType = (r.type || "").toLowerCase();
+                    let badgeClass = "bg-primary"; 
+                    if (currentType === "purchase") badgeClass = "bg-danger";
+                    if (currentType === "payment") badgeClass = "bg-success";
+                    if (currentType === "opening bal" || currentType === "opening_balance") badgeClass = "bg-warning text-dark";
+                    if (currentType === "adjustment") badgeClass = "bg-info text-dark";
+
+                    let itemDetail = "-";
+                    if (currentType === "purchase") {
+                      itemDetail = r.detail || "Purchase Entry";
+                    } else if (currentType === "opening bal" || currentType === "opening_balance") {
+                      itemDetail = "🔑 Opening Balance Entry";
+                    } else if (r.type === "Snapshot Opening") {
+                      itemDetail = "📦 Archived Snapshot Balance";
+                    } else {
+                      itemDetail = r.description || `${r.type} (${r.payment_method || ""})`;
+                    }
+
+                    return (
+                      <tr key={i}>
+                        <td className="text-center fw-bold small">{formatDate(r.date)}</td>
+                        <td className="text-center">
+                          <span className={`badge ${badgeClass}`} style={{ fontSize: "0.75rem" }}>
+                            {r.type}
+                          </span>
+                        </td>
+                        <td className="text-center fw-bold text-secondary small">{r.ref_no || "-"}</td>
+                        <td className="text-start fw-bold text-primary small">{currentType === "purchase" ? r.supplier_name : "-"}</td>
+                        <td className="text-start fw-bold text-success small">{itemDetail}</td>
+                        <td className="text-center small">
+                          {r.payment_method && r.payment_method !== "-" ? (
+                            <span className={`badge ${r.payment_method.toLowerCase() === "cash" ? "bg-success" : "bg-primary"}`}>{r.payment_method}</span>
+                          ) : "-"}
+                        </td>
+                        <td className={normalizeZero(r.debit) > 0 ? "text-danger fw-bold" : ""}>{fmtAmt(r.debit)}</td>
+                        <td className={normalizeZero(r.credit) > 0 ? "text-success fw-bold" : ""}>{fmtAmt(r.credit)}</td>
+                        <td className="fw-bold">{fmtAmt(r.balance)}</td>
+                        <td className="text-center">
+                          {r.entry_type === "payment" && r.id && r.id !== 0 ? (
+                            <button className="btn btn-xs btn-outline-danger py-0 px-1" onClick={() => deleteEntry(r)}>Delete</button>
+                          ) : "-"}
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
-              
-              {/* LEDGER FOOTER METADATA */}
-              <div className="card p-2 m-2 bg-light border-0">
-                <div className="row text-center text-md-start">
-                  <div className="col-md-4">
-                    <span className="text-muted small">Snapshot Date:</span> <strong className="small">{snapshotDate ? formatDate(snapshotDate) : "No Snapshot"}</strong>
-                  </div>
-                  <div className="col-md-4">
-                    <span className="text-muted small">Opening Balance:</span> <strong className="text-dark small">{fmtAmt(openingBalance)}</strong>
-                  </div>
-                  <div className="col-md-4 text-md-end">
-                    <span className="text-muted small">Current Balance:</span> <strong className="text-primary">{ledger.length ? fmtAmt(ledger[ledger.length - 1].balance) : 0}</strong>
-                  </div>
+            </div>
+
+            {/* LEDGER FOOTER METADATA OUTSIDE TABLE HTML */}
+            <div className="card p-2 m-2 bg-light border-0">
+              <div className="row text-center text-md-start">
+                <div className="col-md-4">
+                  <span className="text-muted small">Snapshot Date:</span> <strong className="small">{snapshotDate ? formatDate(snapshotDate) : "No Snapshot"}</strong>
+                </div>
+                <div className="col-md-4">
+                  <span className="text-muted small">Opening Balance:</span> <strong className="text-dark small">{fmtAmt(openingBalance)}</strong>
+                </div>
+                <div className="col-md-4 text-md-end">
+                  <span className="text-muted small">Current Balance:</span> <strong className="text-primary">{ledger.length ? fmtAmt(ledger[ledger.length - 1].balance) : 0}</strong>
                 </div>
               </div>
-
             </div>
+
           </div>
 
         </div>
