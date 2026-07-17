@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import jsPDF from "jspdf";
 import Swal from "sweetalert2";
+import * as XLSX from "xlsx"; // <--- EXCEL EXPORT PACKAGE IMPORTED
 
 /* =========================
    HELPERS & UTILS
@@ -134,18 +135,14 @@ export default function RegisteredCustomerLedger({ onNavigate }) {
     let detectedType = "INVOICE";
     let endpoint = "";
 
-    // Step 1: Extract real reference key (e.g., "SALE-TIC-00032" -> "TIC-00032")
-    // taake backend correct dynamic key match kar sake.
     let cleanRef = idStr;
     if (idStr.startsWith("SALE-")) {
       cleanRef = idStr.replace("SALE-", "");
     }
 
-    // Exact Ledger row matching fallback ke liye balance fetch karne ke liye
     const matchedLedgerRow = rows.find(r => String(r.id) === idStr);
     const ledgerDebitVal = matchedLedgerRow ? Number(matchedLedgerRow.debit || 0) : 0;
 
-    // Step 2: Set matching base routers
     if (cleanRef.startsWith("TIC-")) {
       detectedType = "TICKETING";
       endpoint = `${import.meta.env.VITE_BACKEND_URL}/api/ticketing/get/${cleanRef}`;
@@ -194,7 +191,6 @@ export default function RegisteredCustomerLedger({ onNavigate }) {
     try {
       const res = await fetch(endpoint);
       
-      // Secondary Plural endpoints handling for robustness
       if (!res.ok) {
         let retryUrl = "";
         if (detectedType === "CARD") {
@@ -245,7 +241,6 @@ export default function RegisteredCustomerLedger({ onNavigate }) {
         row.rows = safeParse(row.rows);
       }
 
-      // ⚡ Total extraction is strict to make sure it NEVER falls back to 0 if debit exists
       row.total_pkr = Number(row.total_pkr || row.grand_total || row.total_amount || row.total_amount_pkr || ledgerDebitVal || 0);
       row.grand_total = row.total_pkr;
       row.total_amount = row.total_pkr;
@@ -401,95 +396,184 @@ export default function RegisteredCustomerLedger({ onNavigate }) {
     }
   };
 
-  /* ==========================================
-     A4 MULTI-PAGE PDF GENERATOR
+/* ==========================================
+     A4 MULTI-PAGE PDF GENERATOR (WITH LOADER)
   ========================================== */
   const exportPDF = () => {
     if (rows.length === 0) return;
 
-    const pdf = new jsPDF("p", "mm", "a4");
-    const pageWidth = pdf.internal.pageSize.getWidth();
-    const pageHeight = pdf.internal.pageSize.getHeight();
-
-    let y = 15;
-
-    const drawHeader = (pageNum) => {
-      pdf.setFillColor(18, 97, 160);
-      pdf.rect(0, 0, pageWidth, 26, "F");
-
-      pdf.setTextColor(255, 255, 255);
-      pdf.setFont("helvetica", "bold");
-      pdf.setFontSize(16);
-      pdf.text("MAKKI MADNI TRAVEL & TOURS", pageWidth / 2, 12, { align: "center" });
-
-      pdf.setFont("helvetica", "normal");
-      pdf.setFontSize(9);
-      pdf.text(`REGISTERED CUSTOMER LEDGER STATEMENT — Page ${pageNum}`, pageWidth / 2, 19, { align: "center" });
-
-      pdf.setFillColor(242, 245, 248);
-      pdf.rect(10, 29, pageWidth - 20, 22, "F");
-
-      pdf.setTextColor(33, 37, 41);
-      pdf.setFont("helvetica", "bold");
-      pdf.setFontSize(10);
-      pdf.text(`CUSTOMER NAME: ${customerName.toUpperCase()}`, 13, 36);
-      pdf.text(`CUSTOMER CODE: ${customerCode}`, 13, 44);
-
-      pdf.setFont("helvetica", "normal");
-      pdf.setFontSize(9.5);
-      const periodStr = startDate || endDate ? `${startDate || "Start"} to ${endDate || "Present"}` : "All Records";
-      pdf.text(`Statement Period: ${periodStr}`, pageWidth - 95, 36);
-      pdf.text(`Printed On: ${getRowDate({ date: today })}`, pageWidth - 95, 44);
-
-      pdf.setFillColor(33, 37, 41);
-      pdf.rect(10, 55, pageWidth - 20, 8, "F");
-      pdf.setTextColor(255, 255, 255);
-      pdf.setFont("helvetica", "bold");
-      pdf.setFontSize(9);
-      pdf.text("Date", 13, 60.5);
-      pdf.text("Description", 35, 60.5);
-      pdf.text("Debit (Dr)", pageWidth - 80, 60.5, { align: "right" });
-      pdf.text("Credit (Cr)", pageWidth - 50, 60.5, { align: "right" });
-      pdf.text("Balance", pageWidth - 14, 60.5, { align: "right" });
-    };
-
-    let currentPage = 1;
-    drawHeader(currentPage);
-    y = 68;
-
-    rows.forEach((row) => {
-      if (y > pageHeight - 18) {
-        pdf.addPage();
-        currentPage++;
-        drawHeader(currentPage);
-        y = 68;
-      }
-
-      pdf.setTextColor(50, 50, 50);
-      pdf.setFont("helvetica", "normal");
-      pdf.setFontSize(8.5);
-
-      pdf.text(getRowDate(row), 13, y);
-      pdf.text(row.description, 35, y, { maxWidth: 80 });
-
-      const debVal = row.debit > 0 ? fmtAmt(row.debit) : "-";
-      const credVal = row.credit > 0 ? fmtAmt(row.credit) : "-";
-
-      pdf.text(debVal, pageWidth - 80, y, { align: "right" });
-      pdf.text(credVal, pageWidth - 50, y, { align: "right" });
-
-      pdf.setFont("helvetica", "bold");
-      pdf.text(fmtAmt(row.balance), pageWidth - 14, y, { align: "right" });
-
-      pdf.setDrawColor(230, 230, 230);
-      pdf.setLineWidth(0.1);
-      pdf.line(10, y + 2.5, pageWidth - 10, y + 2.5);
-
-      y += 8;
+    // 1. Show Loading Alert
+    Swal.fire({
+      width: "250px",
+      title: "Generating PDF...",
+      text: "Please wait a moment",
+      allowOutsideClick: false,
+      didOpen: () => Swal.showLoading()
     });
 
-    const safeName = customerName.replace(/[^a-zA-Z0-9]/g, "_");
-    pdf.save(`Ledger-${customerCode}-${safeName}.pdf`);
+    // Timeout ka use kiya hai taake UI ko loader render karne ka time mile
+    setTimeout(() => {
+      try {
+        const pdf = new jsPDF("p", "mm", "a4");
+        const pageWidth = pdf.internal.pageSize.getWidth();
+        const pageHeight = pdf.internal.pageSize.getHeight();
+
+        let y = 15;
+
+        const drawHeader = (pageNum) => {
+          pdf.setFillColor(18, 97, 160);
+          pdf.rect(0, 0, pageWidth, 26, "F");
+
+          pdf.setTextColor(255, 255, 255);
+          pdf.setFont("helvetica", "bold");
+          pdf.setFontSize(16);
+          pdf.text("MAKKI MADNI TRAVEL & TOURS", pageWidth / 2, 12, { align: "center" });
+
+          pdf.setFont("helvetica", "normal");
+          pdf.setFontSize(9);
+          pdf.text(`REGISTERED CUSTOMER LEDGER STATEMENT — Page ${pageNum}`, pageWidth / 2, 19, { align: "center" });
+
+          pdf.setFillColor(242, 245, 248);
+          pdf.rect(10, 29, pageWidth - 20, 22, "F");
+
+          pdf.setTextColor(33, 37, 41);
+          pdf.setFont("helvetica", "bold");
+          pdf.setFontSize(10);
+          pdf.text(`CUSTOMER NAME: ${customerName.toUpperCase()}`, 13, 36);
+          pdf.text(`CUSTOMER CODE: ${customerCode}`, 13, 44);
+
+          pdf.setFont("helvetica", "normal");
+          pdf.setFontSize(9.5);
+          const periodStr = startDate || endDate ? `${startDate || "Start"} to ${endDate || "Present"}` : "All Records";
+          pdf.text(`Statement Period: ${periodStr}`, pageWidth - 95, 36);
+          pdf.text(`Printed On: ${getRowDate({ date: today })}`, pageWidth - 95, 44);
+
+          pdf.setFillColor(33, 37, 41);
+          pdf.rect(10, 55, pageWidth - 20, 8, "F");
+          pdf.setTextColor(255, 255, 255);
+          pdf.setFont("helvetica", "bold");
+          pdf.setFontSize(9);
+          pdf.text("Date", 13, 60.5);
+          pdf.text("Description", 35, 60.5);
+          pdf.text("Debit (Dr)", pageWidth - 80, 60.5, { align: "right" });
+          pdf.text("Credit (Cr)", pageWidth - 50, 60.5, { align: "right" });
+          pdf.text("Balance", pageWidth - 14, 60.5, { align: "right" });
+        };
+
+        let currentPage = 1;
+        drawHeader(currentPage);
+        y = 68;
+
+        rows.forEach((row) => {
+          if (y > pageHeight - 18) {
+            pdf.addPage();
+            currentPage++;
+            drawHeader(currentPage);
+            y = 68;
+          }
+
+          pdf.setTextColor(50, 50, 50);
+          pdf.setFont("helvetica", "normal");
+          pdf.setFontSize(8.5);
+
+          pdf.text(getRowDate(row), 13, y);
+          pdf.text(row.description, 35, y, { maxWidth: 80 });
+
+          const debVal = row.debit > 0 ? fmtAmt(row.debit) : "-";
+          const credVal = row.credit > 0 ? fmtAmt(row.credit) : "-";
+
+          pdf.text(debVal, pageWidth - 80, y, { align: "right" });
+          pdf.text(credVal, pageWidth - 50, y, { align: "right" });
+
+          pdf.setFont("helvetica", "bold");
+          pdf.text(fmtAmt(row.balance), pageWidth - 14, y, { align: "right" });
+
+          pdf.setDrawColor(230, 230, 230);
+          pdf.setLineWidth(0.1);
+          pdf.line(10, y + 2.5, pageWidth - 10, y + 2.5);
+
+          y += 8;
+        });
+
+        const safeName = customerName.replace(/[^a-zA-Z0-9]/g, "_");
+        pdf.save(`Ledger-${customerCode}-${safeName}.pdf`);
+
+        // 2. Close Loading Alert
+        Swal.close();
+      } catch (error) {
+        console.error(error);
+        Swal.fire({ width: "300px", icon: "error", text: "Failed to generate PDF" });
+      }
+    }, 100);
+  };
+
+/* ==========================================
+     ✨ PROFESSIONAL EXCEL EXPORT (WITH LOADER)
+  ========================================== */
+  const exportExcel = () => {
+    if (rows.length === 0) return;
+
+    // 1. Show Loading Alert
+    Swal.fire({
+      width: "250px",
+      title: "Generating Excel...",
+      text: "Please wait a moment",
+      allowOutsideClick: false,
+      didOpen: () => Swal.showLoading()
+    });
+
+    // Timeout ka use kiya hai taake UI ko loader render karne ka time mile
+    setTimeout(() => {
+      try {
+        // Prepare Metadata / Title Rows
+        const headerInfo = [
+          ["MAKKI MADNI TRAVEL & TOURS"],
+          ["REGISTERED CUSTOMER FINANCIAL LEDGER"],
+          [""],
+          ["Customer Name:", customerName.toUpperCase(), "", "Printed Date:", getRowDate({ date: today })],
+          ["Customer Code:", customerCode, "", "Statement Period:", startDate || endDate ? `${startDate || "Start"} to ${endDate || "Present"}` : "All Records"],
+          [""]
+        ];
+
+        // Map Ledger Rows into Tabular Array
+        const tableHeaders = ["Date", "Description", "Debit (Dr)", "Credit (Cr)", "Balance"];
+        
+        const tableData = rows.map((r) => [
+          getRowDate(r),
+          r.description,
+          r.debit > 0 ? r.debit : 0,
+          r.credit > 0 ? r.credit : 0,
+          r.balance
+        ]);
+
+        // Construct Complete Sheet Array
+        const sheetData = [...headerInfo, tableHeaders, ...tableData];
+
+        // Create Workbook and Worksheet
+        const worksheet = XLSX.utils.aoa_to_sheet(sheetData);
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, "Ledger Statement");
+
+        // Define Column Widths
+        worksheet["!cols"] = [
+          { wch: 15 }, // Date
+          { wch: 45 }, // Description
+          { wch: 15 }, // Debit
+          { wch: 15 }, // Credit
+          { wch: 18 }  // Balance
+        ];
+
+        // Generate and Download Excel File
+        const safeName = customerName.replace(/[^a-zA-Z0-9]/g, "_");
+        XLSX.writeFile(workbook, `Ledger-${customerCode}-${safeName}.xlsx`);
+
+        // 2. Close Loading Alert
+        Swal.close();
+      } catch (error) {
+        console.error(error);
+        Swal.fire({ width: "300px", icon: "error", text: "Failed to generate Excel sheet" });
+      }
+    }, 100);
   };
 
   /* =======================================================
@@ -591,7 +675,10 @@ export default function RegisteredCustomerLedger({ onNavigate }) {
                     >
                       <div className="d-flex justify-content-between align-items-start mb-1">
                         <span className="badge bg-dark font-monospace" style={{ fontSize: "0.75rem" }}>{p.customer_code}</span>
-                        <span className={`badge py-0 px-1 ${p.payment_status === "PENDING" ? "bg-danger" : "bg-warning text-dark"}`} style={{ fontSize: "0.7rem" }}>
+                        <span className={`badge py-0 px-1 ${
+                          p.payment_status === "PENDING" ? "bg-danger" : 
+                          p.payment_status === "EXTRA PAID" ? "bg-success" : "bg-warning text-dark"
+                        }`} style={{ fontSize: "0.7rem" }}>
                           {p.payment_status}
                         </span>
                       </div>
@@ -637,13 +724,18 @@ export default function RegisteredCustomerLedger({ onNavigate }) {
                   <input type="date" className="form-control" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
                 </div>
                 <div className="col-md-3">
-                  <div className="d-flex gap-2">
-                    <button className="btn btn-primary w-100 fw-bold" onClick={() => loadLedger()}>
+                  <div className="d-flex flex-column gap-1">
+                    <button className="btn btn-primary w-100 fw-bold btn-sm" onClick={() => loadLedger()}>
                       🔍 Load Ledger
                     </button>
-                    <button className="btn btn-success w-100 fw-bold" onClick={exportPDF} disabled={rows.length === 0}>
-                      📄 Export PDF
-                    </button>
+                    <div className="d-flex gap-1">
+                      <button className="btn btn-success w-100 fw-bold btn-sm" onClick={exportExcel} disabled={rows.length === 0}>
+                        🟢 Excel
+                      </button>
+                      <button className="btn btn-danger w-100 fw-bold btn-sm" onClick={exportPDF} disabled={rows.length === 0}>
+                        🔴 PDF
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -684,6 +776,7 @@ export default function RegisteredCustomerLedger({ onNavigate }) {
                   <select className="form-select" value={type} onChange={(e) => setType(e.target.value)}>
                     <option value="payment">payment</option>
                     <option value="adjustment">adjustment</option>
+                    <option value="opening_balance">🔑 opening_balance (Debit)</option>
                   </select>
                 </div>
                 <div className="col-md-3">
