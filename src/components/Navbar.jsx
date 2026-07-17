@@ -75,7 +75,7 @@ export default function Navbar({ onNavigate }) {
   return (
     <nav className="vip-navbar">
       <div className="nav-logo" onClick={() => go("dashboard")}>
-        ✈ Makki Madni Travel & TOURS
+        ✈ Makki Madni Travel & Tours
       </div>
 
       <div className="nav-links">
