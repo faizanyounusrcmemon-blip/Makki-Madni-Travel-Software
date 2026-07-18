@@ -56,10 +56,13 @@ import ItemLossZeroReport from "./screens/ItemLossZeroReport";
 import MonthlyProfitDashboard from "./screens/MonthlyProfitDashboard";
 
 // VOUCHERS
+import CustomizHotelVoucher from "./screens/CustomizHotelVoucher";
 import HotelVoucher from "./screens/HotelVoucher";
 import HotelVoucher3in1 from "./screens/HotelVoucher3in1";
 import TransportVoucher from "./screens/TransportVoucher";
+import CustomizTransportVoucher from "./screens/CustomizTransportVoucher";
 import ManageUsers from "./screens/ManageUsers";
+
 
 // VIEWS
 import PackagesView from "./screens/PackagesView";
@@ -191,6 +194,9 @@ export default function App() {
       {page === "restore" && <Restore onNavigate={navigate} />}
 
       {/* ================= VOUCHERS (FIXED) ================= */}
+      {page === "customizHotelVoucher" && (
+        <CustomizHotelVoucher onNavigate={navigate} />
+      )}
       {page === "hotelVoucher" && (
         <HotelVoucher onNavigate={navigate} />
       )}
@@ -199,6 +205,9 @@ export default function App() {
       )}
       {page === "transportVoucher" && (
         <TransportVoucher onNavigate={navigate} />
+      )}
+      {page === "customizTransportVoucher" && (
+        <CustomizTransportVoucher onNavigate={navigate} />
       )}
 
       {/* ================= DETAIL VIEWS ================= */}
