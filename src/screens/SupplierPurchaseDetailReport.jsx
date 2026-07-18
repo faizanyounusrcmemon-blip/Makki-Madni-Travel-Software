@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
+import * as XLSX from "xlsx"; // Make sure to run: npm install xlsx
 
 /* ================= HELPERS ================= */
 const fmt = (n) => Number(n || 0).toLocaleString("en-US");
@@ -78,16 +79,76 @@ export default function SupplierPurchasedetailreport({ onNavigate }) {
     return true;
   });
 
-  /* ================= TOTALS ================= */
+  /* ================= TOTALS (ADDED SAR TOTALS) ================= */
   const totals = filtered.reduce(
     (a, b) => {
-      if (showSale) a.sale += Number(b.sale_pkr || 0);
-      a.purchase += Number(b.purchase_pkr || 0);
+      if (showSale) {
+        a.sale_pkr += Number(b.sale_pkr || 0);
+        a.sale_sar += Number(b.sale_sar || 0);
+      }
+      a.purchase_pkr += Number(b.purchase_pkr || 0);
+      a.purchase_sar += Number(b.purchase_sar || 0);
       if (showProfit) a.profit += Number(b.profit || 0);
       return a;
     },
-    { sale: 0, purchase: 0, profit: 0 }
+    { sale_pkr: 0, sale_sar: 0, purchase_pkr: 0, purchase_sar: 0, profit: 0 }
   );
+
+  /* ================= EXCEL EXPORT FUNCTION ================= */
+  const exportExcel = () => {
+    const dataRows = filtered.map((r) => {
+      const rowObj = {
+        "Date": formatDate(r.booking_date),
+        "Supplier": r.supplier_name,
+        "Ref No": r.ref_no,
+        "Item": r.item,
+      };
+
+      if (showSale) {
+        rowObj["Sale SAR"] = Number(r.sale_sar || 0);
+        rowObj["Sale Rate"] = Number(r.sale_rate || 0);
+        rowObj["Sale PKR"] = Number(r.sale_pkr || 0);
+      }
+
+      rowObj["Purchase SAR"] = Number(r.purchase_sar || 0);
+      rowObj["Purchase Rate"] = Number(r.purchase_rate || 0);
+      rowObj["Purchase PKR"] = Number(r.purchase_pkr || 0);
+
+      if (showProfit) {
+        rowObj["Profit"] = Number(r.profit || 0);
+      }
+      return rowObj;
+    });
+
+    // Add Totals Row at the bottom of Excel sheet
+    const totalRow = {
+      "Date": "TOTALS",
+      "Supplier": "",
+      "Ref No": "",
+      "Item": "",
+    };
+
+    if (showSale) {
+      totalRow["Sale SAR"] = totals.sale_sar;
+      totalRow["Sale Rate"] = "";
+      totalRow["Sale PKR"] = totals.sale_pkr;
+    }
+
+    totalRow["Purchase SAR"] = totals.purchase_sar;
+    totalRow["Purchase Rate"] = "";
+    totalRow["Purchase PKR"] = totals.purchase_pkr;
+
+    if (showProfit) {
+      totalRow["Profit"] = totals.profit;
+    }
+
+    dataRows.push(totalRow);
+
+    const worksheet = XLSX.utils.json_to_sheet(dataRows);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Purchase Detail");
+    XLSX.writeFile(workbook, "supplier-purchase-report.xlsx");
+  };
 
   /* ================= PDF EXPORT ================= */
   const exportPDF = () => {
@@ -135,10 +196,10 @@ export default function SupplierPurchasedetailreport({ onNavigate }) {
       didDrawPage: (data) => {
         const finalY = data.cursor.y + 5;
         let totalsText = "";
-        if (showSale) totalsText += `Sale PKR: ${fmt(totals.sale)}    `;
-        totalsText += `Purchase PKR: ${fmt(totals.purchase)}    `;
+        if (showSale) totalsText += `Sale SAR: ${fmt(totals.sale_sar)} | Sale PKR: ${fmt(totals.sale_pkr)}   `;
+        totalsText += `Purchase SAR: ${fmt(totals.purchase_sar)} | Purchase PKR: ${fmt(totals.purchase_pkr)}   `;
         if (showProfit) totalsText += `Profit: ${fmt(totals.profit)}`;
-        doc.setFontSize(12);
+        doc.setFontSize(10);
         doc.setTextColor(0, 0, 0);
         doc.text(totalsText, pageWidth - 10, finalY, { align: "right" });
       },
@@ -166,8 +227,11 @@ export default function SupplierPurchasedetailreport({ onNavigate }) {
             <button className="btn btn-light btn-sm rounded-pill" onClick={() => onNavigate("dashboard")}>
               ⬅ Back
             </button>
-            <button className="btn btn-success btn-sm rounded-pill" onClick={exportPDF}>
-              Export PDF
+            <button className="btn btn-success btn-sm rounded-pill" onClick={exportExcel}>
+              Export Excel 📊
+            </button>
+            <button className="btn btn-danger btn-sm rounded-pill" onClick={exportPDF}>
+              Export PDF 📄
             </button>
           </div>
         </div>
@@ -188,7 +252,7 @@ export default function SupplierPurchasedetailreport({ onNavigate }) {
                 <option value="Ticket">Ticket</option>
                 <option value="Hotel">Hotel</option>
                 <option value="Visa">Visa</option>
-                <option value="Card">Visa</option>
+                <option value="Card">Card</option>
                 <option value="Transport">Transport</option>
                 <option value="Ziyarat">Ziyarat</option>
                 <option value="Groups">Groups</option>
@@ -227,10 +291,25 @@ export default function SupplierPurchasedetailreport({ onNavigate }) {
       {/* TABLE DISPLAY */}
       <div className="card shadow-sm rounded" style={{ overflowX: "auto", maxHeight: "70vh" }}>
         <div className="card-body py-2">
-          <div className="mb-2 text-end fw-bold">
-            {showSale && <span className="me-3 text-primary">Sale PKR: {fmt(totals.sale)}</span>}
-            <span className="me-3 text-danger">Purchase PKR: {fmt(totals.purchase)}</span>
-            {showProfit && <span className={totals.profit >= 0 ? "text-success" : "text-danger"}>Profit: {fmt(totals.profit)}</span>}
+          {/* HEADER TOTALS BLOCK */}
+          <div className="mb-2 text-end fw-bold d-flex flex-wrap gap-3 justify-content-end align-items-center" style={{ fontSize: 13 }}>
+            {showSale && (
+              <>
+                <span className="text-primary">Sale SAR Total: {fmt(totals.sale_sar)}</span>
+                <span className="text-primary me-2">Sale PKR Total: {fmt(totals.sale_pkr)}</span>
+                <span className="text-muted">|</span>
+              </>
+            )}
+            <span className="text-danger">Purchase SAR Total: {fmt(totals.purchase_sar)}</span>
+            <span className="text-danger me-2">Purchase PKR Total: {fmt(totals.purchase_pkr)}</span>
+            {showProfit && (
+              <>
+                <span className="text-muted">|</span>
+                <span className={totals.profit >= 0 ? "text-success" : "text-danger"}>
+                  Net Profit: {fmt(totals.profit)}
+                </span>
+              </>
+            )}
           </div>
 
           <table className="table table-sm table-bordered text-center align-middle">
@@ -259,17 +338,34 @@ export default function SupplierPurchasedetailreport({ onNavigate }) {
                   <td>{r.ref_no}</td>
                   <td>{r.item}</td>
                   {showSale && <>
-                    <td className="text-end">{fmt(r.sale_sar)}</td>
+                    <td className="text-end fw-semibold text-primary">{fmt(r.sale_sar)}</td>
                     <td className="text-end">{fmt(r.sale_rate)}</td>
                     <td className="text-end">{fmt(r.sale_pkr)}</td>
                   </>}
-                  <td className="text-end">{fmt(r.purchase_sar)}</td>
+                  <td className="text-end fw-semibold text-danger">{fmt(r.purchase_sar)}</td>
                   <td className="text-end">{fmt(r.purchase_rate)}</td>
                   <td className="text-end">{fmt(r.purchase_pkr)}</td>
                   {showProfit && <td className={`text-end fw-bold ${r.profit >= 0 ? "text-success" : "text-danger"}`}>{fmt(r.profit)}</td>}
                 </tr>
               ))}
             </tbody>
+            {/* TABLE FOOTER SUMMARY FOR QUICK SCANNING */}
+            <tfoot className="table-dark fw-bold">
+              <tr>
+                <td colSpan="4">TOTALS</td>
+                {showSale && (
+                  <>
+                    <td className="text-end text-info">{fmt(totals.sale_sar)}</td>
+                    <td></td>
+                    <td className="text-end">{fmt(totals.sale_pkr)}</td>
+                  </>
+                )}
+                <td className="text-end text-warning">{fmt(totals.purchase_sar)}</td>
+                <td></td>
+                <td className="text-end">{fmt(totals.purchase_pkr)}</td>
+                {showProfit && <td className="text-end">{fmt(totals.profit)}</td>}
+              </tr>
+            </tfoot>
           </table>
         </div>
       </div>
