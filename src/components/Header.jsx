@@ -68,7 +68,7 @@ export default function Header({ title }) {
         >
           <div
             style={{
-              fontSize: 30,
+              fontSize: 25,
               fontWeight: 800,
               lineHeight: 1.15,
               letterSpacing: 0.5,
