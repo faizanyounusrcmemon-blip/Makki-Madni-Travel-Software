@@ -52,6 +52,7 @@ export default function Header({ title }) {
               width: "135%",
               height: "135%",
               objectFit: "contain",
+              transform: "scale(1.2)",
               display: "block",
             }}
           />
