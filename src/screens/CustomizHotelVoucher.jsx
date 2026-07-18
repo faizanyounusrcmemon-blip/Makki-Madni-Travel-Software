@@ -301,7 +301,7 @@ export default function HotelVoucher({ onNavigate }) {
         <div style={styles.signatureRow}>
           <div style={styles.sigBox}>
             <div style={styles.sigLine} />
-            <p style={styles.sigText}>Prepared By (Al Mukarram)</p>
+            <p style={styles.sigText}>Prepared By</p>
           </div>
           <div style={styles.sigBox}>
             <div style={styles.sigLine} />
