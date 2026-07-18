@@ -5,70 +5,72 @@ export default function Header({ title }) {
     <div
       className="pdf-header"
       style={{
-        background: "#ffffff",
-        borderRadius: 12,
-        padding: 10,
-        marginBottom: 10,
+        background: "#fff",
         border: "2px solid #d4af37",
-        boxShadow: "0 4px 10px rgba(0,0,0,.08)",
+        borderRadius: 12,
+        padding: "12px 16px",
+        marginBottom: 15,
         overflow: "hidden",
+        boxSizing: "border-box",
       }}
     >
-      {/* Header Top */}
+      {/* ================= Header Top ================= */}
       <div
         style={{
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          gap: 15,
-          flexWrap: "wrap",
+          gap: 18,
         }}
       >
-        {/* Logo */}
+        {/* ================= Logo ================= */}
 
-<div
-  style={{
-    width: 85,
-    height: 85,
-    borderRadius: "50%",
-    border: "2px solid #d4af37",
-    overflow: "hidden",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    background: "#fff",
-    flexShrink: 0,
-  }}
->
-  <img
-    src="/logo.png"
-    alt="Makki Madni Travel"
-    style={{
-      width: "130%",
-      height: "130%",
-      objectFit: "contain",
-      transform: "scale(1.4)",
-      display: "block",
-    }}
-  />
-</div>
-
-        {/* Company Info */}
         <div
           style={{
-            textAlign: "center",
-            flex: 1,
-            minWidth: 0,
+            width: 90,
+            height: 90,
+            borderRadius: "50%",
+            border: "2px solid #d4af37",
+            background: "#fff",
+            overflow: "hidden",
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            flexShrink: 0,
           }}
         >
-          {/* Company Name */}
+          <img
+            src="/logo.png"
+            alt="Makki Madni Travel"
+            crossOrigin="anonymous"
+            loading="eager"
+            draggable={false}
+            onError={(e) => {
+              e.currentTarget.style.display = "none";
+            }}
+            style={{
+              width: "135%",
+              height: "135%",
+              objectFit: "contain",
+              display: "block",
+            }}
+          />
+        </div>
+
+        {/* ================= Company ================= */}
+
+        <div
+          style={{
+            flex: 1,
+            textAlign: "center",
+          }}
+        >
           <div
             style={{
-              fontSize: "clamp(18px, 4vw, 28px)",
-              fontWeight: 700,
+              fontSize: 30,
+              fontWeight: 800,
+              lineHeight: 1.15,
               letterSpacing: 0.5,
-              lineHeight: 1.2,
-              wordBreak: "break-word",
             }}
           >
             <span style={{ color: "#0b3d91" }}>
@@ -85,91 +87,84 @@ export default function Header({ title }) {
             </span>
           </div>
 
-          {/* Golden Line */}
+          {/* Gold Line */}
+
           <div
             style={{
-              width: 100,
+              width: 130,
               height: 3,
-              margin: "8px auto",
+              background: "#d4af37",
+              margin: "10px auto",
               borderRadius: 20,
-              background:
-                "linear-gradient(to right,#d4af37,#ffd700,#d4af37)",
             }}
           />
 
           {/* Address */}
+
           <div
             style={{
-              fontSize: "clamp(9px, 2vw, 10px)",
-              lineHeight: 1.4,
               color: "#0b3d91",
+              fontSize: 11,
               fontWeight: 600,
-              wordBreak: "break-word",
+              lineHeight: 1.5,
             }}
           >
-            Shop #10 Diamond City Building,
+            Shop #10 Diamond City Building
+            <br />
             Near Zeenat-ul-Islam Masjid
             <br />
             Garden West, Karachi
           </div>
 
           {/* Contact */}
+
           <div
             style={{
-              marginTop: 4,
-              fontSize: "clamp(9px, 2vw, 10px)",
-              fontWeight: 600,
+              marginTop: 8,
               display: "flex",
               justifyContent: "center",
               alignItems: "center",
+              gap: 10,
               flexWrap: "wrap",
-              gap: 4,
-              wordBreak: "break-word",
+              fontSize: 11,
+              fontWeight: 600,
             }}
           >
             <span style={{ color: "#003366" }}>
-              📧 makkimadnitravel@gmail.com
+                📧 makkimadnitravel@gmail.com
             </span>
 
-            <span
-              style={{
-                color: "#999",
-                margin: "0 4px",
-              }}
-            >
-              |
-            </span>
+            <span style={{ color: "#999" }}>|</span>
 
             <span style={{ color: "#198754" }}>
-              ☎️ 0335-7476744
+                ☎ 0335-7476744
             </span>
           </div>
         </div>
       </div>
 
-      {/* Divider */}
+      {/* ================= Divider ================= */}
+
       <div
         style={{
           height: 1,
-          marginTop: 8,
-          marginBottom: 8,
-          background:
-            "linear-gradient(to right,transparent,#d4af37,transparent)",
+          background: "#d4af37",
+          margin: "12px 0",
         }}
       />
 
-      {/* Report Title */}
+      {/* ================= Title ================= */}
+
       <div
         style={{
           background: "#0b3d91",
           color: "#fff",
           textAlign: "center",
-          padding: "6px 10px",
+          padding: "8px",
           borderRadius: 8,
-          fontSize: 15,
+          fontSize: 16,
           fontWeight: 700,
           letterSpacing: 0.5,
-          wordBreak: "break-word",
         }}
       >
         {title}
