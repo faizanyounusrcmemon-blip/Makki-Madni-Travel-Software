@@ -3,17 +3,30 @@ import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 import Swal from "sweetalert2";
 
-/* =========================
-   HELPERS
-========================= */
-const getRowDate = (r) => {
-  if (!r?.date) return "-";
-  const d = new Date(r.date);
-  if (isNaN(d.getTime())) return "-";
-  const day = String(d.getDate()).padStart(2, "0");
-  const month = d.toLocaleString("en-US", { month: "short" });
-  const year = d.getFullYear();
+const toInputDate = (d) => {
+  if (!d) return "";
+  const dt = new Date(d);
+  if (isNaN(dt.getTime())) return "";
+  const year = dt.getFullYear();
+  const month = String(dt.getMonth() + 1).padStart(2, "0");
+  const day = String(dt.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
+
+const formatDate = (d) => {
+  if (!d) return "-";
+  const dt = new Date(d);
+  if (isNaN(dt.getTime())) return "-";
+  const day = String(dt.getDate()).padStart(2, "0");
+  const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  const month = monthNames[dt.getMonth()];
+  const year = dt.getFullYear();
   return `${day}/${month}/${year}`;
+};
+
+const getRowDate = (r) => {
+  if (!r) return "-";
+  return formatDate(r.date || r.payment_date || r.created_at);
 };
 
 const fmtAmt = (v) =>
@@ -23,9 +36,9 @@ const parseAmt = (v) => Number(String(v).replace(/,/g, "") || 0);
 
 const numberToWords = (num) => {
   if (!num) return "";
-  const a = ["","One","Two","Three","Four","Five","Six","Seven","Eight","Nine",
-    "Ten","Eleven","Twelve","Thirteen","Fourteen","Fifteen","Sixteen","Seventeen","Eighteen","Nineteen"];
-  const b = ["","","Twenty","Thirty","Forty","Fifty","Sixty","Seventy","Eighty","Ninety"];
+  const a = ["", "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine",
+    "Ten", "Eleven", "Twelve", "Thirteen", "Fourteen", "Fifteen", "Sixteen", "Seventeen", "Eighteen", "Nineteen"];
+  const b = ["", "", "Twenty", "Thirty", "Forty", "Fifty", "Sixty", "Seventy", "Eighty", "Ninety"];
 
   const w = (n) => {
     if (n < 20) return a[n];
@@ -260,7 +273,7 @@ export default function CustomerLedger({ onNavigate }) {
 
   const del = async (id) => {
     if (id === "SALE" || id === "CUSTOMER") {
-      return Swal.fire({ width: "300px", icon: "warning", text: "یہ entry delete نہیں ہو سکتی" });
+      return Swal.fire({ width: "300px", icon: "warning", text: "Yeh entry delete nahi ho sakti" });
     }
 
     const confirmDelete = await Swal.fire({
@@ -306,7 +319,144 @@ export default function CustomerLedger({ onNavigate }) {
     }
   };
 
+  /* =========================
+     EDIT PAYMENT ENTRY
+  ========================== */
+  const editRow = async (row) => {
+    if (row.id === "SALE" || row.id === "CUSTOMER") {
+      return Swal.fire({
+        width: "300px",
+        icon: "warning",
+        text: "Yeh system invoice record edit nahi ho sakta."
+      });
+    }
+
+    const formattedDate = toInputDate(row.date || row.payment_date) || today;
+    const isAdjustment = row.description === "Adjustment";
+
+    const { value: formValues } = await Swal.fire({
+      width: "360px",
+      title: "✏️ Edit Payment Entry",
+      html: `
+        <div style="text-align:left; font-size:12px;" class="d-flex flex-column gap-2">
+          <div>
+            <label class="fw-bold mb-1">Amount (PKR)</label>
+            <input id="swal-edit-amount" type="number" class="form-control form-control-sm" value="${row.debit || row.credit || 0}" />
+          </div>
+          <div>
+            <label class="fw-bold mb-1">Payment Date</label>
+            <input id="swal-edit-date" type="date" class="form-control form-control-sm" value="${formattedDate}" />
+            <div id="swal-edit-date-text" class="text-primary fw-bold mt-1" style="font-size: 11px;">
+              ${formatDate(formattedDate)}
+            </div>
+          </div>
+          <div>
+            <label class="fw-bold mb-1">Type</label>
+            <select id="swal-edit-type" class="form-select form-select-sm">
+              <option value="payment" ${!isAdjustment ? "selected" : ""}>Payment</option>
+              <option value="adjustment" ${isAdjustment ? "selected" : ""}>Adjustment</option>
+            </select>
+          </div>
+          <div>
+            <label class="fw-bold mb-1">Payment Method</label>
+            <select id="swal-edit-method" class="form-select form-select-sm">
+              <option value="Bank" ${row.description?.includes("Bank") ? "selected" : ""}>Bank</option>
+              <option value="Cash" ${row.description?.includes("Cash") ? "selected" : ""}>Cash</option>
+            </select>
+          </div>
+          <div>
+            <label class="fw-bold mb-1">Authorization Password</label>
+            <div style="position:relative;">
+              <input id="swal-edit-pass" type="password" class="form-control form-control-sm" placeholder="Password" style="padding-right:35px;" />
+              <span id="eye-toggle-edit" style="position:absolute; right:10px; top:50%; transform:translateY(-50%); cursor:pointer; user-select:none;">👁</span>
+            </div>
+          </div>
+        </div>
+      `,
+      showCancelButton: true,
+      confirmButtonText: "Update Entry",
+      focusConfirm: false,
+      didOpen: () => {
+        const input = document.getElementById("swal-edit-pass");
+        const eye = document.getElementById("eye-toggle-edit");
+        const dateInput = document.getElementById("swal-edit-date");
+        const dateTextLabel = document.getElementById("swal-edit-date-text");
+
+        dateInput.addEventListener("change", (e) => {
+          dateTextLabel.textContent = formatDate(e.target.value);
+        });
+
+        let visible = false;
+        eye.addEventListener("click", () => {
+          visible = !visible;
+          input.type = visible ? "text" : "password";
+          eye.textContent = visible ? "🙈" : "👁";
+        });
+      },
+      preConfirm: () => {
+        const amount = document.getElementById("swal-edit-amount").value;
+        const payment_date = document.getElementById("swal-edit-date").value;
+        const type = document.getElementById("swal-edit-type").value;
+        const payment_method = document.getElementById("swal-edit-method").value;
+        const password = document.getElementById("swal-edit-pass").value.trim();
+
+        if (!amount || Number(amount) <= 0) {
+          Swal.showValidationMessage("Valid amount required");
+          return false;
+        }
+        if (!payment_date) {
+          Swal.showValidationMessage("Date required");
+          return false;
+        }
+        if (!password) {
+          Swal.showValidationMessage("Password required");
+          return false;
+        }
+
+        return {
+          amount: Number(amount),
+          payment_date,
+          type,
+          payment_method,
+          password
+        };
+      }
+    });
+
+    if (!formValues) return;
+
+    Swal.fire({
+      width: "260px",
+      title: "Updating...",
+      allowOutsideClick: false,
+      didOpen: () => Swal.showLoading()
+    });
+
+    try {
+      const r = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/customer-ledger/edit/${row.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formValues)
+      });
+
+      const d = await r.json();
+      Swal.close();
+
+      if (d.success) {
+        await loadLedger(refNo);
+        await loadPending();
+        Swal.fire({ width: "280px", icon: "success", text: "Entry Updated Successfully" });
+      } else {
+        Swal.fire({ width: "300px", icon: "error", text: d.error || "Update Failed!" });
+      }
+    } catch (err) {
+      Swal.close();
+      Swal.fire({ width: "300px", icon: "error", text: "Network Error" });
+    }
+  };
+
   const exportPDF = async () => {
+    if (!pdfRef.current) return;
     const canvas = await html2canvas(pdfRef.current, { scale: 3 });
     const img = canvas.toDataURL("image/png");
 
@@ -350,7 +500,7 @@ export default function CustomerLedger({ onNavigate }) {
       </div>
 
       <div className="row">
-        {/* SIDEBAR: PENDING / PARTIAL LIST (Left or Right side as side panel) */}
+        {/* SIDEBAR: PENDING / PARTIAL LIST */}
         <div className="col-lg-3 col-md-4 mb-4">
           <div className="card shadow-sm h-100">
             <div className="card-header bg-danger text-white fw-bold d-flex align-items-center">
@@ -392,10 +542,8 @@ export default function CustomerLedger({ onNavigate }) {
           </div>
         </div>
 
-        {/* MAIN PANEL: SEARCH, ENTRY FORM & LEDGER TABLE */}
+        {/* MAIN PANEL */}
         <div className="col-lg-9 col-md-8">
-          
-          {/* SEARCH & CONTROLS */}
           <div className="card shadow-sm mb-3">
             <div className="card-body py-3">
               <div className="row g-2">
@@ -419,7 +567,6 @@ export default function CustomerLedger({ onNavigate }) {
             </div>
           </div>
 
-          {/* ENTRY FORM (Disabled if no ledger is loaded) */}
           <div className={`card shadow-sm mb-3 ${!refNo ? "opacity-50" : ""}`} style={{ pointerEvents: !refNo ? "none" : "auto" }}>
             <div className="card-header bg-light fw-bold text-secondary">📥 Add Payment / Adjustment Receipt</div>
             <div className="card-body">
@@ -427,6 +574,9 @@ export default function CustomerLedger({ onNavigate }) {
                 <div className="col-md-3">
                   <label className="form-label small text-muted mb-1">Date</label>
                   <input type="date" className="form-control" value={date} onChange={(e) => setDate(e.target.value)} />
+                  <span className="text-primary fw-bold d-block mt-1" style={{ fontSize: "0.75rem" }}>
+                    {formatDate(date)}
+                  </span>
                 </div>
                 <div className="col-md-3">
                   <label className="form-label small text-muted mb-1">Amount</label>
@@ -469,7 +619,6 @@ export default function CustomerLedger({ onNavigate }) {
             </div>
           </div>
 
-          {/* LEDGER TABLE CARD */}
           <div ref={pdfRef} className="card shadow-sm overflow-hidden">
             <div className="table-responsive">
               <table className="table table-striped table-hover table-bordered mb-0 align-middle">
@@ -491,8 +640,8 @@ export default function CustomerLedger({ onNavigate }) {
                       </td>
                     </tr>
                   ) : (
-                    rows.map((r) => (
-                      <tr key={r.id}>
+                    rows.map((r, i) => (
+                      <tr key={r.id || i}>
                         <td>{getRowDate(r)}</td>
                         <td className={r.id === "CUSTOMER" ? "fw-bold text-primary" : ""}>
                           {r.description}
@@ -504,7 +653,22 @@ export default function CustomerLedger({ onNavigate }) {
                         </td>
                         <td className="text-center">
                           {r.id !== "SALE" && r.id !== "CUSTOMER" ? (
-                            <button className="btn btn-outline-danger btn-sm py-0 px-2" onClick={() => del(r.id)}>Del</button>
+                            <div className="d-flex gap-1 justify-content-center">
+                              <button
+                                className="btn btn-outline-primary btn-sm py-0 px-1"
+                                style={{ fontSize: "11px" }}
+                                onClick={() => editRow(r)}
+                              >
+                                Edit
+                              </button>
+                              <button
+                                className="btn btn-outline-danger btn-sm py-0 px-1"
+                                style={{ fontSize: "11px" }}
+                                onClick={() => del(r.id)}
+                              >
+                                Del
+                              </button>
+                            </div>
                           ) : (
                             <span className="text-muted small">-</span>
                           )}
@@ -516,7 +680,6 @@ export default function CustomerLedger({ onNavigate }) {
               </table>
             </div>
           </div>
-
         </div>
       </div>
     </div>

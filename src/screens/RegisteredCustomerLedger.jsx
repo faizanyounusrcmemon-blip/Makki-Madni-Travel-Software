@@ -1,19 +1,34 @@
 import React, { useState, useEffect } from "react";
 import jsPDF from "jspdf";
 import Swal from "sweetalert2";
-import * as XLSX from "xlsx"; // <--- EXCEL EXPORT PACKAGE IMPORTED
+import * as XLSX from "xlsx";
 
-/* =========================
-   HELPERS & UTILS
-========================= */
-const getRowDate = (r) => {
-  if (!r?.date) return "-";
-  const d = new Date(r.date);
-  if (isNaN(d.getTime())) return "-";
-  const day = String(d.getDate()).padStart(2, "0");
-  const month = d.toLocaleString("en-US", { month: "short" }).toUpperCase();
-  const year = d.getFullYear();
+/* ================= DATE HELPER FUNCTIONS ================= */
+
+const toInputDate = (d) => {
+  if (!d) return "";
+  const dt = new Date(d);
+  if (isNaN(dt.getTime())) return "";
+  const year = dt.getFullYear();
+  const month = String(dt.getMonth() + 1).padStart(2, "0");
+  const day = String(dt.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
+
+const formatDate = (d) => {
+  if (!d) return "-";
+  const dt = new Date(d);
+  if (isNaN(dt.getTime())) return "-";
+  const day = String(dt.getDate()).padStart(2, "0");
+  const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  const month = monthNames[dt.getMonth()];
+  const year = dt.getFullYear();
   return `${day}/${month}/${year}`;
+};
+
+const getRowDate = (r) => {
+  if (!r) return "-";
+  return formatDate(r.date || r.payment_date || r.created_at);
 };
 
 const fmtAmt = (v) =>
@@ -23,9 +38,9 @@ const parseAmt = (v) => Number(String(v).replace(/,/g, "") || 0);
 
 const numberToWords = (num) => {
   if (!num) return "";
-  const a = ["","One","Two","Three","Four","Five","Six","Seven","Eight","Nine",
-    "Ten","Eleven","Twelve","Thirteen","Fourteen","Fifteen","Sixteen","Seventeen","Eighteen","Nineteen"];
-  const b = ["","","Twenty","Thirty","Forty","Fifty","Sixty","Seventy","Eighty","Ninety"];
+  const a = ["", "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine",
+    "Ten", "Eleven", "Twelve", "Thirteen", "Fourteen", "Fifteen", "Sixteen", "Seventeen", "Eighteen", "Nineteen"];
+  const b = ["", "", "Twenty", "Thirty", "Forty", "Fifty", "Sixty", "Seventy", "Eighty", "Ninety"];
 
   const w = (n) => {
     if (n < 20) return a[n];
@@ -38,29 +53,29 @@ const numberToWords = (num) => {
   return w(num) + " Only";
 };
 
-const today = new Date().toISOString().split("T")[0];
+const getTodayInputDate = () => toInputDate(new Date());
 
 export default function RegisteredCustomerLedger({ onNavigate }) {
   const [customerCode, setCustomerCode] = useState("");
   const [customerName, setCustomerName] = useState("");
   const [rows, setRows] = useState([]);
   const [pending, setPending] = useState([]);
-  
+
   // Date Filters
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
 
-  // Add Transaction Form
+  // Transaction Form
   const [amountRaw, setAmountRaw] = useState(0);
   const [amountDisp, setAmountDisp] = useState("");
-  const [date, setDate] = useState(today);
+  const [date, setDate] = useState(getTodayInputDate());
   const [type, setType] = useState("payment");
   const [method, setMethod] = useState("Bank");
   const [saving, setSaving] = useState(false);
 
-  // --- DYNAMIC DETAILED MODAL STATES ---
+  // Dynamic Detail Modal States
   const [detailModalOpen, setDetailModalOpen] = useState(false);
-  const [detailType, setDetailType] = useState(""); 
+  const [detailType, setDetailType] = useState("");
   const [detailLoading, setDetailLoading] = useState(false);
   const [detailData, setDetailData] = useState(null);
 
@@ -127,9 +142,46 @@ export default function RegisteredCustomerLedger({ onNavigate }) {
     }
   };
 
-  /* ==========================================================
-       SMART DYNAMIC FETCH: PARSES EXACT DB REFERENCE KEY & ENDPOINTS
-    ============================================================= */
+  /* =========================
+     FETCH SALE DETAIL MODAL
+  ========================== */
+  const handleSuccessResponse = (data, ledgerDebitVal, originalId, currentType) => {
+    if (data.success && data.row) {
+      const row = data.row;
+
+      const safeParse = (v) => {
+        if (!v) return [];
+        if (Array.isArray(v)) return v;
+        try { return JSON.parse(v); } catch { return []; }
+      };
+
+      if (currentType === "TICKETING" || String(row.ref_no || "").includes("TIC")) {
+        row.flight_from = safeParse(row.flight_from);
+        row.flight_to = safeParse(row.flight_to);
+        row.flight_date = safeParse(row.flight_date);
+        row.airline = safeParse(row.airline);
+      } else if (["VISA", "ZIYARAT", "TRANSPORT", "CARD", "GROUPS"].includes(currentType)) {
+        row.rows = safeParse(row.rows);
+      }
+
+      row.total_pkr = Number(row.total_pkr || row.grand_total || row.total_amount || row.total_amount_pkr || ledgerDebitVal || 0);
+      row.grand_total = row.total_pkr;
+      row.total_amount = row.total_pkr;
+
+      setDetailData(row);
+    } else {
+      setDetailData({
+        ref_no: originalId || "N/A",
+        customer_name: customerName,
+        booking_date: getTodayInputDate(),
+        description: "",
+        total_pkr: ledgerDebitVal,
+        grand_total: ledgerDebitVal,
+        total_amount: ledgerDebitVal
+      });
+    }
+  };
+
   const fetchSaleDetail = async (id, description) => {
     const idStr = String(id || "").toUpperCase();
     let detectedType = "INVOICE";
@@ -178,7 +230,7 @@ export default function RegisteredCustomerLedger({ onNavigate }) {
       setDetailData({
         ref_no: cleanRef,
         customer_name: customerName,
-        booking_date: matchedLedgerRow?.date || today,
+        booking_date: matchedLedgerRow?.date || getTodayInputDate(),
         description: description,
         total_pkr: ledgerDebitVal,
         grand_total: ledgerDebitVal,
@@ -190,7 +242,7 @@ export default function RegisteredCustomerLedger({ onNavigate }) {
 
     try {
       const res = await fetch(endpoint);
-      
+
       if (!res.ok) {
         let retryUrl = "";
         if (detectedType === "CARD") {
@@ -198,7 +250,7 @@ export default function RegisteredCustomerLedger({ onNavigate }) {
         } else if (detectedType === "TICKETING") {
           retryUrl = `${import.meta.env.VITE_BACKEND_URL}/api/ticket/get/${cleanRef}`;
         }
-        
+
         if (retryUrl) {
           const altRes = await fetch(retryUrl);
           if (altRes.ok) {
@@ -207,7 +259,7 @@ export default function RegisteredCustomerLedger({ onNavigate }) {
           }
         }
       }
-      
+
       if (!res.ok) {
         throw new Error("API status: " + res.status);
       }
@@ -219,43 +271,6 @@ export default function RegisteredCustomerLedger({ onNavigate }) {
       useBackupFallback();
     } finally {
       setDetailLoading(false);
-    }
-  };
-
-  const handleSuccessResponse = (data, ledgerDebitVal, originalId, currentType) => {
-    if (data.success && data.row) {
-      const row = data.row;
-      
-      const safeParse = (v) => {
-        if (!v) return [];
-        if (Array.isArray(v)) return v;
-        try { return JSON.parse(v); } catch { return []; }
-      };
-
-      if (currentType === "TICKETING" || String(row.ref_no || "").includes("TIC")) {
-        row.flight_from = safeParse(row.flight_from);
-        row.flight_to = safeParse(row.flight_to);
-        row.flight_date = safeParse(row.flight_date);
-        row.airline = safeParse(row.airline);
-      } else if (["VISA", "ZIYARAT", "TRANSPORT", "CARD", "GROUPS"].includes(currentType)) {
-        row.rows = safeParse(row.rows);
-      }
-
-      row.total_pkr = Number(row.total_pkr || row.grand_total || row.total_amount || row.total_amount_pkr || ledgerDebitVal || 0);
-      row.grand_total = row.total_pkr;
-      row.total_amount = row.total_pkr;
-
-      setDetailData(row);
-    } else {
-      setDetailData({
-        ref_no: originalId || "N/A",
-        customer_name: customerName,
-        booking_date: today,
-        description: "",
-        total_pkr: ledgerDebitVal,
-        grand_total: ledgerDebitVal,
-        total_amount: ledgerDebitVal
-      });
     }
   };
 
@@ -285,7 +300,7 @@ export default function RegisteredCustomerLedger({ onNavigate }) {
         body: JSON.stringify({
           customer_code: customerCode,
           amount: Number(amountRaw),
-          payment_date: date,
+          payment_date: date || getTodayInputDate(),
           payment_method: method,
           type
         }),
@@ -297,7 +312,7 @@ export default function RegisteredCustomerLedger({ onNavigate }) {
       if (d.success) {
         setAmountRaw(0);
         setAmountDisp("");
-        setDate(today);
+        setDate(getTodayInputDate());
         await loadLedger(customerCode);
         await loadPending();
         Swal.fire({ width: "280px", icon: "success", text: "Transaction Saved Successfully!" });
@@ -396,13 +411,135 @@ export default function RegisteredCustomerLedger({ onNavigate }) {
     }
   };
 
-/* ==========================================
-     A4 MULTI-PAGE PDF GENERATOR (WITH LOADER)
-  ========================================== */
+  /* =========================
+     EDIT ROW
+  ========================== */
+  const editRow = async (row) => {
+    if (String(row.id).startsWith("SALE-") || String(row.id).startsWith("TIC-") || String(row.id).startsWith("HOT-")) {
+      return Swal.fire({ width: "300px", icon: "warning", text: "Invoice entry cannot be edited here. Edit from original module." });
+    }
+
+    const formattedDate = toInputDate(row.date || row.payment_date) || getTodayInputDate();
+
+    const { value: formValues } = await Swal.fire({
+      width: "360px",
+      title: "✏️ Edit Payment Entry",
+      html: `
+        <div style="text-align:left; font-size:12px;" class="d-flex flex-column gap-2">
+          <div>
+            <label class="fw-bold mb-1">Amount (PKR)</label>
+            <input id="swal-edit-amount" type="number" class="form-control form-control-sm" value="${row.debit || row.credit || 0}" />
+          </div>
+          <div>
+            <label class="fw-bold mb-1">Receipt Date</label>
+            <input id="swal-edit-date" type="date" class="form-control form-control-sm" value="${formattedDate}" />
+            <div id="swal-edit-date-text" class="text-primary fw-bold mt-1" style="font-size: 11px;">
+              ${formatDate(formattedDate)}
+            </div>
+          </div>
+          <div>
+            <label class="fw-bold mb-1">Payment Method</label>
+            <select id="swal-edit-method" class="form-select form-select-sm">
+              <option value="Bank" ${row.description?.includes("Bank") ? "selected" : ""}>Bank</option>
+              <option value="Cash" ${row.description?.includes("Cash") ? "selected" : ""}>Cash</option>
+            </select>
+          </div>
+          <div>
+            <label class="fw-bold mb-1">Authorization Password</label>
+            <div style="position:relative;">
+              <input id="swal-edit-pass" type="password" class="form-control form-control-sm" placeholder="Password" style="padding-right:35px;" />
+              <span id="eye-toggle-edit" style="position:absolute; right:10px; top:50%; transform:translateY(-50%); cursor:pointer; user-select:none;">👁</span>
+            </div>
+          </div>
+        </div>
+      `,
+      showCancelButton: true,
+      confirmButtonText: "Update Entry",
+      focusConfirm: false,
+      didOpen: () => {
+        const input = document.getElementById("swal-edit-pass");
+        const eye = document.getElementById("eye-toggle-edit");
+        const dateInput = document.getElementById("swal-edit-date");
+        const dateTextLabel = document.getElementById("swal-edit-date-text");
+
+        dateInput.addEventListener("change", (e) => {
+          dateTextLabel.textContent = formatDate(e.target.value);
+        });
+
+        let visible = false;
+        eye.addEventListener("click", () => {
+          visible = !visible;
+          input.type = visible ? "text" : "password";
+          eye.textContent = visible ? "🙈" : "👁";
+        });
+      },
+      preConfirm: () => {
+        const amount = document.getElementById("swal-edit-amount").value;
+        const payment_date = document.getElementById("swal-edit-date").value;
+        const payment_method = document.getElementById("swal-edit-method").value;
+        const password = document.getElementById("swal-edit-pass").value.trim();
+
+        if (!amount || Number(amount) <= 0) {
+          Swal.showValidationMessage("Valid amount required");
+          return false;
+        }
+        if (!payment_date) {
+          Swal.showValidationMessage("Valid date required");
+          return false;
+        }
+        if (!password) {
+          Swal.showValidationMessage("Password cannot be empty");
+          return false;
+        }
+
+        return {
+          amount: Number(amount),
+          payment_date,
+          payment_method,
+          password,
+          type: row.type || "payment"
+        };
+      }
+    });
+
+    if (!formValues) return;
+
+    Swal.fire({
+      width: "250px",
+      title: "Updating...",
+      allowOutsideClick: false,
+      didOpen: () => Swal.showLoading()
+    });
+
+    try {
+      const r = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/registered-ledger/edit/${row.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formValues)
+      });
+
+      const d = await r.json();
+      Swal.close();
+
+      if (d.success) {
+        await loadLedger(customerCode);
+        await loadPending();
+        Swal.fire({ width: "280px", icon: "success", text: "Transaction Updated Successfully" });
+      } else {
+        Swal.fire({ width: "300px", icon: "error", text: d.error || "Update Failed!" });
+      }
+    } catch (err) {
+      Swal.close();
+      Swal.fire({ width: "300px", icon: "error", text: "Network communication error" });
+    }
+  };
+
+  /* =========================
+     EXPORTS
+  ========================== */
   const exportPDF = () => {
     if (rows.length === 0) return;
 
-    // 1. Show Loading Alert
     Swal.fire({
       width: "250px",
       title: "Generating PDF...",
@@ -411,7 +548,6 @@ export default function RegisteredCustomerLedger({ onNavigate }) {
       didOpen: () => Swal.showLoading()
     });
 
-    // Timeout ka use kiya hai taake UI ko loader render karne ka time mile
     setTimeout(() => {
       try {
         const pdf = new jsPDF("p", "mm", "a4");
@@ -446,7 +582,7 @@ export default function RegisteredCustomerLedger({ onNavigate }) {
           pdf.setFontSize(9.5);
           const periodStr = startDate || endDate ? `${startDate || "Start"} to ${endDate || "Present"}` : "All Records";
           pdf.text(`Statement Period: ${periodStr}`, pageWidth - 95, 36);
-          pdf.text(`Printed On: ${getRowDate({ date: today })}`, pageWidth - 95, 44);
+          pdf.text(`Printed On: ${getRowDate({ date: new Date() })}`, pageWidth - 95, 44);
 
           pdf.setFillColor(33, 37, 41);
           pdf.rect(10, 55, pageWidth - 20, 8, "F");
@@ -498,7 +634,6 @@ export default function RegisteredCustomerLedger({ onNavigate }) {
         const safeName = customerName.replace(/[^a-zA-Z0-9]/g, "_");
         pdf.save(`Ledger-${customerCode}-${safeName}.pdf`);
 
-        // 2. Close Loading Alert
         Swal.close();
       } catch (error) {
         console.error(error);
@@ -507,13 +642,9 @@ export default function RegisteredCustomerLedger({ onNavigate }) {
     }, 100);
   };
 
-/* ==========================================
-     ✨ PROFESSIONAL EXCEL EXPORT (WITH LOADER)
-  ========================================== */
   const exportExcel = () => {
     if (rows.length === 0) return;
 
-    // 1. Show Loading Alert
     Swal.fire({
       width: "250px",
       title: "Generating Excel...",
@@ -522,22 +653,19 @@ export default function RegisteredCustomerLedger({ onNavigate }) {
       didOpen: () => Swal.showLoading()
     });
 
-    // Timeout ka use kiya hai taake UI ko loader render karne ka time mile
     setTimeout(() => {
       try {
-        // Prepare Metadata / Title Rows
         const headerInfo = [
           ["MAKKI MADNI TRAVEL & TOURS"],
           ["REGISTERED CUSTOMER FINANCIAL LEDGER"],
           [""],
-          ["Customer Name:", customerName.toUpperCase(), "", "Printed Date:", getRowDate({ date: today })],
+          ["Customer Name:", customerName.toUpperCase(), "", "Printed Date:", getRowDate({ date: new Date() })],
           ["Customer Code:", customerCode, "", "Statement Period:", startDate || endDate ? `${startDate || "Start"} to ${endDate || "Present"}` : "All Records"],
           [""]
         ];
 
-        // Map Ledger Rows into Tabular Array
         const tableHeaders = ["Date", "Description", "Debit (Dr)", "Credit (Cr)", "Balance"];
-        
+
         const tableData = rows.map((r) => [
           getRowDate(r),
           r.description,
@@ -546,28 +674,23 @@ export default function RegisteredCustomerLedger({ onNavigate }) {
           r.balance
         ]);
 
-        // Construct Complete Sheet Array
         const sheetData = [...headerInfo, tableHeaders, ...tableData];
 
-        // Create Workbook and Worksheet
         const worksheet = XLSX.utils.aoa_to_sheet(sheetData);
         const workbook = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(workbook, worksheet, "Ledger Statement");
 
-        // Define Column Widths
         worksheet["!cols"] = [
-          { wch: 15 }, // Date
-          { wch: 45 }, // Description
-          { wch: 15 }, // Debit
-          { wch: 15 }, // Credit
-          { wch: 18 }  // Balance
+          { wch: 15 },
+          { wch: 45 },
+          { wch: 15 },
+          { wch: 15 },
+          { wch: 18 }
         ];
 
-        // Generate and Download Excel File
         const safeName = customerName.replace(/[^a-zA-Z0-9]/g, "_");
         XLSX.writeFile(workbook, `Ledger-${customerCode}-${safeName}.xlsx`);
 
-        // 2. Close Loading Alert
         Swal.close();
       } catch (error) {
         console.error(error);
@@ -576,9 +699,6 @@ export default function RegisteredCustomerLedger({ onNavigate }) {
     }, 100);
   };
 
-  /* =======================================================
-     DYNAMIC TRIP DURATION GENERATOR (FOR TICKET MODAL VIEW)
-  ======================================================= */
   const getTripDurationText = (flightDatesArray) => {
     const dates = (flightDatesArray || []).filter(Boolean).sort();
     if (dates.length >= 2) {
@@ -590,17 +710,14 @@ export default function RegisteredCustomerLedger({ onNavigate }) {
     return "Standard Duration";
   };
 
-  /* =====================================================================
-     SMART DYNAMIC VALUE GETTERS (MAPS DATABASE KEYS ROBUSTLY)
-  ===================================================================== */
   const getModalTotalSar = () => {
     if (!detailData) return 0;
     return (
-      detailData.total_sar || 
-      detailData.sar_total || 
-      detailData.hotels_total || 
-      detailData.flight_sar_total || 
-      detailData.total_sar_rate || 
+      detailData.total_sar ||
+      detailData.sar_total ||
+      detailData.hotels_total ||
+      detailData.flight_sar_total ||
+      detailData.total_sar_rate ||
       0
     );
   };
@@ -608,9 +725,9 @@ export default function RegisteredCustomerLedger({ onNavigate }) {
   const getModalPkrRate = () => {
     if (!detailData) return 0;
     return (
-      detailData.pkr_rate || 
-      detailData.sar_rate || 
-      detailData.exchange_rate || 
+      detailData.pkr_rate ||
+      detailData.sar_rate ||
+      detailData.exchange_rate ||
       detailData.rate ||
       0
     );
@@ -619,12 +736,12 @@ export default function RegisteredCustomerLedger({ onNavigate }) {
   const getModalTotalPkr = () => {
     if (!detailData) return 0;
     return (
-      detailData.total_pkr || 
-      detailData.net_pkr_total || 
-      detailData.grand_total || 
-      detailData.total_amount || 
-      detailData.total_amount_pkr || 
-      detailData.debit || 
+      detailData.total_pkr ||
+      detailData.net_pkr_total ||
+      detailData.grand_total ||
+      detailData.total_amount ||
+      detailData.total_amount_pkr ||
+      detailData.debit ||
       0
     );
   };
@@ -644,7 +761,7 @@ export default function RegisteredCustomerLedger({ onNavigate }) {
       </div>
 
       <div className="row">
-        {/* LEFT PANEL: PENDING LIST */}
+        {/* LEFT PANEL */}
         <div className="col-lg-3 col-md-4 mb-4">
           <div className="card shadow-sm h-100">
             <div className="card-header bg-danger text-white fw-bold d-flex justify-content-between align-items-center">
@@ -676,7 +793,7 @@ export default function RegisteredCustomerLedger({ onNavigate }) {
                       <div className="d-flex justify-content-between align-items-start mb-1">
                         <span className="badge bg-dark font-monospace" style={{ fontSize: "0.75rem" }}>{p.customer_code}</span>
                         <span className={`badge py-0 px-1 ${
-                          p.payment_status === "PENDING" ? "bg-danger" : 
+                          p.payment_status === "PENDING" ? "bg-danger" :
                           p.payment_status === "EXTRA PAID" ? "bg-success" : "bg-warning text-dark"
                         }`} style={{ fontSize: "0.7rem" }}>
                           {p.payment_status}
@@ -698,8 +815,6 @@ export default function RegisteredCustomerLedger({ onNavigate }) {
 
         {/* MAIN PANEL */}
         <div className="col-lg-9 col-md-8">
-          
-          {/* SEARCH & FILTERS CONTROLS */}
           <div className="card shadow-sm mb-3 border-start border-primary border-3">
             <div className="card-body">
               <div className="row g-2 align-items-end">
@@ -742,7 +857,6 @@ export default function RegisteredCustomerLedger({ onNavigate }) {
             </div>
           </div>
 
-          {/* ADD PAYMENT RECIEPT FORM */}
           <div className={`card shadow-sm mb-3 ${!customerCode ? "opacity-50" : ""}`} style={{ pointerEvents: !customerCode ? "none" : "auto" }}>
             <div className="card-header bg-dark text-white fw-bold">📥 Post New Payment / Receipt</div>
             <div className="card-body">
@@ -750,6 +864,9 @@ export default function RegisteredCustomerLedger({ onNavigate }) {
                 <div className="col-md-3">
                   <label className="form-label small text-muted mb-1">Receipt Date</label>
                   <input type="date" className="form-control" value={date} onChange={(e) => setDate(e.target.value)} />
+                  <span className="text-primary fw-bold d-block mt-1" style={{ fontSize: "0.75rem" }}>
+                    {formatDate(date)}
+                  </span>
                 </div>
                 <div className="col-md-3">
                   <label className="form-label small text-muted mb-1">Amount (PKR)</label>
@@ -793,7 +910,6 @@ export default function RegisteredCustomerLedger({ onNavigate }) {
             </div>
           </div>
 
-          {/* LEDGER DATA TABLE CARD */}
           <div className="card shadow-sm overflow-hidden">
             <div className="card-header bg-secondary text-white fw-bold d-flex justify-content-between align-items-center">
               <span>📊 Statement Details</span>
@@ -833,7 +949,7 @@ export default function RegisteredCustomerLedger({ onNavigate }) {
                           </td>
                           <td className="text-center">
                             {isSale ? (
-                              <button 
+                              <button
                                 className="btn btn-sm btn-info py-0 px-2 text-white fw-bold"
                                 style={{ fontSize: "11px" }}
                                 onClick={() => fetchSaleDetail(r.id, r.description)}
@@ -841,9 +957,22 @@ export default function RegisteredCustomerLedger({ onNavigate }) {
                                 👁 View
                               </button>
                             ) : (
-                              <button className="btn btn-outline-danger btn-sm py-0 px-2" onClick={() => deleteRow(r.id)}>
-                                Del
-                              </button>
+                              <div className="d-flex gap-1 justify-content-center">
+                                <button
+                                  className="btn btn-outline-primary btn-sm py-0 px-1"
+                                  style={{ fontSize: "11px" }}
+                                  onClick={() => editRow(r)}
+                                >
+                                  Edit
+                                </button>
+                                <button
+                                  className="btn btn-outline-danger btn-sm py-0 px-1"
+                                  style={{ fontSize: "11px" }}
+                                  onClick={() => deleteRow(r.id)}
+                                >
+                                  Del
+                                </button>
+                              </div>
                             )}
                           </td>
                         </tr>
@@ -854,35 +983,29 @@ export default function RegisteredCustomerLedger({ onNavigate }) {
               </table>
             </div>
           </div>
-
         </div>
       </div>
 
-      {/* =====================================================
-          ✨ BEAUTIFUL DYNAMIC DETAIL MODAL (POPUP)
-         ===================================================== */}
+      {/* DETAIL MODAL */}
       {detailModalOpen && (
-        <div 
-          className="modal show d-block animate__animated animate__fadeIn" 
-          tabIndex="-1" 
+        <div
+          className="modal show d-block animate__animated animate__fadeIn"
+          tabIndex="-1"
           style={{ backgroundColor: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)", zIndex: 1055 }}
         >
           <div className="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
             <div className="modal-content rounded-4 border-0 shadow-lg">
-              
-              {/* Modal Header */}
               <div className="modal-header text-white bg-dark border-0 rounded-top-4">
                 <h5 className="modal-title fw-bold">
                   📄 {detailType === "CARD" ? "INVOICE" : detailType} DETAILS
                 </h5>
-                <button 
-                  type="button" 
-                  className="btn-close btn-close-white" 
+                <button
+                  type="button"
+                  className="btn-close btn-close-white"
                   onClick={() => setDetailModalOpen(false)}
                 ></button>
               </div>
 
-              {/* Modal Body */}
               <div className="modal-body bg-light p-4">
                 {detailLoading ? (
                   <div className="text-center py-5">
@@ -891,7 +1014,6 @@ export default function RegisteredCustomerLedger({ onNavigate }) {
                   </div>
                 ) : detailData ? (
                   <div>
-                    {/* ===== INFO CARDS LAYOUT ===== */}
                     <div className="row g-3 mb-4">
                       <div className="col-md-6">
                         <div className="bg-white border rounded-4 p-3 shadow-sm h-100">
@@ -911,7 +1033,7 @@ export default function RegisteredCustomerLedger({ onNavigate }) {
                         <div className="bg-white border rounded-4 p-3 shadow-sm text-center">
                           <span className="text-muted small d-block">📅 Booking Date</span>
                           <strong className="text-dark">
-                            {detailData.booking_date || detailData.created_at ? new Date(detailData.booking_date || detailData.created_at).toLocaleDateString("en-GB") : "-"}
+                            {getRowDate({ date: detailData.booking_date || detailData.created_at })}
                           </strong>
                         </div>
                       </div>
@@ -935,7 +1057,6 @@ export default function RegisteredCustomerLedger({ onNavigate }) {
 
                     <hr />
 
-                    {/* ===== 1. TICKETING SPECIFIC VIEW ===== */}
                     {detailType === "TICKETING" && (
                       <div className="mb-4">
                         <h5 className="fw-bold text-primary mb-3">✈️ Flight Routes</h5>
@@ -954,7 +1075,7 @@ export default function RegisteredCustomerLedger({ onNavigate }) {
                               </div>
                               <div className="mt-2">
                                 <span className="badge bg-primary" style={{ fontSize: "12px", padding: "6px 10px" }}>
-                                  📅 {detailData.flight_date?.[idx] ? new Date(detailData.flight_date[idx]).toLocaleDateString("en-GB") : "-"}
+                                  📅 {getRowDate({ date: detailData.flight_date?.[idx] })}
                                 </span>
                               </div>
                             </div>
@@ -983,7 +1104,6 @@ export default function RegisteredCustomerLedger({ onNavigate }) {
                       </div>
                     )}
 
-                    {/* ===== 2. HOTEL SPECIFIC VIEW ===== */}
                     {detailType === "HOTEL" && (
                       <div className="mb-4">
                         <h5 className="fw-bold text-primary mb-3">🏨 Hotel Details</h5>
@@ -999,10 +1119,10 @@ export default function RegisteredCustomerLedger({ onNavigate }) {
                                 <div className="col-6"><b>📍 Location:</b> {h.location}</div>
                                 <div className="col-6"><b>Type:</b> {h.type}</div>
                                 <div className="col-6">
-                                  <b>Check-in:</b> <span className="text-primary fw-bold">{h.checkIn ? new Date(h.checkIn).toLocaleDateString("en-GB") : "-"}</span>
+                                  <b>Check-in:</b> <span className="text-primary fw-bold">{getRowDate({ date: h.checkIn })}</span>
                                 </div>
                                 <div className="col-6">
-                                  <b>Check-out:</b> <span className="text-danger fw-bold">{h.checkOut ? new Date(h.checkOut).toLocaleDateString("en-GB") : "-"}</span>
+                                  <b>Check-out:</b> <span className="text-danger fw-bold">{getRowDate({ date: h.checkOut })}</span>
                                 </div>
                                 <div className="col-6"><b>Nights:</b> {h.nights}</div>
                                 <div className="col-6"><b>Rooms:</b> {h.rooms}</div>
@@ -1015,7 +1135,6 @@ export default function RegisteredCustomerLedger({ onNavigate }) {
                       </div>
                     )}
 
-                    {/* ===== 3. PACKAGE SPECIFIC VIEW ===== */}
                     {detailType === "PACKAGE" && (
                       <div className="mb-4">
                         <h5 className="fw-bold text-primary mb-2">✈️ Flights Included</h5>
@@ -1023,7 +1142,7 @@ export default function RegisteredCustomerLedger({ onNavigate }) {
                           {Array.isArray(detailData.flights) && detailData.flights.length > 0 ? (
                             detailData.flights.map((f, idx) => (
                               <div key={idx} className="mb-1 text-muted">
-                                {f.date ? new Date(f.date).toLocaleDateString("en-GB") : "-"} — {f.from} → {f.to} {f.airline && <b>({f.airline})</b>}
+                                {getRowDate({ date: f.date })} — {f.from} → {f.to} {f.airline && <b>({f.airline})</b>}
                               </div>
                             ))
                           ) : (
@@ -1036,8 +1155,8 @@ export default function RegisteredCustomerLedger({ onNavigate }) {
                           detailData.hotels.map((h, idx) => (
                             <div key={idx} className="border p-2 bg-white rounded mb-2 shadow-sm">
                               <b>🛏️ {h.hotel}</b> — 📍 {h.location}<br />
-                              Check In: <span className="text-primary fw-bold">{h.checkIn ? new Date(h.checkIn).toLocaleDateString("en-GB") : "-"}</span> → 
-                              Check Out: <span className="text-danger fw-bold">{h.checkOut ? new Date(h.checkOut).toLocaleDateString("en-GB") : "-"}</span>
+                              Check In: <span className="text-primary fw-bold">{getRowDate({ date: h.checkIn })}</span> → 
+                              Check Out: <span className="text-danger fw-bold">{getRowDate({ date: h.checkOut })}</span>
                             </div>
                           ))
                         ) : (
@@ -1046,7 +1165,6 @@ export default function RegisteredCustomerLedger({ onNavigate }) {
                       </div>
                     )}
 
-                    {/* ===== 4. ARRAYS-BASED MODULES (VISA, ZIYARAT, TRANSPORT, CARD, GROUPS) ===== */}
                     {["VISA", "ZIYARAT", "TRANSPORT", "CARD", "GROUPS"].includes(detailType) && (
                       <div className="mb-4">
                         <h5 className="fw-bold text-primary mb-3">Entries Details</h5>
@@ -1074,7 +1192,6 @@ export default function RegisteredCustomerLedger({ onNavigate }) {
 
                     <hr />
 
-                    {/* ===== TOTALS FOOTER BREAKDOWN ===== */}
                     <div className="row g-3 bg-white p-3 rounded-4 shadow-sm border mb-4">
                       <div className="col-4 text-center border-end">
                         <span className="text-muted small">Total SAR</span>
@@ -1096,7 +1213,6 @@ export default function RegisteredCustomerLedger({ onNavigate }) {
                       </div>
                     </div>
 
-                    {/* ===== TOTAL GRAND SUMMARY ===== */}
                     <div className="d-flex justify-content-between align-items-center bg-dark text-white p-3 rounded-3 shadow-sm">
                       <span className="fw-bold">TOTAL AMOUNT (PKR):</span>
                       <h4 className="mb-0 fw-bold font-monospace">
@@ -1111,22 +1227,19 @@ export default function RegisteredCustomerLedger({ onNavigate }) {
                 )}
               </div>
 
-              {/* Modal Footer */}
               <div className="modal-footer bg-light border-0 rounded-bottom-4">
-                <button 
-                  type="button" 
-                  className="btn btn-secondary px-4 fw-bold" 
+                <button
+                  type="button"
+                  className="btn btn-secondary px-4 fw-bold"
                   onClick={() => setDetailModalOpen(false)}
                 >
                   Close
                 </button>
               </div>
-
             </div>
           </div>
         </div>
       )}
-
     </div>
   );
 }

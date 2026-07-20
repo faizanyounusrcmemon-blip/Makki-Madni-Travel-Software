@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from "react";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 import Swal from "sweetalert2";
-import * as XLSX from "xlsx"; //  Excel Export ke liye library import ki
+import * as XLSX from "xlsx";
 
 /* =========================
    HELPERS (NO -0 EVER)
@@ -19,12 +19,14 @@ const parseAmt = (v) => {
   return normalizeZero(Math.round(n || 0));
 };
 
+/* ================= DATE FORMATTER: DD/MMM/YYYY (e.g. 20/Jul/2026) ================= */
 const formatDate = (d) => {
   if (!d) return "-";
   const dt = new Date(d);
   if (isNaN(dt.getTime())) return "-";
   const day = String(dt.getDate()).padStart(2, "0");
-  const month = dt.toLocaleString("en-US", { month: "short" });
+  const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  const month = monthNames[dt.getMonth()];
   const year = dt.getFullYear();
   return `${day}/${month}/${year}`;
 };
@@ -59,7 +61,7 @@ export default function SupplierLedger({ onNavigate }) {
   const [amountDisp, setAmountDisp] = useState("");
   const [payDate, setPayDate] = useState(today);
   const [method, setMethod] = useState("Bank");
-  const [type, setType] = useState("payment"); // ✨ FIX: Capitalised 'Payment' ko lowercase kiya option match ke liye
+  const [type, setType] = useState("payment");
   const [saving, setSaving] = useState(false);
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
@@ -348,6 +350,128 @@ export default function SupplierLedger({ onNavigate }) {
     }
   };
 
+  /* ====================================================
+     EDIT ENTRY WITH PASSWORD & LIVE DATE FORMAT DISPLAY
+  ==================================================== */
+  const editEntry = async (entry) => {
+    if (entry.entry_type !== "payment" || !entry.id) return;
+
+    const formattedDate = entry.date ? new Date(entry.date).toISOString().split('T')[0] : today;
+
+    const { value: formValues } = await Swal.fire({
+      width: "360px",
+      title: "✏️ Edit Ledger Entry",
+      html: `
+        <div style="text-align:left; font-size:12px;" class="d-flex flex-column gap-2">
+          <div>
+            <label class="fw-bold mb-1">Amount (PKR)</label>
+            <input id="swal-edit-amount" type="number" class="form-control form-control-sm" value="${entry.debit || entry.credit || 0}" />
+          </div>
+          <div>
+            <label class="fw-bold mb-1">Payment Date</label>
+            <input id="swal-edit-date" type="date" class="form-control form-control-sm" value="${formattedDate}" />
+            <div id="swal-edit-date-text" class="text-primary fw-bold mt-1" style="font-size: 11px;">
+              ${formatDate(formattedDate)}
+            </div>
+          </div>
+          <div>
+            <label class="fw-bold mb-1">Method</label>
+            <select id="swal-edit-method" class="form-select form-select-sm">
+              <option value="Bank" ${entry.payment_method === "Bank" ? "selected" : ""}>Bank</option>
+              <option value="Cash" ${entry.payment_method === "Cash" ? "selected" : ""}>Cash</option>
+            </select>
+          </div>
+          <div>
+            <label class="fw-bold mb-1">Password</label>
+            <div style="position:relative;">
+              <input id="swal-edit-pass" type="password" class="form-control form-control-sm" placeholder="Enter password" style="padding-right:35px;" />
+              <span id="toggle-edit-pass" style="position:absolute; right:10px; top:50%; transform:translateY(-50%); cursor:pointer; user-select:none;">👁</span>
+            </div>
+          </div>
+        </div>
+      `,
+      showCancelButton: true,
+      confirmButtonText: "Update",
+      focusConfirm: false,
+      didOpen: () => {
+        const input = document.getElementById("swal-edit-pass");
+        const toggle = document.getElementById("toggle-edit-pass");
+        const dateInput = document.getElementById("swal-edit-date");
+        const dateTextLabel = document.getElementById("swal-edit-date-text");
+
+        // Live Date Change Update
+        dateInput.addEventListener("change", (e) => {
+          dateTextLabel.textContent = formatDate(e.target.value);
+        });
+
+        let show = false;
+        toggle.onclick = () => {
+          show = !show;
+          input.type = show ? "text" : "password";
+          toggle.textContent = show ? "🙈" : "👁";
+        };
+      },
+      preConfirm: () => {
+        const amount = document.getElementById("swal-edit-amount").value;
+        const payment_date = document.getElementById("swal-edit-date").value;
+        const payment_method = document.getElementById("swal-edit-method").value;
+        const password = document.getElementById("swal-edit-pass").value.trim();
+
+        if (!amount || amount <= 0) {
+          Swal.showValidationMessage("Valid amount required");
+          return false;
+        }
+        if (!password) {
+          Swal.showValidationMessage("Password required");
+          return false;
+        }
+
+        return {
+          amount: Number(amount),
+          payment_date,
+          payment_method,
+          password,
+          type: entry.type === "Opening Bal" || entry.type === "opening_balance" ? "opening_balance" : (entry.type === "Adjustment" ? "adjustment" : "payment")
+        };
+      }
+    });
+
+    if (!formValues) return;
+
+    Swal.fire({
+      width: "260px",
+      title: "Updating...",
+      allowOutsideClick: false,
+      didOpen: () => Swal.showLoading()
+    });
+
+    try {
+      const res = await fetch(
+        `${import.meta.env.VITE_BACKEND_URL}/api/supplier-ledger/edit/${entry.id}`,
+        {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(formValues),
+        }
+      );
+
+      const d = await res.json();
+      Swal.close();
+
+      if (!d.success) {
+        Swal.fire({ icon: "error", text: d.error || "Update failed" });
+        return;
+      }
+
+      await loadLedger();
+      await loadPendingAlways();
+      Swal.fire({ icon: "success", text: "Entry updated successfully" });
+    } catch (err) {
+      Swal.close();
+      Swal.fire({ icon: "error", text: "Network Error" });
+    }
+  };
+
   /* =========================
      EXPORT PDF (WITH LOADER)
   ========================= */
@@ -557,7 +681,10 @@ export default function SupplierLedger({ onNavigate }) {
               <div className="col-md-2">
                 <label className="form-label small fw-bold mb-1">Payment Date</label>
                 <input type="date" className="form-control form-control-sm" value={payDate} onChange={e => setPayDate(e.target.value)} />
-                <small className="text-muted d-block mt-1" style={{ fontSize: "0.7rem" }}>{formatDate(payDate)}</small>
+                {/* LIVE FORMATTED DATE TEXT DISPLAY */}
+                <span className="text-primary fw-bold d-block mt-1" style={{ fontSize: "0.75rem" }}>
+                  {formatDate(payDate)}
+                </span>
               </div>
               <div className="col-md-3">
                 <label className="form-label small fw-bold mb-1">Amount (PKR)</label>
@@ -662,7 +789,22 @@ export default function SupplierLedger({ onNavigate }) {
                         <td className="fw-bold">{fmtAmt(r.balance)}</td>
                         <td className="text-center">
                           {r.entry_type === "payment" && r.id && r.id !== 0 ? (
-                            <button className="btn btn-xs btn-outline-danger py-0 px-1" onClick={() => deleteEntry(r)}>Delete</button>
+                            <div className="d-flex gap-1 justify-content-center">
+                              <button 
+                                className="btn btn-xs btn-outline-primary py-0 px-1" 
+                                onClick={() => editEntry(r)}
+                                style={{ fontSize: "0.75rem" }}
+                              >
+                                Edit
+                              </button>
+                              <button 
+                                className="btn btn-xs btn-outline-danger py-0 px-1" 
+                                onClick={() => deleteEntry(r)}
+                                style={{ fontSize: "0.75rem" }}
+                              >
+                                Delete
+                              </button>
+                            </div>
                           ) : "-"}
                         </td>
                       </tr>
