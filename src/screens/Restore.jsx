@@ -244,129 +244,133 @@ const askPassword = async (title, fileObj) => {
     });
   };
 
-  /* ================= RESTORE ================= */
+/* ================= RESTORE (WITH LIVE PROGRESS & STEPPER) ================= */
 
   const restore = async (file, mode) => {
-    const fileObj = files.find(f => f.name === file);
+    const fileObj = files.find((f) => f.name === file);
 
-    const password = await askPassword("Restore Backup", fileObj);
+    const password = await askPassword(
+      mode === "full" ? "Full Backup Restore" : "Table Backup Restore",
+      fileObj
+    );
     if (!password) return;
 
     if (mode === "table" && !tableMap[file]) {
-      return Swal.fire("Error", "Table select karo", "error");
+      return Swal.fire("Error", "Please select a table to restore", "error");
     }
 
-    Swal.fire({
-  title: "🔄 Restoring Backup",
-  html: `
-    <div style="margin-top:15px">
-
-      <div style="
-        width:100%;
-        height:24px;
-        background:#e5e7eb;
-        border-radius:50px;
-        overflow:hidden;
-      ">
-        <div
-          id="restoreBar"
-          style="
-            width:0%;
-            height:100%;
-            background:linear-gradient(
-              90deg,
-              #3b82f6,
-              #2563eb
-            );
-            transition:width .4s ease;
-          "
-        ></div>
-      </div>
-
-      <div
-        id="restorePercent"
-        style="
-          margin-top:10px;
-          font-size:18px;
-          font-weight:800;
-        "
-      >
-        0%
-      </div>
-
-    </div>
-  `,
-  showConfirmButton: false,
-  allowOutsideClick: false,
-});
+    let progressInterval = null;
 
     try {
-let p = 0;
-
-const timer = setInterval(() => {
-
-  if (p >= 90) return;
-
-  p += 5;
-
-  const bar =
-    document.getElementById("restoreBar");
-
-  const txt =
-    document.getElementById("restorePercent");
-
-  if (bar) {
-    bar.style.width = `${p}%`;
-  }
-
-  if (txt) {
-    txt.innerHTML = `${p}%`;
-  }
-
-}, 250);
-
-      const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}${
-        mode === "full"
-          ? "/api/backup/restore/full"
-          : "/api/backup/restore/table"
-      }`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ file, table: tableMap[file], password }),
+      // 1. Progress Bar Popup with Stepper UI
+      Swal.fire({
+        title: "🔄 External Database Engine",
+        html: `
+          <div style="margin-top:15px; text-align: left;">
+            <div style="width:100%; height:20px; background:#e5e7eb; border-radius:50px; overflow:hidden; margin-bottom: 15px;">
+              <div id="restoreBar" style="width:0%; height:100%; background:linear-gradient(90deg, #3b82f6, #2563eb); transition:width 0.4s ease;"></div>
+            </div>
+            <div style="display:flex; justify-content:space-between; font-weight:800; font-size:16px; margin-bottom:15px;">
+              <span>Status: <span id="restoreStatus" style="color:#2563eb;">Initiating Restore...</span></span>
+              <span id="restorePercent">0%</span>
+            </div>
+            <div id="stepperContainer" style="font-size:13px; line-height: 2;">
+              <div id="step1" style="color:#2563eb; font-weight:bold;">⏳ Step 1: Reading Backup File...</div>
+              <div id="step2" style="color:#94a3b8;">⚪ Step 2: Extracting & Verifying Structures...</div>
+              <div id="step3" style="color:#94a3b8;">⚪ Step 3: Purging Live Records & Overwriting Tables...</div>
+              <div id="step4" style="color:#94a3b8;">⚪ Step 4: Finalizing Sequences & Triggers...</div>
+            </div>
+          </div>
+        `,
+        allowOutsideClick: false,
+        allowEscapeKey: false,
+        showConfirmButton: false,
       });
+
+      // Helper function to update Progress & Steppers
+      const updateProgressDOM = (pct, statusText, currentStep) => {
+        const bar = document.getElementById("restoreBar");
+        const txt = document.getElementById("restorePercent");
+        const st = document.getElementById("restoreStatus");
+        if (bar) bar.style.width = `${pct}%`;
+        if (txt) txt.innerHTML = `${pct}%`;
+        if (st) st.innerHTML = statusText;
+
+        for (let i = 1; i <= 4; i++) {
+          const el = document.getElementById(`step${i}`);
+          if (el) {
+            if (i < currentStep) {
+              el.innerHTML = el.innerHTML.replace(/[⏳⚪✅]/, "✅");
+              el.style.color = "#16a34a";
+              el.style.fontWeight = "normal";
+            } else if (i === currentStep) {
+              el.innerHTML = el.innerHTML.replace(/[⏳⚪✅]/, "⏳");
+              el.style.color = "#2563eb";
+              el.style.fontWeight = "bold";
+            } else {
+              el.style.color = "#94a3b8";
+              el.style.fontWeight = "normal";
+            }
+          }
+        }
+      };
+
+      // 2. Simulated Dynamic Progress Steps
+      let simulatedPct = 0;
+      progressInterval = setInterval(() => {
+        if (simulatedPct < 30) {
+          simulatedPct += 5;
+          updateProgressDOM(simulatedPct, "Reading Backup File...", 1);
+        } else if (simulatedPct >= 30 && simulatedPct < 65) {
+          simulatedPct += 3;
+          updateProgressDOM(simulatedPct, "Extracting & verifying structures...", 2);
+        } else if (simulatedPct >= 65 && simulatedPct < 90) {
+          simulatedPct += 2;
+          updateProgressDOM(simulatedPct, "Purging records & overwriting...", 3);
+        }
+      }, 250);
+
+      // 3. Send REST request to backend
+      const res = await fetch(
+        `${import.meta.env.VITE_BACKEND_URL}${
+          mode === "full"
+            ? "/api/backup/restore/full"
+            : "/api/backup/restore/table"
+        }`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ file, table: tableMap[file], password }),
+        }
+      );
 
       const data = await res.json();
 
-clearInterval(timer);
+      // Clear interval on server response
+      if (progressInterval) clearInterval(progressInterval);
 
-const bar =
-  document.getElementById("restoreBar");
+      if (!res.ok || !data.success) {
+        Swal.close();
+        return Swal.fire("Error", data.error || "Restore failed / Wrong password", "error");
+      }
 
-const txt =
-  document.getElementById("restorePercent");
-
-if (bar) {
-  bar.style.width = "100%";
-}
-
-if (txt) {
-  txt.innerHTML = "100%";
-}
-
-await new Promise((r) =>
-  setTimeout(r, 500)
-);
+      // Final completion steps
+      updateProgressDOM(96, "Finalizing sequences & triggers...", 4);
+      await new Promise((r) => setTimeout(r, 600));
+      updateProgressDOM(100, "Done!", 5);
+      await new Promise((r) => setTimeout(r, 400));
 
       Swal.close();
 
-      if (!res.ok || !data.success) {
-        return Swal.fire("Error", data.error || "Wrong password", "error");
-      }
+      Swal.fire({
+        icon: "success",
+        title: "Restore Completed",
+        text: "Database restored successfully!",
+        confirmButtonColor: "#16a34a",
+      });
 
-Swal.close();
-
-      Swal.fire("Success", "Restore completed successfully", "success");
-    } catch {
+    } catch (err) {
+      if (progressInterval) clearInterval(progressInterval);
       Swal.close();
       Swal.fire("Error", "Restore failed", "error");
     }
