@@ -70,29 +70,30 @@ export default function SupplierLedger({ onNavigate }) {
   const [snapshotDate, setSnapshotDate] = useState(null);
   const [openingBalance, setOpeningBalance] = useState(0);
 
-  /* =========================
-     LOAD PENDING / PARTIAL
-  ========================== */
-  const loadPendingAlways = async () => {
-    try {
-      const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/supplier-ledger/pending`);
-      const d = await res.json();
-      if (d.success) {
-        const clean = (d.pending || [])
-          .map(p => ({
-            ...p,
-            pending_amount: normalizeZero(p.pending_amount),
-            total_purchase: normalizeZero(p.total_purchase),
-            total_paid: normalizeZero(p.total_paid)
-          }))
-          .filter(p => p.status !== "PAID")
-          .sort((a, b) => b.pending_amount - a.pending_amount);
-        setPending(clean);
-      }
-    } catch (e) {
-      console.error("Pending load error:", e);
+/* =========================
+   LOAD PENDING / PARTIAL
+========================== */
+const loadPendingAlways = async () => {
+  try {
+    const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/supplier-ledger/pending`);
+    const d = await res.json();
+    if (d.success) {
+      const clean = (d.pending || [])
+        .map(p => ({
+          ...p,
+          pending_amount: normalizeZero(p.pending_amount),
+          total_purchase: normalizeZero(p.total_purchase),
+          total_paid: normalizeZero(p.total_paid)
+        }))
+        // Filter handles zero-check cleanly for both unpaid purchases & opening balance entries
+        .filter(p => p.status !== "PAID" || Math.abs(p.pending_amount) > 0.5)
+        .sort((a, b) => b.pending_amount - a.pending_amount);
+      setPending(clean);
     }
-  };
+  } catch (e) {
+    console.error("Pending load error:", e);
+  }
+};
 
   /* =========================
      LOAD LEDGER
@@ -515,7 +516,7 @@ export default function SupplierLedger({ onNavigate }) {
           pdf.rect(0, 0, pageWidth, 20, "F");
           pdf.setTextColor(255, 255, 255);
           pdf.setFontSize(16);
-          pdf.text("MAKKI MADNI TRAVEL & TOURS", pageWidth / 2, 10, { align: "center" });
+          pdf.text("BE TRAVEL & TOURS", pageWidth / 2, 10, { align: "center" });
           pdf.setFontSize(10);
           pdf.text("Supplier Ledger Statement", pageWidth / 2, 16, { align: "center" });
 
@@ -565,7 +566,7 @@ export default function SupplierLedger({ onNavigate }) {
         const supplierName = supplierRow?.supplier_name || "Supplier";
 
         const headerInfo = [
-          ["MAKKI MADNI TRAVEL & TOURS"],
+          ["BE TRAVEL & TOURS"],
           ["SUPPLIER LEDGER STATEMENT"],
           [""],
           ["Supplier Name:", supplierName.toUpperCase(), "", "Printed Date:", formatDate(today)],

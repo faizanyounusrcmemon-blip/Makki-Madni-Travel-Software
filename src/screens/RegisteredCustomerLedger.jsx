@@ -145,7 +145,7 @@ export default function RegisteredCustomerLedger({ onNavigate }) {
   /* =========================
      FETCH SALE DETAIL MODAL
   ========================== */
-  const handleSuccessResponse = (data, ledgerDebitVal, originalId, currentType) => {
+  const handleSuccessResponse = (data, ledgerVal, originalId, currentType) => {
     if (data.success && data.row) {
       const row = data.row;
 
@@ -164,7 +164,7 @@ export default function RegisteredCustomerLedger({ onNavigate }) {
         row.rows = safeParse(row.rows);
       }
 
-      row.total_pkr = Number(row.total_pkr || row.grand_total || row.total_amount || row.total_amount_pkr || ledgerDebitVal || 0);
+      row.total_pkr = Number(row.total_pkr || row.grand_total || row.total_amount || row.total_amount_pkr || ledgerVal || 0);
       row.grand_total = row.total_pkr;
       row.total_amount = row.total_pkr;
 
@@ -175,9 +175,9 @@ export default function RegisteredCustomerLedger({ onNavigate }) {
         customer_name: customerName,
         booking_date: getTodayInputDate(),
         description: "",
-        total_pkr: ledgerDebitVal,
-        grand_total: ledgerDebitVal,
-        total_amount: ledgerDebitVal
+        total_pkr: ledgerVal,
+        grand_total: ledgerVal,
+        total_amount: ledgerVal
       });
     }
   };
@@ -193,7 +193,7 @@ export default function RegisteredCustomerLedger({ onNavigate }) {
     }
 
     const matchedLedgerRow = rows.find(r => String(r.id) === idStr);
-    const ledgerDebitVal = matchedLedgerRow ? Number(matchedLedgerRow.debit || 0) : 0;
+    const ledgerVal = matchedLedgerRow ? Number(matchedLedgerRow.credit || matchedLedgerRow.debit || 0) : 0;
 
     if (cleanRef.startsWith("TIC-")) {
       detectedType = "TICKETING";
@@ -232,9 +232,9 @@ export default function RegisteredCustomerLedger({ onNavigate }) {
         customer_name: customerName,
         booking_date: matchedLedgerRow?.date || getTodayInputDate(),
         description: description,
-        total_pkr: ledgerDebitVal,
-        grand_total: ledgerDebitVal,
-        total_amount: ledgerDebitVal,
+        total_pkr: ledgerVal,
+        grand_total: ledgerVal,
+        total_amount: ledgerVal,
         total_sar: 0,
         pkr_rate: 0
       });
@@ -255,7 +255,7 @@ export default function RegisteredCustomerLedger({ onNavigate }) {
           const altRes = await fetch(retryUrl);
           if (altRes.ok) {
             const altData = await altRes.json();
-            return handleSuccessResponse(altData, ledgerDebitVal, cleanRef, detectedType);
+            return handleSuccessResponse(altData, ledgerVal, cleanRef, detectedType);
           }
         }
       }
@@ -265,7 +265,7 @@ export default function RegisteredCustomerLedger({ onNavigate }) {
       }
 
       const data = await res.json();
-      handleSuccessResponse(data, ledgerDebitVal, cleanRef, detectedType);
+      handleSuccessResponse(data, ledgerVal, cleanRef, detectedType);
     } catch (err) {
       console.error("Error fetching detail:", err);
       useBackupFallback();
@@ -288,7 +288,7 @@ export default function RegisteredCustomerLedger({ onNavigate }) {
     setSaving(true);
     Swal.fire({
       width: "250px",
-      title: "Saving Receipt...",
+      title: "Saving Entry...",
       allowOutsideClick: false,
       didOpen: () => Swal.showLoading()
     });
@@ -563,7 +563,7 @@ export default function RegisteredCustomerLedger({ onNavigate }) {
           pdf.setTextColor(255, 255, 255);
           pdf.setFont("helvetica", "bold");
           pdf.setFontSize(16);
-          pdf.text("MAKKI MADNI TRAVEL & TOURS", pageWidth / 2, 12, { align: "center" });
+          pdf.text("BE TRAVEL & TOURS", pageWidth / 2, 12, { align: "center" });
 
           pdf.setFont("helvetica", "normal");
           pdf.setFontSize(9);
@@ -656,7 +656,7 @@ export default function RegisteredCustomerLedger({ onNavigate }) {
     setTimeout(() => {
       try {
         const headerInfo = [
-          ["MAKKI MADNI TRAVEL & TOURS"],
+          ["BE TRAVEL & TOURS"],
           ["REGISTERED CUSTOMER FINANCIAL LEDGER"],
           [""],
           ["Customer Name:", customerName.toUpperCase(), "", "Printed Date:", getRowDate({ date: new Date() })],
@@ -741,6 +741,7 @@ export default function RegisteredCustomerLedger({ onNavigate }) {
       detailData.grand_total ||
       detailData.total_amount ||
       detailData.total_amount_pkr ||
+      detailData.credit ||
       detailData.debit ||
       0
     );
@@ -858,7 +859,7 @@ export default function RegisteredCustomerLedger({ onNavigate }) {
           </div>
 
           <div className={`card shadow-sm mb-3 ${!customerCode ? "opacity-50" : ""}`} style={{ pointerEvents: !customerCode ? "none" : "auto" }}>
-            <div className="card-header bg-dark text-white fw-bold">📥 Post New Payment / Receipt</div>
+            <div className="card-header bg-dark text-white fw-bold">📥 Post New Payment / Entry</div>
             <div className="card-body">
               <div className="row g-2 mb-3">
                 <div className="col-md-3">
@@ -891,9 +892,9 @@ export default function RegisteredCustomerLedger({ onNavigate }) {
                 <div className="col-md-3">
                   <label className="form-label small text-muted mb-1">Transaction Type</label>
                   <select className="form-select" value={type} onChange={(e) => setType(e.target.value)}>
-                    <option value="payment">payment</option>
-                    <option value="adjustment">adjustment</option>
-                    <option value="opening_balance">🔑 opening_balance (Debit)</option>
+                    <option value="payment">payment (Debit)</option>
+                    <option value="adjustment">adjustment (Debit)</option>
+                    <option value="opening_balance">🔑 opening_balance (Credit)</option>
                   </select>
                 </div>
                 <div className="col-md-3">
