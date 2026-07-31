@@ -76,7 +76,7 @@ export default function ArchiveView({ archiveId, onNavigate }) {
         </button>
       </div>
 
-      {/* METRICS CARDS ROW (FIXED VISIBILITY) */}
+      {/* METRICS CARDS ROW */}
       <div className="row g-3 mb-4">
         <Card title="Opening Cash" value={data.snapshot.opening_cash} icon="💵" color="#10b981" money={money} />
         <Card title="Opening Bank" value={data.snapshot.opening_bank} icon="🏦" color="#3b82f6" money={money} />
@@ -94,6 +94,7 @@ export default function ArchiveView({ archiveId, onNavigate }) {
               <table className="table table-dark table-hover mb-0">
                 <thead>
                   <tr className="table-info text-dark">
+                    <th>Code</th>
                     <th>Name</th>
                     <th className="text-end">Balance</th>
                   </tr>
@@ -101,13 +102,14 @@ export default function ArchiveView({ archiveId, onNavigate }) {
                 <tbody>
                   {(data.customers || []).map((c, i) => (
                     <tr key={i}>
-                      <td>{c.name}</td>
+                      <td className="fw-bold text-info">{c.customer_code || c.code || c.ref_no || "N/A"}</td>
+                      <td>{c.name || c.customer_name}</td>
                       <td className="text-end text-info fw-bold">{money(c.balance)}</td>
                     </tr>
                   ))}
                   {(data.customers || []).length === 0 && (
                     <tr>
-                      <td colSpan="2" className="text-center text-muted">No records found</td>
+                      <td colSpan="3" className="text-center text-muted">No records found</td>
                     </tr>
                   )}
                 </tbody>
@@ -124,6 +126,7 @@ export default function ArchiveView({ archiveId, onNavigate }) {
               <table className="table table-dark table-hover mb-0">
                 <thead>
                   <tr className="table-warning text-dark">
+                    <th>Code</th>
                     <th>Name</th>
                     <th className="text-end">Balance</th>
                   </tr>
@@ -131,13 +134,14 @@ export default function ArchiveView({ archiveId, onNavigate }) {
                 <tbody>
                   {(data.suppliers || []).map((s, i) => (
                     <tr key={i}>
-                      <td>{s.name}</td>
+                      <td className="fw-bold text-warning">{s.supplier_code || s.code || "N/A"}</td>
+                      <td>{s.name || s.supplier_name}</td>
                       <td className="text-end text-warning fw-bold">{money(s.balance)}</td>
                     </tr>
                   ))}
                   {(data.suppliers || []).length === 0 && (
                     <tr>
-                      <td colSpan="2" className="text-center text-muted">No records found</td>
+                      <td colSpan="3" className="text-center text-muted">No records found</td>
                     </tr>
                   )}
                 </tbody>
