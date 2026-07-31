@@ -139,7 +139,7 @@ Swal.fire({
   return (
     <div className="login-wrapper">
       <div className={`login-card ${shake ? "shake" : ""}`}>
-        <h2 className="title">✈️ Makki Madni Travel</h2>
+        <h2 className="title">✈️ Makki Madni Travel & Tours</h2>
         <p className="subtitle">Secure Login Panel</p>
 
         <input
