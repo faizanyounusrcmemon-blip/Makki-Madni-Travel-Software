@@ -16,6 +16,18 @@ const formatCustomDate = (dateStr) => {
   return `${day}/${month}/${year}`;
 };
 
+// Helper Function for SweetAlert Loading Modal
+const showLoading = (title = "Processing...") => {
+  Swal.fire({
+    title: title,
+    allowOutsideClick: false,
+    allowEscapeKey: false,
+    didOpen: () => {
+      Swal.showLoading();
+    }
+  });
+};
+
 /* ================= ARCHIVE DASHBOARD COMPONENT ================= */
 function ArchiveDashboard() {
   const [liveStartDate, setLiveStartDate] = useState("Loading...");
@@ -111,51 +123,80 @@ export default function ArchiveManager({ onNavigate }) {
     loadList();
   }, []);
 
-  const checkPassword = async () => {
+  // 🔐 DYNAMIC PASSWORD CHECKER
+  const checkPassword = async (actionName = "Archive Access") => {
     let showPassword = false;
     const result = await Swal.fire({
-      title: "🔐 Archive Access",
+      title: `<div style="font-size:15px; font-weight:700; color:#f8fafc; line-height:1.4;">
+                🔐 Action Verification<br>
+                <span style="font-size:12px; color:#38bdf8; font-weight:600;">[ ${actionName} ]</span>
+              </div>`,
       html: `
-        <div style="position:relative">
-          <input id="archive-password" type="password" class="swal2-input" placeholder="Enter Password" style="margin:0;width:100%;padding-right:45px" />
-          <button id="toggle-password" type="button" style="position:absolute;right:8px;top:8px;border:none;background:none;cursor:pointer;font-size:18px;">👁️</button>
+        <div style="position:relative; margin-top:12px;">
+          <input id="archive-password" type="password" placeholder="Enter Password" 
+            style="width:100%; padding:9px 38px 9px 12px; background:#0f172a; border:1px solid #334155; color:#f8fafc; border-radius:8px; font-size:13px; outline:none; box-sizing:border-box;" />
+          <button id="toggle-password" type="button" 
+            style="position:absolute; right:10px; top:50%; transform:translateY(-50%); border:none; background:none; cursor:pointer; font-size:15px; color:#94a3b8; padding:0; display:flex; align-items:center;">👁️</button>
         </div>
       `,
-      width: 350,
+      width: 310,
+      padding: "16px",
+      background: "#1e293b",
       showCancelButton: true,
-      confirmButtonText: "Login",
+      confirmButtonText: "Confirm",
+      cancelButtonText: "Cancel",
+      confirmButtonColor: "#2563eb",
+      cancelButtonColor: "#334155",
       focusConfirm: false,
       didOpen: () => {
         const input = document.getElementById("archive-password");
         const btn = document.getElementById("toggle-password");
-        btn.addEventListener("click", () => {
-          showPassword = !showPassword;
-          input.type = showPassword ? "text" : "password";
-          btn.innerHTML = showPassword ? "🙈" : "👁️";
-        });
+        
+        if (input) input.focus();
+
+        if (btn && input) {
+          btn.addEventListener("click", () => {
+            showPassword = !showPassword;
+            input.type = showPassword ? "text" : "password";
+            btn.innerHTML = showPassword ? "🙈" : "👁️";
+          });
+        }
       },
-      preConfirm: () => document.getElementById("archive-password").value
+      preConfirm: () => {
+        const val = document.getElementById("archive-password").value;
+        if (!val) {
+          Swal.showValidationMessage("Password is required");
+        }
+        return val;
+      }
     });
 
     const password = result.value;
     if (!password) return false;
-    if (password === "faizan") return true;
 
-    Swal.close();
-    await Swal.fire({ icon: "error", title: "Wrong Password", text: "Access Denied", width: 320 });
+    try {
+      const res = await API.post("/archive/verify-password", {
+        key_name: "archive_management_pass",
+        password: password
+      });
+
+      if (res.data.success) {
+        return true;
+      }
+    } catch (err) {
+      Swal.close();
+      await Swal.fire({ 
+        icon: "error", 
+        title: "Wrong Password", 
+        text: err.response?.data?.error || "Access Denied", 
+        width: 300,
+        background: "#1e293b",
+        color: "#f8fafc"
+      });
+      return false;
+    }
+
     return false;
-  };
-
-  const showLoading = (text = "Processing...") => {
-    Swal.close();
-    Swal.fire({
-      title: text,
-      html: `<div style="margin-top:15px; font-size:16px; color:#64748b;">⏳ Please wait...<br/>System is working</div>`,
-      width: 320,
-      allowOutsideClick: false,
-      allowEscapeKey: false,
-      didOpen: () => { Swal.showLoading(); }
-    });
   };
 
   // 1ST STEP PREVIEW
@@ -178,7 +219,7 @@ export default function ArchiveManager({ onNavigate }) {
 
   // 2ND STEP SNAPSHOT
   const handleSnapshot = async () => {
-    if (!(await checkPassword())) return;
+    if (!(await checkPassword("Create Snapshot"))) return;
     if (!from || !to) {
       Swal.close();
       return Swal.fire({ icon: "error", title: "Date Required", text: "Please select dates", width: 320 });
@@ -242,7 +283,7 @@ export default function ArchiveManager({ onNavigate }) {
 
   // 3RD STEP DOWNLOAD ZIP
   const handleBackup = async () => {
-    if (!(await checkPassword())) return;
+    if (!(await checkPassword("Download ZIP Backup"))) return;
     if (!from || !to) {
       Swal.close();
       return Swal.fire({ icon: "error", title: "Date Required", text: "Select dates", width: 320 });
@@ -283,7 +324,7 @@ export default function ArchiveManager({ onNavigate }) {
 
   // 4TH STEP DELETE LIVE DATA
   const handleDelete = async () => {
-    if (!(await checkPassword())) return;
+    if (!(await checkPassword("Delete Live Data"))) return;
     if (!from || !to) {
       return Swal.fire({ icon: "error", title: "Date Required", text: "Select dates first", width: 320 });
     }
@@ -320,7 +361,7 @@ export default function ArchiveManager({ onNavigate }) {
   };
 
   const handleRestore = async () => {
-    if (!(await checkPassword())) return;
+    if (!(await checkPassword("Restore ZIP Backup"))) return;
     const { value: file } = await Swal.fire({
       title: "📤 Upload Backup ZIP",
       input: "file",
@@ -352,7 +393,7 @@ export default function ArchiveManager({ onNavigate }) {
   };
 
   const handleView = async (id) => {
-    if (!(await checkPassword())) return;
+    if (!(await checkPassword(`Inspect Snapshot #${id}`))) return;
     try {
       const res = await API.get(`/archive/view/${id}`);
       if (res.data.success) {
@@ -365,7 +406,7 @@ export default function ArchiveManager({ onNavigate }) {
   };
 
   const handleDownload = async (id) => {
-    if (!(await checkPassword())) return;
+    if (!(await checkPassword(`Pull ZIP Stream #${id}`))) return;
     const targetItem = list.find(item => item.id === id);
     if (!targetItem) return Swal.fire("Error", "Snapshot not found", "error");
 
@@ -406,49 +447,49 @@ export default function ArchiveManager({ onNavigate }) {
       {/* Embedded Dashboard Component */}
       <ArchiveDashboard />
 
-{/* Controls / Inputs Section */}
-<div style={styles.cardMain}>
-  <div style={styles.row}>
-    {/* START DATE */}
-    <div style={{ flex: 1 }}>
-      <label style={styles.inputLabel}>START DATE</label>
-      <input 
-        type="date" 
-        value={from} 
-        onChange={(e) => setFrom(e.target.value)} 
-        style={styles.inputField} 
-      />
-      {/* Date Preview Badge (Supplier Ledger Format) */}
-      <div style={styles.datePreviewBadge}>
-        {from ? formatCustomDate(from) : "DD/MMM/YYYY"}
-      </div>
-    </div>
+      {/* Controls / Inputs Section */}
+      <div style={styles.cardMain}>
+        <div style={styles.row}>
+          {/* START DATE */}
+          <div style={{ flex: 1 }}>
+            <label style={styles.inputLabel}>START DATE</label>
+            <input 
+              type="date" 
+              value={from} 
+              onChange={(e) => setFrom(e.target.value)} 
+              style={styles.inputField} 
+            />
+            {/* Date Preview Badge */}
+            <div style={styles.datePreviewBadge}>
+              {from ? formatCustomDate(from) : "DD/MMM/YYYY"}
+            </div>
+          </div>
 
-    {/* END DATE */}
-    <div style={{ flex: 1 }}>
-      <label style={styles.inputLabel}>END DATE</label>
-      <input 
-        type="date" 
-        value={to} 
-        onChange={(e) => setTo(e.target.value)} 
-        style={styles.inputField} 
-      />
-      {/* Date Preview Badge (Supplier Ledger Format) */}
-      <div style={styles.datePreviewBadge}>
-        {to ? formatCustomDate(to) : "DD/MMM/YYYY"}
-      </div>
-    </div>
-  </div>
+          {/* END DATE */}
+          <div style={{ flex: 1 }}>
+            <label style={styles.inputLabel}>END DATE</label>
+            <input 
+              type="date" 
+              value={to} 
+              onChange={(e) => setTo(e.target.value)} 
+              style={styles.inputField} 
+            />
+            {/* Date Preview Badge */}
+            <div style={styles.datePreviewBadge}>
+              {to ? formatCustomDate(to) : "DD/MMM/YYYY"}
+            </div>
+          </div>
+        </div>
 
-  {/* Action Buttons Sequence */}
-  <div style={styles.buttonRow}>
-    <button style={styles.btnSecondary} onClick={handlePreview}>🔍 1st Step Preview</button>
-    <button style={styles.btnPrimary} onClick={handleSnapshot}>💾 2nd Snapshot</button>
-    <button style={styles.btnPrimary} onClick={handleBackup}>📦 3rd Download ZIP</button>
-    <button style={styles.btnDanger} onClick={handleDelete}>🔥 4th Delete Live Data</button>
-    <button style={styles.btnWarning} onClick={handleRestore}>📤 Restore ZIP</button>
-  </div>
-</div>
+        {/* Action Buttons Sequence */}
+        <div style={styles.buttonRow}>
+          <button style={styles.btnSecondary} onClick={handlePreview}>🔍 1st Step Preview</button>
+          <button style={styles.btnPrimary} onClick={handleSnapshot}>💾 2nd Snapshot</button>
+          <button style={styles.btnPrimary} onClick={handleBackup}>📦 3rd Download ZIP</button>
+          <button style={styles.btnDanger} onClick={handleDelete}>🔥 4th Delete Live Data</button>
+          <button style={styles.btnWarning} onClick={handleRestore}>📤 Restore ZIP</button>
+        </div>
+      </div>
 
       {/* Preview Section */}
       {preview && (
@@ -562,7 +603,7 @@ export default function ArchiveManager({ onNavigate }) {
 const styles = {
   container: {
     padding: "24px",
-    background: "#0f172a", // Dark Sober Background
+    background: "#0f172a",
     minHeight: "100vh",
     color: "#f8fafc",
     fontFamily: "'Inter', system-ui, -apple-system, sans-serif"
@@ -808,18 +849,18 @@ const styles = {
     fontSize: "12px",
     fontWeight: "600"
   },
-datePreviewBadge: {
-  marginTop: "6px",
-  padding: "4px 8px",
-  background: "#1e3a8a", // Dark Blue Badge like Supplier Ledger
-  color: "#93c5fd",
-  borderRadius: "4px",
-  fontSize: "12px",
-  fontWeight: "700",
-  display: "inline-block",
-  border: "1px solid #1e40af"
-},
- smallBtnPrimary: {
+  datePreviewBadge: {
+    marginTop: "6px",
+    padding: "4px 8px",
+    background: "#1e3a8a",
+    color: "#93c5fd",
+    borderRadius: "4px",
+    fontSize: "12px",
+    fontWeight: "700",
+    display: "inline-block",
+    border: "1px solid #1e40af"
+  },
+  smallBtnPrimary: {
     padding: "6px 12px",
     background: "#2563eb",
     color: "#fff",
