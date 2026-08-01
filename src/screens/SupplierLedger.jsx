@@ -351,13 +351,14 @@ const loadPendingAlways = async () => {
     }
   };
 
-  /* ====================================================
+/* ====================================================
      EDIT ENTRY WITH PASSWORD & LIVE DATE FORMAT DISPLAY
   ==================================================== */
   const editEntry = async (entry) => {
     if (entry.entry_type !== "payment" || !entry.id) return;
 
     const formattedDate = entry.date ? new Date(entry.date).toISOString().split('T')[0] : today;
+    const currentType = (entry.type || "payment").toLowerCase();
 
     const { value: formValues } = await Swal.fire({
       width: "360px",
@@ -374,6 +375,14 @@ const loadPendingAlways = async () => {
             <div id="swal-edit-date-text" class="text-primary fw-bold mt-1" style="font-size: 11px;">
               ${formatDate(formattedDate)}
             </div>
+          </div>
+          <div>
+            <label class="fw-bold mb-1">Transaction Type</label>
+            <select id="swal-edit-type" class="form-select form-select-sm">
+              <option value="payment" ${currentType.includes("payment") ? "selected" : ""}>Payment</option>
+              <option value="adjustment" ${currentType.includes("adjustment") ? "selected" : ""}>Adjustment</option>
+              <option value="opening_balance" ${currentType.includes("opening") ? "selected" : ""}>🔑 Opening Balance (Debit)</option>
+            </select>
           </div>
           <div>
             <label class="fw-bold mb-1">Method</label>
@@ -416,6 +425,7 @@ const loadPendingAlways = async () => {
         const amount = document.getElementById("swal-edit-amount").value;
         const payment_date = document.getElementById("swal-edit-date").value;
         const payment_method = document.getElementById("swal-edit-method").value;
+        const type = document.getElementById("swal-edit-type").value;
         const password = document.getElementById("swal-edit-pass").value.trim();
 
         if (!amount || amount <= 0) {
@@ -431,8 +441,8 @@ const loadPendingAlways = async () => {
           amount: Number(amount),
           payment_date,
           payment_method,
-          password,
-          type: entry.type === "Opening Bal" || entry.type === "opening_balance" ? "opening_balance" : (entry.type === "Adjustment" ? "adjustment" : "payment")
+          type,
+          password
         };
       }
     });
@@ -516,7 +526,7 @@ const loadPendingAlways = async () => {
           pdf.rect(0, 0, pageWidth, 20, "F");
           pdf.setTextColor(255, 255, 255);
           pdf.setFontSize(16);
-          pdf.text("MAKKI MADNI TRAVEL & TOURS", pageWidth / 2, 10, { align: "center" });
+          pdf.text("BE TRAVEL & TOURS", pageWidth / 2, 10, { align: "center" });
           pdf.setFontSize(10);
           pdf.text("Supplier Ledger Statement", pageWidth / 2, 16, { align: "center" });
 
@@ -566,7 +576,7 @@ const loadPendingAlways = async () => {
         const supplierName = supplierRow?.supplier_name || "Supplier";
 
         const headerInfo = [
-          ["MAKKI MADNI TRAVEL & TOURS"],
+          ["BE TRAVEL & TOURS"],
           ["SUPPLIER LEDGER STATEMENT"],
           [""],
           ["Supplier Name:", supplierName.toUpperCase(), "", "Printed Date:", formatDate(today)],

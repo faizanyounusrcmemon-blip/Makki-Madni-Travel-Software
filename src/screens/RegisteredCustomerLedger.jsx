@@ -411,7 +411,7 @@ export default function RegisteredCustomerLedger({ onNavigate }) {
     }
   };
 
-  /* =========================
+/* =========================
      EDIT ROW
   ========================== */
   const editRow = async (row) => {
@@ -420,6 +420,7 @@ export default function RegisteredCustomerLedger({ onNavigate }) {
     }
 
     const formattedDate = toInputDate(row.date || row.payment_date) || getTodayInputDate();
+    const currentType = (row.type || "payment").toLowerCase();
 
     const { value: formValues } = await Swal.fire({
       width: "360px",
@@ -436,6 +437,14 @@ export default function RegisteredCustomerLedger({ onNavigate }) {
             <div id="swal-edit-date-text" class="text-primary fw-bold mt-1" style="font-size: 11px;">
               ${formatDate(formattedDate)}
             </div>
+          </div>
+          <div>
+            <label class="fw-bold mb-1">Transaction Type</label>
+            <select id="swal-edit-type" class="form-select form-select-sm">
+              <option value="payment" ${currentType.includes("payment") ? "selected" : ""}>Payment (Debit)</option>
+              <option value="adjustment" ${currentType.includes("adjustment") ? "selected" : ""}>Adjustment (Debit)</option>
+              <option value="opening_balance" ${currentType.includes("opening") ? "selected" : ""}>🔑 Opening Balance (Credit)</option>
+            </select>
           </div>
           <div>
             <label class="fw-bold mb-1">Payment Method</label>
@@ -477,6 +486,7 @@ export default function RegisteredCustomerLedger({ onNavigate }) {
         const amount = document.getElementById("swal-edit-amount").value;
         const payment_date = document.getElementById("swal-edit-date").value;
         const payment_method = document.getElementById("swal-edit-method").value;
+        const type = document.getElementById("swal-edit-type").value;
         const password = document.getElementById("swal-edit-pass").value.trim();
 
         if (!amount || Number(amount) <= 0) {
@@ -496,8 +506,8 @@ export default function RegisteredCustomerLedger({ onNavigate }) {
           amount: Number(amount),
           payment_date,
           payment_method,
-          password,
-          type: row.type || "payment"
+          type,
+          password
         };
       }
     });
@@ -563,7 +573,7 @@ export default function RegisteredCustomerLedger({ onNavigate }) {
           pdf.setTextColor(255, 255, 255);
           pdf.setFont("helvetica", "bold");
           pdf.setFontSize(16);
-          pdf.text("MAKKI MADNI TRAVEL & TOURS", pageWidth / 2, 12, { align: "center" });
+          pdf.text("BE TRAVEL & TOURS", pageWidth / 2, 12, { align: "center" });
 
           pdf.setFont("helvetica", "normal");
           pdf.setFontSize(9);
@@ -656,7 +666,7 @@ export default function RegisteredCustomerLedger({ onNavigate }) {
     setTimeout(() => {
       try {
         const headerInfo = [
-          ["MAKKI MADNI TRAVEL & TOURS"],
+          ["BE TRAVEL & TOURS"],
           ["REGISTERED CUSTOMER FINANCIAL LEDGER"],
           [""],
           ["Customer Name:", customerName.toUpperCase(), "", "Printed Date:", getRowDate({ date: new Date() })],
