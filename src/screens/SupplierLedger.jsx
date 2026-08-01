@@ -526,7 +526,7 @@ const loadPendingAlways = async () => {
           pdf.rect(0, 0, pageWidth, 20, "F");
           pdf.setTextColor(255, 255, 255);
           pdf.setFontSize(16);
-          pdf.text("BE TRAVEL & TOURS", pageWidth / 2, 10, { align: "center" });
+          pdf.text("MAKKI MADNI TRAVEL & TOURS", pageWidth / 2, 10, { align: "center" });
           pdf.setFontSize(10);
           pdf.text("Supplier Ledger Statement", pageWidth / 2, 16, { align: "center" });
 
@@ -576,7 +576,7 @@ const loadPendingAlways = async () => {
         const supplierName = supplierRow?.supplier_name || "Supplier";
 
         const headerInfo = [
-          ["BE TRAVEL & TOURS"],
+          ["MAKKI MADNI TRAVEL & TOURS"],
           ["SUPPLIER LEDGER STATEMENT"],
           [""],
           ["Supplier Name:", supplierName.toUpperCase(), "", "Printed Date:", formatDate(today)],
