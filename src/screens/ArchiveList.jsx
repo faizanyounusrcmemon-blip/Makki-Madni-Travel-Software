@@ -23,6 +23,47 @@ export default function ArchiveList({ onNavigate, onView, onLogs }) {
     }
   };
 
+  // 🌟 REUSABLE LIVE PROGRESS BAR MODAL
+  const showProgressModal = (title, barColor = "#dc3545", statusText = "Processing request...") => {
+    let percent = 0;
+
+    Swal.fire({
+      title: title,
+      html: `
+        <div style="margin-top:15px">
+          <div style="width:100%; height:20px; background:#e9ecef; border-radius:50px; overflow:hidden; border:1px solid #dee2e6;">
+            <div id="swalProgressBar" style="width:0%; height:100%; background:${barColor}; transition:width .2s ease;"></div>
+          </div>
+          <div id="swalProgressPercent" style="margin-top:10px; font-size:16px; font-weight:800; color:#212529;">0%</div>
+          <div style="margin-top:5px; font-size:12px; color:#6c757d;">${statusText}</div>
+        </div>
+      `,
+      allowOutsideClick: false,
+      allowEscapeKey: false,
+      showConfirmButton: false,
+    });
+
+    const timer = setInterval(() => {
+      if (percent >= 90) return;
+      percent += 5;
+      const bar = document.getElementById("swalProgressBar");
+      const txt = document.getElementById("swalProgressPercent");
+      if (bar) bar.style.width = `${percent}%`;
+      if (txt) txt.innerHTML = `${percent}%`;
+    }, 150);
+
+    return {
+      finish: () => {
+        clearInterval(timer);
+        const bar = document.getElementById("swalProgressBar");
+        const txt = document.getElementById("swalProgressPercent");
+        if (bar) bar.style.width = "100%";
+        if (txt) txt.innerHTML = "100%";
+      },
+      stop: () => clearInterval(timer)
+    };
+  };
+
   // 🛠️ Dynamic Database Password Verification Function
   const verifyArchivePassword = async (actionTitle) => {
     let showPassword = false;
@@ -103,17 +144,7 @@ export default function ArchiveList({ onNavigate, onView, onLogs }) {
     return false;
   };
 
-  const showProcessingAlert = (message) => {
-    Swal.fire({
-      title: message,
-      html: "Please wait while system processes your request...",
-      allowOutsideClick: false,
-      didOpen: () => {
-        Swal.showLoading();
-      },
-    });
-  };
-
+  // 🔥 DELETE LIVE ARCHIVE DATA WITH LIVE PROGRESS BAR
   const handleDelete = async (id) => {
     const result = await Swal.fire({
       title: "Delete Archive ?",
@@ -127,10 +158,14 @@ export default function ArchiveList({ onNavigate, onView, onLogs }) {
 
     if (!result.isConfirmed) return;
 
-    showProcessingAlert("Deleting Archive Data...");
+    const prog = showProgressModal("🔥 Deleting Archive Data...", "#dc3545", "Removing archive records from system...");
 
     try {
       const res = await API.delete(`/archive/delete/${id}`);
+      prog.finish();
+      await new Promise(r => setTimeout(r, 300));
+      Swal.close();
+
       if (res.data.success) {
         Swal.fire("Deleted", "Archive deleted successfully", "success");
         load();
@@ -138,6 +173,8 @@ export default function ArchiveList({ onNavigate, onView, onLogs }) {
         Swal.fire("Error", res.data.error || "Delete failed", "error");
       }
     } catch (err) {
+      prog.stop();
+      Swal.close();
       Swal.fire("Error", err.response?.data?.error || "Delete operation failed", "error");
     }
   };
@@ -272,10 +309,14 @@ export default function ArchiveList({ onNavigate, onView, onLogs }) {
 
                                   if (!confirm.isConfirmed) return;
 
-                                  showProcessingAlert("Deleting Snapshot...");
+                                  const prog = showProgressModal("❌ Deleting Snapshot...", "#6c757d", "Clearing snapshot records...");
 
                                   try {
                                     const res = await API.delete(`/archive/delete-snapshot/${r.id}`);
+                                    prog.finish();
+                                    await new Promise(r => setTimeout(r, 300));
+                                    Swal.close();
+
                                     if (res.data.success) {
                                       Swal.fire("Deleted", "Snapshot deleted successfully", "success");
                                       load();
@@ -283,6 +324,8 @@ export default function ArchiveList({ onNavigate, onView, onLogs }) {
                                       Swal.fire("Error", res.data.error || "Delete failed", "error");
                                     }
                                   } catch (err) {
+                                    prog.stop();
+                                    Swal.close();
                                     Swal.fire("Error", err.response?.data?.error || "Delete snapshot failed", "error");
                                   }
                                 }}

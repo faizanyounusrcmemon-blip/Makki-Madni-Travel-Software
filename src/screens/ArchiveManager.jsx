@@ -16,16 +16,53 @@ const formatCustomDate = (dateStr) => {
   return `${day}/${month}/${year}`;
 };
 
-// Helper Function for SweetAlert Loading Modal
-const showLoading = (title = "Processing...") => {
+// 🌟 REUSABLE PROGRESS BAR MODAL FOR ALL ACTIONS
+const showProgressModal = (title, barColor = "#2563eb", statusText = "Processing request...") => {
+  let percent = 0;
+  
   Swal.fire({
     title: title,
+    background: "#1e293b",
+    color: "#f8fafc",
+    html: `
+      <div style="margin-top:15px">
+        <div style="width:100%; height:20px; background:#0f172a; border-radius:50px; overflow:hidden; border:1px solid #334155;">
+          <div id="swalProgressBar" style="width:0%; height:100%; background:${barColor}; transition:width .2s ease;"></div>
+        </div>
+        <div id="swalProgressPercent" style="margin-top:10px; font-size:16px; font-weight:800; color:#38bdf8;">0%</div>
+        <div style="margin-top:5px; font-size:12px; color:#94a3b8;">${statusText}</div>
+      </div>
+    `,
     allowOutsideClick: false,
     allowEscapeKey: false,
-    didOpen: () => {
-      Swal.showLoading();
-    }
+    showConfirmButton: false,
   });
+
+  const timer = setInterval(() => {
+    if (percent >= 90) return;
+    percent += 5;
+    const bar = document.getElementById("swalProgressBar");
+    const txt = document.getElementById("swalProgressPercent");
+    if (bar) bar.style.width = `${percent}%`;
+    if (txt) txt.innerHTML = `${percent}%`;
+  }, 150);
+
+  return {
+    finish: () => {
+      clearInterval(timer);
+      const bar = document.getElementById("swalProgressBar");
+      const txt = document.getElementById("swalProgressPercent");
+      if (bar) bar.style.width = "100%";
+      if (txt) txt.innerHTML = "100%";
+    },
+    updateProgress: (loadedPercent) => {
+      const bar = document.getElementById("swalProgressBar");
+      const txt = document.getElementById("swalProgressPercent");
+      if (bar) bar.style.width = `${loadedPercent}%`;
+      if (txt) txt.innerHTML = `${loadedPercent}%`;
+    },
+    stop: () => clearInterval(timer)
+  };
 };
 
 /* ================= ARCHIVE DASHBOARD COMPONENT ================= */
@@ -199,30 +236,39 @@ export default function ArchiveManager({ onNavigate }) {
     return false;
   };
 
-  // 1ST STEP PREVIEW
+  // 1ST STEP PREVIEW (WITH PROGRESS BAR)
   const handlePreview = async () => {
     if (!from || !to) {
-      return Swal.fire("Error", "Date range required", "error");
+      return Swal.fire({ icon: "error", title: "Error", text: "Date range required", background: "#1e293b", color: "#f8fafc" });
     }
+
+    const prog = showProgressModal("🔍 Generating Preview...", "#334155", "Fetching operational stats from live db...");
+
     try {
       setLoading(true);
       const res = await API.post("/archive/preview", { date_from: from, date_to: to });
+      prog.finish();
+      await new Promise(r => setTimeout(r, 300));
+      Swal.close();
+
       if (res.data.success) {
         setPreview(res.data);
       }
     } catch (err) {
-      Swal.fire("Error", err.response?.data?.error || err.message, "error");
+      prog.stop();
+      Swal.close();
+      Swal.fire({ icon: "error", title: "Error", text: err.response?.data?.error || err.message, background: "#1e293b", color: "#f8fafc" });
     } finally {
       setLoading(false);
     }
   };
 
-  // 2ND STEP SNAPSHOT
+  // 2ND STEP SNAPSHOT (WITH PROGRESS BAR)
   const handleSnapshot = async () => {
     if (!(await checkPassword("Create Snapshot"))) return;
     if (!from || !to) {
       Swal.close();
-      return Swal.fire({ icon: "error", title: "Date Required", text: "Please select dates", width: 320 });
+      return Swal.fire({ icon: "error", title: "Date Required", text: "Please select dates", width: 320, background: "#1e293b", color: "#f8fafc" });
     }
 
     const confirm = await Swal.fire({
@@ -231,14 +277,21 @@ export default function ArchiveManager({ onNavigate }) {
       icon: "warning",
       width: 320,
       showCancelButton: true,
-      confirmButtonText: "Create"
+      confirmButtonText: "Create",
+      background: "#1e293b",
+      color: "#f8fafc"
     });
     if (!confirm.isConfirmed) return;
 
+    const prog = showProgressModal("💾 Creating Archive Snapshot...", "#2563eb", "Processing balances and calculating table records...");
+
     try {
       setLoading(true);
-      showLoading("Creating Snapshot...");
       const res = await API.post("/archive/snapshot", { from_date: from, to_date: to });
+      prog.finish();
+      await new Promise(r => setTimeout(r, 300));
+      Swal.close();
+
       if (res.data.success) {
         const newSnapshotId = res.data.snapshotId;
         setSnapshotId(newSnapshotId);
@@ -255,13 +308,14 @@ export default function ArchiveManager({ onNavigate }) {
           suppliers: res.data.suppliers || prev?.suppliers || []
         }));
 
-        Swal.close();
         await Swal.fire({
           icon: "success",
-          title: "Snapshot Created",
+          title: "Snapshot Created ✅",
           width: 320,
+          background: "#1e293b",
+          color: "#f8fafc",
           html: `
-            <div style="text-align:left; font-size: 14px;">
+            <div style="text-align:left; font-size: 14px; color:#cbd5e1;">
               <b>ID:</b> ${newSnapshotId}<br><br>
               <b>Customers:</b> ${res.data.customerCount || 0}<br>
               <b>Suppliers:</b> ${res.data.supplierCount || 0}<br>
@@ -274,19 +328,20 @@ export default function ArchiveManager({ onNavigate }) {
         loadList();
       }
     } catch (err) {
+      prog.stop();
       Swal.close();
-      Swal.fire({ icon: "error", title: "Server Error", text: err.response?.data?.error || err.message, width: 320 });
+      Swal.fire({ icon: "error", title: "Server Error", text: err.response?.data?.error || err.message, width: 320, background: "#1e293b", color: "#f8fafc" });
     } finally {
       setLoading(false);
     }
   };
 
-  // 3RD STEP DOWNLOAD ZIP
+  // 3RD STEP DOWNLOAD ZIP (WITH REAL-TIME DOWNLOAD PROGRESS BAR)
   const handleBackup = async () => {
     if (!(await checkPassword("Download ZIP Backup"))) return;
     if (!from || !to) {
       Swal.close();
-      return Swal.fire({ icon: "error", title: "Date Required", text: "Select dates", width: 320 });
+      return Swal.fire({ icon: "error", title: "Date Required", text: "Select dates", width: 320, background: "#1e293b", color: "#f8fafc" });
     }
 
     const confirm = await Swal.fire({
@@ -295,14 +350,30 @@ export default function ArchiveManager({ onNavigate }) {
       icon: "question",
       width: 320,
       showCancelButton: true,
-      confirmButtonText: "Download"
+      confirmButtonText: "Download",
+      background: "#1e293b",
+      color: "#f8fafc"
     });
     if (!confirm.isConfirmed) return;
 
+    const prog = showProgressModal("📦 Streaming ZIP Backup...", "#0284c7", "Building ZIP file package from database...");
+
     try {
       setLoading(true);
-      showLoading("Streaming ZIP Backup from Server...");
-      const response = await API.get(`/archive/download-stream?fromDate=${from}&toDate=${to}`, { responseType: "blob" });
+      const response = await API.get(`/archive/download-stream?fromDate=${from}&toDate=${to}`, {
+        responseType: "blob",
+        onDownloadProgress: (e) => {
+          if (e.total) {
+            const p = Math.round((e.loaded * 100) / e.total);
+            prog.updateProgress(p);
+          }
+        }
+      });
+
+      prog.finish();
+      await new Promise(r => setTimeout(r, 300));
+      Swal.close();
+
       const blob = new Blob([response.data], { type: "application/zip" });
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
@@ -312,21 +383,21 @@ export default function ArchiveManager({ onNavigate }) {
       a.click();
       a.remove();
       window.URL.revokeObjectURL(url);
-      Swal.close();
       loadList();
     } catch (err) {
+      prog.stop();
       Swal.close();
-      Swal.fire({ icon: "error", title: "Streaming Error", text: err.message, width: 320 });
+      Swal.fire({ icon: "error", title: "Streaming Error", text: err.message, width: 320, background: "#1e293b", color: "#f8fafc" });
     } finally {
       setLoading(false);
     }
   };
 
-  // 4TH STEP DELETE LIVE DATA
+  // 4TH STEP DELETE LIVE DATA (WITH PROGRESS BAR)
   const handleDelete = async () => {
     if (!(await checkPassword("Delete Live Data"))) return;
     if (!from || !to) {
-      return Swal.fire({ icon: "error", title: "Date Required", text: "Select dates first", width: 320 });
+      return Swal.fire({ icon: "error", title: "Date Required", text: "Select dates first", width: 320, background: "#1e293b", color: "#f8fafc" });
     }
 
     const confirm = await Swal.fire({ 
@@ -334,59 +405,91 @@ export default function ArchiveManager({ onNavigate }) {
       text: "Warning: This will clear the live operational data. Make sure backup is created first!", 
       icon: "warning", 
       showCancelButton: true,
-      confirmButtonText: "Yes, Delete" 
+      confirmButtonText: "Yes, Delete",
+      confirmButtonColor: "#991b1b",
+      background: "#1e293b",
+      color: "#f8fafc"
     });
     if (!confirm.isConfirmed) return;
 
+    const prog = showProgressModal("🔥 Wiping Live System Data...", "#dc2626", "Clearing transactions and archiving state...");
+
     try {
-      showLoading("Wiping Live System Data...");
       const res = await API.post("/archive/delete", { 
         from_date: from, 
         to_date: to 
       });
+
+      prog.finish();
+      await new Promise(r => setTimeout(r, 300));
+      Swal.close();
       
       if (res.data.success) {
-        Swal.close();
-        await Swal.fire({ icon: "success", title: "Wiped Successfully", text: "Live data has been cleared.", width: 320 });
+        await Swal.fire({ icon: "success", title: "Wiped Successfully ✅", text: "Live data has been cleared.", width: 320, background: "#1e293b", color: "#f8fafc" });
         setPreview(null);
         loadList();
       } else {
-        Swal.close();
-        Swal.fire("Error", res.data.error || "Failed to delete live data", "error");
+        Swal.fire({ icon: "error", title: "Error", text: res.data.error || "Failed to delete live data", background: "#1e293b", color: "#f8fafc" });
       }
     } catch (err) {
+      prog.stop();
       Swal.close();
-      Swal.fire("Error", err.response?.data?.error || err.message, "error");
+      Swal.fire({ icon: "error", title: "Error", text: err.response?.data?.error || err.message, background: "#1e293b", color: "#f8fafc" });
     }
   };
 
+  // RESTORE ZIP (WITH UPLOAD PROGRESS BAR)
   const handleRestore = async () => {
     if (!(await checkPassword("Restore ZIP Backup"))) return;
     const { value: file } = await Swal.fire({
       title: "📤 Upload Backup ZIP",
       input: "file",
       inputAttributes: { accept: ".zip" },
-      showCancelButton: true
+      showCancelButton: true,
+      background: "#1e293b",
+      color: "#f8fafc"
     });
     if (!file) return;
 
-    const confirm = await Swal.fire({ title: "⚠️ ARE YOU SURE?", text: "This will restore data!", icon: "warning", showCancelButton: true });
+    const confirm = await Swal.fire({ 
+      title: "⚠️ ARE YOU SURE?", 
+      text: "This will restore data!", 
+      icon: "warning", 
+      showCancelButton: true,
+      background: "#1e293b",
+      color: "#f8fafc" 
+    });
     if (!confirm.isConfirmed) return;
+
+    const prog = showProgressModal("📤 Restoring Database...", "#d97706", "Uploading ZIP and unzipping SQL database tables...");
 
     try {
       setLoading(true);
-      showLoading("Restoring Database...");
       const formData = new FormData();
       formData.append("backup_file", file);
-      const res = await API.post("/archive/restore", formData, { headers: { "Content-Type": "multipart/form-data" } });
+      
+      const res = await API.post("/archive/restore", formData, { 
+        headers: { "Content-Type": "multipart/form-data" },
+        onUploadProgress: (e) => {
+          if (e.total) {
+            const p = Math.round((e.loaded * 100) / e.total);
+            prog.updateProgress(p);
+          }
+        }
+      });
+
+      prog.finish();
+      await new Promise(r => setTimeout(r, 300));
       Swal.close();
+
       if (res.data.success) {
-        await Swal.fire({ icon: "success", title: "System Restored!", width: 320 });
+        await Swal.fire({ icon: "success", title: "System Restored! ✅", width: 320, background: "#1e293b", color: "#f8fafc" });
         loadList();
       }
     } catch (err) {
+      prog.stop();
       Swal.close();
-      Swal.fire({ icon: "error", title: "Server Error", text: err.message, width: 320 });
+      Swal.fire({ icon: "error", title: "Server Error", text: err.message, width: 320, background: "#1e293b", color: "#f8fafc" });
     } finally {
       setLoading(false);
     }
@@ -401,18 +504,33 @@ export default function ArchiveManager({ onNavigate }) {
         setSnapshotId(id);
       }
     } catch (err) {
-      Swal.fire("Error", "Failed to fetch archive view data", "error");
+      Swal.fire({ icon: "error", title: "Error", text: "Failed to fetch archive view data", background: "#1e293b", color: "#f8fafc" });
     }
   };
 
+  // TABLE PULL ZIP (WITH DOWNLOAD PROGRESS BAR)
   const handleDownload = async (id) => {
     if (!(await checkPassword(`Pull ZIP Stream #${id}`))) return;
     const targetItem = list.find(item => item.id === id);
-    if (!targetItem) return Swal.fire("Error", "Snapshot not found", "error");
+    if (!targetItem) return Swal.fire({ icon: "error", title: "Error", text: "Snapshot not found", background: "#1e293b", color: "#f8fafc" });
+
+    const prog = showProgressModal(`📥 Pulling ZIP #${id}...`, "#2563eb", "Fetching historical backup archive...");
 
     try {
-      showLoading("Pulling ZIP File Stream...");
-      const res = await API.get(`/archive/download-stream?fromDate=${targetItem.date_from}&toDate=${targetItem.date_to}`, { responseType: "blob" });
+      const res = await API.get(`/archive/download-stream?fromDate=${targetItem.date_from}&toDate=${targetItem.date_to}`, { 
+        responseType: "blob",
+        onDownloadProgress: (e) => {
+          if (e.total) {
+            const p = Math.round((e.loaded * 100) / e.total);
+            prog.updateProgress(p);
+          }
+        }
+      });
+
+      prog.finish();
+      await new Promise(r => setTimeout(r, 300));
+      Swal.close();
+
       const blob = new Blob([res.data], { type: "application/zip" });
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
@@ -422,10 +540,10 @@ export default function ArchiveManager({ onNavigate }) {
       a.click();
       a.remove();
       window.URL.revokeObjectURL(url);
-      Swal.close();
     } catch (err) {
+      prog.stop();
       Swal.close();
-      Swal.fire({ icon: "error", title: "Download Failed", text: err.message, width: 320 });
+      Swal.fire({ icon: "error", title: "Download Failed", text: err.message, width: 320, background: "#1e293b", color: "#f8fafc" });
     }
   };
 
