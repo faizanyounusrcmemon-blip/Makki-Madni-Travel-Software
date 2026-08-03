@@ -30,22 +30,6 @@ export default function SystemStorage({ onNavigate }) {
 
   const usedPercent = Math.round((data.usedMB / data.dbLimitMB) * 100);
 
-const uniqueTables = Object.values(
-  data.tables.reduce((acc, item) => {
-    if (!acc[item.table]) {
-      acc[item.table] = {
-        table: item.table,
-        rows: Number(item.rows || 0),
-      };
-    } else {
-      acc[item.table].rows += Number(item.rows || 0);
-    }
-    return acc;
-  }, {})
-);
-
-
-
   return (
     <div className="container py-3">
 
@@ -140,6 +124,43 @@ const uniqueTables = Object.values(
         </div>
       </div>
 
+{/* MONTHLY PROJECTION CARD */}
+<div className="card shadow mb-3 border-start border-4 border-info">
+  <div className="card-body">
+    <h6 className="fw-bold mb-3 text-primary">📈 Monthly Growth & Capacity Projection</h6>
+    
+    <div className="row text-center g-3">
+      <div className="col-md-3 col-6">
+        <small className="text-muted d-block">Data Duration</small>
+        <span className="fs-5 fw-bold text-dark">
+          {data.totalMonths ?? 1} Months
+        </span>
+      </div>
+
+      <div className="col-md-3 col-6">
+        <small className="text-muted d-block">Avg Usage / Month</small>
+        <span className="fs-5 fw-bold text-warning">
+          {data.avgMBPerMonth ?? 0} MB/mo
+        </span>
+      </div>
+
+      <div className="col-md-3 col-6">
+        <small className="text-muted d-block">Estimated Months Left</small>
+        <span className="fs-5 fw-bold text-success">
+          ~{data.remainingMonths ?? 0} Months
+        </span>
+      </div>
+
+      <div className="col-md-3 col-6">
+        <small className="text-muted d-block">Estimated Storage Until</small>
+        <span className="fs-5 fw-bold text-primary font-monospace">
+          📅 {data.estimatedEndDate || "N/A"}
+        </span>
+      </div>
+    </div>
+  </div>
+</div>
+
       {/* TABLE */}
       <div className="card shadow mb-3">
         <div className="card-header fw-bold">
@@ -153,14 +174,14 @@ const uniqueTables = Object.values(
                 <th>Rows</th>
               </tr>
             </thead>
-<tbody>
-  {data.tables.map((t, i) => (
-    <tr key={`${t.table}-${i}`}>
-      <td className="fw-semibold">{t.table}</td>
-      <td>{Number(t.rows).toLocaleString()}</td>
-    </tr>
-  ))}
-</tbody>
+            <tbody>
+              {data.tables.map((t, i) => (
+                <tr key={`${t.table}-${i}`}>
+                  <td className="fw-semibold">{t.table}</td>
+                  <td>{Number(t.rows).toLocaleString()}</td>
+                </tr>
+              ))}
+            </tbody>
           </table>
         </div>
       </div>
@@ -169,10 +190,11 @@ const uniqueTables = Object.values(
       <div className="alert alert-info shadow-sm">
         <b>ℹ️ Calculation Logic</b>
         <div className="small mt-1">
-          avg row size = used storage ÷ total rows <br />
-          possible rows = free storage ÷ avg row size <br />
+          • avg monthly growth = used storage ÷ active months <br />
+          • remaining months = free storage ÷ avg monthly growth <br />
+          • estimated end date = current date + remaining months <br />
           <span className="fw-bold">
-            This is an estimated value based on current data.
+            This is an estimated value based on current usage trends.
           </span>
         </div>
       </div>
