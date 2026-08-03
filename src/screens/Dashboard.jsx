@@ -156,28 +156,67 @@ export default function Dashboard({ onNavigate }) {
     }
   };
 
-  // 2. DOWNLOAD ZIP TO PC FUNCTION
+  // 2. DOWNLOAD ZIP TO PC FUNCTION (WITH PROGRESS BAR)
   const downloadPCBackup = async () => {
     const { value: pass, isDismissed } = await askPassword("📥 Download ZIP", "Enter password to download backup to PC");
     if (isDismissed || !pass) return;
 
     Swal.fire({
-      title: "📦 Generating ZIP...",
-      text: "Please wait while we prepare the file for your PC...",
+      title: "📦 Generating PC ZIP Backup...",
+      html: `
+        <div style="margin-top:15px">
+          <div style="width:100%; height:24px; background:#e5e7eb; border-radius:50px; overflow:hidden; box-shadow:inset 0 2px 5px rgba(0,0,0,.08);">
+            <div id="pcBackupBar" style="width:0%; height:100%; background:linear-gradient(90deg, #0284c7, #0369a1); transition:width .2s ease;"></div>
+          </div>
+          <div id="pcBackupPercent" style="margin-top:10px; font-size:18px; font-weight:800; color:#0f172a;">0%</div>
+          <div style="margin-top:5px; font-size:12px; color:#64748b;">Compressing & preparing file download...</div>
+        </div>
+      `,
       allowOutsideClick: false,
+      allowEscapeKey: false,
       showConfirmButton: false,
-      didOpen: () => { Swal.showLoading(); }
     });
+
+    // Simulated initial loader before download stream starts
+    let percent = 0;
+    const timer = setInterval(() => {
+      if (percent >= 85) return;
+      percent += 5;
+      const bar = document.getElementById("pcBackupBar");
+      const txt = document.getElementById("pcBackupPercent");
+      if (bar) bar.style.width = `${percent}%`;
+      if (txt) txt.innerHTML = `${percent}%`;
+    }, 200);
 
     try {
       const response = await axios.post(
         `${import.meta.env.VITE_BACKEND_URL}/api/backup/download-direct`,
         { password: pass },
-        { responseType: "blob" }
+        {
+          responseType: "blob",
+          onDownloadProgress: (progressEvent) => {
+            if (progressEvent.total) {
+              const loadedPercent = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+              const bar = document.getElementById("pcBackupBar");
+              const txt = document.getElementById("pcBackupPercent");
+              if (bar) bar.style.width = `${loadedPercent}%`;
+              if (txt) txt.innerHTML = `${loadedPercent}%`;
+            }
+          }
+        }
       );
 
+      clearInterval(timer);
+
+      const bar = document.getElementById("pcBackupBar");
+      const txt = document.getElementById("pcBackupPercent");
+      if (bar) bar.style.width = "100%";
+      if (txt) txt.innerHTML = "100%";
+
+      await new Promise((r) => setTimeout(r, 400));
       Swal.close();
 
+      // Trigger ZIP file download on browser
       const blob = new Blob([response.data], { type: "application/zip" });
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement("a");
@@ -191,8 +230,9 @@ export default function Dashboard({ onNavigate }) {
       link.parentNode.removeChild(link);
       window.URL.revokeObjectURL(url);
 
-      Swal.fire({ icon: "success", title: "Success", text: "ZIP downloaded to PC successfully! 💻" });
+      Swal.fire({ icon: "success", title: "Success ✅", text: "ZIP downloaded to PC successfully! 💻", confirmButtonColor: "#0284c7" });
     } catch (err) {
+      clearInterval(timer);
       Swal.close();
       Swal.fire({ icon: "error", title: "Download Failed", text: "Wrong password or Server authorization failed." });
     }
@@ -220,7 +260,7 @@ export default function Dashboard({ onNavigate }) {
       <div style={{ position: "relative", zIndex: 2, padding: 20 }}>
         {/* HEADER */}
         <div style={{ textAlign: "center", paddingTop: 40 }}>
-          <h2 style={{ fontSize: 32, margin: 0 }}>Makki Madni Travel & Tours</h2>
+          <h2 style={{ fontSize: 32, margin: 0 }}>Makki Madni Travel & Toure</h2>
           <i>Live Travel Management Dashboard</i>
         </div>
 
@@ -243,7 +283,7 @@ export default function Dashboard({ onNavigate }) {
               {loading ? (<><span className="btn-loader"></span> Backing up...</>) : "Cloud Backup Now"}
             </button>
 
-            {/* Naya PC Download Button */}
+            {/* PC Download Button with Progress Modal */}
             <button className="vip-backup-btn" onClick={downloadPCBackup} style={{ background: "linear-gradient(135deg, #0284c7, #0369a1)" }}>
               📥 Download ZIP to PC
             </button>
