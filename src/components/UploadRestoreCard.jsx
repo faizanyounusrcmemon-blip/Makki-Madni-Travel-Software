@@ -38,150 +38,216 @@ export default function UploadRestoreCard() {
     "system_passwords",
   ];
 
-  const uploadRequest = async (
-    url,
-    fileField,
-    file,
-    table = null,
-    title = "Restore"
-  ) => {
-    if (!file) {
-      return Swal.fire("Error", "Please select a file", "error");
-    }
+/* ================= UPLOAD REQUEST (WITH REAL-TIME UPLOAD + ETA COUNTER) ================= */
 
-    const password = await askPassword(title, file);
-    if (!password) return;
+const uploadRequest = async (
+  url,
+  fileField,
+  file,
+  table = null,
+  title = "Restore"
+) => {
+  if (!file) {
+    return Swal.fire("Error", "Please select a file", "error");
+  }
 
-    const fd = new FormData();
-    fd.append(fileField, file);
-    fd.append("password", password);
+  const password = await askPassword(title, file);
+  if (!password) return;
 
-    if (table) {
-      fd.append("table", table);
-    }
+  const fd = new FormData();
+  fd.append(fileField, file);
+  fd.append("password", password);
 
-    let progressInterval = null;
+  if (table) {
+    fd.append("table", table);
+  }
 
-    try {
-      Swal.fire({
-        title: "🔄 External Database Engine",
-        html: `
-          <div style="margin-top:15px; text-align: left;">
-            <div style="width:100%; height:20px; background:#e5e7eb; border-radius:50px; overflow:hidden; margin-bottom: 15px;">
-              <div id="uploadBar" style="width:0%; height:100%; background:linear-gradient(90deg, #3b82f6, #2563eb); transition:width 0.4s ease;"></div>
-            </div>
-            <div style="display:flex; justify-content:space-between; font-weight:800; font-size:16px; margin-bottom:15px;">
-              <span>Status: <span id="uploadStatus" style="color:#2563eb;">Uploading dump file...</span></span>
-              <span id="uploadPercent">0%</span>
-            </div>
-            <div id="stepperContainer" style="font-size:13px; line-height: 2;">
-              <div id="step1" style="color:#2563eb; font-weight:bold;">⏳ Step 1: Sending Streams & Uploading Backup...</div>
-              <div id="step2" style="color:#94a3b8;">⚪ Step 2: Extracting & Verifying Structures...</div>
-              <div id="step3" style="color:#94a3b8;">⚪ Step 3: Purging Live Records & Overwriting Tables...</div>
-              <div id="step4" style="color:#94a3b8;">⚪ Step 4: Finalizing Sequences & Triggers...</div>
+  let progressInterval = null;
+  let timerInterval = null;
+
+  try {
+    // 1. App Store Downloading Style Modal UI
+    Swal.fire({
+      title: "🔄 External Database Engine",
+      html: `
+        <div style="margin-top:15px; text-align: left; font-family: system-ui, -apple-system, sans-serif;">
+          
+          <!-- Progress Bar -->
+          <div style="width:100%; height:12px; background:#e2e8f0; border-radius:10px; overflow:hidden; margin-bottom: 12px;">
+            <div id="uploadBar" style="width:0%; height:100%; background:linear-gradient(90deg, #2563eb, #3b82f6); transition:width 0.3s ease;"></div>
+          </div>
+
+          <!-- App Store Style Percentage & Live Counters -->
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+            <span id="uploadPercent" style="font-weight:800; font-size:22px; color:#1e293b;">0%</span>
+            
+            <div style="text-align:right; font-size:12px; color:#64748b; line-height:1.4;">
+              <div>⏱ Elapsed: <strong id="timeElapsed" style="color:#0f172a;">00:00</strong></div>
+              <div>⏳ Remaining: <strong id="timeRemaining" style="color:#2563eb;">Calculating...</strong></div>
             </div>
           </div>
-        `,
-        allowOutsideClick: false,
-        allowEscapeKey: false,
-        showConfirmButton: false,
-      });
 
-      const updateProgressDOM = (pct, statusText, currentStep) => {
-        const bar = document.getElementById("uploadBar");
-        const txt = document.getElementById("uploadPercent");
-        const st = document.getElementById("uploadStatus");
-        if (bar) bar.style.width = `${pct}%`;
-        if (txt) txt.innerHTML = `${pct}%`;
-        if (st) st.innerHTML = statusText;
+          <!-- Current Task Label -->
+          <div style="background:#f8fafc; padding:10px 14px; border-radius:10px; font-size:13px; color:#334155; border:1px solid #e2e8f0; margin-bottom:15px; display:flex; align-items:center; gap:8px;">
+            <span style="display:inline-block; animation: spin 1s linear infinite;">🔄</span>
+            <span id="uploadStatus" style="font-weight:600;">Sending Streams & Uploading Backup...</span>
+          </div>
 
-        for (let i = 1; i <= 4; i++) {
-          const el = document.getElementById(`step${i}`);
-          if (el) {
-            if (i < currentStep) {
-              el.innerHTML = el.innerHTML.replace(/[⏳⚪✅]/, "✅");
-              el.style.color = "#16a34a";
-              el.style.fontWeight = "normal";
-            } else if (i === currentStep) {
-              el.innerHTML = el.innerHTML.replace(/[⏳⚪✅]/, "⏳");
-              el.style.color = "#2563eb";
-              el.style.fontWeight = "bold";
-            } else {
-              el.style.color = "#94a3b8";
-              el.style.fontWeight = "normal";
-            }
-          }
+          <!-- Stepper Checklist -->
+          <div id="stepperContainer" style="font-size:12px; line-height: 2; color:#64748b;">
+            <div id="step1" style="color:#2563eb; font-weight:bold;">⏳ Step 1: Sending Streams & Uploading Backup...</div>
+            <div id="step2">⚪ Step 2: Extracting & Verifying Structures...</div>
+            <div id="step3">⚪ Step 3: Purging Live Records & Overwriting Tables...</div>
+            <div id="step4">⚪ Step 4: Finalizing Sequences & Triggers...</div>
+          </div>
+        </div>
+
+        <style>
+          @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        </style>
+      `,
+      allowOutsideClick: false,
+      allowEscapeKey: false,
+      showConfirmButton: false,
+    });
+
+    const formatMMSS = (totalSecs) => {
+      const m = Math.floor(totalSecs / 60).toString().padStart(2, "0");
+      const s = (totalSecs % 60).toString().padStart(2, "0");
+      return `${m}:${s}`;
+    };
+
+    const updateProgressDOM = (pct, statusText, currentStep, elapsedSecs, remainingSecs) => {
+      const bar = document.getElementById("uploadBar");
+      const txt = document.getElementById("uploadPercent");
+      const st = document.getElementById("uploadStatus");
+      const elapsedEl = document.getElementById("timeElapsed");
+      const remainingEl = document.getElementById("timeRemaining");
+
+      if (bar) bar.style.width = `${pct}%`;
+      if (txt) txt.innerHTML = `${pct}%`;
+      if (st) st.innerHTML = statusText;
+      if (elapsedEl) elapsedEl.innerHTML = formatMMSS(elapsedSecs);
+
+      if (remainingEl) {
+        if (remainingSecs === null) {
+          remainingEl.innerHTML = "Calculating...";
+        } else if (remainingSecs <= 0) {
+          remainingEl.innerHTML = "Finishing...";
+        } else {
+          remainingEl.innerHTML = formatMMSS(remainingSecs);
         }
-      };
-
-      // 1. Send network request with standard network stream tracking
-      const res = await axios.post(
-        `${import.meta.env.VITE_BACKEND_URL}${url}`,
-        fd,
-        {
-          headers: {
-            "Content-Type": "multipart/form-data",
-          },
-          onUploadProgress: (evt) => {
-            if (!evt.total) return;
-            const percent = Math.round((evt.loaded * 100) / evt.total);
-            
-            // Map actual upload progress from 0% to 40% range
-            const scaledPercent = Math.min(Math.round((percent * 40) / 100), 40);
-            updateProgressDOM(scaledPercent, "Uploading dump file...", 1);
-
-            // Once network transmission hits 100%, trigger smooth step incrementers
-            if (percent >= 100) {
-              let simulatedPct = 40;
-              if (!progressInterval) {
-                progressInterval = setInterval(() => {
-                  if (simulatedPct < 65) {
-                    simulatedPct += 2;
-                    updateProgressDOM(simulatedPct, "Extracting & verifying structures...", 2);
-                  } else if (simulatedPct >= 65 && simulatedPct < 92) {
-                    simulatedPct += 1;
-                    updateProgressDOM(simulatedPct, "Purging records & overwriting...", 3);
-                  }
-                }, 250);
-              }
-            }
-          },
-        }
-      );
-
-      // Clean up the running loops
-      if (progressInterval) clearInterval(progressInterval);
-
-      if (!res.data.success) {
-        Swal.close();
-        return Swal.fire("Error", res.data.error || "Restore failed", "error");
       }
 
-      // Final dynamic steps sync up instantly on server true response
-      updateProgressDOM(96, "Finalizing sequences & triggers...", 4);
-      await new Promise((r) => setTimeout(r, 600));
-      updateProgressDOM(100, "Done!", 5);
-      await new Promise((r) => setTimeout(r, 400));
+      for (let i = 1; i <= 4; i++) {
+        const el = document.getElementById(`step${i}`);
+        if (el) {
+          if (i < currentStep) {
+            el.innerHTML = el.innerHTML.replace(/[⏳⚪✅]/, "✅");
+            el.style.color = "#16a34a";
+            el.style.fontWeight = "normal";
+          } else if (i === currentStep) {
+            el.innerHTML = el.innerHTML.replace(/[⏳⚪✅]/, "⏳");
+            el.style.color = "#2563eb";
+            el.style.fontWeight = "bold";
+          } else {
+            el.style.color = "#94a3b8";
+            el.style.fontWeight = "normal";
+          }
+        }
+      }
+    };
 
+    const startTime = Date.now();
+    let currentPct = 0;
+
+    // Live Timer Engine (Calculates Elapsed & Remaining ETA every 300ms)
+    timerInterval = setInterval(() => {
+      const elapsedSecs = Math.floor((Date.now() - startTime) / 1000);
+      let remainingSecs = null;
+
+      if (currentPct > 5) {
+        const totalEstimatedSecs = (elapsedSecs / currentPct) * 100;
+        remainingSecs = Math.max(0, Math.ceil(totalEstimatedSecs - elapsedSecs));
+      }
+
+      let step = 1;
+      let statusMsg = "Sending Streams & Uploading Backup...";
+      if (currentPct >= 40 && currentPct < 65) {
+        step = 2;
+        statusMsg = "Extracting & verifying structures...";
+      } else if (currentPct >= 65) {
+        step = 3;
+        statusMsg = "Purging live records & overwriting...";
+      }
+
+      updateProgressDOM(currentPct, statusMsg, step, elapsedSecs, remainingSecs);
+    }, 300);
+
+    // 2. Axios Network Call with Upload Progress Integration
+    const res = await axios.post(
+      `${import.meta.env.VITE_BACKEND_URL}${url}`,
+      fd,
+      {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+        onUploadProgress: (evt) => {
+          if (!evt.total) return;
+          const percent = Math.round((evt.loaded * 100) / evt.total);
+
+          // Map actual file upload from 0% to 40%
+          currentPct = Math.min(Math.round((percent * 40) / 100), 40);
+
+          // File upload finished -> switch to simulated backend processing
+          if (percent >= 100 && !progressInterval) {
+            progressInterval = setInterval(() => {
+              if (currentPct < 65) {
+                currentPct += 2;
+              } else if (currentPct >= 65 && currentPct < 90) {
+                currentPct += 1;
+              }
+            }, 250);
+          }
+        },
+      }
+    );
+
+    if (progressInterval) clearInterval(progressInterval);
+    if (timerInterval) clearInterval(timerInterval);
+
+    if (!res.data.success) {
       Swal.close();
-
-      Swal.fire({
-        icon: "success",
-        title: "Restore Completed",
-        html: `<div style="font-size:14px">External backup data successfully injected into database.</div>`,
-        confirmButtonColor: "#16a34a",
-      });
-
-    } catch (err) {
-      if (progressInterval) clearInterval(progressInterval);
-      Swal.close();
-      Swal.fire({
-        icon: "error",
-        title: "Restore Failed",
-        text: err?.response?.data?.error || err.message || "Unknown Error",
-      });
+      return Swal.fire("Error", res.data.error || "Restore failed", "error");
     }
-  };
+
+    // Final completion step
+    const totalElapsedSecs = Math.floor((Date.now() - startTime) / 1000);
+    updateProgressDOM(98, "Finalizing sequences & triggers...", 4, totalElapsedSecs, 0);
+    await new Promise((r) => setTimeout(r, 500));
+    updateProgressDOM(100, "Done!", 5, totalElapsedSecs, 0);
+    await new Promise((r) => setTimeout(r, 300));
+
+    Swal.close();
+
+    Swal.fire({
+      icon: "success",
+      title: "Restore Completed",
+      html: `<div style="font-size:14px">External backup data successfully injected into database.</div>`,
+      confirmButtonColor: "#16a34a",
+    });
+
+  } catch (err) {
+    if (progressInterval) clearInterval(progressInterval);
+    if (timerInterval) clearInterval(timerInterval);
+    Swal.close();
+    Swal.fire({
+      icon: "error",
+      title: "Restore Failed",
+      text: err?.response?.data?.error || err.message || "Unknown Error",
+    });
+  }
+};
 
   const askPassword = async (title, fileObj) => {
     let show = false;
