@@ -19,53 +19,74 @@ export default function Restore({ onNavigate }) {
   ];
 
 
+/* ================= FIX SEQUENCES (BEAUTIFUL POPUP + LIVE TIMER & PROGRESS BAR) ================= */
+
 const fixSequences = async () => {
-  let passwordValue = "";
   let showPassword = false;
 
   const { value: confirmed } = await Swal.fire({
+    width: "380px",
     title: "🔐 Admin Authentication",
     html: `
-      <div style="text-align:left">
-        <label style="font-weight:600;">Enter Password</label>
+      <div style="text-align:left; font-size:13px; font-family: system-ui, -apple-system, sans-serif;">
+        
+        <!-- Action Info Card -->
+        <div style="
+          background:#fff7ed;
+          border:1px solid #ffedd5;
+          border-radius:10px;
+          padding:12px;
+          margin-bottom:14px;
+        ">
+          <div style="font-weight:700; color:#ea580c; font-size:13px; display:flex; align-items:center; gap:6px;">
+            <span>🔧 Sequence Realignment</span>
+          </div>
+          <div style="margin-top:4px; color:#9a3412; font-size:11px; line-height:1.4;">
+            This action will recalculate and fix auto-increment primary key IDs across all database tables.
+          </div>
+        </div>
 
-        <div style="position:relative; margin-top:8px;">
+        <label style="font-weight:600; color:#334155; font-size:12px; display:block; margin-bottom:6px;">
+          Enter Admin Password
+        </label>
+
+        <!-- Compact Password Input -->
+        <div style="position:relative;">
           <input
             id="swal-pass"
             type="password"
             class="swal2-input"
-            placeholder="Enter admin password"
-            style="margin:0; width:100%; padding-right:40px;"
+            placeholder="Enter password"
+            style="width:100%; margin:0; height:40px; font-size:13px; border-radius:8px; padding-right:40px;"
           />
 
-          <button
-            type="button"
+          <span
             id="togglePass"
             style="
               position:absolute;
-              right:10px;
+              right:12px;
               top:50%;
               transform:translateY(-50%);
-              border:none;
-              background:transparent;
               cursor:pointer;
-              font-size:16px;
+              font-size:15px;
+              user-select:none;
             "
-          >👁️</button>
+          >👁️</span>
         </div>
       </div>
     `,
     showCancelButton: true,
     confirmButtonText: "🚀 Run Fix",
+    confirmButtonColor: "#ea580c",
     cancelButtonText: "Cancel",
     focusConfirm: false,
     preConfirm: () => {
       const input = document.getElementById("swal-pass").value;
-      if (!input) {
+      if (!input || !input.trim()) {
         Swal.showValidationMessage("Password required!");
         return false;
       }
-      return input;
+      return input.trim();
     },
     didOpen: () => {
       const input = document.getElementById("swal-pass");
@@ -81,15 +102,136 @@ const fixSequences = async () => {
 
   if (!confirmed) return;
 
-  // LOADING POPUP
-  Swal.fire({
-    title: "Fixing Sequences...",
-    text: "Please wait...",
-    allowOutsideClick: false,
-    didOpen: () => Swal.showLoading()
-  });
+  let progressInterval = null;
 
   try {
+    // App Store Downloading Style Modal for Sequences Fix
+    Swal.fire({
+      title: "🔧 Fixing Database Sequences",
+      html: `
+        <div style="margin-top:15px; text-align: left; font-family: system-ui, -apple-system, sans-serif;">
+          
+          <!-- Progress Bar -->
+          <div style="width:100%; height:12px; background:#e2e8f0; border-radius:10px; overflow:hidden; margin-bottom: 12px;">
+            <div id="fixBar" style="width:0%; height:100%; background:linear-gradient(90deg, #ea580c, #f59e0b); transition:width 0.3s ease;"></div>
+          </div>
+
+          <!-- App Store Style Percentage & Live Counters -->
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+            <span id="fixPercent" style="font-weight:800; font-size:22px; color:#1e293b;">0%</span>
+            
+            <div style="text-align:right; font-size:12px; color:#64748b; line-height:1.4;">
+              <div>⏱ Elapsed: <strong id="timeElapsed" style="color:#0f172a;">00:00</strong></div>
+              <div>⏳ Remaining: <strong id="timeRemaining" style="color:#ea580c;">Calculating...</strong></div>
+            </div>
+          </div>
+
+          <!-- Current Task Label -->
+          <div style="background:#f8fafc; padding:10px 14px; border-radius:10px; font-size:13px; color:#334155; border:1px solid #e2e8f0; margin-bottom:15px; display:flex; align-items:center; gap:8px;">
+            <span style="display:inline-block; animation: spin 1s linear infinite;">🔄</span>
+            <span id="fixStatus" style="font-weight:600;">Authenticating & Reading Schema...</span>
+          </div>
+
+          <!-- Stepper Checklist -->
+          <div id="stepperContainer" style="font-size:12px; line-height: 2; color:#64748b;">
+            <div id="step1" style="color:#ea580c; font-weight:bold;">⏳ Step 1: Scanning Database Tables & Sequences...</div>
+            <div id="step2">⚪ Step 2: Calculating Maximum Primary Keys...</div>
+            <div id="step3">⚪ Step 3: Syncing Auto-Increment Sequence IDs...</div>
+            <div id="step4">⚪ Step 4: Verifying Database Integrity...</div>
+          </div>
+        </div>
+
+        <style>
+          @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        </style>
+      `,
+      allowOutsideClick: false,
+      allowEscapeKey: false,
+      showConfirmButton: false,
+    });
+
+    const formatMMSS = (totalSecs) => {
+      const m = Math.floor(totalSecs / 60).toString().padStart(2, "0");
+      const s = (totalSecs % 60).toString().padStart(2, "0");
+      return `${m}:${s}`;
+    };
+
+    const updateProgressDOM = (pct, statusText, currentStep, elapsedSecs, remainingSecs) => {
+      const bar = document.getElementById("fixBar");
+      const txt = document.getElementById("fixPercent");
+      const st = document.getElementById("fixStatus");
+      const elapsedEl = document.getElementById("timeElapsed");
+      const remainingEl = document.getElementById("timeRemaining");
+
+      if (bar) bar.style.width = `${pct}%`;
+      if (txt) txt.innerHTML = `${pct}%`;
+      if (st) st.innerHTML = statusText;
+      if (elapsedEl) elapsedEl.innerHTML = formatMMSS(elapsedSecs);
+
+      if (remainingEl) {
+        if (remainingSecs === null) {
+          remainingEl.innerHTML = "Calculating...";
+        } else if (remainingSecs <= 0) {
+          remainingEl.innerHTML = "Finishing...";
+        } else {
+          remainingEl.innerHTML = formatMMSS(remainingSecs);
+        }
+      }
+
+      for (let i = 1; i <= 4; i++) {
+        const el = document.getElementById(`step${i}`);
+        if (el) {
+          if (i < currentStep) {
+            el.innerHTML = el.innerHTML.replace(/[⏳⚪✅]/, "✅");
+            el.style.color = "#16a34a";
+            el.style.fontWeight = "normal";
+          } else if (i === currentStep) {
+            el.innerHTML = el.innerHTML.replace(/[⏳⚪✅]/, "⏳");
+            el.style.color = "#ea580c";
+            el.style.fontWeight = "bold";
+          } else {
+            el.style.color = "#94a3b8";
+            el.style.fontWeight = "normal";
+          }
+        }
+      }
+    };
+
+    // Live Progress Simulation
+    let simulatedPct = 0;
+    const startTime = Date.now();
+
+    progressInterval = setInterval(() => {
+      if (simulatedPct < 30) {
+        simulatedPct += 5;
+      } else if (simulatedPct >= 30 && simulatedPct < 75) {
+        simulatedPct += 4;
+      } else if (simulatedPct >= 75 && simulatedPct < 90) {
+        simulatedPct += 2;
+      }
+
+      const elapsedSecs = Math.floor((Date.now() - startTime) / 1000);
+      let remainingSecs = null;
+
+      if (simulatedPct > 5) {
+        const totalEstimatedSecs = (elapsedSecs / simulatedPct) * 100;
+        remainingSecs = Math.max(0, Math.ceil(totalEstimatedSecs - elapsedSecs));
+      }
+
+      let step = 1;
+      let statusMsg = "Scanning Tables & Sequences...";
+      if (simulatedPct >= 30 && simulatedPct < 75) {
+        step = 2;
+        statusMsg = "Calculating Maximum Primary Keys...";
+      } else if (simulatedPct >= 75) {
+        step = 3;
+        statusMsg = "Syncing Auto-Increment Sequence IDs...";
+      }
+
+      updateProgressDOM(simulatedPct, statusMsg, step, elapsedSecs, remainingSecs);
+    }, 300);
+
+    // Backend Request
     const res = await fetch(
       `${import.meta.env.VITE_BACKEND_URL}/api/backup/fix-sequences`,
       {
@@ -97,21 +239,32 @@ const fixSequences = async () => {
         headers: {
           "Content-Type": "application/json"
         },
-        body: JSON.stringify({ password: confirmed }) // Yeh password backend ke verifySystemPassword('backup_action_pass') se lookup hoga
+        body: JSON.stringify({ password: confirmed })
       }
     );
 
     const data = await res.json();
-    Swal.close();
+
+    if (progressInterval) clearInterval(progressInterval);
 
     if (!data.success) {
-      // Agar password wrong hoga toh backend se direct "Wrong password" ka error handle ho jayega
+      Swal.close();
       return Swal.fire("❌ Error", data.error || "Something went wrong", "error");
     }
+
+    // Completion Steps
+    const totalElapsedSecs = Math.floor((Date.now() - startTime) / 1000);
+    updateProgressDOM(98, "Verifying Database Integrity...", 4, totalElapsedSecs, 0);
+    await new Promise((r) => setTimeout(r, 400));
+    updateProgressDOM(100, "Done!", 5, totalElapsedSecs, 0);
+    await new Promise((r) => setTimeout(r, 300));
+
+    Swal.close();
 
     Swal.fire("✅ Success", "All sequences fixed successfully", "success");
 
   } catch (err) {
+    if (progressInterval) clearInterval(progressInterval);
     Swal.close();
     Swal.fire("Error", err.message, "error");
   }
@@ -244,137 +397,199 @@ const askPassword = async (title, fileObj) => {
     });
   };
 
-/* ================= RESTORE (WITH LIVE PROGRESS & STEPPER) ================= */
+/* ================= RESTORE (APP STORE STYLE LIVE TIMER & ETA) ================= */
 
-  const restore = async (file, mode) => {
-    const fileObj = files.find((f) => f.name === file);
+const restore = async (file, mode) => {
+  const fileObj = files.find((f) => f.name === file);
 
-    const password = await askPassword(
-      mode === "full" ? "Full Backup Restore" : "Table Backup Restore",
-      fileObj
-    );
-    if (!password) return;
+  const password = await askPassword(
+    mode === "full" ? "Full Backup Restore" : "Table Backup Restore",
+    fileObj
+  );
+  if (!password) return;
 
-    if (mode === "table" && !tableMap[file]) {
-      return Swal.fire("Error", "Please select a table to restore", "error");
-    }
+  if (mode === "table" && !tableMap[file]) {
+    return Swal.fire("Error", "Please select a table to restore", "error");
+  }
 
-    let progressInterval = null;
+  let progressInterval = null;
 
-    try {
-      // 1. Progress Bar Popup with Stepper UI
-      Swal.fire({
-        title: "🔄 External Database Engine",
-        html: `
-          <div style="margin-top:15px; text-align: left;">
-            <div style="width:100%; height:20px; background:#e5e7eb; border-radius:50px; overflow:hidden; margin-bottom: 15px;">
-              <div id="restoreBar" style="width:0%; height:100%; background:linear-gradient(90deg, #3b82f6, #2563eb); transition:width 0.4s ease;"></div>
-            </div>
-            <div style="display:flex; justify-content:space-between; font-weight:800; font-size:16px; margin-bottom:15px;">
-              <span>Status: <span id="restoreStatus" style="color:#2563eb;">Initiating Restore...</span></span>
-              <span id="restorePercent">0%</span>
-            </div>
-            <div id="stepperContainer" style="font-size:13px; line-height: 2;">
-              <div id="step1" style="color:#2563eb; font-weight:bold;">⏳ Step 1: Reading Backup File...</div>
-              <div id="step2" style="color:#94a3b8;">⚪ Step 2: Extracting & Verifying Structures...</div>
-              <div id="step3" style="color:#94a3b8;">⚪ Step 3: Purging Live Records & Overwriting Tables...</div>
-              <div id="step4" style="color:#94a3b8;">⚪ Step 4: Finalizing Sequences & Triggers...</div>
+  try {
+    // 1. App Store Downloading Style Modal
+    Swal.fire({
+      title: "🔄 Restoring Database",
+      html: `
+        <div style="margin-top:15px; text-align: left; font-family: system-ui, -apple-system, sans-serif;">
+          
+          <!-- Progress Bar -->
+          <div style="width:100%; height:12px; background:#e2e8f0; border-radius:10px; overflow:hidden; margin-bottom: 12px;">
+            <div id="restoreBar" style="width:0%; height:100%; background:linear-gradient(90deg, #2563eb, #3b82f6); transition:width 0.3s ease;"></div>
+          </div>
+
+          <!-- App Store Style Percentage & Live Counters -->
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+            <span id="restorePercent" style="font-weight:800; font-size:22px; color:#1e293b;">0%</span>
+            
+            <div style="text-align:right; font-size:12px; color:#64748b; line-height:1.4;">
+              <div>⏱ Elapsed: <strong id="timeElapsed" style="color:#0f172a;">00:00</strong></div>
+              <div>⏳ Remaining: <strong id="timeRemaining" style="color:#2563eb;">Calculating...</strong></div>
             </div>
           </div>
-        `,
-        allowOutsideClick: false,
-        allowEscapeKey: false,
-        showConfirmButton: false,
-      });
 
-      // Helper function to update Progress & Steppers
-      const updateProgressDOM = (pct, statusText, currentStep) => {
-        const bar = document.getElementById("restoreBar");
-        const txt = document.getElementById("restorePercent");
-        const st = document.getElementById("restoreStatus");
-        if (bar) bar.style.width = `${pct}%`;
-        if (txt) txt.innerHTML = `${pct}%`;
-        if (st) st.innerHTML = statusText;
+          <!-- Current Task Label -->
+          <div style="background:#f8fafc; padding:10px 14px; border-radius:10px; font-size:13px; color:#334155; border:1px solid #e2e8f0; margin-bottom:15px; display:flex; align-items:center; gap:8px;">
+            <span id="restoreSpinner" style="display:inline-block; animation: spin 1s linear infinite;">🔄</span>
+            <span id="restoreStatus" style="font-weight:600;">Initiating process...</span>
+          </div>
 
-        for (let i = 1; i <= 4; i++) {
-          const el = document.getElementById(`step${i}`);
-          if (el) {
-            if (i < currentStep) {
-              el.innerHTML = el.innerHTML.replace(/[⏳⚪✅]/, "✅");
-              el.style.color = "#16a34a";
-              el.style.fontWeight = "normal";
-            } else if (i === currentStep) {
-              el.innerHTML = el.innerHTML.replace(/[⏳⚪✅]/, "⏳");
-              el.style.color = "#2563eb";
-              el.style.fontWeight = "bold";
-            } else {
-              el.style.color = "#94a3b8";
-              el.style.fontWeight = "normal";
-            }
-          }
+          <!-- Stepper Checklist -->
+          <div id="stepperContainer" style="font-size:12px; line-height: 2; color:#64748b;">
+            <div id="step1" style="color:#2563eb; font-weight:bold;">⏳ Step 1: Reading Backup File...</div>
+            <div id="step2">⚪ Step 2: Extracting & Verifying Structures...</div>
+            <div id="step3">⚪ Step 3: Purging Live Records & Overwriting Tables...</div>
+            <div id="step4">⚪ Step 4: Finalizing Sequences & Triggers...</div>
+          </div>
+        </div>
+
+        <style>
+          @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        </style>
+      `,
+      allowOutsideClick: false,
+      allowEscapeKey: false,
+      showConfirmButton: false,
+    });
+
+    // Seconds ko MM:SS format me convert karne ke liye helper
+    const formatMMSS = (totalSecs) => {
+      const m = Math.floor(totalSecs / 60).toString().padStart(2, "0");
+      const s = (totalSecs % 60).toString().padStart(2, "0");
+      return `${m}:${s}`;
+    };
+
+    // DOM Updates Handler
+    const updateProgressDOM = (pct, statusText, currentStep, elapsedSecs, remainingSecs) => {
+      const bar = document.getElementById("restoreBar");
+      const txt = document.getElementById("restorePercent");
+      const st = document.getElementById("restoreStatus");
+      const elapsedEl = document.getElementById("timeElapsed");
+      const remainingEl = document.getElementById("timeRemaining");
+
+      if (bar) bar.style.width = `${pct}%`;
+      if (txt) txt.innerHTML = `${pct}%`;
+      if (st) st.innerHTML = statusText;
+      if (elapsedEl) elapsedEl.innerHTML = formatMMSS(elapsedSecs);
+      
+      if (remainingEl) {
+        if (remainingSecs === null) {
+          remainingEl.innerHTML = "Calculating...";
+        } else if (remainingSecs <= 0) {
+          remainingEl.innerHTML = "Finishing...";
+        } else {
+          remainingEl.innerHTML = formatMMSS(remainingSecs);
         }
-      };
-
-      // 2. Simulated Dynamic Progress Steps
-      let simulatedPct = 0;
-      progressInterval = setInterval(() => {
-        if (simulatedPct < 30) {
-          simulatedPct += 5;
-          updateProgressDOM(simulatedPct, "Reading Backup File...", 1);
-        } else if (simulatedPct >= 30 && simulatedPct < 65) {
-          simulatedPct += 3;
-          updateProgressDOM(simulatedPct, "Extracting & verifying structures...", 2);
-        } else if (simulatedPct >= 65 && simulatedPct < 90) {
-          simulatedPct += 2;
-          updateProgressDOM(simulatedPct, "Purging records & overwriting...", 3);
-        }
-      }, 250);
-
-      // 3. Send REST request to backend
-      const res = await fetch(
-        `${import.meta.env.VITE_BACKEND_URL}${
-          mode === "full"
-            ? "/api/backup/restore/full"
-            : "/api/backup/restore/table"
-        }`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ file, table: tableMap[file], password }),
-        }
-      );
-
-      const data = await res.json();
-
-      // Clear interval on server response
-      if (progressInterval) clearInterval(progressInterval);
-
-      if (!res.ok || !data.success) {
-        Swal.close();
-        return Swal.fire("Error", data.error || "Restore failed / Wrong password", "error");
       }
 
-      // Final completion steps
-      updateProgressDOM(96, "Finalizing sequences & triggers...", 4);
-      await new Promise((r) => setTimeout(r, 600));
-      updateProgressDOM(100, "Done!", 5);
-      await new Promise((r) => setTimeout(r, 400));
+      for (let i = 1; i <= 4; i++) {
+        const el = document.getElementById(`step${i}`);
+        if (el) {
+          if (i < currentStep) {
+            el.innerHTML = el.innerHTML.replace(/[⏳⚪✅]/, "✅");
+            el.style.color = "#16a34a";
+            el.style.fontWeight = "normal";
+          } else if (i === currentStep) {
+            el.innerHTML = el.innerHTML.replace(/[⏳⚪✅]/, "⏳");
+            el.style.color = "#2563eb";
+            el.style.fontWeight = "bold";
+          } else {
+            el.style.color = "#94a3b8";
+            el.style.fontWeight = "normal";
+          }
+        }
+      }
+    };
 
+    // Timer logic variables
+    let simulatedPct = 0;
+    const startTime = Date.now();
+
+    progressInterval = setInterval(() => {
+      // Dynamic speed simulation
+      if (simulatedPct < 25) {
+        simulatedPct += 5;
+      } else if (simulatedPct >= 25 && simulatedPct < 70) {
+        simulatedPct += 3;
+      } else if (simulatedPct >= 70 && simulatedPct < 90) {
+        simulatedPct += 2;
+      }
+
+      // Calculations
+      const elapsedSecs = Math.floor((Date.now() - startTime) / 1000);
+      
+      let remainingSecs = null;
+      if (simulatedPct > 5) {
+        const totalEstimatedSecs = (elapsedSecs / simulatedPct) * 100;
+        remainingSecs = Math.max(0, Math.ceil(totalEstimatedSecs - elapsedSecs));
+      }
+
+      let step = 1;
+      let statusMsg = "Reading Backup File...";
+      if (simulatedPct >= 25 && simulatedPct < 70) {
+        step = 2;
+        statusMsg = "Extracting & verifying structures...";
+      } else if (simulatedPct >= 70) {
+        step = 3;
+        statusMsg = "Purging live records & overwriting...";
+      }
+
+      updateProgressDOM(simulatedPct, statusMsg, step, elapsedSecs, remainingSecs);
+    }, 400);
+
+    // REST Call Backend Engine
+    const res = await fetch(
+      `${import.meta.env.VITE_BACKEND_URL}${
+        mode === "full"
+          ? "/api/backup/restore/full"
+          : "/api/backup/restore/table"
+      }`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ file, table: tableMap[file], password }),
+      }
+    );
+
+    const data = await res.json();
+
+    if (progressInterval) clearInterval(progressInterval);
+
+    if (!res.ok || !data.success) {
       Swal.close();
-
-      Swal.fire({
-        icon: "success",
-        title: "Restore Completed",
-        text: "Database restored successfully!",
-        confirmButtonColor: "#16a34a",
-      });
-
-    } catch (err) {
-      if (progressInterval) clearInterval(progressInterval);
-      Swal.close();
-      Swal.fire("Error", "Restore failed", "error");
+      return Swal.fire("Error", data.error || "Restore failed / Wrong password", "error");
     }
-  };
+
+    // Final Completion Step
+    const totalElapsedSecs = Math.floor((Date.now() - startTime) / 1000);
+    updateProgressDOM(98, "Finalizing sequences & triggers...", 4, totalElapsedSecs, 0);
+    await new Promise((r) => setTimeout(r, 500));
+    updateProgressDOM(100, "Done!", 5, totalElapsedSecs, 0);
+    await new Promise((r) => setTimeout(r, 300));
+
+    Swal.close();
+
+    Swal.fire({
+      icon: "success",
+      title: "Restore Completed",
+      text: "Database restored successfully!",
+      confirmButtonColor: "#16a34a",
+    });
+
+  } catch (err) {
+    if (progressInterval) clearInterval(progressInterval);
+    Swal.close();
+    Swal.fire("Error", "Restore failed", "error");
+  }
+};
 
   /* ================= DOWNLOAD ================= */
 
