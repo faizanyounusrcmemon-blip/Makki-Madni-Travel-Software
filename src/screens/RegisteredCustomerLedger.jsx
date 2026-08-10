@@ -142,137 +142,152 @@ export default function RegisteredCustomerLedger({ onNavigate }) {
     }
   };
 
-  /* =========================
-     FETCH SALE DETAIL MODAL
-  ========================== */
-  const handleSuccessResponse = (data, ledgerVal, originalId, currentType) => {
-    if (data.success && data.row) {
-      const row = data.row;
+/* =========================
+   FETCH SALE DETAIL MODAL (FIXED)
+========================== */
+const handleSuccessResponse = (data, ledgerVal, originalId, currentType) => {
+  if (data.success && data.row) {
+    const row = data.row;
 
-      const safeParse = (v) => {
-        if (!v) return [];
-        if (Array.isArray(v)) return v;
-        try { return JSON.parse(v); } catch { return []; }
-      };
-
-      if (currentType === "TICKETING" || String(row.ref_no || "").includes("TIC")) {
-        row.flight_from = safeParse(row.flight_from);
-        row.flight_to = safeParse(row.flight_to);
-        row.flight_date = safeParse(row.flight_date);
-        row.airline = safeParse(row.airline);
-      } else if (["VISA", "ZIYARAT", "TRANSPORT", "CARD", "GROUPS"].includes(currentType)) {
-        row.rows = safeParse(row.rows);
-      }
-
-      row.total_pkr = Number(row.total_pkr || row.grand_total || row.total_amount || row.total_amount_pkr || ledgerVal || 0);
-      row.grand_total = row.total_pkr;
-      row.total_amount = row.total_pkr;
-
-      setDetailData(row);
-    } else {
-      setDetailData({
-        ref_no: originalId || "N/A",
-        customer_name: customerName,
-        booking_date: getTodayInputDate(),
-        description: "",
-        total_pkr: ledgerVal,
-        grand_total: ledgerVal,
-        total_amount: ledgerVal
-      });
-    }
-  };
-
-  const fetchSaleDetail = async (id, description) => {
-    const idStr = String(id || "").toUpperCase();
-    let detectedType = "INVOICE";
-    let endpoint = "";
-
-    let cleanRef = idStr;
-    if (idStr.startsWith("SALE-")) {
-      cleanRef = idStr.replace("SALE-", "");
-    }
-
-    const matchedLedgerRow = rows.find(r => String(r.id) === idStr);
-    const ledgerVal = matchedLedgerRow ? Number(matchedLedgerRow.credit || matchedLedgerRow.debit || 0) : 0;
-
-    if (cleanRef.startsWith("TIC-")) {
-      detectedType = "TICKETING";
-      endpoint = `${import.meta.env.VITE_BACKEND_URL}/api/ticketing/get/${cleanRef}`;
-    } else if (cleanRef.startsWith("HOT-")) {
-      detectedType = "HOTEL";
-      endpoint = `${import.meta.env.VITE_BACKEND_URL}/api/hotels/get/${cleanRef}`;
-    } else if (cleanRef.startsWith("VISA-")) {
-      detectedType = "VISA";
-      endpoint = `${import.meta.env.VITE_BACKEND_URL}/api/visa/get/${cleanRef}`;
-    } else if (cleanRef.startsWith("PKG-")) {
-      detectedType = "PACKAGE";
-      endpoint = `${import.meta.env.VITE_BACKEND_URL}/api/bookings/get/${cleanRef}`;
-    } else if (cleanRef.startsWith("ZIY-")) {
-      detectedType = "ZIYARAT";
-      endpoint = `${import.meta.env.VITE_BACKEND_URL}/api/ziyarat/get/${cleanRef}`;
-    } else if (cleanRef.startsWith("TRN-")) {
-      detectedType = "TRANSPORT";
-      endpoint = `${import.meta.env.VITE_BACKEND_URL}/api/transport/get/${cleanRef}`;
-    } else if (cleanRef.startsWith("CARD-")) {
-      detectedType = "CARD";
-      endpoint = `${import.meta.env.VITE_BACKEND_URL}/api/card/get/${cleanRef}`;
-    } else if (cleanRef.startsWith("GRP-")) {
-      detectedType = "GROUPS";
-      endpoint = `${import.meta.env.VITE_BACKEND_URL}/api/groups/get/${cleanRef}`;
-    }
-
-    setDetailType(detectedType);
-    setDetailModalOpen(true);
-    setDetailLoading(true);
-    setDetailData(null);
-
-    const useBackupFallback = () => {
-      setDetailData({
-        ref_no: cleanRef,
-        customer_name: customerName,
-        booking_date: matchedLedgerRow?.date || getTodayInputDate(),
-        description: description,
-        total_pkr: ledgerVal,
-        grand_total: ledgerVal,
-        total_amount: ledgerVal,
-        total_sar: 0,
-        pkr_rate: 0
-      });
+    const safeParse = (v) => {
+      if (!v) return [];
+      if (Array.isArray(v)) return v;
+      try { return JSON.parse(v); } catch { return []; }
     };
 
-    try {
-      const res = await fetch(endpoint);
-
-      if (!res.ok) {
-        let retryUrl = "";
-        if (detectedType === "CARD") {
-          retryUrl = `${import.meta.env.VITE_BACKEND_URL}/api/cards/get/${cleanRef}`;
-        } else if (detectedType === "TICKETING") {
-          retryUrl = `${import.meta.env.VITE_BACKEND_URL}/api/ticket/get/${cleanRef}`;
-        }
-
-        if (retryUrl) {
-          const altRes = await fetch(retryUrl);
-          if (altRes.ok) {
-            const altData = await altRes.json();
-            return handleSuccessResponse(altData, ledgerVal, cleanRef, detectedType);
-          }
-        }
-      }
-
-      if (!res.ok) {
-        throw new Error("API status: " + res.status);
-      }
-
-      const data = await res.json();
-      handleSuccessResponse(data, ledgerVal, cleanRef, detectedType);
-    } catch (err) {
-      console.error("Error fetching detail:", err);
-      useBackupFallback();
-    } finally {
-      setDetailLoading(false);
+    if (currentType === "TICKETING" || String(row.ref_no || "").includes("TIC")) {
+      row.flight_from = safeParse(row.flight_from);
+      row.flight_to = safeParse(row.flight_to);
+      row.flight_date = safeParse(row.flight_date);
+      row.airline = safeParse(row.airline);
+    } else if (currentType === "HOTEL") {
+      row.hotels = safeParse(row.hotels);
+    } else if (currentType === "PACKAGE") {
+      row.flights = safeParse(row.flights);
+      row.hotels = safeParse(row.hotels);
+      row.visa = safeParse(row.visa);
+      row.transport = safeParse(row.transport);
+      row.ziyarat = safeParse(row.ziyarat);
+    } else if (["VISA", "ZIYARAT", "TRANSPORT", "CARD", "GROUPS"].includes(currentType)) {
+      row.rows = safeParse(row.rows);
     }
+
+    row.total_pkr = Number(row.total_pkr || row.grand_total || row.total_amount || row.total_amount_pkr || ledgerVal || 0);
+    row.grand_total = row.total_pkr;
+    row.total_amount = row.total_pkr;
+
+    setDetailData(row);
+  } else {
+    setDetailData({
+      ref_no: originalId || "N/A",
+      customer_name: customerName,
+      booking_date: getTodayInputDate(),
+      description: "",
+      total_pkr: ledgerVal,
+      grand_total: ledgerVal,
+      total_amount: ledgerVal
+    });
+  }
+};
+
+const fetchSaleDetail = async (id, description) => {
+  const idStr = String(id || "").toUpperCase();
+  let detectedType = "INVOICE";
+  let endpoint = "";
+
+  let cleanRef = idStr;
+  if (idStr.startsWith("SALE-")) {
+    cleanRef = idStr.replace("SALE-", "");
+  }
+
+  const matchedLedgerRow = rows.find(r => String(r.id) === idStr);
+  const ledgerVal = matchedLedgerRow ? Number(matchedLedgerRow.credit || matchedLedgerRow.debit || 0) : 0;
+
+  // Prefixes Normalized for both VIS-/VISA-, CRD-/CARD-, BKG-/PKG-
+  if (cleanRef.startsWith("TIC-")) {
+    detectedType = "TICKETING";
+    endpoint = `${import.meta.env.VITE_BACKEND_URL}/api/ticketing/get/${cleanRef}`;
+  } else if (cleanRef.startsWith("HOT-")) {
+    detectedType = "HOTEL";
+    endpoint = `${import.meta.env.VITE_BACKEND_URL}/api/hotels/get/${cleanRef}`;
+  } else if (cleanRef.startsWith("VISA-") || cleanRef.startsWith("VIS-")) {
+    detectedType = "VISA";
+    endpoint = `${import.meta.env.VITE_BACKEND_URL}/api/visa/get/${cleanRef}`;
+  } else if (cleanRef.startsWith("PKG-") || cleanRef.startsWith("BKG-")) {
+    detectedType = "PACKAGE";
+    endpoint = `${import.meta.env.VITE_BACKEND_URL}/api/bookings/get/${cleanRef}`;
+  } else if (cleanRef.startsWith("ZIY-")) {
+    detectedType = "ZIYARAT";
+    endpoint = `${import.meta.env.VITE_BACKEND_URL}/api/ziyarat/get/${cleanRef}`;
+  } else if (cleanRef.startsWith("TRN-")) {
+    detectedType = "TRANSPORT";
+    endpoint = `${import.meta.env.VITE_BACKEND_URL}/api/transport/get/${cleanRef}`;
+  } else if (cleanRef.startsWith("CARD-") || cleanRef.startsWith("CRD-")) {
+    detectedType = "CARD";
+    endpoint = `${import.meta.env.VITE_BACKEND_URL}/api/card/get/${cleanRef}`;
+  } else if (cleanRef.startsWith("GRP-")) {
+    detectedType = "GROUPS";
+    endpoint = `${import.meta.env.VITE_BACKEND_URL}/api/groups/get/${cleanRef}`;
+  }
+
+  setDetailType(detectedType);
+  setDetailModalOpen(true);
+  setDetailLoading(true);
+  setDetailData(null);
+
+  const useBackupFallback = () => {
+    setDetailData({
+      ref_no: cleanRef,
+      customer_name: customerName,
+      booking_date: matchedLedgerRow?.date || getTodayInputDate(),
+      description: description,
+      total_pkr: ledgerVal,
+      grand_total: ledgerVal,
+      total_amount: ledgerVal,
+      total_sar: 0,
+      pkr_rate: 0
+    });
   };
+
+  if (!endpoint) {
+    useBackupFallback();
+    setDetailLoading(false);
+    return;
+  }
+
+  try {
+    const res = await fetch(endpoint);
+
+    if (!res.ok) {
+      let retryUrl = "";
+      if (detectedType === "CARD") {
+        retryUrl = `${import.meta.env.VITE_BACKEND_URL}/api/cards/get/${cleanRef}`;
+      } else if (detectedType === "TICKETING") {
+        retryUrl = `${import.meta.env.VITE_BACKEND_URL}/api/ticket/get/${cleanRef}`;
+      }
+
+      if (retryUrl) {
+        const altRes = await fetch(retryUrl);
+        if (altRes.ok) {
+          const altData = await altRes.json();
+          return handleSuccessResponse(altData, ledgerVal, cleanRef, detectedType);
+        }
+      }
+    }
+
+    if (!res.ok) {
+      throw new Error("API status: " + res.status);
+    }
+
+    const data = await res.json();
+    handleSuccessResponse(data, ledgerVal, cleanRef, detectedType);
+  } catch (err) {
+    console.error("Error fetching detail:", err);
+    useBackupFallback();
+  } finally {
+    setDetailLoading(false);
+  }
+};
 
   /* =========================
      SAVE PAYMENT/ADJUSTMENT
@@ -573,7 +588,7 @@ export default function RegisteredCustomerLedger({ onNavigate }) {
           pdf.setTextColor(255, 255, 255);
           pdf.setFont("helvetica", "bold");
           pdf.setFontSize(16);
-          pdf.text("MAKKI MADNI TRAVEL & TOURS", pageWidth / 2, 12, { align: "center" });
+          pdf.text("BE TRAVEL & TOURS", pageWidth / 2, 12, { align: "center" });
 
           pdf.setFont("helvetica", "normal");
           pdf.setFontSize(9);
@@ -666,7 +681,7 @@ export default function RegisteredCustomerLedger({ onNavigate }) {
     setTimeout(() => {
       try {
         const headerInfo = [
-          ["MAKKI MADNI TRAVEL & TOURS"],
+          ["BE TRAVEL & TOURS"],
           ["REGISTERED CUSTOMER FINANCIAL LEDGER"],
           [""],
           ["Customer Name:", customerName.toUpperCase(), "", "Printed Date:", getRowDate({ date: new Date() })],
@@ -1146,35 +1161,184 @@ export default function RegisteredCustomerLedger({ onNavigate }) {
                       </div>
                     )}
 
-                    {detailType === "PACKAGE" && (
-                      <div className="mb-4">
-                        <h5 className="fw-bold text-primary mb-2">✈️ Flights Included</h5>
-                        <div className="border p-2 bg-white rounded mb-3">
-                          {Array.isArray(detailData.flights) && detailData.flights.length > 0 ? (
-                            detailData.flights.map((f, idx) => (
-                              <div key={idx} className="mb-1 text-muted">
-                                {getRowDate({ date: f.date })} — {f.from} → {f.to} {f.airline && <b>({f.airline})</b>}
-                              </div>
-                            ))
-                          ) : (
-                            <p className="mb-0 text-muted">No flights</p>
-                          )}
-                        </div>
+{detailType === "PACKAGE" && (() => {
+  /* ================= PACKAGE DURATION ================= */
+  const flightDates = Array.isArray(detailData.flights)
+    ? detailData.flights.map((f) => f.date).filter(Boolean).sort()
+    : [];
 
-                        <h5 className="fw-bold text-success mb-2">🏨 Hotels Included</h5>
-                        {Array.isArray(detailData.hotels) && detailData.hotels.length > 0 ? (
-                          detailData.hotels.map((h, idx) => (
-                            <div key={idx} className="border p-2 bg-white rounded mb-2 shadow-sm">
-                              <b>🛏️ {h.hotel}</b> — 📍 {h.location}<br />
-                              Check In: <span className="text-primary fw-bold">{getRowDate({ date: h.checkIn })}</span> → 
-                              Check Out: <span className="text-danger fw-bold">{getRowDate({ date: h.checkOut })}</span>
-                            </div>
-                          ))
-                        ) : (
-                          <p className="text-muted">No hotels included</p>
-                        )}
-                      </div>
-                    )}
+  let packageDays = 0;
+  let packageNights = 0;
+
+  if (flightDates.length >= 2) {
+    const startDate = new Date(flightDates[0]);
+    const endDate = new Date(flightDates[flightDates.length - 1]);
+    const diff = (endDate - startDate) / (1000 * 60 * 60 * 24);
+    packageDays = diff + 1;
+    packageNights = diff;
+  }
+
+  /* ================= PER PERSON CALCULATION ================= */
+  const adultCount = Number(detailData.adult_count || 0);
+  const childCount = Number(detailData.child_count || 0);
+  const infantCount = Number(detailData.infant_count || 0);
+
+  const rate = {
+    flight: Number(detailData.flight_sar_rate || 0),
+    hotels: Number(detailData.hotel_sar_rate || 0),
+    visa: Number(detailData.visa_sar_rate || 0),
+    transport: Number(detailData.transport_sar_rate || 0),
+    ziyarat: Number(detailData.ziyarat_sar_rate || 0),
+  };
+
+  const adultFlightPKR = adultCount * Number(detailData.adult_rate || 0) * rate.flight;
+  const childFlightPKR = childCount * Number(detailData.child_rate || 0) * rate.flight;
+  const infantFlightPKR = infantCount * Number(detailData.infant_rate || 0) * rate.flight;
+
+  const visaPersons = (detailData.visa || []).reduce((sum, v) => sum + Number(v.persons || 0), 0);
+  const visaPKR = Number(detailData.visa_sar_total || 0) * rate.visa;
+  const visaPerPerson = visaPersons > 0 ? visaPKR / visaPersons : 0;
+
+  const hotelsPKR = Number(detailData.hotel_sar_total || 0) * rate.hotels;
+  const transportPKR = Number(detailData.transport_sar_total || 0) * rate.transport;
+  const ziyaratPKR = Number(detailData.ziyarat_sar_total || 0) * rate.ziyarat;
+
+  const sharedPKR = hotelsPKR + transportPKR + ziyaratPKR;
+  const sharedPerAdult = adultCount > 0 ? sharedPKR / adultCount : 0;
+
+  const adultPerPerson = Math.round(
+    adultCount > 0 ? adultFlightPKR / adultCount + visaPerPerson + sharedPerAdult : 0
+  );
+
+  const childPerPerson = Math.round(
+    childCount > 0 ? childFlightPKR / childCount + visaPerPerson : 0
+  );
+
+  const infantPerPerson = Math.round(
+    infantCount > 0 ? infantFlightPKR / infantCount + visaPerPerson : 0
+  );
+
+  return (
+    <div className="mb-4 text-start">
+      {/* 📅 DURATION CARD */}
+      <div
+        className="border rounded-3 p-3 mb-4 shadow-sm"
+        style={{
+          background: "linear-gradient(135deg,#f8f9fa,#e9f7ef)",
+          borderLeft: "5px solid #198754",
+        }}
+      >
+        <div className="text-uppercase fw-bold text-muted small">Package Duration</div>
+        <div className="fs-4 fw-bold text-success mt-1">
+          📅 {packageDays} Days / 🌙 {packageNights} Nights
+        </div>
+      </div>
+
+      {/* ✈️ FLIGHTS */}
+      <h5 className="fw-bold text-primary mb-2">✈️ Flight</h5>
+      <div className="border p-3 rounded-3 bg-white mb-2 shadow-sm">
+        {Array.isArray(detailData.flights) && detailData.flights.length > 0 ? (
+          detailData.flights.map((f, i) => (
+            <div key={i} className="mb-1 text-dark">
+              {getRowDate({ date: f.date })} — <span className="fw-bold">{f.from}</span> → <span className="fw-bold">{f.to}</span> {f.airline && <b>({f.airline})</b>}
+            </div>
+          ))
+        ) : (
+          <p className="text-muted mb-0">No flights</p>
+        )}
+      </div>
+      <div className="small text-muted bg-white p-2 rounded border mb-3">
+        Adults: {detailData.adult_count || 0} × {fmtAmt(detailData.adult_rate || 0)} | Child: {detailData.child_count || 0} × {fmtAmt(detailData.child_rate || 0)} | Infant: {detailData.infant_count || 0} × {fmtAmt(detailData.infant_rate || 0)} <br />
+        <b>Flight SAR:</b> {fmtAmt(detailData.flight_sar_total || 0)} | <b>Flight PKR:</b> {fmtAmt(detailData.flight_pkr_total || 0)}
+      </div>
+
+      {/* 🏨 HOTELS */}
+      <h5 className="fw-bold text-success mb-2">🏨 Hotels</h5>
+      {Array.isArray(detailData.hotels) && detailData.hotels.length > 0 ? (
+        detailData.hotels.map((h, i) => (
+          <div key={i} className="border p-3 rounded-3 bg-white mb-2 shadow-sm">
+            <b>🛏️ {h.hotel}</b> — 📍 {h.location}<br />
+            Check In: <span className="text-primary fw-bold">{getRowDate({ date: h.checkIn })}</span> → Check Out: <span className="text-danger fw-bold">{getRowDate({ date: h.checkOut })}</span><br />
+            <span className="small text-muted">Nights: {h.nights}, Rooms: {h.rooms}, Type: {h.type} | Rate: {fmtAmt(h.rate)} SAR — Total: {fmtAmt(h.total)} SAR</span>
+          </div>
+        ))
+      ) : (
+        <p className="text-muted">No hotels</p>
+      )}
+      <div className="small text-muted bg-white p-2 rounded border mb-3">
+        <b>Hotel SAR:</b> {fmtAmt(detailData.hotel_sar_total || 0)} | <b>Hotel PKR:</b> {fmtAmt(detailData.hotel_pkr_total || 0)}
+      </div>
+
+      {/* 🛂 VISA */}
+      <h5 className="fw-bold text-warning mb-2">🛂 Visa</h5>
+      {Array.isArray(detailData.visa) && detailData.visa.length > 0 ? (
+        detailData.visa.map((v, i) => (
+          <div key={i} className="border p-2 rounded bg-white mb-1 shadow-sm d-flex justify-content-between">
+            <span>{v.type || v.title || "Visa"} — {v.persons || v.qty || 1} Persons</span>
+            <span>× {fmtAmt(v.rate || 0)} = {fmtAmt(v.total || 0)} SAR</span>
+          </div>
+        ))
+      ) : (
+        <p className="text-muted">No visa</p>
+      )}
+      <div className="small text-muted bg-white p-2 rounded border mb-3">
+        <b>Visa SAR:</b> {fmtAmt(detailData.visa_sar_total || 0)} | <b>Visa PKR:</b> {fmtAmt(detailData.visa_pkr_total || 0)}
+      </div>
+
+      {/* 🚐 TRANSPORT */}
+      <h5 className="fw-bold text-danger mb-2">🚐 Transport</h5>
+      {Array.isArray(detailData.transport) && detailData.transport.length > 0 ? (
+        detailData.transport.map((t, i) => (
+          <div key={i} className="border p-2 rounded bg-white mb-1 shadow-sm d-flex justify-content-between">
+            <span>{t.text || t.sector || t.route || t.vehicle || "Transport Service"}</span>
+            <span>{fmtAmt(t.amount || t.total || 0)} SAR</span>
+          </div>
+        ))
+      ) : (
+        <p className="text-muted">No transport</p>
+      )}
+      <div className="small text-muted bg-white p-2 rounded border mb-3">
+        <b>Transport SAR:</b> {fmtAmt(detailData.transport_sar_total || 0)} | <b>Transport PKR:</b> {fmtAmt(detailData.transport_pkr_total || 0)}
+      </div>
+
+      {/* 🕌 ZIYARAT */}
+      <h5 className="fw-bold mb-2" style={{ color: "#6f42c1" }}>🕌 Ziyarat</h5>
+      {Array.isArray(detailData.ziyarat) && detailData.ziyarat.length > 0 ? (
+        detailData.ziyarat.map((z, i) => (
+          <div key={i} className="border p-2 rounded bg-white mb-1 shadow-sm d-flex justify-content-between">
+            <span>{z.text || z.route || z.description || z.city || "Ziyarat Tour"}</span>
+            <span>{fmtAmt(z.amount || z.total || 0)} SAR</span>
+          </div>
+        ))
+      ) : (
+        <p className="text-muted">No ziyarat</p>
+      )}
+      <div className="small text-muted bg-white p-2 rounded border mb-3">
+        <b>Ziyarat SAR:</b> {fmtAmt(detailData.ziyarat_sar_total || 0)} | <b>Ziyarat PKR:</b> {fmtAmt(detailData.ziyarat_pkr_total || 0)}
+      </div>
+
+      {/* 👥 PER PERSON COST BREAKDOWN */}
+      <div className="border rounded-3 p-3 bg-white shadow-sm mt-3">
+        <h6 className="fw-bold mb-3 text-dark">👥 Per Person Cost</h6>
+
+        <div className="d-flex justify-content-between border-bottom py-2">
+          <span><b>Adults ({adultCount})</b></span>
+          <span className="fw-bold text-success">{fmtAmt(adultPerPerson)} PKR</span>
+        </div>
+
+        <div className="d-flex justify-content-between border-bottom py-2">
+          <span><b>Children ({childCount})</b></span>
+          <span className="fw-bold text-success">{fmtAmt(childPerPerson)} PKR</span>
+        </div>
+
+        <div className="d-flex justify-content-between py-2">
+          <span><b>Infants ({infantCount})</b></span>
+          <span className="fw-bold text-success">{fmtAmt(infantPerPerson)} PKR</span>
+        </div>
+      </div>
+    </div>
+  );
+})()}
 
                     {["VISA", "ZIYARAT", "TRANSPORT", "CARD", "GROUPS"].includes(detailType) && (
                       <div className="mb-4">
