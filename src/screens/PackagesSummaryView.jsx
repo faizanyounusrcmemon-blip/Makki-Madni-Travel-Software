@@ -15,7 +15,7 @@ const fmtDate = (d) =>
 /* ================= FILE NAME HELPERS ================= */
 
 
-export default function PackagesView({ id, onNavigate }) {
+export default function PackagesView({ id, onNavigate, fromPage }) {
   const [data, setData] = useState(null);
 
 
@@ -135,17 +135,17 @@ if (data) {
 
       {/* ============ TOP ACTIONS ============ */}
       <div className="d-flex justify-content-start mb-3 gap-2 flex-wrap">
-        <button
-          className="btn btn-sm text-white fw-bold shadow"
-          style={{
-            background: "linear-gradient(135deg,#000,#434343)",
-            borderRadius: 8,
-            padding: "6px 16px",
-          }}
-          onClick={() => onNavigate("allreports")}
-        >
-          ⬅ Back
-        </button>
+<button
+  className="btn btn-sm text-white fw-bold shadow"
+  style={{
+    background: "linear-gradient(135deg,#000,#434343)",
+    borderRadius: 8,
+    padding: "6px 16px",
+  }}
+  onClick={() => onNavigate(fromPage || "allreports")}
+>
+  ⬅ Back
+</button>
 
 <button
   className="btn btn-success btn-sm fw-bold shadow"

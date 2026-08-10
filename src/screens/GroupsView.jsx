@@ -8,7 +8,7 @@ const fmt = (v) => Number(v || 0).toLocaleString("en-US");
 const fmtDate = (d) => d ? new Date(d).toLocaleDateString("en-GB") : "-";
 
 
-export default function GroupsView({ id, onNavigate }) {
+export default function GroupsView({ id, onNavigate, fromPage }) {
   const [data, setData] = useState(null);
   const ref = useRef(null);
 
@@ -50,13 +50,17 @@ export default function GroupsView({ id, onNavigate }) {
     <div className="container mt-3 mb-5">
       {/* ===== ACTIONS ===== */}
       <div className="d-flex gap-2 mb-3 flex-wrap">
-        <button
-          className="btn btn-sm text-white fw-bold shadow"
-          style={{ background: "linear-gradient(135deg,#000,#434343)", borderRadius: 8, padding: "6px 16px" }}
-          onClick={() => onNavigate("allreports")}
-        >
-          ⬅ Back
-        </button>
+<button
+  className="btn btn-sm text-white fw-bold shadow"
+  style={{
+    background: "linear-gradient(135deg,#000,#434343)",
+    borderRadius: 8,
+    padding: "6px 16px",
+  }}
+  onClick={() => onNavigate(fromPage || "allreports")}
+>
+  ⬅ Back
+</button>
 
 <button
   className="btn btn-success btn-sm fw-bold shadow"

@@ -17,7 +17,7 @@ const fmtDate = (d) => {
 
 
 
-export default function TicketingView({ id, onNavigate }) {
+export default function TicketingView({ id, onNavigate, fromPage }) {
   const [data, setData] = useState(null);
   const ref = useRef(null);
 
@@ -87,13 +87,17 @@ if (flightDates.length >= 2) {
     <div className="container mt-3 mb-5">
       {/* ===== TOP ACTIONS ===== */}
       <div className="d-flex gap-2 mb-3 flex-wrap">
-        <button
-          className="btn btn-sm text-white fw-bold shadow"
-          style={{ background: "linear-gradient(135deg,#000,#434343)", borderRadius: 8, padding: "6px 16px" }}
-          onClick={() => onNavigate("allreports")}
-        >
-          ⬅ Back
-        </button>
+<button
+  className="btn btn-sm text-white fw-bold shadow"
+  style={{
+    background: "linear-gradient(135deg,#000,#434343)",
+    borderRadius: 8,
+    padding: "6px 16px",
+  }}
+  onClick={() => onNavigate(fromPage || "allreports")}
+>
+  ⬅ Back
+</button>
 
 <button
   className="btn btn-success btn-sm fw-bold shadow"

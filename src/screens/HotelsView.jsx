@@ -24,7 +24,7 @@ const fmtDate = (val) => {
 };
 
 
-export default function HotelsView({ id, onNavigate }) {
+export default function HotelsView({ id, onNavigate, fromPage }) {
   const [data, setData] = useState(null);
   const pdfRef = useRef(null);
 
@@ -61,17 +61,17 @@ const { exportPDF, printPDF } = usePdf(pdfRef, {
 
       {/* ===== TOP ACTIONS ===== */}
       <div className="d-flex gap-2 mb-3 flex-wrap">
-        <button
-          className="btn btn-sm text-white fw-bold shadow"
-          style={{
-            background: "linear-gradient(135deg,#000,#434343)",
-            borderRadius: 8,
-            padding: "6px 16px",
-          }}
-          onClick={() => onNavigate("allreports")}
-        >
-          ⬅ Back
-        </button>
+<button
+  className="btn btn-sm text-white fw-bold shadow"
+  style={{
+    background: "linear-gradient(135deg,#000,#434343)",
+    borderRadius: 8,
+    padding: "6px 16px",
+  }}
+  onClick={() => onNavigate(fromPage || "allreports")}
+>
+  ⬅ Back
+</button>
 
         <button
           className="btn btn-success btn-sm fw-bold shadow"
