@@ -56,13 +56,10 @@ import ItemLossZeroReport from "./screens/ItemLossZeroReport";
 import MonthlyProfitDashboard from "./screens/MonthlyProfitDashboard";
 
 // VOUCHERS
-import CustomizHotelVoucher from "./screens/CustomizHotelVoucher";
 import HotelVoucher from "./screens/HotelVoucher";
 import HotelVoucher3in1 from "./screens/HotelVoucher3in1";
 import TransportVoucher from "./screens/TransportVoucher";
-import CustomizTransportVoucher from "./screens/CustomizTransportVoucher";
 import ManageUsers from "./screens/ManageUsers";
-
 
 // VIEWS
 import PackagesView from "./screens/PackagesView";
@@ -87,6 +84,7 @@ import PurchaseDetailDeleted from "./screens/PurchaseDetailDeleted";
 
 export default function App() {
   const [page, setPage] = useState("dashboard");
+  const [previousPage, setPreviousPage] = useState("dashboard"); // History Tracker
   const [detail, setDetail] = useState(null);
 
   // 🔐 LOGIN CHECK (sessionStorage)
@@ -94,6 +92,7 @@ export default function App() {
 
   // NAVIGATION HANDLER
   const navigate = (p, d = null) => {
+    setPreviousPage(page); // Previous page save karein
     setPage(p);
     setDetail(d);
   };
@@ -122,7 +121,6 @@ export default function App() {
       {page === "archiveManager" && <ArchiveManager onNavigate={navigate} />}
       {page === "passwordSettings" && <PasswordSettings onNavigate={navigate} />}
       
-      {/* Case matching validation secured */}
       {(page === "archiveList" || page === "dashboard/archiveList") && (
         <ArchiveList
           onNavigate={navigate}
@@ -193,10 +191,7 @@ export default function App() {
       )}
       {page === "restore" && <Restore onNavigate={navigate} />}
 
-      {/* ================= VOUCHERS (FIXED) ================= */}
-      {page === "customizHotelVoucher" && (
-        <CustomizHotelVoucher onNavigate={navigate} />
-      )}
+      {/* ================= VOUCHERS ================= */}
       {page === "hotelVoucher" && (
         <HotelVoucher onNavigate={navigate} />
       )}
@@ -206,47 +201,42 @@ export default function App() {
       {page === "transportVoucher" && (
         <TransportVoucher onNavigate={navigate} />
       )}
-      {page === "customizTransportVoucher" && (
-        <CustomizTransportVoucher onNavigate={navigate} />
-      )}
 
       {/* ================= DETAIL VIEWS ================= */}
       {page === "packages_view" && (
-        <PackagesView id={detail} onNavigate={navigate} />
+        <PackagesView id={detail} onNavigate={navigate} fromPage={previousPage} />
       )}
       {page === "packages_summary_view" && (
-        <PackagesSummaryView id={detail} onNavigate={navigate} />
+        <PackagesSummaryView id={detail} onNavigate={navigate} fromPage={previousPage} />
       )}
       {page === "hotels_view" && (
-        <HotelsView id={detail} onNavigate={navigate} />
+        <HotelsView id={detail} onNavigate={navigate} fromPage={previousPage} />
       )}
       {page === "ticket_view" && (
-        <TicketingView id={detail} onNavigate={navigate} />
+        <TicketingView id={detail} onNavigate={navigate} fromPage={previousPage} />
       )}
       {page === "visa_view" && (
-        <VisaView id={detail} onNavigate={navigate} />
+        <VisaView id={detail} onNavigate={navigate} fromPage={previousPage} />
       )}
       {page === "card_view" && (
-        <CardView id={detail} onNavigate={navigate} />
+        <CardView id={detail} onNavigate={navigate} fromPage={previousPage} />
       )}
       {page === "groups_view" && (
-        <GroupsView id={detail} onNavigate={navigate} />
+        <GroupsView id={detail} onNavigate={navigate} fromPage={previousPage} />
       )}
       {page === "transport_view" && (
-        <TransportView id={detail} onNavigate={navigate} />
+        <TransportView id={detail} onNavigate={navigate} fromPage={previousPage} />
       )}
       {page === "ziyarat_view" && (
-        <ZiyaratView id={detail} onNavigate={navigate} />
+        <ZiyaratView id={detail} onNavigate={navigate} fromPage={previousPage} />
       )}
 
       {page === "packages_view_deleted" && (
         <PackagesViewDeleted id={detail} onNavigate={navigate} />
       )}
-
       {page === "hotels_view_deleted" && (
         <HotelsViewDeleted id={detail} onNavigate={navigate} />
       )}
-
       {page === "ticket_view_deleted" && (
         <TicketingViewDeleted id={detail} onNavigate={navigate} />
       )}
@@ -265,7 +255,6 @@ export default function App() {
       {page === "ziyarat_view_deleted" && (
         <ZiyaratViewDeleted id={detail} onNavigate={navigate} />
       )}
-
       {page === "purchase_view_deleted" && (
         <PurchaseDetailDeleted id={detail} onNavigate={navigate} />
       )}
