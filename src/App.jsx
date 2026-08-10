@@ -60,7 +60,7 @@ import HotelVoucher from "./screens/HotelVoucher";
 import HotelVoucher3in1 from "./screens/HotelVoucher3in1";
 import TransportVoucher from "./screens/TransportVoucher";
 import CustomizTransportVoucher from "./screens/CustomizTransportVoucher";
-import ManageUsers from "./screens/ManageUsers";
+import CustomizHotelVoucher from "./screens/CustomizHotelVoucher";
 import ManageUsers from "./screens/ManageUsers";
 
 // VIEWS
