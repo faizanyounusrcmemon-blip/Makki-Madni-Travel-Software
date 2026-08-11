@@ -47,6 +47,7 @@ import ProfitReport from "./screens/ProfitReport";
 import SaleAdjustmentReport from "./screens/SaleAdjustmentReport";
 import SupplierAdjustmentOnly from "./screens/SupplierAdjustmentOnly";
 import SupplierPurchaseDetailReport from "./screens/SupplierPurchaseDetailReport";
+import CustomerSaleDetailReport from "./screens/CustomerSaleDetailReport";
 import CreateUser from "./screens/CreateUser";
 import DeletedReports from "./screens/DeletedReports";
 import Restore from "./screens/Restore";
@@ -184,6 +185,7 @@ export default function App() {
       {page === "saleAdjustmentReport" && <SaleAdjustmentReport onNavigate={navigate} />}
       {page === "supplierAdjustmentOnly" && <SupplierAdjustmentOnly onNavigate={navigate} />}
       {page === "supplierPurchaseDetailReport" && <SupplierPurchaseDetailReport onNavigate={navigate} />}
+      {page === "customerSaleDetailReport" && <CustomerSaleDetailReport onNavigate={navigate} />}
       {page === "saleChangeCheckReport" && <SaleChangeCheckReport onNavigate={navigate} />}
       {page === "itemLossZeroReport" && <ItemLossZeroReport onNavigate={navigate} />}
       {page === "monthlyProfitDashboard" && <MonthlyProfitDashboard onNavigate={navigate} />}
