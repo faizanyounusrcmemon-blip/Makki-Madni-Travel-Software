@@ -1,7 +1,7 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
-import * as XLSX from "xlsx"; // Make sure to run: npm install xlsx
+import * as XLSX from "xlsx";
 
 /* ================= HELPERS ================= */
 const fmt = (n) => Number(n || 0).toLocaleString("en-US");
@@ -15,6 +15,99 @@ const formatDate = (d) => {
   });
 };
 
+/* ================= SMART SEARCHABLE SUPPLIER DROPDOWN ================= */
+function SmartSupplierSelect({ suppliers, selectedSupplier, onSelect }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [search, setSearch] = useState("");
+  const dropdownRef = useRef(null);
+
+  const cleanSuppliers = suppliers.filter((s) => s !== "ALL");
+  const filteredList = cleanSuppliers.filter((s) =>
+    s.toLowerCase().includes(search.toLowerCase())
+  );
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  return (
+    <div className="position-relative" ref={dropdownRef}>
+      <button
+        type="button"
+        className="form-select form-select-sm text-start bg-white d-flex justify-content-between align-items-center shadow-none"
+        onClick={() => setIsOpen(!isOpen)}
+        style={{ cursor: "pointer" }}
+      >
+        <span className="text-truncate" style={{ maxWidth: "85%" }}>
+          {selectedSupplier || "ALL"}
+        </span>
+      </button>
+
+      {isOpen && (
+        <div
+          className="position-absolute start-0 w-100 bg-white border rounded-3 shadow-lg p-2"
+          style={{ zIndex: 1050, top: "100%", marginTop: "3px", maxHeight: "220px", overflowY: "auto" }}
+        >
+          <input
+            type="text"
+            className="form-control form-control-sm mb-2"
+            placeholder="🔍 Search supplier..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            autoFocus
+          />
+          <div
+            className={`p-2 rounded text-truncate mb-1 ${
+              selectedSupplier === "ALL" ? "bg-primary text-white fw-bold" : "text-dark"
+            }`}
+            style={{ cursor: "pointer", fontSize: "12px" }}
+            onClick={() => {
+              onSelect("ALL");
+              setIsOpen(false);
+              setSearch("");
+            }}
+          >
+            ALL
+          </div>
+          {filteredList.length > 0 ? (
+            filteredList.map((s, i) => (
+              <div
+                key={i}
+                className={`p-2 rounded text-truncate mb-1 ${
+                  selectedSupplier === s ? "bg-primary text-white fw-bold" : "text-dark"
+                }`}
+                style={{
+                  cursor: "pointer",
+                  fontSize: "12px",
+                  backgroundColor: selectedSupplier === s ? undefined : "#f8f9fa",
+                }}
+                onClick={() => {
+                  onSelect(s);
+                  setIsOpen(false);
+                  setSearch("");
+                }}
+              >
+                {s}
+              </div>
+            ))
+          ) : (
+            <div className="text-muted p-2 text-center" style={{ fontSize: "11px" }}>
+              No supplier found
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ================= MAIN REPORT COMPONENT ================= */
 export default function SupplierPurchasedetailreport({ onNavigate }) {
   const [rows, setRows] = useState([]);
   const [suppliers, setSuppliers] = useState(["ALL"]);
@@ -61,6 +154,11 @@ export default function SupplierPurchasedetailreport({ onNavigate }) {
 
   /* ================= FILTER ================= */
   const filtered = rows.filter((r) => {
+    // Hide 0 purchase records
+    if (Number(r.purchase_sar || 0) <= 0 && Number(r.purchase_pkr || 0) <= 0) {
+      return false;
+    }
+
     if (supplier !== "ALL" && r.supplier_name?.trim() !== supplier.trim()) return false;
     if (itemType !== "ALL" && !r.item?.toLowerCase().includes(itemType.toLowerCase())) return false;
 
@@ -79,7 +177,7 @@ export default function SupplierPurchasedetailreport({ onNavigate }) {
     return true;
   });
 
-  /* ================= TOTALS (ADDED SAR TOTALS) ================= */
+  /* ================= TOTALS ================= */
   const totals = filtered.reduce(
     (a, b) => {
       if (showSale) {
@@ -120,7 +218,6 @@ export default function SupplierPurchasedetailreport({ onNavigate }) {
       return rowObj;
     });
 
-    // Add Totals Row at the bottom of Excel sheet
     const totalRow = {
       "Date": "TOTALS",
       "Supplier": "",
@@ -241,12 +338,17 @@ export default function SupplierPurchasedetailreport({ onNavigate }) {
       <div className="card shadow-sm mb-3 border-0" style={{ background: "#eef2f3", borderRadius: "10px" }}>
         <div className="card-body py-3">
           <div className="row g-2 align-items-end">
-            <div className="col-md-2">
-              <select className="form-select form-select-sm" value={supplier} onChange={(e) => setSupplier(e.target.value)}>
-                {suppliers.map((s, i) => <option key={i} value={s}>{s}</option>)}
-              </select>
+            <div className="col-md-3">
+              <label className="fw-bold mb-1">Supplier (Smart Search)</label>
+              <SmartSupplierSelect
+                suppliers={suppliers}
+                selectedSupplier={supplier}
+                onSelect={(val) => setSupplier(val)}
+              />
             </div>
+
             <div className="col-md-2">
+              <label className="fw-bold mb-1">Category</label>
               <select className="form-select form-select-sm" value={itemType} onChange={(e) => setItemType(e.target.value)}>
                 <option value="ALL">All Items</option>
                 <option value="Ticket">Ticket</option>
@@ -258,16 +360,23 @@ export default function SupplierPurchasedetailreport({ onNavigate }) {
                 <option value="Groups">Groups</option>
               </select>
             </div>
+
             <div className="col-md-2">
+              <label className="fw-bold mb-1">From Date</label>
               <input type="date" className="form-control form-control-sm" value={from} onChange={(e) => setFrom(e.target.value)} />
             </div>
+
             <div className="col-md-2">
+              <label className="fw-bold mb-1">To Date</label>
               <input type="date" className="form-control form-control-sm" value={to} onChange={(e) => setTo(e.target.value)} />
             </div>
+
             <div className="col-md-2">
-              <input type="text" placeholder="Search" className="form-control form-control-sm" value={search} onChange={(e) => setSearch(e.target.value)} />
+              <label className="fw-bold mb-1">Search</label>
+              <input type="text" placeholder="Ref, Item, Supplier..." className="form-control form-control-sm" value={search} onChange={(e) => setSearch(e.target.value)} />
             </div>
-            <div className="col-md-2 d-grid">
+
+            <div className="col-md-1 d-grid">
               <button className="btn btn-primary btn-sm rounded-pill" onClick={loadReport}>
                 {loading ? <span className="spinner-border spinner-border-sm"></span> : "Load"}
               </button>
@@ -277,22 +386,22 @@ export default function SupplierPurchasedetailreport({ onNavigate }) {
           {/* CHECKBOXES */}
           <div className="d-flex gap-4 mt-3">
             <div className="form-check">
-              <input type="checkbox" className="form-check-input" checked={showSale} onChange={(e) => setShowSale(e.target.checked)} />
-              <label className="form-check-label">Show Sale</label>
+              <input type="checkbox" className="form-check-input" id="chkSale" checked={showSale} onChange={(e) => setShowSale(e.target.checked)} />
+              <label className="form-check-label fw-semibold" htmlFor="chkSale">Show Sale</label>
             </div>
             <div className="form-check">
-              <input type="checkbox" className="form-check-input" checked={showProfit} onChange={(e) => setShowProfit(e.target.checked)} />
-              <label className="form-check-label">Show Profit</label>
+              <input type="checkbox" className="form-check-input" id="chkProfit" checked={showProfit} onChange={(e) => setShowProfit(e.target.checked)} />
+              <label className="form-check-label fw-semibold" htmlFor="chkProfit">Show Profit</label>
             </div>
           </div>
         </div>
       </div>
 
       {/* TABLE DISPLAY */}
-      <div className="card shadow-sm rounded" style={{ overflowX: "auto", maxHeight: "70vh" }}>
-        <div className="card-body py-2">
+      <div className="card shadow-sm rounded" style={{ overflow: "auto", maxHeight: "70vh" }}>
+        <div className="card-body py-2 p-0">
           {/* HEADER TOTALS BLOCK */}
-          <div className="mb-2 text-end fw-bold d-flex flex-wrap gap-3 justify-content-end align-items-center" style={{ fontSize: 13 }}>
+          <div className="p-2 text-end fw-bold d-flex flex-wrap gap-3 justify-content-end align-items-center" style={{ fontSize: 13, background: "#ffffff" }}>
             {showSale && (
               <>
                 <span className="text-primary">Sale SAR Total: {fmt(totals.sale_sar)}</span>
@@ -312,31 +421,42 @@ export default function SupplierPurchasedetailreport({ onNavigate }) {
             )}
           </div>
 
-          <table className="table table-sm table-bordered text-center align-middle">
-            <thead style={{ background: "#ff9a9e", color: "#fff" }}>
+          <table className="table table-sm table-bordered text-center align-middle m-0">
+            {/* FREEZE HEADER STYLES ADDED HERE */}
+            <thead
+              style={{
+                position: "sticky",
+                top: 0,
+                zIndex: 5,
+                background: "#ff9a9e",
+                color: "#fff",
+              }}
+            >
               <tr>
-                <th>Date</th>
-                <th>Supplier</th>
-                <th>Ref</th>
-                <th>Item</th>
-                {showSale && <>
-                  <th>Sale SAR</th>
-                  <th>Sale Rate</th>
-                  <th>Sale PKR</th>
-                </>}
-                <th>Purchase SAR</th>
-                <th>Purchase Rate</th>
-                <th>Purchase PKR</th>
-                {showProfit && <th>Profit</th>}
+                <th style={{ background: "#ff9a9e", color: "#fff" }}>Date</th>
+                <th style={{ background: "#ff9a9e", color: "#fff" }}>Supplier</th>
+                <th style={{ background: "#ff9a9e", color: "#fff" }}>Ref</th>
+                <th style={{ background: "#ff9a9e", color: "#fff" }}>Item</th>
+                {showSale && (
+                  <>
+                    <th style={{ background: "#ff9a9e", color: "#fff" }}>Sale SAR</th>
+                    <th style={{ background: "#ff9a9e", color: "#fff" }}>Sale Rate</th>
+                    <th style={{ background: "#ff9a9e", color: "#fff" }}>Sale PKR</th>
+                  </>
+                )}
+                <th style={{ background: "#ff9a9e", color: "#fff" }}>Purchase SAR</th>
+                <th style={{ background: "#ff9a9e", color: "#fff" }}>Purchase Rate</th>
+                <th style={{ background: "#ff9a9e", color: "#fff" }}>Purchase PKR</th>
+                {showProfit && <th style={{ background: "#ff9a9e", color: "#fff" }}>Profit</th>}
               </tr>
             </thead>
             <tbody>
               {filtered.map((r, i) => (
                 <tr key={i} style={{ background: i % 2 === 0 ? "#fff8e1" : "#ffe0b2" }}>
                   <td>{formatDate(r.booking_date)}</td>
-                  <td>{r.supplier_name}</td>
+                  <td className="fw-bold">{r.supplier_name}</td>
                   <td>{r.ref_no}</td>
-                  <td>{r.item}</td>
+                  <td className="text-start">{r.item}</td>
                   {showSale && <>
                     <td className="text-end fw-semibold text-primary">{fmt(r.sale_sar)}</td>
                     <td className="text-end">{fmt(r.sale_rate)}</td>
@@ -344,13 +464,21 @@ export default function SupplierPurchasedetailreport({ onNavigate }) {
                   </>}
                   <td className="text-end fw-semibold text-danger">{fmt(r.purchase_sar)}</td>
                   <td className="text-end">{fmt(r.purchase_rate)}</td>
-                  <td className="text-end">{fmt(r.purchase_pkr)}</td>
+                  <td className="text-end fw-bold">{fmt(r.purchase_pkr)}</td>
                   {showProfit && <td className={`text-end fw-bold ${r.profit >= 0 ? "text-success" : "text-danger"}`}>{fmt(r.profit)}</td>}
                 </tr>
               ))}
             </tbody>
-            {/* TABLE FOOTER SUMMARY FOR QUICK SCANNING */}
-            <tfoot className="table-dark fw-bold">
+
+            {/* STICKY FOOTER SUMMARY */}
+            <tfoot
+              className="table-dark fw-bold"
+              style={{
+                position: "sticky",
+                bottom: 0,
+                zIndex: 5,
+              }}
+            >
               <tr>
                 <td colSpan="4">TOTALS</td>
                 {showSale && (
