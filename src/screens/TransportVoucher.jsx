@@ -27,216 +27,179 @@ export default function TransportVoucher({ onNavigate }) {
   const [vehicles, setVehicles] = useState({});
   const [pickupDates, setPickupDates] = useState({});
   const [contacts, setContacts] = useState({});
+  const [details, setDetails] = useState({});
 
   const voucherRef = useRef(null);
 
-/* ================= LOAD ================= */
-const loadVoucher = async () => {
+  /* ================= LOAD ================= */
+  const loadVoucher = async () => {
+    try {
+      const upperRef = ref.trim().toUpperCase();
 
-  try {
+      // EMPTY
+      if (!upperRef) {
+        return Swal.fire({
+          width: "300px",
+          icon: "warning",
+          text: "Please enter Ref No",
+        });
+      }
 
-    const upperRef = ref.trim().toUpperCase();
+      let r;
+      let d;
 
-    // EMPTY
-    if (!upperRef) {
-      return Swal.fire({
-        width: "300px",
-        icon: "warning",
-        text: "Please enter Ref No"
+      // LOADING
+      Swal.fire({
+        width: "260px",
+        title: "Loading Voucher...",
+        allowOutsideClick: false,
+        didOpen: () => Swal.showLoading(),
       });
-    }
 
-    let r;
-    let d;
+      if (upperRef.startsWith("PKG-")) {
+        r = await fetch(
+          `${import.meta.env.VITE_BACKEND_URL}/api/bookings/get/${upperRef}`
+        );
 
-    // LOADING
-    Swal.fire({
-      width: "260px",
-      title: "Loading Voucher...",
-      allowOutsideClick: false,
-      didOpen: () => Swal.showLoading()
-    });
+        d = await r.json();
 
-    if (upperRef.startsWith("PKG-")) {
+        if (!d.success) {
+          Swal.close();
 
-      r = await fetch(
-        `${import.meta.env.VITE_BACKEND_URL}/api/bookings/get/${upperRef}`
-      );
+          return Swal.fire({
+            width: "300px",
+            icon: "error",
+            text: "Voucher not found",
+          });
+        }
 
-      d = await r.json();
+        setData(d.row);
+        setRows(d.row.transport || []);
+      } else if (upperRef.startsWith("TRN-")) {
+        r = await fetch(
+          `${import.meta.env.VITE_BACKEND_URL}/api/transport/get/${upperRef}`
+        );
 
-      if (!d.success) {
+        d = await r.json();
 
+        if (!d.success) {
+          Swal.close();
+
+          return Swal.fire({
+            width: "300px",
+            icon: "error",
+            text: "Voucher not found",
+          });
+        }
+
+        setData(d.row);
+        setRows(d.row.rows || []);
+      } else {
         Swal.close();
 
         return Swal.fire({
           width: "300px",
           icon: "error",
-          text: "Voucher not found"
+          text: "Invalid Ref No",
         });
       }
-
-      setData(d.row);
-      setRows(d.row.transport || []);
-
-    } else if (upperRef.startsWith("TRN-")) {
-
-      r = await fetch(
-        `${import.meta.env.VITE_BACKEND_URL}/api/transport/get/${upperRef}`
-      );
-
-      d = await r.json();
-
-      if (!d.success) {
-
-        Swal.close();
-
-        return Swal.fire({
-          width: "300px",
-          icon: "error",
-          text: "Voucher not found"
-        });
-      }
-
-      setData(d.row);
-      setRows(d.row.rows || []);
-
-    } else {
 
       Swal.close();
 
-      return Swal.fire({
+      Swal.fire({
+        width: "280px",
+        icon: "success",
+        text: "Voucher Loaded Successfully 😎",
+        timer: 1200,
+        showConfirmButton: false,
+      });
+    } catch (err) {
+      Swal.close();
+
+      Swal.fire({
         width: "300px",
         icon: "error",
-        text: "Invalid Ref No"
+        text: "Load Failed",
       });
     }
+  };
 
-    Swal.close();
-
-    Swal.fire({
-      width: "280px",
-      icon: "success",
-      text: "Voucher Loaded Successfully 😎",
-      timer: 1200,
-      showConfirmButton: false
-    });
-
-  } catch (err) {
-
-    Swal.close();
-
-    Swal.fire({
-      width: "300px",
-      icon: "error",
-      text: "Load Failed"
-    });
-  }
-};
-
-/* ================= PDF (SINGLE PAGE AUTO FIT) ================= */
-const exportPDF = async () => {
-
-  try {
-
-    if (!voucherRef.current || !data) {
-
-      return Swal.fire({
-        width: "300px",
-        icon: "warning",
-        text: "No voucher data found"
-      });
-    }
-
-    Swal.fire({
-      width: "260px",
-      title: "Generating PDF...",
-      allowOutsideClick: false,
-      didOpen: () => Swal.showLoading()
-    });
-
-    const element = voucherRef.current;
-
-    const canvas = await html2canvas(element, {
-  scale: 3,
-  useCORS: true,
-  backgroundColor: "#ffffff",
-
-  ignoreElements: (el) =>
-    el.tagName === "CANVAS",
-
-  onclone: (doc) => {
-    doc.querySelectorAll("*").forEach((el) => {
-      const bg = el.style.backgroundImage;
-
-      if (
-        bg &&
-        bg.includes("gradient")
-      ) {
-        el.style.backgroundImage = "none";
+  /* ================= PDF (SINGLE PAGE AUTO FIT) ================= */
+  const exportPDF = async () => {
+    try {
+      if (!voucherRef.current || !data) {
+        return Swal.fire({
+          width: "300px",
+          icon: "warning",
+          text: "No voucher data found",
+        });
       }
-    });
-  },
-});
 
-    const imgData = canvas.toDataURL("image/png");
+      Swal.fire({
+        width: "260px",
+        title: "Generating PDF...",
+        allowOutsideClick: false,
+        didOpen: () => Swal.showLoading(),
+      });
 
-    const pdf = new jsPDF("p", "mm", "a4");
+      const element = voucherRef.current;
 
-    const pageWidth = pdf.internal.pageSize.getWidth();
-    const pageHeight = pdf.internal.pageSize.getHeight();
+      const canvas = await html2canvas(element, {
+        scale: 3,
+        useCORS: true,
+        backgroundColor: "#ffffff",
 
-    const imgWidth = pageWidth;
+        ignoreElements: (el) => el.tagName === "CANVAS",
 
-    let imgHeight =
-      (canvas.height * imgWidth) / canvas.width;
+        onclone: (doc) => {
+          doc.querySelectorAll("*").forEach((el) => {
+            const bg = el.style.backgroundImage;
 
-    if (imgHeight > pageHeight) {
+            if (bg && bg.includes("gradient")) {
+              el.style.backgroundImage = "none";
+            }
+          });
+        },
+      });
 
-      const scale = pageHeight / imgHeight;
+      const imgData = canvas.toDataURL("image/png");
 
-      pdf.addImage(
-        imgData,
-        "PNG",
-        0,
-        0,
-        imgWidth * scale,
-        pageHeight
-      );
+      const pdf = new jsPDF("p", "mm", "a4");
 
-    } else {
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
 
-      pdf.addImage(
-        imgData,
-        "PNG",
-        0,
-        0,
-        imgWidth,
-        imgHeight
-      );
+      const imgWidth = pageWidth;
+
+      let imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+      if (imgHeight > pageHeight) {
+        const scale = pageHeight / imgHeight;
+
+        pdf.addImage(imgData, "PNG", 0, 0, imgWidth * scale, pageHeight);
+      } else {
+        pdf.addImage(imgData, "PNG", 0, 0, imgWidth, imgHeight);
+      }
+
+      pdf.save(`Transport-Voucher-${data.ref_no}.pdf`);
+
+      Swal.close();
+
+      Swal.fire({
+        width: "280px",
+        icon: "success",
+        text: "PDF Downloaded Successfully 😎",
+      });
+    } catch (err) {
+      Swal.close();
+
+      Swal.fire({
+        width: "300px",
+        icon: "error",
+        text: "PDF Generation Failed",
+      });
     }
-
-    pdf.save(`Transport-Voucher-${data.ref_no}.pdf`);
-
-    Swal.close();
-
-    Swal.fire({
-      width: "280px",
-      icon: "success",
-      text: "PDF Downloaded Successfully 😎"
-    });
-
-  } catch (err) {
-
-    Swal.close();
-
-    Swal.fire({
-      width: "300px",
-      icon: "error",
-      text: "PDF Generation Failed"
-    });
-  }
-};
+  };
 
   return (
     <div className="container py-3">
@@ -260,201 +223,177 @@ const exportPDF = async () => {
           Load Voucher
         </button>
 
-{data && (
-  <>
-    <button
-      className="btn btn-success btn-sm"
-      onClick={exportPDF}
-    >
-      📄 Download PDF
-    </button>
+        {data && (
+          <>
+            <button className="btn btn-success btn-sm" onClick={exportPDF}>
+              📄 Download PDF
+            </button>
 
-<button
-  className="btn btn-secondary btn-sm"
-  onClick={async () => {
+            <button
+              className="btn btn-secondary btn-sm"
+              onClick={async () => {
+                try {
+                  if (!voucherRef.current || !data) {
+                    return Swal.fire({
+                      width: "300px",
+                      icon: "warning",
+                      text: "No voucher data found",
+                    });
+                  }
 
-    try {
+                  Swal.fire({
+                    width: "260px",
+                    title: "Preparing Print...",
+                    allowOutsideClick: false,
+                    didOpen: () => Swal.showLoading(),
+                  });
 
-      if (!voucherRef.current || !data) {
+                  const canvas = await html2canvas(voucherRef.current, {
+                    scale: 3,
+                    useCORS: true,
+                    backgroundColor: "#ffffff",
 
-        return Swal.fire({
-          width: "300px",
-          icon: "warning",
-          text: "No voucher data found"
-        });
-      }
+                    ignoreElements: (el) => el.tagName === "CANVAS",
 
-      Swal.fire({
-        width: "260px",
-        title: "Preparing Print...",
-        allowOutsideClick: false,
-        didOpen: () => Swal.showLoading()
-      });
+                    onclone: (doc) => {
+                      doc.querySelectorAll("*").forEach((el) => {
+                        const bg = el.style.backgroundImage;
 
-      const canvas = await html2canvas(voucherRef.current, {
-  scale: 3,
-  useCORS: true,
-  backgroundColor: "#ffffff",
+                        if (bg && bg.includes("gradient")) {
+                          el.style.backgroundImage = "none";
+                        }
+                      });
+                    },
+                  });
 
-  ignoreElements: (el) =>
-    el.tagName === "CANVAS",
+                  const imgData = canvas.toDataURL("image/png");
 
-  onclone: (doc) => {
-    doc.querySelectorAll("*").forEach((el) => {
-      const bg = el.style.backgroundImage;
+                  const pdf = new jsPDF("p", "mm", "a4");
 
-      if (
-        bg &&
-        bg.includes("gradient")
-      ) {
-        el.style.backgroundImage = "none";
-      }
-    });
-  },
-});
+                  const pageWidth = pdf.internal.pageSize.getWidth();
+                  const pageHeight = pdf.internal.pageSize.getHeight();
 
-      const imgData = canvas.toDataURL("image/png");
+                  const imgWidth = pageWidth;
 
-      const pdf = new jsPDF("p", "mm", "a4");
+                  let imgHeight = (canvas.height * imgWidth) / canvas.width;
 
-      const pageWidth = pdf.internal.pageSize.getWidth();
-      const pageHeight = pdf.internal.pageSize.getHeight();
+                  if (imgHeight > pageHeight) {
+                    const scale = pageHeight / imgHeight;
 
-      const imgWidth = pageWidth;
+                    pdf.addImage(
+                      imgData,
+                      "PNG",
+                      0,
+                      0,
+                      imgWidth * scale,
+                      pageHeight
+                    );
+                  } else {
+                    pdf.addImage(imgData, "PNG", 0, 0, imgWidth, imgHeight);
+                  }
 
-      let imgHeight =
-        (canvas.height * imgWidth) / canvas.width;
+                  Swal.close();
 
-      if (imgHeight > pageHeight) {
+                  window.open(pdf.output("bloburl"), "_blank");
 
-        const scale = pageHeight / imgHeight;
+                  Swal.fire({
+                    width: "280px",
+                    icon: "success",
+                    text: "Print Preview Opened 😎",
+                    timer: 1200,
+                    showConfirmButton: false,
+                  });
+                } catch (err) {
+                  Swal.close();
 
-        pdf.addImage(
-          imgData,
-          "PNG",
-          0,
-          0,
-          imgWidth * scale,
-          pageHeight
-        );
-
-      } else {
-
-        pdf.addImage(
-          imgData,
-          "PNG",
-          0,
-          0,
-          imgWidth,
-          imgHeight
-        );
-      }
-
-      Swal.close();
-
-      window.open(pdf.output("bloburl"), "_blank");
-
-      Swal.fire({
-        width: "280px",
-        icon: "success",
-        text: "Print Preview Opened 😎",
-        timer: 1200,
-        showConfirmButton: false
-      });
-
-    } catch (err) {
-
-      Swal.close();
-
-      Swal.fire({
-        width: "300px",
-        icon: "error",
-        text: "Print Failed"
-      });
-    }
-  }}
->
-  🖨️ Print
-</button>
-  </>
-)}
+                  Swal.fire({
+                    width: "300px",
+                    icon: "error",
+                    text: "Print Failed",
+                  });
+                }
+              }}
+            >
+              🖨️ Print
+            </button>
+          </>
+        )}
       </div>
 
       {data && (
-<div
-  ref={voucherRef}
-  style={{
-    maxWidth: 900,
-    margin: "auto",
-    padding: 25,
-    borderRadius: 20,
-    background: "#fff",
-    border: "3px solid #0d6efd",
-    boxShadow: "0 10px 30px rgba(0,0,0,.12)",
-    position: "relative",
-    overflow: "hidden",
-    fontFamily: "Segoe UI",
-  }}
->
+        <div
+          ref={voucherRef}
+          style={{
+            maxWidth: 900,
+            margin: "auto",
+            padding: 25,
+            borderRadius: 20,
+            background: "#fff",
+            border: "3px solid #0d6efd",
+            boxShadow: "0 10px 30px rgba(0,0,0,.12)",
+            position: "relative",
+            overflow: "hidden",
+            fontFamily: "Segoe UI",
+          }}
+        >
           {/* HEADER */}
+          <Header title="🚐 TRANSPORT VOUCHER" />
 
-        <Header title="🚐 TRANSPORT VOUCHER" />
-
-<img
-  src="/logo.png"
-  alt=""
-  style={{
-    position: "absolute",
-    top: "50%",
-    left: "50%",
-    transform: "translate(-50%, -50%)",
-    width: "380px",
-    opacity: 0.05,
-    pointerEvents: "none",
-    zIndex: 0,
-  }}
-/>
+          <img
+            src="/logo.png"
+            alt=""
+            style={{
+              position: "absolute",
+              top: "50%",
+              left: "50%",
+              transform: "translate(-50%, -50%)",
+              width: "380px",
+              opacity: 0.05,
+              pointerEvents: "none",
+              zIndex: 0,
+            }}
+          />
 
           {/* INFO */}
-<div
-  style={{
-    background: "#f8fbff",
-    border: "1px solid #dbeafe",
-    borderRadius: 12,
-    padding: "12px 18px",
-    display: "flex",
-    justifyContent: "space-between",
-    marginBottom: 15,
-    position: "relative",
-    zIndex: 1,
-  }}
->
-  <div>
-    <strong>Ref No:</strong> {data.ref_no}
-  </div>
+          <div
+            style={{
+              background: "#f8fbff",
+              border: "1px solid #dbeafe",
+              borderRadius: 12,
+              padding: "12px 18px",
+              display: "flex",
+              justifyContent: "space-between",
+              marginBottom: 15,
+              position: "relative",
+              zIndex: 1,
+            }}
+          >
+            <div>
+              <strong>Ref No:</strong> {data.ref_no}
+            </div>
 
-  <div>
-    <strong>Date:</strong> {showDate(data.booking_date)}
-  </div>
-</div>
+            <div>
+              <strong>Date:</strong> {showDate(data.booking_date)}
+            </div>
+          </div>
 
           {/* CUSTOMER */}
-<div
-  style={{
-    background: "#f8fbff",
-    border: "1px solid #dbeafe",
-    borderLeft: "5px solid #0d6efd",
-    borderRadius: 12,
-    padding: 15,
-    marginBottom: 20,
-    fontSize: 17,
-    fontWeight: 600,
-    position: "relative",
-    zIndex: 1,
-  }}
->
-  👤 Customer Name: {data.customer_name}
-</div>
+          <div
+            style={{
+              background: "#f8fbff",
+              border: "1px solid #dbeafe",
+              borderLeft: "5px solid #0d6efd",
+              borderRadius: 12,
+              padding: 15,
+              marginBottom: 20,
+              fontSize: 17,
+              fontWeight: 600,
+              position: "relative",
+              zIndex: 1,
+            }}
+          >
+            👤 Customer Name: {data.customer_name}
+          </div>
 
           {/* SERVICES */}
           {rows.map((r, i) => (
@@ -462,8 +401,8 @@ const exportPDF = async () => {
               key={i}
               style={{
                 background: "#fff",
-border: "1px solid #dbeafe",
-boxShadow: "0 4px 12px rgba(0,0,0,0.05)",
+                border: "1px solid #dbeafe",
+                boxShadow: "0 4px 12px rgba(0,0,0,0.05)",
                 borderRadius: 20,
                 padding: 22,
                 marginBottom: 18,
@@ -472,7 +411,7 @@ boxShadow: "0 4px 12px rgba(0,0,0,0.05)",
               <b>🚐 {r.text || r.description}</b>
 
               <div className="row g-3 mt-2">
-                <div className="col-md-3">
+                <div className="col-md-2">
                   <label className="small fw-bold">Vehicle</label>
                   <input
                     className="form-control form-control-sm"
@@ -483,7 +422,7 @@ boxShadow: "0 4px 12px rgba(0,0,0,0.05)",
                   />
                 </div>
 
-                <div className="col-md-3">
+                <div className="col-md-2">
                   <label className="small fw-bold">Pick-up Date</label>
                   <input
                     type="date"
@@ -500,7 +439,7 @@ boxShadow: "0 4px 12px rgba(0,0,0,0.05)",
                   )}
                 </div>
 
-                <div className="col-md-3">
+                <div className="col-md-2">
                   <label className="small fw-bold">Contact</label>
                   <input
                     className="form-control form-control-sm"
@@ -514,7 +453,7 @@ boxShadow: "0 4px 12px rgba(0,0,0,0.05)",
                   />
                 </div>
 
-                <div className="col-md-3">
+                <div className="col-md-2">
                   <label className="small fw-bold">Alternate</label>
                   <input
                     className="form-control form-control-sm"
@@ -524,6 +463,20 @@ boxShadow: "0 4px 12px rgba(0,0,0,0.05)",
                         ...contacts,
                         [i]: { ...contacts[i], c2: e.target.value },
                       })
+                    }
+                  />
+                </div>
+
+                <div className="col-md-4">
+                  <label className="small fw-bold">Details</label>
+                  <textarea
+                    className="form-control form-control-sm"
+                    rows={1}
+                    style={{ resize: "both", minHeight: "31px" }}
+                    placeholder="Enter details..."
+                    value={details[i] || ""}
+                    onChange={(e) =>
+                      setDetails({ ...details, [i]: e.target.value })
                     }
                   />
                 </div>
@@ -541,13 +494,13 @@ boxShadow: "0 4px 12px rgba(0,0,0,0.05)",
               fontWeight: 600,
             }}
           >
-            <b>اہم ہدایات:</b><br />
-            براہِ کرم ڈرائیور اور گاڑی کی تفصیلات وقت پر کنفرم کریں۔
-            کسی بھی مسئلے کی صورت میں مکّی مدنی ٹریول سے فوری رابطہ کریں۔
+            <b>اہم ہدایات:</b>
+            <br />
+            براہِ کرم ڈرائیور اور گاڑی کی تفصیلات وقت پر کنفرم کریں۔ کسی بھی
+            مسئلے کی صورت میں مکّی مدنی ٹریول سے فوری رابطہ کریں۔
           </div>
         </div>
       )}
     </div>
   );
 }
-
