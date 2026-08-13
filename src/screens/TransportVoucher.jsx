@@ -377,23 +377,32 @@ export default function TransportVoucher({ onNavigate }) {
             </div>
           </div>
 
-          {/* CUSTOMER */}
-          <div
-            style={{
-              background: "#f8fbff",
-              border: "1px solid #dbeafe",
-              borderLeft: "5px solid #0d6efd",
-              borderRadius: 12,
-              padding: 15,
-              marginBottom: 20,
-              fontSize: 17,
-              fontWeight: 600,
-              position: "relative",
-              zIndex: 1,
-            }}
-          >
-            👤 Customer Name: {data.customer_name}
-          </div>
+{/* CUSTOMER (EDITABLE INPUT) */}
+<div
+  style={{
+    background: "#f8fbff",
+    border: "1px solid #dbeafe",
+    borderLeft: "5px solid #0d6efd",
+    borderRadius: 12,
+    padding: 15,
+    marginBottom: 20,
+    position: "relative",
+    zIndex: 1,
+  }}
+>
+  <label className="fw-bold mb-1 d-block" style={{ fontSize: 15 }}>
+    👤 Customer Name
+  </label>
+  <input
+    type="text"
+    className="form-control fw-bold"
+    value={data.customer_name || ""}
+    onChange={(e) =>
+      setData({ ...data, customer_name: e.target.value })
+    }
+    placeholder="Enter Customer Name"
+  />
+</div>
 
           {/* SERVICES */}
           {rows.map((r, i) => (
@@ -497,7 +506,7 @@ export default function TransportVoucher({ onNavigate }) {
             <b>اہم ہدایات:</b>
             <br />
             براہِ کرم ڈرائیور اور گاڑی کی تفصیلات وقت پر کنفرم کریں۔ کسی بھی
-            مسئلے کی صورت میں مکّی مدنی ٹریول سے فوری رابطہ کریں۔
+            مسئلے کی صورت میں بی ٹریول سے فوری رابطہ کریں۔
           </div>
         </div>
       )}
