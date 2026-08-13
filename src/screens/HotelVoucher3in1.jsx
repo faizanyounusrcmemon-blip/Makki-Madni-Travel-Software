@@ -450,9 +450,19 @@ const canvas = await html2canvas(voucherRef.current, {
             />
           </div>
 
-          <div className="mb-2 pdf-customer">
-            <b>Customer Name:</b> {data.customer_name}
-          </div>
+{/* CUSTOMER NAME (EDITABLE INPUT) */}
+<div className="mb-2 pdf-customer">
+  <label className="fw-bold">Customer Name</label>
+  <input
+    type="text"
+    className="form-control form-control-sm fw-bold"
+    value={data.customer_name || ""}
+    onChange={(e) =>
+      setData({ ...data, customer_name: e.target.value })
+    }
+    placeholder="Enter Customer Name"
+  />
+</div>
 
 {data.hotels.map((h, i) => (
 <div
