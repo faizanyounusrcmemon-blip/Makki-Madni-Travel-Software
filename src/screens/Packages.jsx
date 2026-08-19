@@ -136,16 +136,18 @@ export default function Packages({ onNavigate }) {
 
 // ================= PER PERSON LOGIC =================
 
-// Total flight in PKR per category
+// 1. Total flight in PKR per category
 const adultFlightPKRTotal = adultCount * adultRate * flightRate;
 const childFlightPKRTotal = childCount * childRate * flightRate;
 const infantFlightPKRTotal = infantCount * infantRate * flightRate;
 
-// Visa total per person
-const visaPersons = visaRows.reduce((s, v) => s + Number(v.persons || 0), 0);
-const visaPerPerson = visaPersons > 0 ? visaPKR / visaPersons : 0;
+// 2. Total Passengers Count
+const totalPassengers = Number(adultCount || 0) + Number(childCount || 0) + Number(infantCount || 0);
 
-// Shared expenses only for adults (hotels + transport + ziyarat)
+// 3. Visa Per Person (Divide total PKR visa cost by total passengers, NOT sum of visa persons)
+const visaPerPerson = totalPassengers > 0 ? visaPKR / totalPassengers : 0;
+
+// 4. Shared expenses only for adults (hotels + transport + ziyarat)
 const sharedPKR = hotelsPKR + transportPKR + ziyaratPKR;
 const sharedPerAdult = adultCount > 0 ? sharedPKR / adultCount : 0;
 
@@ -162,7 +164,6 @@ const infantPerPerson = infantCount > 0
   ? Math.round((infantFlightPKRTotal / infantCount) + visaPerPerson)
   : 0;
 
-const totalPassengers = Number(adultCount || 0) + Number(childCount || 0) + Number(infantCount || 0);
 
 // ===================================================
 
