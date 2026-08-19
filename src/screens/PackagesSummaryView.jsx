@@ -68,32 +68,7 @@ if (flightDates.length >= 2) {
   packageNights = diff;
 }
 
-  // ================= CALCULATE TOTALS =================
-  const flightTotal = Number(data.flight_sar_total || 0);
-  const hotelsTotal = Number(data.hotel_sar_total || 0);
-  const visaTotal = Number(data.visa_sar_total || 0);
-  const transportTotal = Number(data.transport_sar_total || 0);
-  const ziyaratTotal = Number(data.ziyarat_sar_total || 0);
-
-  const rate = {
-    flight: Number(data.flight_sar_rate || 0),
-    hotels: Number(data.hotel_sar_rate || 0),
-    visa: Number(data.visa_sar_rate || 0),
-    transport: Number(data.transport_sar_rate || 0),
-    ziyarat: Number(data.ziyarat_sar_rate || 0),
-  };
-
-  const flightPKR = flightTotal * rate.flight;
-  const hotelsPKR = hotelsTotal * rate.hotels;
-  const visaPKR = visaTotal * rate.visa;
-  const transportPKR = transportTotal * rate.transport;
-  const ziyaratPKR = ziyaratTotal * rate.ziyarat;
-
-  const grandPKR = flightPKR + hotelsPKR + visaPKR + transportPKR + ziyaratPKR;
-
-  const personQty = Number(data.per_person_qty || 0);
-  const perPerson = grandPKR / personQty;
-
+// ================= PER PERSON CALCULATION =================
 let adultCount = 0, childCount = 0, infantCount = 0;
 let adultPerPerson = 0, childPerPerson = 0, infantPerPerson = 0;
 
@@ -114,9 +89,13 @@ if (data) {
   const childFlightPKR = childCount * Number(data.child_rate || 0) * rate.flight;
   const infantFlightPKR = infantCount * Number(data.infant_rate || 0) * rate.flight;
 
-  const visaPersons = data.visa?.reduce((sum, v) => sum + Number(v.persons || 0), 0) || 0;
+  // ⚡ FIX: Calculate total passengers
+  const totalPassengers = adultCount + childCount + infantCount;
+
   const visaPKR = Number(data.visa_sar_total || 0) * rate.visa;
-  const visaPerPerson = visaPersons > 0 ? visaPKR / visaPersons : 0;
+
+  // ⚡ FIX: Divide visaPKR by totalPassengers instead of visaPersons sum
+  const visaPerPerson = totalPassengers > 0 ? visaPKR / totalPassengers : 0;
 
   const hotelsPKR = Number(data.hotel_sar_total || 0) * rate.hotels;
   const transportPKR = Number(data.transport_sar_total || 0) * rate.transport;
