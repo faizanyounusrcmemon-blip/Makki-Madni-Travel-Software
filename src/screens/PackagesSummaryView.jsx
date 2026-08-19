@@ -68,11 +68,13 @@ if (flightDates.length >= 2) {
   packageNights = diff;
 }
 
-// ================= PER PERSON CALCULATION =================
-let adultCount = 0, childCount = 0, infantCount = 0;
-let adultPerPerson = 0, childPerPerson = 0, infantPerPerson = 0;
+// ================= CALCULATE TOTALS =================
+  const flightTotal = Number(data.flight_sar_total || 0);
+  const hotelsTotal = Number(data.hotel_sar_total || 0);
+  const visaTotal = Number(data.visa_sar_total || 0);
+  const transportTotal = Number(data.transport_sar_total || 0);
+  const ziyaratTotal = Number(data.ziyarat_sar_total || 0);
 
-if (data) {
   const rate = {
     flight: Number(data.flight_sar_rate || 0),
     hotels: Number(data.hotel_sar_rate || 0),
@@ -81,33 +83,44 @@ if (data) {
     ziyarat: Number(data.ziyarat_sar_rate || 0),
   };
 
-  adultCount = Number(data.adult_count || 0);
-  childCount = Number(data.child_count || 0);
-  infantCount = Number(data.infant_count || 0);
+  const flightPKR = flightTotal * rate.flight;
+  const hotelsPKR = hotelsTotal * rate.hotels;
+  const visaPKR = visaTotal * rate.visa;
+  const transportPKR = transportTotal * rate.transport;
+  const ziyaratPKR = ziyaratTotal * rate.ziyarat;
+
+  const grandPKR = flightPKR + hotelsPKR + visaPKR + transportPKR + ziyaratPKR;
+
+  // ================= PER PERSON CALCULATION =================
+  const adultCount = Number(data.adult_count || 0);
+  const childCount = Number(data.child_count || 0);
+  const infantCount = Number(data.infant_count || 0);
+
+  // Total passengers (used to divide total visa cost correctly)
+  const totalPassengers = adultCount + childCount + infantCount;
 
   const adultFlightPKR = adultCount * Number(data.adult_rate || 0) * rate.flight;
   const childFlightPKR = childCount * Number(data.child_rate || 0) * rate.flight;
   const infantFlightPKR = infantCount * Number(data.infant_rate || 0) * rate.flight;
 
-  // ⚡ FIX: Calculate total passengers
-  const totalPassengers = adultCount + childCount + infantCount;
-
-  const visaPKR = Number(data.visa_sar_total || 0) * rate.visa;
-
-  // ⚡ FIX: Divide visaPKR by totalPassengers instead of visaPersons sum
+  // Visa divided equally among all passengers
   const visaPerPerson = totalPassengers > 0 ? visaPKR / totalPassengers : 0;
 
-  const hotelsPKR = Number(data.hotel_sar_total || 0) * rate.hotels;
-  const transportPKR = Number(data.transport_sar_total || 0) * rate.transport;
-  const ziyaratPKR = Number(data.ziyarat_sar_total || 0) * rate.ziyarat;
-
+  // Hotels, Transport & Ziyarat shared only among adults
   const sharedPKR = hotelsPKR + transportPKR + ziyaratPKR;
   const sharedPerAdult = adultCount > 0 ? sharedPKR / adultCount : 0;
 
-  adultPerPerson = Math.round(adultCount > 0 ? adultFlightPKR / adultCount + visaPerPerson + sharedPerAdult : 0);
-  childPerPerson = Math.round(childCount > 0 ? childFlightPKR / childCount + visaPerPerson : 0);
-  infantPerPerson = Math.round(infantCount > 0 ? infantFlightPKR / infantCount + visaPerPerson : 0);
-}
+  const adultPerPerson = Math.round(
+    adultCount > 0 ? adultFlightPKR / adultCount + visaPerPerson + sharedPerAdult : 0
+  );
+
+  const childPerPerson = Math.round(
+    childCount > 0 ? childFlightPKR / childCount + visaPerPerson : 0
+  );
+
+  const infantPerPerson = Math.round(
+    infantCount > 0 ? infantFlightPKR / infantCount + visaPerPerson : 0
+  );
 
   return (
     <div className="container mt-3 mb-5">
