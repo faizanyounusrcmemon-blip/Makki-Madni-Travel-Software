@@ -12,21 +12,17 @@ const fmtDate = (d) =>
       })
     : "";
 
-/* ================= FILE NAME HELPERS ================= */
-
-
 export default function PackagesView({ id, onNavigate, fromPage }) {
   const [data, setData] = useState(null);
 
+  const ref = useRef(null);
 
-const ref = useRef(null);
-
-const { exportPDF, printPDF } = usePdf(ref, {
-  filePrefix: "PackageSummary",
-  customerName: data?.customer_name,
-  bookingDate: data?.booking_date,
-  orientation: "p",
-});
+  const { exportPDF, printPDF } = usePdf(ref, {
+    filePrefix: "PackageSummary",
+    customerName: data?.customer_name,
+    bookingDate: data?.booking_date,
+    orientation: "p",
+  });
 
   /* ================= LOAD DATA ================= */
   useEffect(() => {
@@ -40,35 +36,30 @@ const { exportPDF, printPDF } = usePdf(ref, {
       });
   }, [id]);
 
-/* ================= EXPORT PDF ================= */
-
-
   if (!data) return <div className="p-4">Loading...</div>;
 
-/* ================= PACKAGE DURATION ================= */
-const flightDates =
-  Array.isArray(data.flights)
+  /* ================= PACKAGE DURATION ================= */
+  const flightDates = Array.isArray(data.flights)
     ? data.flights
         .map((f) => f.date)
         .filter(Boolean)
         .sort()
     : [];
 
-let packageDays = 0;
-let packageNights = 0;
+  let packageDays = 0;
+  let packageNights = 0;
 
-if (flightDates.length >= 2) {
-  const startDate = new Date(flightDates[0]);
-  const endDate = new Date(flightDates[flightDates.length - 1]);
+  if (flightDates.length >= 2) {
+    const startDate = new Date(flightDates[0]);
+    const endDate = new Date(flightDates[flightDates.length - 1]);
 
-  const diff =
-    (endDate - startDate) / (1000 * 60 * 60 * 24);
+    const diff = (endDate - startDate) / (1000 * 60 * 60 * 24);
 
-  packageDays = diff + 1;
-  packageNights = diff;
-}
+    packageDays = diff + 1;
+    packageNights = diff;
+  }
 
-// ================= CALCULATE TOTALS =================
+  // ================= CALCULATE TOTALS =================
   const flightTotal = Number(data.flight_sar_total || 0);
   const hotelsTotal = Number(data.hotel_sar_total || 0);
   const visaTotal = Number(data.visa_sar_total || 0);
@@ -124,37 +115,35 @@ if (flightDates.length >= 2) {
 
   return (
     <div className="container mt-3 mb-5">
-
       {/* ============ TOP ACTIONS ============ */}
       <div className="d-flex justify-content-start mb-3 gap-2 flex-wrap">
-<button
-  className="btn btn-sm text-white fw-bold shadow"
-  style={{
-    background: "linear-gradient(135deg,#000,#434343)",
-    borderRadius: 8,
-    padding: "6px 16px",
-  }}
-  onClick={() => onNavigate(fromPage || "allreports")}
->
-  ⬅ Back
-</button>
+        <button
+          className="btn btn-sm text-white fw-bold shadow"
+          style={{
+            background: "linear-gradient(135deg,#000,#434343)",
+            borderRadius: 8,
+            padding: "6px 16px",
+          }}
+          onClick={() => onNavigate(fromPage || "allreports")}
+        >
+          ⬅ Back
+        </button>
 
-<button
-  className="btn btn-success btn-sm fw-bold shadow"
-  style={{ borderRadius: 8, padding: "6px 16px" }}
-  onClick={exportPDF}
->
-  📄 Export PDF
-</button>
+        <button
+          className="btn btn-success btn-sm fw-bold shadow"
+          style={{ borderRadius: 8, padding: "6px 16px" }}
+          onClick={exportPDF}
+        >
+          📄 Export PDF
+        </button>
 
-<button
-  className="btn btn-secondary btn-sm fw-bold shadow"
-  style={{ borderRadius: 8, padding: "6px 16px" }}
-  onClick={printPDF}
->
-  🖨️ Print
-</button>
-
+        <button
+          className="btn btn-secondary btn-sm fw-bold shadow"
+          style={{ borderRadius: 8, padding: "6px 16px" }}
+          onClick={printPDF}
+        >
+          🖨️ Print
+        </button>
       </div>
 
       {/* ============ PDF CONTENT ============ */}
@@ -164,9 +153,7 @@ if (flightDates.length >= 2) {
         style={{ maxWidth: "800px", margin: "auto", fontFamily: "Arial, sans-serif" }}
       >
         {/* ===== HEADER ===== */}
-
-      <Header title="PACKAGE QUOTATION" />
-
+        <Header title="PACKAGE QUOTATION" />
 
         {/* ===== PACKAGE INFO ===== */}
         <div className="mb-3">
@@ -174,39 +161,37 @@ if (flightDates.length >= 2) {
           <p><b>Customer:</b> {data.customer_name}</p>
           <p><b>Contact No:</b> {data.contact_no || "-"}</p>
           <p><b>Booking Date:</b> {fmtDate(data.booking_date)}</p>
-<div
-  className="border rounded-3 p-3 mt-2 shadow-sm"
-  style={{
-    background: "linear-gradient(135deg,#f8f9fa,#e9f7ef)",
-    borderLeft: "5px solid #198754",
-  }}
->
-  <div
-    style={{
-      fontSize: "12px",
-      color: "#6c757d",
-      textTransform: "uppercase",
-      fontWeight: "600",
-    }}
-  >
-    Package Duration
-  </div>
+          <div
+            className="border rounded-3 p-3 mt-2 shadow-sm"
+            style={{
+              background: "linear-gradient(135deg,#f8f9fa,#e9f7ef)",
+              borderLeft: "5px solid #198754",
+            }}
+          >
+            <div
+              style={{
+                fontSize: "12px",
+                color: "#6c757d",
+                textTransform: "uppercase",
+                fontWeight: "600",
+              }}
+            >
+              Package Duration
+            </div>
 
-  <div
-    style={{
-      fontSize: "22px",
-      fontWeight: "800",
-      color: "#198754",
-    }}
-  >
-    📅 {packageDays} Days / 🌙 {packageNights} Nights
-  </div>
-</div>
-
+            <div
+              style={{
+                fontSize: "22px",
+                fontWeight: "800",
+                color: "#198754",
+              }}
+            >
+              📅 {packageDays} Days / 🌙 {packageNights} Nights
+            </div>
+          </div>
         </div>
 
         <hr />
-
 
         {/* ===== FLIGHTS ===== */}
         <h5 className="fw-bold text-primary mb-2">✈️ Flight</h5>
@@ -227,34 +212,35 @@ if (flightDates.length >= 2) {
           Child: {data.child_count} × {data.child_rate} <br />
           Infant: {data.infant_count} × {data.infant_rate} <br />
           <b>Flight SAR:</b> {flightTotal.toLocaleString()} <br />
+          <b>SAR Rate:</b>  {rate.flight} <br />
           <b>Flight PKR:</b> {flightPKR.toLocaleString()}
         </p>
 
         <hr />
 
-{/* ===== HOTELS ===== */}
-<h5 className="fw-bold text-success mb-2">🏨 Hotels</h5>
-{Array.isArray(data.hotels) && data.hotels.length > 0 ? (
-  data.hotels.map((h, i) => (
-    <div key={i} className="border p-2 rounded mb-2 shadow-sm">
-      <b>🛏️ {h.hotel}</b> — 📍 {h.location}<br />
-      Check In Date: <span style={{ color: "#0d6efd", fontWeight: "bold" }}>{fmtDate(h.checkIn)}</span> → 
-      Check Out Date: <span style={{ color: "#dc3545", fontWeight: "bold" }}>{fmtDate(h.checkOut)}</span><br />
-      Nights: <b>{h.nights}</b>, Rooms: <b>{h.rooms}</b>, Type: <b>{h.type}</b><br />
-      Rate: {h.rate}   — Total: {h.total}
-    </div>
-  ))
-) : (
-  <p>No hotels</p>
-)}
+        {/* ===== HOTELS ===== */}
+        <h5 className="fw-bold text-success mb-2">🏨 Hotels</h5>
+        {Array.isArray(data.hotels) && data.hotels.length > 0 ? (
+          data.hotels.map((h, i) => (
+            <div key={i} className="border p-2 rounded mb-2 shadow-sm">
+              <b>🛏️ {h.hotel}</b> — 📍 {h.location}<br />
+              Check In Date: <span style={{ color: "#0d6efd", fontWeight: "bold" }}>{fmtDate(h.checkIn)}</span> → 
+              Check Out Date: <span style={{ color: "#dc3545", fontWeight: "bold" }}>{fmtDate(h.checkOut)}</span><br />
+              Nights: <b>{h.nights}</b>, Rooms: <b>{h.rooms}</b>, Type: <b>{h.type}</b><br />
+              Rate: {h.rate}   — Total: {h.total}
+            </div>
+          ))
+        ) : (
+          <p>No hotels</p>
+        )}
 
-<p>
-  <b>Hotel SAR:</b> {hotelsTotal.toLocaleString()} <br />
-  <b>Hotel PKR:</b> {hotelsPKR.toLocaleString()}
-</p>
+        <p>
+          <b>Hotel SAR:</b> {hotelsTotal.toLocaleString()} <br />
+          <b>SAR Rate:</b>  {rate.hotels} <br />
+          <b>Hotel PKR:</b> {hotelsPKR.toLocaleString()}
+        </p>
 
-<hr />
-
+        <hr />
 
         {/* ===== VISA ===== */}
         <h5 className="fw-bold text-warning mb-2">🛂 Visa</h5>
@@ -269,6 +255,7 @@ if (flightDates.length >= 2) {
         )}
         <p>
           <b>Visa SAR:</b> {visaTotal.toLocaleString()} <br />
+          <b>SAR Rate:</b>  {rate.visa} <br />
           <b>Visa PKR:</b> {visaPKR.toLocaleString()}
         </p>
 
@@ -287,6 +274,7 @@ if (flightDates.length >= 2) {
         )}
         <p>
           <b>Transport SAR:</b> {transportTotal.toLocaleString()} <br />
+          <b>SAR Rate:</b>  {rate.transport} <br />
           <b>Transport PKR:</b> {transportPKR.toLocaleString()}
         </p>
 
@@ -305,11 +293,13 @@ if (flightDates.length >= 2) {
         )}
         <p>
           <b>Ziyarat SAR:</b> {ziyaratTotal.toLocaleString()} <br />
+          <b>SAR Rate:</b>  {rate.ziyarat} <br />
           <b>Ziyarat PKR:</b> {ziyaratPKR.toLocaleString()}
         </p>
 
         <hr />
-                {/* ===== SUMMARY TABLE ===== */}
+
+        {/* ===== SUMMARY TABLE ===== */}
         <h6 className="section-title">📊 Summary</h6>
         <table className="table table-sm mb-4">
           <thead>
@@ -357,24 +347,24 @@ if (flightDates.length >= 2) {
               <td></td>
               <td className="fw-bold">{grandPKR.toLocaleString()}</td>
             </tr>
-<tr style={{ background: "#f1f1f1" }}>
-  <td className="fw-bold">Per Person (Adults)</td>
-  <td>{adultCount}</td>
-  <td></td>
-  <td className="fw-bold">{adultPerPerson.toLocaleString()}</td>
-</tr>
-<tr style={{ background: "#f1f1f1" }}>
-  <td className="fw-bold">Per Person (Children)</td>
-  <td>{childCount}</td>
-  <td></td>
-  <td className="fw-bold">{childPerPerson.toLocaleString()}</td>
-</tr>
-<tr style={{ background: "#f1f1f1" }}>
-  <td className="fw-bold">Per Person (Infants)</td>
-  <td>{infantCount}</td>
-  <td></td>
-  <td className="fw-bold">{infantPerPerson.toLocaleString()}</td>
-</tr>
+            <tr style={{ background: "#f1f1f1" }}>
+              <td className="fw-bold">Per Person (Adults)</td>
+              <td>{adultCount}</td>
+              <td></td>
+              <td className="fw-bold">{adultPerPerson.toLocaleString()}</td>
+            </tr>
+            <tr style={{ background: "#f1f1f1" }}>
+              <td className="fw-bold">Per Person (Children)</td>
+              <td>{childCount}</td>
+              <td></td>
+              <td className="fw-bold">{childPerPerson.toLocaleString()}</td>
+            </tr>
+            <tr style={{ background: "#f1f1f1" }}>
+              <td className="fw-bold">Per Person (Infants)</td>
+              <td>{infantCount}</td>
+              <td></td>
+              <td className="fw-bold">{infantPerPerson.toLocaleString()}</td>
+            </tr>
           </tbody>
         </table>
 
@@ -392,5 +382,3 @@ if (flightDates.length >= 2) {
     </div>
   );
 }
-
-
