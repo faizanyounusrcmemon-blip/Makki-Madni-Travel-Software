@@ -94,17 +94,15 @@ const childFlightPKR =
 const infantFlightPKR =
   infantCount * Number(data.infant_rate || 0) * rate.flight;
 
-const visaPersons =
-  data.visa?.reduce(
-    (sum, v) => sum + Number(v.persons || 0),
-    0
-  ) || 0;
+// ⚡ FIX: Calculate total passengers
+const totalPassengers = adultCount + childCount + infantCount;
 
 const visaPKR =
   Number(data.visa_sar_total || 0) * rate.visa;
 
+// ⚡ FIX: Divide visaPKR by totalPassengers instead of visaPersons sum
 const visaPerPerson =
-  visaPersons > 0 ? visaPKR / visaPersons : 0;
+  totalPassengers > 0 ? visaPKR / totalPassengers : 0;
 
 const hotelsPKR =
   Number(data.hotel_sar_total || 0) * rate.hotels;
