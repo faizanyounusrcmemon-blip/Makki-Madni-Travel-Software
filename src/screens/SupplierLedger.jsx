@@ -352,136 +352,182 @@ const loadPendingAlways = async () => {
   };
 
 /* ====================================================
-     EDIT ENTRY WITH PASSWORD & LIVE DATE FORMAT DISPLAY
-  ==================================================== */
-  const editEntry = async (entry) => {
-    if (entry.entry_type !== "payment" || !entry.id) return;
+   EDIT ENTRY (STEP 1: PASSWORD -> STEP 2: EDIT FORM)
+==================================================== */
+const editEntry = async (entry) => {
+  if (entry.entry_type !== "payment" || !entry.id) return;
 
-    const formattedDate = entry.date ? new Date(entry.date).toISOString().split('T')[0] : today;
-    const currentType = (entry.type || "payment").toLowerCase();
+  // STEP 1: Pehle Password Pop-up Khulega
+  const { value: passInput } = await Swal.fire({
+    width: "320px",
+    title: "🔒 Authorization Required",
+    html: `
+      <div style="text-align:left;">
+        <label style="font-size:13px; font-weight:bold;">Enter Password to Edit:</label>
+        <div style="position:relative; margin-top:8px;">
+          <input id="swal-pass-edit" type="password" class="swal2-input" 
+            style="width:100%; height:38px; margin:0; padding-right:40px; font-size:14px;" placeholder="Password" />
+          <span id="eye-toggle-edit-step1" style="position:absolute; right:12px; top:50%; transform:translateY(-50%); cursor:pointer; font-size:16px; user-select:none;">👁</span>
+        </div>
+      </div>
+    `,
+    showCancelButton: true,
+    confirmButtonText: "Verify Password",
+    preConfirm: () => {
+      const val = document.getElementById("swal-pass-edit").value.trim();
+      if (!val) {
+        Swal.showValidationMessage("Password cannot be empty");
+        return false;
+      }
+      return val;
+    },
+    didOpen: () => {
+      const input = document.getElementById("swal-pass-edit");
+      const eye = document.getElementById("eye-toggle-edit-step1");
+      let visible = false;
+      eye.addEventListener("click", () => {
+        visible = !visible;
+        input.type = visible ? "text" : "password";
+        eye.textContent = visible ? "🙈" : "👁";
+      });
+    }
+  });
 
-    const { value: formValues } = await Swal.fire({
-      width: "360px",
-      title: "✏️ Edit Ledger Entry",
-      html: `
-        <div style="text-align:left; font-size:12px;" class="d-flex flex-column gap-2">
-          <div>
-            <label class="fw-bold mb-1">Amount (PKR)</label>
-            <input id="swal-edit-amount" type="number" class="form-control form-control-sm" value="${entry.debit || entry.credit || 0}" />
-          </div>
-          <div>
-            <label class="fw-bold mb-1">Payment Date</label>
-            <input id="swal-edit-date" type="date" class="form-control form-control-sm" value="${formattedDate}" />
-            <div id="swal-edit-date-text" class="text-primary fw-bold mt-1" style="font-size: 11px;">
-              ${formatDate(formattedDate)}
-            </div>
-          </div>
-          <div>
-            <label class="fw-bold mb-1">Transaction Type</label>
-            <select id="swal-edit-type" class="form-select form-select-sm">
-              <option value="payment" ${currentType.includes("payment") ? "selected" : ""}>Payment</option>
-              <option value="adjustment" ${currentType.includes("adjustment") ? "selected" : ""}>Adjustment</option>
-              <option value="opening_balance" ${currentType.includes("opening") ? "selected" : ""}>🔑 Opening Balance (Debit)</option>
-            </select>
-          </div>
-          <div>
-            <label class="fw-bold mb-1">Method</label>
-            <select id="swal-edit-method" class="form-select form-select-sm">
-              <option value="Bank" ${entry.payment_method === "Bank" ? "selected" : ""}>Bank</option>
-              <option value="Cash" ${entry.payment_method === "Cash" ? "selected" : ""}>Cash</option>
-            </select>
-          </div>
-          <div>
-            <label class="fw-bold mb-1">Password</label>
-            <div style="position:relative;">
-              <input id="swal-edit-pass" type="password" class="form-control form-control-sm" placeholder="Enter password" style="padding-right:35px;" />
-              <span id="toggle-edit-pass" style="position:absolute; right:10px; top:50%; transform:translateY(-50%); cursor:pointer; user-select:none;">👁</span>
-            </div>
+  if (!passInput) return;
+
+  // Backend par Password Check Karein
+  Swal.fire({
+    width: "250px",
+    title: "Verifying...",
+    allowOutsideClick: false,
+    didOpen: () => Swal.showLoading()
+  });
+
+  try {
+    const verifyRes = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/supplier-ledger/verify-password`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ password: passInput })
+    });
+    const verifyData = await verifyRes.json();
+    Swal.close();
+
+    if (!verifyData.success) {
+      return Swal.fire({ width: "300px", icon: "error", text: verifyData.error || "Wrong Password!" });
+    }
+  } catch (err) {
+    Swal.close();
+    return Swal.fire({ width: "300px", icon: "error", text: "Network verification error" });
+  }
+
+  // STEP 2: Password Sahi Hone par Form Khulega
+  const formattedDate = entry.date ? new Date(entry.date).toISOString().split('T')[0] : today;
+  const currentType = (entry.type || "payment").toLowerCase();
+
+  const { value: formValues } = await Swal.fire({
+    width: "360px",
+    title: "✏️ Edit Ledger Entry",
+    html: `
+      <div style="text-align:left; font-size:12px;" class="d-flex flex-column gap-2">
+        <div>
+          <label class="fw-bold mb-1">Amount (PKR)</label>
+          <input id="swal-edit-amount" type="number" class="form-control form-control-sm" value="${entry.debit || entry.credit || 0}" />
+        </div>
+        <div>
+          <label class="fw-bold mb-1">Payment Date</label>
+          <input id="swal-edit-date" type="date" class="form-control form-control-sm" value="${formattedDate}" />
+          <div id="swal-edit-date-text" class="text-primary fw-bold mt-1" style="font-size: 11px;">
+            ${formatDate(formattedDate)}
           </div>
         </div>
-      `,
-      showCancelButton: true,
-      confirmButtonText: "Update",
-      focusConfirm: false,
-      didOpen: () => {
-        const input = document.getElementById("swal-edit-pass");
-        const toggle = document.getElementById("toggle-edit-pass");
-        const dateInput = document.getElementById("swal-edit-date");
-        const dateTextLabel = document.getElementById("swal-edit-date-text");
+        <div>
+          <label class="fw-bold mb-1">Transaction Type</label>
+          <select id="swal-edit-type" class="form-select form-select-sm">
+            <option value="payment" ${currentType.includes("payment") ? "selected" : ""}>Payment</option>
+            <option value="adjustment" ${currentType.includes("adjustment") ? "selected" : ""}>Adjustment</option>
+            <option value="opening_balance" ${currentType.includes("opening") ? "selected" : ""}>🔑 Opening Balance (Debit)</option>
+          </select>
+        </div>
+        <div>
+          <label class="fw-bold mb-1">Method</label>
+          <select id="swal-edit-method" class="form-select form-select-sm">
+            <option value="Bank" ${entry.payment_method === "Bank" ? "selected" : ""}>Bank</option>
+            <option value="Cash" ${entry.payment_method === "Cash" ? "selected" : ""}>Cash</option>
+          </select>
+        </div>
+      </div>
+    `,
+    showCancelButton: true,
+    confirmButtonText: "Update",
+    focusConfirm: false,
+    didOpen: () => {
+      const dateInput = document.getElementById("swal-edit-date");
+      const dateTextLabel = document.getElementById("swal-edit-date-text");
+      dateInput.addEventListener("change", (e) => {
+        dateTextLabel.textContent = formatDate(e.target.value);
+      });
+    },
+    preConfirm: () => {
+      const amount = document.getElementById("swal-edit-amount").value;
+      const payment_date = document.getElementById("swal-edit-date").value;
+      const payment_method = document.getElementById("swal-edit-method").value;
+      const type = document.getElementById("swal-edit-type").value;
 
-        // Live Date Change Update
-        dateInput.addEventListener("change", (e) => {
-          dateTextLabel.textContent = formatDate(e.target.value);
-        });
-
-        let show = false;
-        toggle.onclick = () => {
-          show = !show;
-          input.type = show ? "text" : "password";
-          toggle.textContent = show ? "🙈" : "👁";
-        };
-      },
-      preConfirm: () => {
-        const amount = document.getElementById("swal-edit-amount").value;
-        const payment_date = document.getElementById("swal-edit-date").value;
-        const payment_method = document.getElementById("swal-edit-method").value;
-        const type = document.getElementById("swal-edit-type").value;
-        const password = document.getElementById("swal-edit-pass").value.trim();
-
-        if (!amount || amount <= 0) {
-          Swal.showValidationMessage("Valid amount required");
-          return false;
-        }
-        if (!password) {
-          Swal.showValidationMessage("Password required");
-          return false;
-        }
-
-        return {
-          amount: Number(amount),
-          payment_date,
-          payment_method,
-          type,
-          password
-        };
+      if (!amount || Number(amount) <= 0) {
+        Swal.showValidationMessage("Valid amount required");
+        return false;
       }
-    });
-
-    if (!formValues) return;
-
-    Swal.fire({
-      width: "260px",
-      title: "Updating...",
-      allowOutsideClick: false,
-      didOpen: () => Swal.showLoading()
-    });
-
-    try {
-      const res = await fetch(
-        `${import.meta.env.VITE_BACKEND_URL}/api/supplier-ledger/edit/${entry.id}`,
-        {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(formValues),
-        }
-      );
-
-      const d = await res.json();
-      Swal.close();
-
-      if (!d.success) {
-        Swal.fire({ icon: "error", text: d.error || "Update failed" });
-        return;
+      if (!payment_date) {
+        Swal.showValidationMessage("Valid date required");
+        return false;
       }
 
-      await loadLedger();
-      await loadPendingAlways();
-      Swal.fire({ icon: "success", text: "Entry updated successfully" });
-    } catch (err) {
-      Swal.close();
-      Swal.fire({ icon: "error", text: "Network Error" });
+      return {
+        amount: Number(amount),
+        payment_date,
+        payment_method,
+        type,
+        password: passInput // Step 1 ka verified password pass kar rahe hain
+      };
     }
-  };
+  });
+
+  if (!formValues) return;
+
+  // STEP 3: Save Update
+  Swal.fire({
+    width: "260px",
+    title: "Updating...",
+    allowOutsideClick: false,
+    didOpen: () => Swal.showLoading()
+  });
+
+  try {
+    const res = await fetch(
+      `${import.meta.env.VITE_BACKEND_URL}/api/supplier-ledger/edit/${entry.id}`,
+      {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formValues),
+      }
+    );
+
+    const d = await res.json();
+    Swal.close();
+
+    if (!d.success) {
+      Swal.fire({ icon: "error", text: d.error || "Update failed" });
+      return;
+    }
+
+    await loadLedger();
+    await loadPendingAlways();
+    Swal.fire({ icon: "success", text: "Entry updated successfully" });
+  } catch (err) {
+    Swal.close();
+    Swal.fire({ icon: "error", text: "Network Error" });
+  }
+};
 
   /* =========================
      EXPORT PDF (WITH LOADER)

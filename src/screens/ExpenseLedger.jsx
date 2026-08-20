@@ -44,233 +44,356 @@ export default function ExpenseLedger({ onNavigate }) {
     load();
   }, []);
 
-/* ================= PASSWORD POPUP (DYNAMIC) ================= */
-const askPassword = async (title = "Enter Password") => {
-  const { value } = await Swal.fire({
-    width: "300px",
-    html: `
-      <div style="text-align:left;font-size:13px">
-        <b>${title}</b>
+  /* ================= PASSWORD POPUP (DYNAMIC) ================= */
+  const askPassword = async (titleText = "Enter Password") => {
+    const { value } = await Swal.fire({
+      width: "300px",
+      html: `
+        <div style="text-align:left;font-size:13px">
+          <b>${titleText}</b>
 
-        <div style="position:relative;margin-top:10px">
-          <input 
-            id="swal-pass" 
-            type="password" 
-            class="swal2-input"
-            style="height:34px;font-size:13px;width:100%;margin:0;padding-right:40px"
-            placeholder="Enter password"
-          />
+          <div style="position:relative;margin-top:10px">
+            <input 
+              id="swal-pass" 
+              type="password" 
+              class="swal2-input"
+              style="height:34px;font-size:13px;width:100%;margin:0;padding-right:40px"
+              placeholder="Enter password"
+            />
 
-          <span id="toggle-pass" style="
-            position:absolute;
-            right:12px;
-            top:50%;
-            transform:translateY(-50%);
-            cursor:pointer;
-            user-select:none;
-            font-size:16px;
-          ">👁</span>
+            <span id="toggle-pass" style="
+              position:absolute;
+              right:12px;
+              top:50%;
+              transform:translateY(-50%);
+              cursor:pointer;
+              user-select:none;
+              font-size:16px;
+            ">👁</span>
+          </div>
         </div>
-      </div>
-    `,
+      `,
 
-    showCancelButton: true,
-    confirmButtonText: "Delete",
-    focusConfirm: false,
+      showCancelButton: true,
+      confirmButtonText: "Verify Password",
+      focusConfirm: false,
 
-    preConfirm: () => {
-      const input = document.getElementById("swal-pass");
-      const val = input.value.trim();
+      preConfirm: () => {
+        const input = document.getElementById("swal-pass");
+        const val = input.value.trim();
 
-      // Khaali input check karega
-      if (!val) {
-        Swal.showValidationMessage("Password required");
-        return false;
-      }
-
-      // ❌ LOCAL HARDCODED "786" CHECK REMOVED
-      // Ab value direct return hogi aur match/mismatch backend handle karega
-      return val;
-    },
-
-    didOpen: () => {
-      const input = document.getElementById("swal-pass");
-      const toggle = document.getElementById("toggle-pass");
-
-      let show = false;
-
-      // 👁 SHOW / HIDE TOGGLE
-      toggle.onclick = () => {
-        show = !show;
-        input.type = show ? "text" : "password";
-        toggle.textContent = show ? "🙈" : "👁";
-      };
-
-      // 🔥 AUTO FOCUS
-      setTimeout(() => input.focus(), 100);
-
-      // 🔥 ENTER KEY SUPPORT
-      const handleEnter = (e) => {
-        if (e.key === "Enter") {
-          e.preventDefault();
-          const confirmBtn = document.querySelector(".swal2-confirm");
-          if (confirmBtn) confirmBtn.click();
+        if (!val) {
+          Swal.showValidationMessage("Password required");
+          return false;
         }
-      };
 
-      document.addEventListener("keydown", handleEnter);
+        return val;
+      },
 
-      // Cleanup listener when popup closes
-      Swal.getPopup().addEventListener("remove", () => {
-        document.removeEventListener("keydown", handleEnter);
+      didOpen: () => {
+        const input = document.getElementById("swal-pass");
+        const toggle = document.getElementById("toggle-pass");
+
+        let show = false;
+
+        toggle.onclick = () => {
+          show = !show;
+          input.type = show ? "text" : "password";
+          toggle.textContent = show ? "🙈" : "👁";
+        };
+
+        setTimeout(() => input.focus(), 100);
+
+        const handleEnter = (e) => {
+          if (e.key === "Enter") {
+            e.preventDefault();
+            const confirmBtn = document.querySelector(".swal2-confirm");
+            if (confirmBtn) confirmBtn.click();
+          }
+        };
+
+        document.addEventListener("keydown", handleEnter);
+
+        Swal.getPopup().addEventListener("remove", () => {
+          document.removeEventListener("keydown", handleEnter);
+        });
+      }
+    });
+
+    return value;
+  };
+
+  /* ================= SAVE ================= */
+  const save = async () => {
+    if (!date || !title || !amount) {
+      return Swal.fire({
+        width: "300px",
+        icon: "warning",
+        text: "Missing fields"
       });
     }
-  });
 
-  return value;
-};
+    Swal.fire({
+      width: "260px",
+      title: "Saving...",
+      allowOutsideClick: false,
+      didOpen: () => Swal.showLoading()
+    });
 
+    try {
+      const r = await fetch(
+        `${import.meta.env.VITE_BACKEND_URL}/api/expense-ledger/add`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            expense_date: date,
+            title,
+            amount: amount.replace(/,/g, ""),
+            payment_method: method,
+            remarks,
+          }),
+        }
+      );
 
-/* ================= SAVE ================= */
-const save = async () => {
+      const d = await r.json();
+      Swal.close();
 
-  if (!date || !title || !amount) {
-    return Swal.fire({
+      if (d.success) {
+        setTitle("");
+        setAmount("");
+        setRemarks("");
+
+        load();
+
+        Swal.fire({
+          width: "280px",
+          icon: "success",
+          text: "Expense Saved Successfully"
+        });
+      } else {
+        Swal.fire({
+          width: "300px",
+          icon: "error",
+          text: d.error || "Save failed"
+        });
+      }
+    } catch (err) {
+      Swal.close();
+      Swal.fire({
+        width: "300px",
+        icon: "error",
+        text: "Network Error"
+      });
+    }
+  };
+
+  /* ================= EDIT EXPENSE (STEP 1: PASSWORD -> STEP 2: EDIT FORM) ================= */
+  const editExpense = async (item) => {
+    // STEP 1: Password Popup
+    const pass = await askPassword("🔒 Enter Edit Password");
+    if (!pass) return;
+
+    // Verify Password with Backend
+    Swal.fire({
+      width: "250px",
+      title: "Verifying...",
+      allowOutsideClick: false,
+      didOpen: () => Swal.showLoading()
+    });
+
+    try {
+      const verifyRes = await fetch(
+        `${import.meta.env.VITE_BACKEND_URL}/api/expense-ledger/verify-password`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ password: pass }),
+        }
+      );
+
+      const verifyData = await verifyRes.json();
+      Swal.close();
+
+      if (!verifyData.success) {
+        return Swal.fire({
+          width: "300px",
+          icon: "error",
+          text: verifyData.error || "Wrong Password!"
+        });
+      }
+    } catch (err) {
+      Swal.close();
+      return Swal.fire({
+        width: "300px",
+        icon: "error",
+        text: "Network verification error"
+      });
+    }
+
+    // STEP 2: Edit Form Popup
+    const formattedDate = item.expense_date
+      ? new Date(item.expense_date).toISOString().split("T")[0]
+      : today;
+
+    const { value: formValues } = await Swal.fire({
+      width: "360px",
+      title: "✏️ Edit Expense",
+      html: `
+        <div style="text-align:left; font-size:12px;" class="d-flex flex-column gap-2">
+          <div>
+            <label class="fw-bold mb-1">Expense Date</label>
+            <input id="swal-edit-date" type="date" class="form-control form-control-sm" value="${formattedDate}" />
+          </div>
+          <div>
+            <label class="fw-bold mb-1">Title</label>
+            <input id="swal-edit-title" type="text" class="form-control form-control-sm" value="${item.title || ""}" placeholder="Title" />
+          </div>
+          <div>
+            <label class="fw-bold mb-1">Amount (PKR)</label>
+            <input id="swal-edit-amount" type="number" class="form-control form-control-sm" value="${item.amount || 0}" />
+          </div>
+          <div>
+            <label class="fw-bold mb-1">Payment Method</label>
+            <select id="swal-edit-method" class="form-select form-select-sm">
+              <option value="Cash" ${item.payment_method === "Cash" ? "selected" : ""}>Cash</option>
+              <option value="Bank" ${item.payment_method === "Bank" ? "selected" : ""}>Bank</option>
+            </select>
+          </div>
+          <div>
+            <label class="fw-bold mb-1">Remarks</label>
+            <input id="swal-edit-remarks" type="text" class="form-control form-control-sm" value="${item.remarks || ""}" placeholder="Remarks" />
+          </div>
+        </div>
+      `,
+      showCancelButton: true,
+      confirmButtonText: "Update",
+      focusConfirm: false,
+      preConfirm: () => {
+        const expense_date = document.getElementById("swal-edit-date").value;
+        const editTitle = document.getElementById("swal-edit-title").value.trim();
+        const editAmount = document.getElementById("swal-edit-amount").value;
+        const payment_method = document.getElementById("swal-edit-method").value;
+        const editRemarks = document.getElementById("swal-edit-remarks").value.trim();
+
+        if (!expense_date) {
+          Swal.showValidationMessage("Date required");
+          return false;
+        }
+        if (!editTitle) {
+          Swal.showValidationMessage("Title required");
+          return false;
+        }
+        if (!editAmount || Number(editAmount) <= 0) {
+          Swal.showValidationMessage("Valid amount required");
+          return false;
+        }
+
+        return {
+          expense_date,
+          title: editTitle,
+          amount: Number(editAmount),
+          payment_method,
+          remarks: editRemarks,
+          password: pass // Step 1 verified password pass kar rahe hain
+        };
+      }
+    });
+
+    if (!formValues) return;
+
+    // STEP 3: Save Update
+    Swal.fire({
+      width: "260px",
+      title: "Updating...",
+      allowOutsideClick: false,
+      didOpen: () => Swal.showLoading()
+    });
+
+    try {
+      const res = await fetch(
+        `${import.meta.env.VITE_BACKEND_URL}/api/expense-ledger/edit/${item.id}`,
+        {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(formValues),
+        }
+      );
+
+      const d = await res.json();
+      Swal.close();
+
+      if (!d.success) {
+        Swal.fire({ icon: "error", text: d.error || "Update failed" });
+        return;
+      }
+
+      load();
+      Swal.fire({ icon: "success", text: "Expense updated successfully" });
+    } catch (err) {
+      Swal.close();
+      Swal.fire({ icon: "error", text: "Network Error" });
+    }
+  };
+
+  /* ======================== DELETE ======================== */
+  const del = async (id) => {
+    const confirmDelete = await Swal.fire({
       width: "300px",
       icon: "warning",
-      text: "Missing fields"
+      text: "Delete this expense?",
+      showCancelButton: true,
+      confirmButtonText: "Delete"
     });
-  }
 
-  Swal.fire({
-    width: "260px",
-    title: "Saving...",
-    allowOutsideClick: false,
-    didOpen: () => Swal.showLoading()
-  });
+    if (!confirmDelete.isConfirmed) return;
 
-  try {
+    const pass = await askPassword("Enter Delete Password");
+    if (!pass) return;
 
-    const r = await fetch(
-      `${import.meta.env.VITE_BACKEND_URL}/api/expense-ledger/add`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          expense_date: date,
-          title,
-          amount: amount.replace(/,/g, ""),
-          payment_method: method,
-          remarks,
-        }),
+    Swal.fire({
+      width: "260px",
+      title: "Deleting...",
+      allowOutsideClick: false,
+      didOpen: () => Swal.showLoading()
+    });
+
+    try {
+      const r = await fetch(
+        `${import.meta.env.VITE_BACKEND_URL}/api/expense-ledger/delete/${id}`,
+        {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ password: pass }),
+        }
+      );
+
+      const d = await r.json();
+      Swal.close();
+
+      if (d.success) {
+        load();
+        Swal.fire({
+          width: "280px",
+          icon: "success",
+          text: "Expense Deleted Successfully"
+        });
+      } else {
+        Swal.fire({
+          width: "300px",
+          icon: "error",
+          text: d.error || "Delete failed"
+        });
       }
-    );
-
-    const d = await r.json();
-
-    Swal.close();
-
-    if (d.success) {
-
-      setTitle("");
-      setAmount("");
-      setRemarks("");
-
-      load();
-
-      Swal.fire({
-        width: "280px",
-        icon: "success",
-        text: "Expense Saved Successfully"
-      });
-
-    } else {
-
+    } catch (err) {
+      Swal.close();
       Swal.fire({
         width: "300px",
         icon: "error",
-        text: d.error || "Save failed"
+        text: "Network Error"
       });
     }
-
-  } catch (err) {
-
-    Swal.close();
-
-    Swal.fire({
-      width: "300px",
-      icon: "error",
-      text: "Network Error"
-    });
-  }
-};
-
-
-/* ======================== DELETE ======================== */
-const del = async (id) => {
-
-  const confirmDelete = await Swal.fire({
-    width: "300px",
-    icon: "warning",
-    text: "Delete this expense?",
-    showCancelButton: true,
-    confirmButtonText: "Delete"
-  });
-
-  if (!confirmDelete.isConfirmed) return;
-
-  // ✅ PASSWORD POPUP (Ab yeh direct user input bina hardcoding ke return karega)
-  const pass = await askPassword("Enter Delete Password");
-
-  if (!pass) return;
-
-  Swal.fire({
-    width: "260px",
-    title: "Deleting...",
-    allowOutsideClick: false,
-    didOpen: () => Swal.showLoading()
-  });
-
-  try {
-    const r = await fetch(
-      `${import.meta.env.VITE_BACKEND_URL}/api/expense-ledger/delete/${id}`,
-      {
-        method: "DELETE",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ password: pass }),
-      }
-    );
-
-    const d = await r.json();
-    Swal.close();
-
-    if (d.success) {
-      load();
-
-      Swal.fire({
-        width: "280px",
-        icon: "success",
-        text: "Expense Deleted Successfully"
-      });
-
-    } else {
-      // Wrong password ka catch backend se direct yahan handler me display hoga
-      Swal.fire({
-        width: "300px",
-        icon: "error",
-        text: d.error || "Delete failed"
-      });
-    }
-
-  } catch (err) {
-    Swal.close();
-    Swal.fire({
-      width: "300px",
-      icon: "error",
-      text: "Network Error"
-    });
-  }
-};
+  };
 
   /* ================= FILTER ================= */
   const filteredRows = rows.filter((r) => {
@@ -291,7 +414,6 @@ const del = async (id) => {
 
   return (
     <div className="container p-3">
-
       {/* HEADER */}
       <div
         className="p-3 mb-3 rounded text-white"
@@ -317,17 +439,24 @@ const del = async (id) => {
           <h6 className="fw-bold text-primary mb-2">➕ Add Expense</h6>
           <div className="row g-2 small fw-bold">
             <div className="col-md-2">
-              <input type="date" className="form-control form-control-sm"
-                value={date} onChange={(e) => setDate(e.target.value)} />
+              <input
+                type="date"
+                className="form-control form-control-sm"
+                value={date}
+                onChange={(e) => setDate(e.target.value)}
+              />
             </div>
             <div className="col-md-3">
-              <input className="form-control form-control-sm"
+              <input
+                className="form-control form-control-sm"
                 placeholder="Title"
                 value={title}
-                onChange={(e) => setTitle(e.target.value)} />
+                onChange={(e) => setTitle(e.target.value)}
+              />
             </div>
             <div className="col-md-2">
-              <input className="form-control form-control-sm"
+              <input
+                className="form-control form-control-sm"
                 placeholder="Amount"
                 value={amount}
                 onChange={(e) =>
@@ -336,21 +465,26 @@ const del = async (id) => {
                       .replace(/,/g, "")
                       .replace(/\B(?=(\d{3})+(?!\d))/g, ",")
                   )
-                } />
+                }
+              />
             </div>
             <div className="col-md-2">
-              <select className="form-control form-control-sm"
+              <select
+                className="form-control form-control-sm"
                 value={method}
-                onChange={(e) => setMethod(e.target.value)}>
+                onChange={(e) => setMethod(e.target.value)}
+              >
                 <option>Cash</option>
                 <option>Bank</option>
               </select>
             </div>
             <div className="col-md-2">
-              <input className="form-control form-control-sm"
+              <input
+                className="form-control form-control-sm"
                 placeholder="Remarks"
                 value={remarks}
-                onChange={(e) => setRemarks(e.target.value)} />
+                onChange={(e) => setRemarks(e.target.value)}
+              />
             </div>
             <div className="col-md-1">
               <button className="btn btn-success btn-sm w-100" onClick={save}>
@@ -367,18 +501,28 @@ const del = async (id) => {
           <h6 className="fw-bold text-info mb-2">🔍 Filters</h6>
           <div className="row g-2 small fw-bold">
             <div className="col-md-2">
-              <input type="date" className="form-control form-control-sm"
-                value={fromDate} onChange={(e) => setFromDate(e.target.value)} />
+              <input
+                type="date"
+                className="form-control form-control-sm"
+                value={fromDate}
+                onChange={(e) => setFromDate(e.target.value)}
+              />
             </div>
             <div className="col-md-2">
-              <input type="date" className="form-control form-control-sm"
-                value={toDate} onChange={(e) => setToDate(e.target.value)} />
+              <input
+                type="date"
+                className="form-control form-control-sm"
+                value={toDate}
+                onChange={(e) => setToDate(e.target.value)}
+              />
             </div>
             <div className="col-md-4">
-              <input className="form-control form-control-sm"
+              <input
+                className="form-control form-control-sm"
                 placeholder="Search title"
                 value={search}
-                onChange={(e) => setSearch(e.target.value)} />
+                onChange={(e) => setSearch(e.target.value)}
+              />
             </div>
           </div>
         </div>
@@ -394,7 +538,7 @@ const del = async (id) => {
               <th>Amount</th>
               <th>Method</th>
               <th>Remarks</th>
-              <th></th>
+              <th style={{ width: "90px" }}>Actions</th>
             </tr>
           </thead>
           <tbody className="small fw-bold">
@@ -408,12 +552,23 @@ const del = async (id) => {
                 <td>{r.payment_method}</td>
                 <td>{r.remarks}</td>
                 <td className="text-center">
-                  <button
-                    className="btn btn-danger btn-sm"
-                    onClick={() => del(r.id)}
-                  >
-                    ❌
-                  </button>
+                            <div className="d-flex gap-1 justify-content-center">
+                              <button
+                                className="btn btn-outline-primary btn-sm py-0 px-1"
+                                style={{ fontSize: "11px" }}
+                                onClick={() => editExpense(r)}
+                              >
+                                Edit
+                              </button>
+                              <button
+                                className="btn btn-outline-danger btn-sm py-0 px-1"
+                                style={{ fontSize: "11px" }}
+                                onClick={() => del(r.id)}
+                              >
+                                Del
+                              </button>
+                            </div>
+
                 </td>
               </tr>
             ))}

@@ -19,7 +19,7 @@ const numberToWords = (num) => {
     .replace("Pakistani rupees", "Rupees");
 };
 
-/* ================= DATE FORMATTER: DD/MMM/YYYY (e.g. 20/Jul/2026) ================= */
+/* ================= DATE FORMATTER ================= */
 const formatDate = (dateStr) => {
   if (!dateStr) return "-";
   const date = new Date(dateStr);
@@ -48,10 +48,8 @@ export default function BankLedger({ onNavigate }) {
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
 
-  /* ================= COLOR MAP REF ================= */
   const supplierColorMap = useRef({});
 
-  /* ================= NAME EXTRACTION ================= */
   const extractName = (str) => {
     if (!str) return "";
     const match = str.match(/- (.+?) \(/);
@@ -109,6 +107,79 @@ export default function BankLedger({ onNavigate }) {
     setFiltered(temp);
     setCurrentPage(1);
   }, [fromDate, toDate, rows, search]);
+
+  /* ================= PASSWORD POPUP (DYNAMIC) ================= */
+  const askPassword = async (titleText = "Enter Password") => {
+    const { value } = await Swal.fire({
+      width: "300px",
+      html: `
+        <div style="text-align:left;font-size:13px">
+          <b>${titleText}</b>
+          <div style="position:relative;margin-top:10px">
+            <input 
+              id="swal-pass" 
+              type="password" 
+              class="swal2-input"
+              style="height:34px;font-size:13px;width:100%;margin:0;padding-right:40px"
+              placeholder="Enter password"
+            />
+            <span id="toggle-pass" style="
+              position:absolute;
+              right:12px;
+              top:50%;
+              transform:translateY(-50%);
+              cursor:pointer;
+              user-select:none;
+              font-size:16px;
+            ">👁</span>
+          </div>
+        </div>
+      `,
+      showCancelButton: true,
+      confirmButtonText: "Verify Password",
+      focusConfirm: false,
+      preConfirm: () => {
+        const input = document.getElementById("swal-pass");
+        const val = input.value.trim();
+
+        if (!val) {
+          Swal.showValidationMessage("Password required");
+          return false;
+        }
+
+        return val;
+      },
+      didOpen: () => {
+        const input = document.getElementById("swal-pass");
+        const toggle = document.getElementById("toggle-pass");
+        let show = false;
+
+        toggle.onclick = () => {
+          show = !show;
+          input.type = show ? "text" : "password";
+          toggle.textContent = show ? "🙈" : "👁";
+        };
+
+        setTimeout(() => input.focus(), 100);
+
+        const handleEnter = (e) => {
+          if (e.key === "Enter") {
+            e.preventDefault();
+            const confirmBtn = document.querySelector(".swal2-confirm");
+            if (confirmBtn) confirmBtn.click();
+          }
+        };
+
+        document.addEventListener("keydown", handleEnter);
+
+        Swal.getPopup().addEventListener("remove", () => {
+          document.removeEventListener("keydown", handleEnter);
+        });
+      }
+    });
+
+    return value;
+  };
 
   /* ================= SAVE ================= */
   const save = async () => {
@@ -168,8 +239,49 @@ export default function BankLedger({ onNavigate }) {
     }
   };
 
-  /* ================= EDIT MANUAL ENTRY WITH LIVE DATE DISPLAY ================= */
+  /* ================= 2-STEP EDIT FLOW (STEP 1: PASSWORD -> STEP 2: EDIT FORM) ================= */
   const editRow = async (row) => {
+    // STEP 1: Password Verification
+    const pass = await askPassword("🔒 Enter Edit Password");
+    if (!pass) return;
+
+    Swal.fire({
+      width: "250px",
+      title: "Verifying...",
+      allowOutsideClick: false,
+      didOpen: () => Swal.showLoading()
+    });
+
+    try {
+      const verifyRes = await fetch(
+        `${import.meta.env.VITE_BACKEND_URL}/api/bank-ledger/verify-password`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ password: pass }),
+        }
+      );
+
+      const verifyData = await verifyRes.json();
+      Swal.close();
+
+      if (!verifyData.success) {
+        return Swal.fire({
+          width: "300px",
+          icon: "error",
+          text: verifyData.error || "Wrong Password!"
+        });
+      }
+    } catch (err) {
+      Swal.close();
+      return Swal.fire({
+        width: "300px",
+        icon: "error",
+        text: "Network verification error"
+      });
+    }
+
+    // STEP 2: Edit Form Modal
     const formattedDateForInput = row.txn_date ? new Date(row.txn_date).toISOString().split("T")[0] : today;
     const currentAmount = row.credit > 0 ? row.credit : row.debit;
     const currentType = row.credit > 0 ? "deposit" : "withdraw";
@@ -201,34 +313,17 @@ export default function BankLedger({ onNavigate }) {
             <label class="fw-bold mb-1">Comment / Description</label>
             <input id="swal-edit-comment" type="text" class="form-control form-control-sm" value="${row.description || ""}" />
           </div>
-          <div>
-            <label class="fw-bold mb-1">Authorization Password</label>
-            <div style="position:relative;">
-              <input id="swal-edit-pass" type="password" class="form-control form-control-sm" placeholder="Password" style="padding-right:35px;" />
-              <span id="eye-toggle-edit" style="position:absolute; right:10px; top:50%; transform:translateY(-50%); cursor:pointer; user-select:none;">👁</span>
-            </div>
-          </div>
         </div>
       `,
       showCancelButton: true,
       confirmButtonText: "Update Transaction",
       focusConfirm: false,
       didOpen: () => {
-        const input = document.getElementById("swal-edit-pass");
-        const eye = document.getElementById("eye-toggle-edit");
         const dateInput = document.getElementById("swal-edit-date");
         const dateTextLabel = document.getElementById("swal-edit-date-text");
 
-        // Live Date Format Update
         dateInput.addEventListener("change", (e) => {
           dateTextLabel.textContent = formatDate(e.target.value);
-        });
-
-        let visible = false;
-        eye.addEventListener("click", () => {
-          visible = !visible;
-          input.type = visible ? "text" : "password";
-          eye.textContent = visible ? "🙈" : "👁";
         });
       },
       preConfirm: () => {
@@ -236,7 +331,6 @@ export default function BankLedger({ onNavigate }) {
         const amountVal = document.getElementById("swal-edit-amount").value;
         const typeVal = document.getElementById("swal-edit-type").value;
         const commentVal = document.getElementById("swal-edit-comment").value.trim();
-        const password = document.getElementById("swal-edit-pass").value.trim();
 
         if (!txn_date) {
           Swal.showValidationMessage("Date required");
@@ -246,23 +340,20 @@ export default function BankLedger({ onNavigate }) {
           Swal.showValidationMessage("Valid amount required");
           return false;
         }
-        if (!password) {
-          Swal.showValidationMessage("Password required");
-          return false;
-        }
 
         return {
           txn_date,
           amount: Number(amountVal),
           type: typeVal,
           comment: commentVal,
-          password
+          password: pass // Step 1 verified password
         };
       }
     });
 
     if (!formValues) return;
 
+    // STEP 3: Submit Update
     Swal.fire({
       width: "260px",
       title: "Updating...",
@@ -292,70 +383,7 @@ export default function BankLedger({ onNavigate }) {
     }
   };
 
-  /* ================= PASSWORD POPUP ================= */
-  const askPassword = async (title = "Enter Password") => {
-    const { value } = await Swal.fire({
-      width: "300px",
-      html: `
-        <div style="text-align:left;font-size:13px">
-          <b>${title}</b>
-          <div style="position:relative;margin-top:10px">
-            <input 
-              id="swal-pass"
-              type="password"
-              class="swal2-input"
-              placeholder="Enter password"
-              style="height:34px;font-size:13px;width:100%;margin:0;padding-right:40px"
-            />
-            <span id="toggle-pass" style="
-              position:absolute;
-              right:12px;
-              top:50%;
-              transform:translateY(-50%);
-              cursor:pointer;
-              user-select:none;
-              font-size:16px;
-            ">👁</span>
-          </div>
-        </div>
-      `,
-      showCancelButton: true,
-      confirmButtonText: "OK",
-      focusConfirm: false,
-      preConfirm: () => {
-        const input = document.getElementById("swal-pass");
-        const val = input.value.trim();
-        if (!val) {
-          Swal.showValidationMessage("Password required");
-          return false;
-        }
-        return val;
-      },
-      didOpen: () => {
-        const input = document.getElementById("swal-pass");
-        const toggle = document.getElementById("toggle-pass");
-        let show = false;
-        toggle.onclick = () => {
-          show = !show;
-          input.type = show ? "text" : "password";
-          toggle.textContent = show ? "🙈" : "👁";
-        };
-        setTimeout(() => input.focus(), 100);
-        const handleEnter = (e) => {
-          if (e.key === "Enter") {
-            e.preventDefault();
-            document.querySelector(".swal2-confirm").click();
-          }
-        };
-        document.addEventListener("keydown", handleEnter);
-        Swal.getPopup().addEventListener("remove", () => {
-          document.removeEventListener("keydown", handleEnter);
-        });
-      }
-    });
-    return value;
-  };
-
+  /* ================= DELETE ================= */
   const del = async (id) => {
     const confirmDelete = await Swal.fire({
       width: "300px",
@@ -440,10 +468,8 @@ export default function BankLedger({ onNavigate }) {
     return rangeWithDots;
   };
 
-  /* ================= CURRENT BALANCE ================= */
   const currentBalance = rows.length ? rows[0].balance : 0;
 
-  /* ================= RENDER ================= */
   return (
     <div className="container py-4">
       {/* HEADER */}
@@ -496,7 +522,6 @@ export default function BankLedger({ onNavigate }) {
             <div className="col-md-2">
               <label className="form-label mb-0 small fw-bold">Date</label>
               <input type="date" className="form-control form-control-sm" value={date} onChange={(e) => setDate(e.target.value)} />
-              {/* LIVE FORMATTED DATE TEXT DISPLAY */}
               <div className="text-primary fw-bold mt-1" style={{ fontSize: "11px" }}>
                 {formatDate(date)}
               </div>

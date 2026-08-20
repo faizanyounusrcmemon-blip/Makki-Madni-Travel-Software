@@ -319,7 +319,7 @@ export default function CustomerLedger({ onNavigate }) {
     }
   };
 
-  /* =========================
+/* =========================
      EDIT PAYMENT ENTRY
   ========================== */
   const editRow = async (row) => {
@@ -331,6 +331,42 @@ export default function CustomerLedger({ onNavigate }) {
       });
     }
 
+    // 1. Password input prompt
+    const pass = await askPassword("Enter Authorization Password");
+    if (!pass) return;
+
+    // 2. Verify password with backend BEFORE opening edit modal
+    Swal.fire({
+      width: "260px",
+      title: "Verifying Password...",
+      allowOutsideClick: false,
+      didOpen: () => Swal.showLoading()
+    });
+
+    try {
+      const verifyRes = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/customer-ledger/verify-password`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password: pass })
+      });
+
+      const verifyData = await verifyRes.json();
+      Swal.close();
+
+      // Galat password par yahan se hi wapis ho jayega, edit modal nahi khulega
+      if (!verifyData.success) {
+        return Swal.fire({
+          width: "300px",
+          icon: "error",
+          text: verifyData.error || "Wrong Password!"
+        });
+      }
+    } catch (err) {
+      Swal.close();
+      return Swal.fire({ width: "300px", icon: "error", text: "Network Error" });
+    }
+
+    // 3. Agar password sahi hai tabhi edit modal khulega
     const formattedDate = toInputDate(row.date || row.payment_date) || today;
     const isAdjustment = row.description === "Adjustment";
 
@@ -364,33 +400,17 @@ export default function CustomerLedger({ onNavigate }) {
               <option value="Cash" ${row.description?.includes("Cash") ? "selected" : ""}>Cash</option>
             </select>
           </div>
-          <div>
-            <label class="fw-bold mb-1">Authorization Password</label>
-            <div style="position:relative;">
-              <input id="swal-edit-pass" type="password" class="form-control form-control-sm" placeholder="Password" style="padding-right:35px;" />
-              <span id="eye-toggle-edit" style="position:absolute; right:10px; top:50%; transform:translateY(-50%); cursor:pointer; user-select:none;">👁</span>
-            </div>
-          </div>
         </div>
       `,
       showCancelButton: true,
       confirmButtonText: "Update Entry",
       focusConfirm: false,
       didOpen: () => {
-        const input = document.getElementById("swal-edit-pass");
-        const eye = document.getElementById("eye-toggle-edit");
         const dateInput = document.getElementById("swal-edit-date");
         const dateTextLabel = document.getElementById("swal-edit-date-text");
 
         dateInput.addEventListener("change", (e) => {
           dateTextLabel.textContent = formatDate(e.target.value);
-        });
-
-        let visible = false;
-        eye.addEventListener("click", () => {
-          visible = !visible;
-          input.type = visible ? "text" : "password";
-          eye.textContent = visible ? "🙈" : "👁";
         });
       },
       preConfirm: () => {
@@ -398,7 +418,6 @@ export default function CustomerLedger({ onNavigate }) {
         const payment_date = document.getElementById("swal-edit-date").value;
         const type = document.getElementById("swal-edit-type").value;
         const payment_method = document.getElementById("swal-edit-method").value;
-        const password = document.getElementById("swal-edit-pass").value.trim();
 
         if (!amount || Number(amount) <= 0) {
           Swal.showValidationMessage("Valid amount required");
@@ -408,17 +427,13 @@ export default function CustomerLedger({ onNavigate }) {
           Swal.showValidationMessage("Date required");
           return false;
         }
-        if (!password) {
-          Swal.showValidationMessage("Password required");
-          return false;
-        }
 
         return {
           amount: Number(amount),
           payment_date,
           type,
           payment_method,
-          password
+          password: pass
         };
       }
     });
