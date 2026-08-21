@@ -1,6 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
-import html2canvas from "html2canvas";
-import jsPDF from "jspdf";
+import useLedgerExport from "../hooks/useLedgerExport";
 import Swal from "sweetalert2";
 
 const toInputDate = (d) => {
@@ -59,6 +58,11 @@ const numberToWords = (num) => {
 const today = new Date().toISOString().split("T")[0];
 
 export default function CustomerLedger({ onNavigate }) {
+
+  const exportUtils = useLedgerExport();
+  const handleExportPDF = exportUtils?.handleExportPDF || exportUtils?.exportPDF;
+  const handleExportExcel = exportUtils?.handleExportExcel || exportUtils?.exportExcel;
+
   const [refNo, setRefNo] = useState("");
   const [rows, setRows] = useState([]);
   const [pending, setPending] = useState([]);
@@ -470,33 +474,57 @@ export default function CustomerLedger({ onNavigate }) {
     }
   };
 
-  const exportPDF = async () => {
-    if (!pdfRef.current) return;
-    const canvas = await html2canvas(pdfRef.current, { scale: 3 });
-    const img = canvas.toDataURL("image/png");
+/* =========================
+     EXPORT FUNCTIONS (PDF & EXCEL)
+  ========================== */
+  const exportPDF = () => {
+    if (!refNo || rows.length === 0) {
+      return Swal.fire({ width: "300px", icon: "warning", text: "Please load a ledger first!" });
+    }
 
-    const pdf = new jsPDF("p", "mm", "a4");
-    const w = pdf.internal.pageSize.getWidth();
-
-    pdf.setFillColor(18, 97, 160);
-    pdf.rect(0, 0, w, 25, "F");
-
-    pdf.setTextColor(255, 255, 255);
-    pdf.setFontSize(16);
-    pdf.text("MAKKI MADNI TRAVEL & TOURS", w / 2, 15, { align: "center" });
-    pdf.setFontSize(10);
-    pdf.text("Customer Ledger Statement", w / 2, 22, { align: "center" });
-
-    pdf.addImage(img, "PNG", 10, 30, 190, (canvas.height * 190) / canvas.width);
+    if (typeof handleExportPDF !== "function") {
+      return Swal.fire({ width: "300px", icon: "error", text: "PDF Export Hook Function Error!" });
+    }
 
     let customerName = "Customer";
-    const customerRow = rows.find(r => r.id === "CUSTOMER");
-    if (customerRow && customerRow.description) {
-      customerName = customerRow.description
-        .replace(/[^a-zA-Z0-9 ]/g, "")
-        .replace(/\s+/g, "_");
+    const customerRow = rows.find((r) => r.id === "CUSTOMER");
+    if (customerRow?.description) {
+      customerName = customerRow.description;
     }
-    pdf.save(`${refNo}-${customerName}-Ledger.pdf`);
+
+    handleExportPDF({
+      code: refNo,
+      name: customerName,
+      fromDate: "",
+      toDate: "",
+      ledgerData: rows,
+      title: "CUSTOMER LEDGER STATEMENT",
+    });
+  };
+
+  const exportExcel = () => {
+    if (!refNo || rows.length === 0) {
+      return Swal.fire({ width: "300px", icon: "warning", text: "Please load a ledger first!" });
+    }
+
+    if (typeof handleExportExcel !== "function") {
+      return Swal.fire({ width: "300px", icon: "error", text: "Excel Export Hook Function Error!" });
+    }
+
+    let customerName = "Customer";
+    const customerRow = rows.find((r) => r.id === "CUSTOMER");
+    if (customerRow?.description) {
+      customerName = customerRow.description;
+    }
+
+    handleExportExcel({
+      code: refNo,
+      name: customerName,
+      fromDate: "",
+      toDate: "",
+      ledgerData: rows,
+      title: "CUSTOMER FINANCIAL LEDGER",
+    });
   };
 
   return (
@@ -557,12 +585,12 @@ export default function CustomerLedger({ onNavigate }) {
           </div>
         </div>
 
-        {/* MAIN PANEL */}
+{/* MAIN PANEL */}
         <div className="col-lg-9 col-md-8">
           <div className="card shadow-sm mb-3">
             <div className="card-body py-3">
               <div className="row g-2">
-                <div className="col-md-6">
+                <div className="col-md-5">
                   <input
                     className="form-control form-control-lg"
                     placeholder="Enter Reference Number (e.g., PKG-1002)"
@@ -571,11 +599,26 @@ export default function CustomerLedger({ onNavigate }) {
                   />
                 </div>
                 <div className="col-md-3">
-                  <button className="btn btn-primary btn-lg w-100 fw-bold" onClick={() => loadLedger()}>🔍 Load Ledger</button>
+                  <button className="btn btn-primary btn-lg w-100 fw-bold" onClick={() => loadLedger()}>
+                    🔍 Load Ledger
+                  </button>
                 </div>
-                <div className="col-md-3">
-                  <button className="btn btn-success btn-lg w-100 fw-bold" onClick={exportPDF} disabled={rows.length === 0}>
-                    📄 Export PDF
+                <div className="col-md-2">
+                  <button
+                    className="btn btn-danger btn-lg w-100 fw-bold"
+                    onClick={exportPDF}
+                    disabled={rows.length === 0}
+                  >
+                    📄 PDF
+                  </button>
+                </div>
+                <div className="col-md-2">
+                  <button
+                    className="btn btn-success btn-lg w-100 fw-bold"
+                    onClick={exportExcel}
+                    disabled={rows.length === 0}
+                  >
+                    📊 Excel
                   </button>
                 </div>
               </div>
@@ -636,63 +679,84 @@ export default function CustomerLedger({ onNavigate }) {
 
           <div ref={pdfRef} className="card shadow-sm overflow-hidden">
             <div className="table-responsive">
-              <table className="table table-striped table-hover table-bordered mb-0 align-middle">
-                <thead className="table-dark">
-                  <tr>
-                    <th style={{ width: "15%" }}>Date</th>
-                    <th style={{ width: "45%" }}>Description</th>
-                    <th style={{ width: "12%" }} className="text-end">Debit (-)</th>
-                    <th style={{ width: "12%" }} className="text-end">Credit (+)</th>
-                    <th style={{ width: "12%" }} className="text-end">Balance</th>
-                    <th style={{ width: "6%" }} className="text-center">Action</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {rows.length === 0 ? (
-                    <tr>
-                      <td colSpan="6" className="text-center p-4 text-muted fs-5">
-                        No ledger entries loaded. Enter a valid Ref No above and click "Load".
-                      </td>
-                    </tr>
-                  ) : (
-                    rows.map((r, i) => (
-                      <tr key={r.id || i}>
-                        <td>{getRowDate(r)}</td>
-                        <td className={r.id === "CUSTOMER" ? "fw-bold text-primary" : ""}>
-                          {r.description}
-                        </td>
-                        <td className="text-end text-danger fw-bold">{r.debit > 0 ? fmtAmt(r.debit) : "-"}</td>
-                        <td className="text-end text-success fw-bold">{r.credit > 0 ? fmtAmt(r.credit) : "-"}</td>
-                        <td className="text-end fw-bold" style={{ backgroundColor: "#f8f9fa" }}>
-                          {fmtAmt(r.balance)}
-                        </td>
-                        <td className="text-center">
-                          {r.id !== "SALE" && r.id !== "CUSTOMER" ? (
-                            <div className="d-flex gap-1 justify-content-center">
-                              <button
-                                className="btn btn-outline-primary btn-sm py-0 px-1"
-                                style={{ fontSize: "11px" }}
-                                onClick={() => editRow(r)}
-                              >
-                                Edit
-                              </button>
-                              <button
-                                className="btn btn-outline-danger btn-sm py-0 px-1"
-                                style={{ fontSize: "11px" }}
-                                onClick={() => del(r.id)}
-                              >
-                                Del
-                              </button>
-                            </div>
-                          ) : (
-                            <span className="text-muted small">-</span>
-                          )}
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
+<table className="table table-striped table-hover table-bordered mb-0 align-middle">
+  <thead className="table-dark">
+    <tr>
+      <th style={{ width: "12%" }}>Date</th>
+      <th style={{ width: "35%" }}>Description</th>
+      <th style={{ width: "12%" }} className="text-center">Method</th> {/* 👈 Naya Header */}
+      <th style={{ width: "11%" }} className="text-end">Debit (-)</th>
+      <th style={{ width: "11%" }} className="text-end">Credit (+)</th>
+      <th style={{ width: "11%" }} className="text-end">Balance</th>
+      <th style={{ width: "8%" }} className="text-center">Action</th>
+    </tr>
+  </thead>
+  <tbody>
+    {rows.length === 0 ? (
+      <tr>
+        <td colSpan="7" className="text-center p-4 text-muted fs-5">
+          No ledger entries loaded. Enter a valid Ref No above and click "Load".
+        </td>
+      </tr>
+    ) : (
+      rows.map((r, i) => (
+        <tr key={r.id || i}>
+          <td>{getRowDate(r)}</td>
+          <td className={r.id === "CUSTOMER" ? "fw-bold text-primary" : ""}>
+            {r.description}
+          </td>
+
+          {/* 👈 Naya Colored Badge Column */}
+          <td className="text-center small">
+            {r.payment_method && r.payment_method !== "-" ? (
+              <span
+                className={`badge ${
+                  r.payment_method.toLowerCase() === "cash"
+                    ? "bg-success"
+                    : r.payment_method.toLowerCase() === "bank"
+                    ? "bg-primary"
+                    : "bg-info text-dark"
+                }`}
+              >
+                {r.payment_method}
+              </span>
+            ) : (
+              "-"
+            )}
+          </td>
+
+          <td className="text-end text-danger fw-bold">{r.debit > 0 ? fmtAmt(r.debit) : "-"}</td>
+          <td className="text-end text-success fw-bold">{r.credit > 0 ? fmtAmt(r.credit) : "-"}</td>
+          <td className="text-end fw-bold" style={{ backgroundColor: "#f8f9fa" }}>
+            {fmtAmt(r.balance)}
+          </td>
+          <td className="text-center">
+            {r.id !== "SALE" && r.id !== "CUSTOMER" ? (
+              <div className="d-flex gap-1 justify-content-center">
+                <button
+                  className="btn btn-outline-primary btn-sm py-0 px-1"
+                  style={{ fontSize: "11px" }}
+                  onClick={() => editRow(r)}
+                >
+                  Edit
+                </button>
+                <button
+                  className="btn btn-outline-danger btn-sm py-0 px-1"
+                  style={{ fontSize: "11px" }}
+                  onClick={() => del(r.id)}
+                >
+                  Del
+                </button>
+              </div>
+            ) : (
+              <span className="text-muted small">-</span>
+            )}
+          </td>
+        </tr>
+      ))
+    )}
+  </tbody>
+</table>
             </div>
           </div>
         </div>

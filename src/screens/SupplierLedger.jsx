@@ -1,8 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
-import html2canvas from "html2canvas";
-import jsPDF from "jspdf";
 import Swal from "sweetalert2";
-import * as XLSX from "xlsx";
+import useLedgerExport from "../hooks/useLedgerExport";
 
 /* =========================
    HELPERS (NO -0 EVER)
@@ -54,6 +52,8 @@ const numberToWords = (num) => {
 const today = new Date().toISOString().split("T")[0];
 
 export default function SupplierLedger({ onNavigate }) {
+
+  const { exportPDF: handleExportPDF, exportExcel: handleExportExcel } = useLedgerExport();
   const [supplierCode, setSupplierCode] = useState("");
   const [ledger, setLedger] = useState([]);
   const [pending, setPending] = useState([]);
@@ -529,140 +529,41 @@ const editEntry = async (entry) => {
   }
 };
 
-  /* =========================
-     EXPORT PDF (WITH LOADER)
-  ========================= */
-  const exportPDF = async () => {
-    if (!pdfRef.current || ledger.length === 0) return;
+/* ✅ CORRECTED EXPORT FUNCTIONS */
+const exportPDF = () => {
+  if (!supplierCode) {
+    return Swal.fire({ icon: "warning", text: "Please load a supplier first!" });
+  }
 
-    Swal.fire({
-      width: "260px",
-      title: "Generating PDF...",
-      text: "Please wait",
-      allowOutsideClick: false,
-      didOpen: () => Swal.showLoading()
-    });
+  // Pending list se supplier ka name find kar rahe hain
+  const currentSupplier = pending.find((p) => p.supplier_code === supplierCode);
 
-    setTimeout(async () => {
-      try {
-        const canvas = await html2canvas(pdfRef.current, { scale: 2, useCORS: true });
-        const imgData = canvas.toDataURL("image/png");
-        const pdf = new jsPDF("p", "mm", "a4");
+  handleExportPDF({
+    code: supplierCode,
+    name: currentSupplier ? currentSupplier.supplier_name : "Supplier",
+    fromDate: fromDate,
+    toDate: toDate,
+    ledgerData: ledgerView,
+    title: "SUPPLIER LEDGER STATEMENT",
+  });
+};
 
-        const pageWidth = 210;
-        const pageHeight = 297;
-        const margin = 10;
-        const headerHeight = 30;
+const exportExcel = () => {
+  if (!supplierCode) {
+    return Swal.fire({ icon: "warning", text: "Please load a supplier first!" });
+  }
 
-        const usableWidth = pageWidth - margin * 2;
-        const usableHeight = pageHeight - headerHeight - margin;
-        const imgWidth = usableWidth;
-        const imgHeight = (canvas.height * imgWidth) / canvas.width;
-        const totalPages = Math.ceil(imgHeight / usableHeight);
+  const currentSupplier = pending.find((p) => p.supplier_code === supplierCode);
 
-        const supplierRow = ledger.find(r => r.supplier_name);
-        const supplierName = supplierRow?.supplier_name || "Supplier";
-        const rangeText = fromDate || toDate ? `${formatDate(fromDate)} → ${formatDate(toDate)}` : "All Dates";
-        const safeName = supplierName.replace(/[^a-zA-Z0-9 ]/g, "").replace(/\s+/g, "_");
-
-        for (let page = 0; page < totalPages; page++) {
-          if (page > 0) pdf.addPage();
-
-          pdf.setFillColor(18, 97, 160);
-          pdf.rect(0, 0, pageWidth, 20, "F");
-          pdf.setTextColor(255, 255, 255);
-          pdf.setFontSize(16);
-          pdf.text("MAKKI MADNI TRAVEL & TOURS", pageWidth / 2, 10, { align: "center" });
-          pdf.setFontSize(10);
-          pdf.text("Supplier Ledger Statement", pageWidth / 2, 16, { align: "center" });
-
-          pdf.setTextColor(0, 0, 0);
-          pdf.setFontSize(11);
-          pdf.text(`Supplier: ${supplierName}`, margin, 26);
-          pdf.text(`Code: ${supplierCode}`, pageWidth - margin, 26, { align: "right" });
-
-          pdf.setFontSize(9);
-          pdf.text(`Date Range: ${rangeText}`, pageWidth / 2, 31, { align: "center" });
-
-          const yOffset = -(usableHeight * page);
-          pdf.addImage(imgData, "PNG", margin, headerHeight + yOffset, imgWidth, imgHeight);
-
-          pdf.setFontSize(9);
-          pdf.setTextColor(120);
-          pdf.text(`Page ${page + 1} / ${totalPages}`, pageWidth - margin, pageHeight - 5, { align: "right" });
-        }
-
-        pdf.save(`${supplierCode}-${safeName}-ledger.pdf`);
-        Swal.close();
-      } catch (err) {
-        console.error(err);
-        Swal.close();
-        Swal.fire({ icon: "error", text: "Failed to generate PDF" });
-      }
-    }, 150);
-  };
-
-  /* ==========================================
-     EXPORT EXCEL (WITH LOADER)
-  ========================================== */
-  const exportExcel = () => {
-    if (ledger.length === 0) return;
-
-    Swal.fire({
-      width: "250px",
-      title: "Generating Excel...",
-      text: "Please wait a moment",
-      allowOutsideClick: false,
-      didOpen: () => Swal.showLoading()
-    });
-
-    setTimeout(() => {
-      try {
-        const supplierRow = ledger.find(r => r.supplier_name);
-        const supplierName = supplierRow?.supplier_name || "Supplier";
-
-        const headerInfo = [
-          ["MAKKI MADNI TRAVEL & TOURS"],
-          ["SUPPLIER LEDGER STATEMENT"],
-          [""],
-          ["Supplier Name:", supplierName.toUpperCase(), "", "Printed Date:", formatDate(today)],
-          ["Supplier Code:", supplierCode, "", "Statement Period:", fromDate || toDate ? `${formatDate(fromDate)} to ${formatDate(toDate)}` : "All Records"],
-          [""]
-        ];
-
-        const tableHeaders = ["Date", "Type", "Ref No", "Item Detail", "Payment Method", "Debit", "Credit", "Balance"];
-        
-        const tableData = ledgerView.map((r) => [
-          formatDate(r.date),
-          r.type || "-",
-          r.ref_no || "-",
-          r.detail || "-",
-          r.payment_method || "-",
-          r.debit > 0 ? r.debit : 0,
-          r.credit > 0 ? r.credit : 0,
-          r.balance
-        ]);
-
-        const sheetData = [...headerInfo, tableHeaders, ...tableData];
-        const worksheet = XLSX.utils.aoa_to_sheet(sheetData);
-        const workbook = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(workbook, worksheet, "Supplier Ledger");
-
-        worksheet["!cols"] = [
-          { wch: 15 }, { wch: 12 }, { wch: 15 }, { wch: 30 }, { wch: 15 }, { wch: 15 }, { wch: 15 }, { wch: 18 }
-        ];
-
-        const safeName = supplierName.replace(/[^a-zA-Z0-9]/g, "_");
-        XLSX.writeFile(workbook, `Supplier-${supplierCode}-${safeName}.xlsx`);
-
-        Swal.close();
-      } catch (error) {
-        console.error(error);
-        Swal.close();
-        Swal.fire({ width: "300px", icon: "error", text: "Failed to generate Excel sheet" });
-      }
-    }, 150);
-  };
+  handleExportExcel({
+    code: supplierCode,
+    name: currentSupplier ? currentSupplier.supplier_name : "Supplier",
+    fromDate: fromDate,
+    toDate: toDate,
+    ledgerData: ledgerView,
+    title: "SUPPLIER FINANCIAL LEDGER",
+  });
+};
 
   return (
     <div className="container-fluid p-3">

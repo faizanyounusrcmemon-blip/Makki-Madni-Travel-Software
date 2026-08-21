@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
-import jsPDF from "jspdf";
+import useLedgerExport from "../hooks/useLedgerExport";
 import Swal from "sweetalert2";
-import * as XLSX from "xlsx";
+
 
 /* ================= DATE HELPER FUNCTIONS ================= */
 
@@ -60,6 +60,7 @@ export default function RegisteredCustomerLedger({ onNavigate }) {
   const [customerName, setCustomerName] = useState("");
   const [rows, setRows] = useState([]);
   const [pending, setPending] = useState([]);
+  const { exportPDF: handleExportPDF, exportExcel: handleExportExcel } = useLedgerExport();
 
   // Date Filters
   const [startDate, setStartDate] = useState("");
@@ -611,217 +612,29 @@ const editRow = async (row) => {
   }
 };
 
-  /* =========================
-     EXPORTS
+/* =========================
+     EXPORTS (USING CUSTOM HOOK)
   ========================== */
   const exportPDF = () => {
-    if (rows.length === 0) return;
-
-    Swal.fire({
-      width: "250px",
-      title: "Generating PDF...",
-      text: "Please wait a moment",
-      allowOutsideClick: false,
-      didOpen: () => Swal.showLoading()
+    handleExportPDF({
+      code: customerCode,
+      name: customerName,
+      fromDate: startDate,
+      toDate: endDate,
+      ledgerData: rows,
+      title: "REGISTERED CUSTOMER LEDGER STATEMENT",
     });
-
-    setTimeout(() => {
-      try {
-        const pdf = new jsPDF("p", "mm", "a4");
-        const pageWidth = pdf.internal.pageSize.getWidth();
-        const pageHeight = pdf.internal.pageSize.getHeight();
-
-        let y = 15;
-
-        const drawHeader = (pageNum) => {
-          pdf.setFillColor(18, 97, 160);
-          pdf.rect(0, 0, pageWidth, 26, "F");
-
-          pdf.setTextColor(255, 255, 255);
-          pdf.setFont("helvetica", "bold");
-          pdf.setFontSize(16);
-          pdf.text("MAKKI MADNI TRAVEL & TOURS", pageWidth / 2, 12, { align: "center" });
-
-          pdf.setFont("helvetica", "normal");
-          pdf.setFontSize(9);
-          pdf.text(`REGISTERED CUSTOMER LEDGER STATEMENT — Page ${pageNum}`, pageWidth / 2, 19, { align: "center" });
-
-          pdf.setFillColor(242, 245, 248);
-          pdf.rect(10, 29, pageWidth - 20, 22, "F");
-
-          pdf.setTextColor(33, 37, 41);
-          pdf.setFont("helvetica", "bold");
-          pdf.setFontSize(10);
-          pdf.text(`CUSTOMER NAME: ${customerName.toUpperCase()}`, 13, 36);
-          pdf.text(`CUSTOMER CODE: ${customerCode}`, 13, 44);
-
-          pdf.setFont("helvetica", "normal");
-          pdf.setFontSize(9.5);
-          const periodStr = startDate || endDate ? `${startDate || "Start"} to ${endDate || "Present"}` : "All Records";
-          pdf.text(`Statement Period: ${periodStr}`, pageWidth - 95, 36);
-          pdf.text(`Printed On: ${getRowDate({ date: new Date() })}`, pageWidth - 95, 44);
-
-          pdf.setFillColor(33, 37, 41);
-          pdf.rect(10, 55, pageWidth - 20, 8, "F");
-          pdf.setTextColor(255, 255, 255);
-          pdf.setFont("helvetica", "bold");
-          pdf.setFontSize(9);
-          pdf.text("Date", 13, 60.5);
-          pdf.text("Description", 35, 60.5);
-          pdf.text("Debit (Dr)", pageWidth - 80, 60.5, { align: "right" });
-          pdf.text("Credit (Cr)", pageWidth - 50, 60.5, { align: "right" });
-          pdf.text("Balance", pageWidth - 14, 60.5, { align: "right" });
-        };
-
-        let currentPage = 1;
-        drawHeader(currentPage);
-        y = 68;
-
-        rows.forEach((row) => {
-          if (y > pageHeight - 18) {
-            pdf.addPage();
-            currentPage++;
-            drawHeader(currentPage);
-            y = 68;
-          }
-
-          pdf.setTextColor(50, 50, 50);
-          pdf.setFont("helvetica", "normal");
-          pdf.setFontSize(8.5);
-
-          pdf.text(getRowDate(row), 13, y);
-          pdf.text(row.description, 35, y, { maxWidth: 80 });
-
-          const debVal = row.debit > 0 ? fmtAmt(row.debit) : "-";
-          const credVal = row.credit > 0 ? fmtAmt(row.credit) : "-";
-
-          pdf.text(debVal, pageWidth - 80, y, { align: "right" });
-          pdf.text(credVal, pageWidth - 50, y, { align: "right" });
-
-          pdf.setFont("helvetica", "bold");
-          pdf.text(fmtAmt(row.balance), pageWidth - 14, y, { align: "right" });
-
-          pdf.setDrawColor(230, 230, 230);
-          pdf.setLineWidth(0.1);
-          pdf.line(10, y + 2.5, pageWidth - 10, y + 2.5);
-
-          y += 8;
-        });
-
-        const safeName = customerName.replace(/[^a-zA-Z0-9]/g, "_");
-        pdf.save(`Ledger-${customerCode}-${safeName}.pdf`);
-
-        Swal.close();
-      } catch (error) {
-        console.error(error);
-        Swal.fire({ width: "300px", icon: "error", text: "Failed to generate PDF" });
-      }
-    }, 100);
   };
 
   const exportExcel = () => {
-    if (rows.length === 0) return;
-
-    Swal.fire({
-      width: "250px",
-      title: "Generating Excel...",
-      text: "Please wait a moment",
-      allowOutsideClick: false,
-      didOpen: () => Swal.showLoading()
+    handleExportExcel({
+      code: customerCode,
+      name: customerName,
+      fromDate: startDate,
+      toDate: endDate,
+      ledgerData: rows,
+      title: "REGISTERED CUSTOMER FINANCIAL LEDGER",
     });
-
-    setTimeout(() => {
-      try {
-        const headerInfo = [
-          ["MAKKI MADNI TRAVEL & TOURS"],
-          ["REGISTERED CUSTOMER FINANCIAL LEDGER"],
-          [""],
-          ["Customer Name:", customerName.toUpperCase(), "", "Printed Date:", getRowDate({ date: new Date() })],
-          ["Customer Code:", customerCode, "", "Statement Period:", startDate || endDate ? `${startDate || "Start"} to ${endDate || "Present"}` : "All Records"],
-          [""]
-        ];
-
-        const tableHeaders = ["Date", "Description", "Debit (Dr)", "Credit (Cr)", "Balance"];
-
-        const tableData = rows.map((r) => [
-          getRowDate(r),
-          r.description,
-          r.debit > 0 ? r.debit : 0,
-          r.credit > 0 ? r.credit : 0,
-          r.balance
-        ]);
-
-        const sheetData = [...headerInfo, tableHeaders, ...tableData];
-
-        const worksheet = XLSX.utils.aoa_to_sheet(sheetData);
-        const workbook = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(workbook, worksheet, "Ledger Statement");
-
-        worksheet["!cols"] = [
-          { wch: 15 },
-          { wch: 45 },
-          { wch: 15 },
-          { wch: 15 },
-          { wch: 18 }
-        ];
-
-        const safeName = customerName.replace(/[^a-zA-Z0-9]/g, "_");
-        XLSX.writeFile(workbook, `Ledger-${customerCode}-${safeName}.xlsx`);
-
-        Swal.close();
-      } catch (error) {
-        console.error(error);
-        Swal.fire({ width: "300px", icon: "error", text: "Failed to generate Excel sheet" });
-      }
-    }, 100);
-  };
-
-  const getTripDurationText = (flightDatesArray) => {
-    const dates = (flightDatesArray || []).filter(Boolean).sort();
-    if (dates.length >= 2) {
-      const start = new Date(dates[0]);
-      const end = new Date(dates[dates.length - 1]);
-      const diff = (end - start) / (1000 * 60 * 60 * 24);
-      return `${diff + 1} Days / ${diff} Nights`;
-    }
-    return "Standard Duration";
-  };
-
-  const getModalTotalSar = () => {
-    if (!detailData) return 0;
-    return (
-      detailData.total_sar ||
-      detailData.sar_total ||
-      detailData.hotels_total ||
-      detailData.flight_sar_total ||
-      detailData.total_sar_rate ||
-      0
-    );
-  };
-
-  const getModalPkrRate = () => {
-    if (!detailData) return 0;
-    return (
-      detailData.pkr_rate ||
-      detailData.sar_rate ||
-      detailData.exchange_rate ||
-      detailData.rate ||
-      0
-    );
-  };
-
-  const getModalTotalPkr = () => {
-    if (!detailData) return 0;
-    return (
-      detailData.total_pkr ||
-      detailData.net_pkr_total ||
-      detailData.grand_total ||
-      detailData.total_amount ||
-      detailData.total_amount_pkr ||
-      detailData.credit ||
-      detailData.debit ||
-      0
-    );
   };
 
   return (
@@ -995,20 +808,21 @@ const editRow = async (row) => {
             </div>
             <div className="table-responsive">
               <table className="table table-striped table-hover table-bordered mb-0 align-middle">
-                <thead className="table-dark">
-                  <tr>
-                    <th style={{ width: "12%" }}>Date</th>
-                    <th style={{ width: "48%" }}>Details / Description</th>
-                    <th style={{ width: "12%" }} className="text-end">Debit (-)</th>
-                    <th style={{ width: "12%" }} className="text-end">Credit (+)</th>
-                    <th style={{ width: "12%" }} className="text-end">Balance</th>
-                    <th style={{ width: "4%" }} className="text-center">Action</th>
-                  </tr>
-                </thead>
+<thead className="table-dark">
+  <tr>
+    <th style={{ width: "12%" }}>Date</th>
+    <th style={{ width: "36%" }}>Details / Description</th>
+    <th style={{ width: "12%" }}>Method</th>  {/* 👈 Added */}
+    <th style={{ width: "12%" }} className="text-end">Debit (-)</th>
+    <th style={{ width: "12%" }} className="text-end">Credit (+)</th>
+    <th style={{ width: "12%" }} className="text-end">Balance</th>
+    <th style={{ width: "4%" }} className="text-center">Action</th>
+  </tr>
+</thead>
                 <tbody>
                   {rows.length === 0 ? (
                     <tr>
-                      <td colSpan="6" className="text-center p-4 text-muted fs-6">
+                      <td colSpan="7" className="text-center p-4 text-muted fs-6"> {/* 👈 7 Updated */}
                         No transactions to display. Enter a Customer Code above and click "Load Ledger".
                       </td>
                     </tr>
@@ -1017,10 +831,27 @@ const editRow = async (row) => {
                       const idStr = String(r.id || "");
                       const isSale = idStr.startsWith("SALE-") || idStr.startsWith("BKG-") || idStr.startsWith("TIC-") || idStr.startsWith("HOT-") || idStr.startsWith("VIS-") || idStr.startsWith("PKG-") || idStr.startsWith("ZIY-") || idStr.startsWith("TRN-") || idStr.startsWith("CRD-") || idStr.startsWith("GRP-");
                       return (
-                        <tr key={r.id || i}>
-                          <td>{getRowDate(r)}</td>
-                          <td>{r.description}</td>
-                          <td className="text-end text-danger fw-bold font-monospace">{r.debit > 0 ? fmtAmt(r.debit) : "-"}</td>
+<tr key={r.id || i}>
+  <td>{getRowDate(r)}</td>
+  <td>{r.description}</td>
+<td className="text-center small">
+  {r.payment_method && r.payment_method !== "-" ? (
+    <span
+      className={`badge ${
+        r.payment_method.toLowerCase() === "cash"
+          ? "bg-success"
+          : r.payment_method.toLowerCase() === "bank"
+          ? "bg-primary"
+          : "bg-info text-dark"
+      }`}
+    >
+      {r.payment_method}
+    </span>
+  ) : (
+    "-"
+  )}
+</td>
+  <td className="text-end text-danger fw-bold font-monospace">{r.debit > 0 ? fmtAmt(r.debit) : "-"}</td>
                           <td className="text-end text-success fw-bold font-monospace">{r.credit > 0 ? fmtAmt(r.credit) : "-"}</td>
                           <td className="text-end fw-bold font-monospace" style={{ backgroundColor: "#fdfdfd" }}>
                             {fmtAmt(r.balance)}
