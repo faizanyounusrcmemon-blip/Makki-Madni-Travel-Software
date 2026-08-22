@@ -109,7 +109,7 @@ export default function DeletedReports({ onNavigate }) {
     return password;
   };
 
-  /* ================= RESTORE ================= */
+/* ================= RESTORE ================= */
   const restore = async (type, ref_no, customer_name, amount) => {
     const password = await askPasswordPopup(
       "♻ RESTORE RECORD",
@@ -135,27 +135,22 @@ export default function DeletedReports({ onNavigate }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ type, ref_no, password })
       });
+
       const data = await res.json();
       Swal.close();
 
-      if (data.success) {
+      if (res.ok && data.success) {
         Swal.fire("Restored!", `Record ${ref_no} is active now.`, "success");
         load();
       } else {
         Swal.fire({
-          title: "Error",
-          text: data.error || "Failed",
+          title: "Restore Blocked!",
+          text: data.error || "Failed to restore record.",
           icon: "error",
-          didOpen: () => {
-            const popup = document.querySelector(".swal2-popup");
-            if (popup) {
-              popup.classList.add("shake");
-              setTimeout(() => popup.classList.remove("shake"), 500);
-            }
-          }
+          confirmButtonColor: "#dc3545"
         });
       }
-    } catch {
+    } catch (err) {
       Swal.close();
       Swal.fire("Error", "Server network error", "error");
     }
