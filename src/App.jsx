@@ -55,6 +55,7 @@ import SystemStorage from "./screens/SystemStorage";
 import SaleChangeCheckReport from "./screens/SaleChangeCheckReport";
 import ItemLossZeroReport from "./screens/ItemLossZeroReport";
 import MonthlyProfitDashboard from "./screens/MonthlyProfitDashboard";
+import ActivityReport from "./screens/ActivityReport";
 
 // VOUCHERS
 import HotelVoucher from "./screens/HotelVoucher";
@@ -190,6 +191,7 @@ export default function App() {
       {page === "itemLossZeroReport" && <ItemLossZeroReport onNavigate={navigate} />}
       {page === "monthlyProfitDashboard" && <MonthlyProfitDashboard onNavigate={navigate} />}
       {page === "createUser" && <CreateUser onNavigate={navigate} />}
+      {page === "activityReport" && <ActivityReport onNavigate={navigate} />}
       {page === "deletedReports" && (
         <DeletedReports onNavigate={navigate} />
       )}
