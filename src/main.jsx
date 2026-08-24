@@ -11,30 +11,22 @@ window.fetch = async function (...args) {
   config = config || {};
   config.headers = config.headers || {};
 
-  // LocalStorage aur SessionStorage dono me se check karna
+  // LocalStorage / SessionStorage dono se check karna
   const userStr = localStorage.getItem("user") || sessionStorage.getItem("user");
-  const directUsername = localStorage.getItem("username") || sessionStorage.getItem("username");
-  
-  let username = directUsername || "";
+  let username = "faizan";
 
-  if (!username && userStr) {
+  if (userStr) {
     try {
-      // Agar user object saved hai (e.g. { username: "ali", role: "admin" })
       const u = JSON.parse(userStr);
-      username = typeof u === "string" ? u : (u.username || u.user_name || u.name || u.email || "");
-    } catch (e) {
-      // Agar direct string bina JSON stringify ke saved hai
-      username = userStr;
-    }
+      username = u.username || u.name || "faizan";
+    } catch (e) {}
   }
 
-  // Header attach karna (Agar username mil jaye to header bhejein)
-  if (username) {
-    if (config.headers instanceof Headers) {
-      config.headers.append("x-user-name", username);
-    } else {
-      config.headers["x-user-name"] = username;
-    }
+  // Header attach karna
+  if (config.headers instanceof Headers) {
+    config.headers.append("x-user-name", username);
+  } else {
+    config.headers["x-user-name"] = username;
   }
 
   return originalFetch(resource, config);
