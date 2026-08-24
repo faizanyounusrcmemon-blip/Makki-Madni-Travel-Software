@@ -193,6 +193,9 @@ export default function Navbar({ onNavigate }) {
               {can("deleted_reports") && <a onClick={() => go("deletedReports")}>🗑 Deleted Reports</a>}
               {can("system_storage") && <a onClick={() => go("systemStorage")}>💾 System Storage</a>}
               {can("password_settings") && <a onClick={() => go("passwordSettings")}>🛠 Password Settings</a>}
+              {user?.role === "admin" && can("user_activity") && (
+                <a onClick={() => go("activityReport")}>🔐 User Activity & Audit</a>
+              )}
               {can("restore") && <a onClick={() => go("restore")}>♻ Restore</a>}
             </div>
           )}
