@@ -1,6 +1,9 @@
 import React, { useEffect, useMemo, useState } from "react";
 
-const API = `${import.meta.env.VITE_BACKEND_URL}/api/reports`;
+// Backend URL Fallback handling
+const BACKEND_BASE = import.meta.env.VITE_BACKEND_URL || import.meta.env.VITE_API_BASE_URL || "https://makki-madni-backend.vercel.app";
+const API = `${BACKEND_BASE}/api/reports`;
+
 const ACTION_LABELS = { 
   CREATE: "Created", 
   UPDATE: "Updated", 
@@ -35,19 +38,7 @@ export default function ActivityReport({ onNavigate }) {
   const [modules, setModules] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // 1. Fetch All Database Users for Dropdown
-  useEffect(() => {
-    fetch(`${import.meta.env.VITE_BACKEND_URL}/api/users`)
-      .then((res) => res.json())
-      .then((data) => {
-        if (Array.isArray(data)) {
-          const names = data.map((u) => u.username).filter(Boolean);
-          setUsers(names);
-        }
-      })
-      .catch((err) => console.error("FETCH USERS ERROR:", err));
-  }, []);
-
+  // Load Data Function
   const load = async () => {
     setLoading(true);
     try {
@@ -58,10 +49,17 @@ export default function ActivityReport({ onNavigate }) {
 
       const r = await fetch(`${API}/activity?${q}`);
       const d = await r.json();
-      if (!d.success) throw Error(d.error);
+      if (!d.success) throw Error(d.error || "Failed to fetch logs");
 
-      setRows(d.rows || []);
+      const fetchedRows = d.rows || [];
+      setRows(fetchedRows);
       setModules(d.modules || []);
+
+      // Automatically extract users from logs for Dropdown
+      if (Array.isArray(fetchedRows)) {
+        const logUsers = [...new Set(fetchedRows.map((r) => r.username).filter((u) => u && u !== "System User"))];
+        setUsers(logUsers);
+      }
     } catch (e) {
       console.error("ACTIVITY REPORT ERROR:", e);
       setRows([]);
