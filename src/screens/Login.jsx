@@ -7,6 +7,12 @@ export default function Login({ onLogin }) {
   const [show, setShow] = useState(false);
   const [loading, setLoading] = useState(false);
 
+  const checkCapsLock = (e) => {
+    if (e.getModifierState) {
+      setCapsLock(e.getModifierState("CapsLock"));
+    }
+  };
+
   // ✅ NEW STATES
   const [shake, setShake] = useState(false);
   const [capsLock, setCapsLock] = useState(false);
@@ -142,36 +148,43 @@ Swal.fire({
         <h2 className="title">✈️ Makki Madni Travel & Tours</h2>
         <p className="subtitle">Secure Login Panel</p>
 
-        <input
-          className="login-input"
-          placeholder="Username"
-          value={username}
-          onChange={(e) => setUsername(e.target.value)}
-          onKeyDown={handleKeyDown}
-        />
+<input
+  className="login-input"
+  placeholder="Username"
+  value={username}
+  onChange={(e) => setUsername(e.target.value)}
+  onKeyDown={(e) => {
+    checkCapsLock(e);
+    handleKeyDown(e);
+  }}
+  onKeyUp={checkCapsLock}
+/>
 
-        <div className="password-box">
-          <input
-            className="login-input"
-            type={show ? "text" : "password"}
-            placeholder="Password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            onKeyDown={handleKeyDown}
-            onKeyUp={(e) => setCapsLock(e.getModifierState("CapsLock"))}
-          />
+<div className="password-box">
+  <input
+    className="login-input"
+    type={show ? "text" : "password"}
+    placeholder="Password"
+    value={password}
+    onChange={(e) => setPassword(e.target.value)}
+    onKeyDown={(e) => {
+      checkCapsLock(e);
+      handleKeyDown(e);
+    }}
+    onKeyUp={checkCapsLock}
+  />
 
-          <span className="eye" onClick={() => setShow(!show)}>
-            {show ? "🙈" : "👁️"}
-          </span>
-        </div>
+  <span className="eye" onClick={() => setShow(!show)}>
+    {show ? "🙈" : "👁️"}
+  </span>
+</div>
 
-        {/* CAPS LOCK WARNING */}
-        {capsLock && (
-          <div style={{ color: "yellow", fontSize: "12px", marginBottom: "8px" }}>
-            ⚠️ Caps Lock is ON
-          </div>
-        )}
+{/* CAPS LOCK WARNING */}
+{capsLock && (
+  <div style={{ color: "#ffd700", fontSize: "13px", marginBottom: "10px", fontWeight: "bold" }}>
+    ⚠️ Caps Lock is ON
+  </div>
+)}
 
         <div className="btn-row">
           <button
