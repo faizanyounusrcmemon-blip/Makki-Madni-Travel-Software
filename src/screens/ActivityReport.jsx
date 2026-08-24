@@ -13,7 +13,6 @@ const ACTION_LABELS = {
   OTHER: "Activity" 
 };
 
-// Time Formatting Helper (Fixed 12-Hour AM/PM)
 const fmtTime = (v) => {
   if (!v) return "-";
   return new Date(v).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: true });
@@ -36,6 +35,19 @@ export default function ActivityReport({ onNavigate }) {
   const [modules, setModules] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  // 1. Fetch All Database Users for Dropdown
+  useEffect(() => {
+    fetch(`${import.meta.env.VITE_BACKEND_URL}/api/users`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (Array.isArray(data)) {
+          const names = data.map((u) => u.username).filter(Boolean);
+          setUsers(names);
+        }
+      })
+      .catch((err) => console.error("FETCH USERS ERROR:", err));
+  }, []);
+
   const load = async () => {
     setLoading(true);
     try {
@@ -49,7 +61,6 @@ export default function ActivityReport({ onNavigate }) {
       if (!d.success) throw Error(d.error);
 
       setRows(d.rows || []);
-      setUsers(d.users || []);
       setModules(d.modules || []);
     } catch (e) {
       console.error("ACTIVITY REPORT ERROR:", e);
@@ -125,7 +136,6 @@ export default function ActivityReport({ onNavigate }) {
     fontWeight: "600"
   };
 
-  // Badge Style Generator
   const getBadgeStyle = (act) => {
     switch (act) {
       case "DELETE":
@@ -240,41 +250,28 @@ export default function ActivityReport({ onNavigate }) {
                     const st = getBadgeStyle(r.action);
                     return (
                       <tr className="activity-row" key={r.id}>
-                        {/* 🕒 TIME COLUMN (FIXED) */}
                         <td style={{ padding: "12px 14px", fontWeight: 700, color: "#1e293b", whiteSpace: "nowrap" }}>
                           ⏱️ {fmtTime(r.created_at)}
                         </td>
-
-                        {/* 👤 USER COLUMN */}
                         <td style={{ padding: "12px 14px", fontWeight: 800, color: "#0f172a", whiteSpace: "nowrap" }}>
                           👤 {r.username && r.username !== "System User" ? r.username : "System User"}
                         </td>
-
-                        {/* 🏷️ ACTION BADGE */}
                         <td style={{ padding: "12px 14px" }}>
                           <span style={{ display: "inline-block", padding: "5px 12px", borderRadius: 999, fontSize: 10, fontWeight: 800, background: st.bg, color: st.color, border: `1px solid ${st.border}` }}>
                             {ACTION_LABELS[r.action] || r.action}
                           </span>
                         </td>
-
-                        {/* 📦 MODULE */}
                         <td style={{ padding: "12px 14px" }}>
                           <span style={{ background: "#f1f5f9", color: "#334155", borderRadius: 8, padding: "5px 10px", fontWeight: 700 }}>
                             {r.module || "-"}
                           </span>
                         </td>
-
-                        {/* 📝 DESCRIPTION */}
                         <td style={{ padding: "12px 14px", color: "#475569", minWidth: 280 }}>
                           {r.description || "-"}
                         </td>
-
-                        {/* 🔢 REFERENCE */}
                         <td style={{ padding: "12px 14px", fontFamily: "monospace", fontWeight: "700", color: "#2563eb" }}>
                           {r.reference_no || "-"}
                         </td>
-
-                        {/* 🌐 METHOD */}
                         <td style={{ padding: "12px 14px", color: "#64748b", fontWeight: "700" }}>
                           {r.method || "-"}
                         </td>
