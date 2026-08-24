@@ -1,9 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 
-// Backend URL Fallback handling
-const BACKEND_BASE = import.meta.env.VITE_BACKEND_URL || import.meta.env.VITE_API_BASE_URL || "https://makki-madni-backend.vercel.app";
-const API = `${BACKEND_BASE}/api/reports`;
-
+const API = `${import.meta.env.VITE_BACKEND_URL}/api/reports`;
 const ACTION_LABELS = { 
   CREATE: "Created", 
   UPDATE: "Updated", 
@@ -16,6 +13,7 @@ const ACTION_LABELS = {
   OTHER: "Activity" 
 };
 
+// Time Formatting Helper (Fixed 12-Hour AM/PM)
 const fmtTime = (v) => {
   if (!v) return "-";
   return new Date(v).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: true });
@@ -38,7 +36,6 @@ export default function ActivityReport({ onNavigate }) {
   const [modules, setModules] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // Load Data Function
   const load = async () => {
     setLoading(true);
     try {
@@ -49,17 +46,11 @@ export default function ActivityReport({ onNavigate }) {
 
       const r = await fetch(`${API}/activity?${q}`);
       const d = await r.json();
-      if (!d.success) throw Error(d.error || "Failed to fetch logs");
+      if (!d.success) throw Error(d.error);
 
-      const fetchedRows = d.rows || [];
-      setRows(fetchedRows);
+      setRows(d.rows || []);
+      setUsers(d.users || []);
       setModules(d.modules || []);
-
-      // Automatically extract users from logs for Dropdown
-      if (Array.isArray(fetchedRows)) {
-        const logUsers = [...new Set(fetchedRows.map((r) => r.username).filter((u) => u && u !== "System User"))];
-        setUsers(logUsers);
-      }
     } catch (e) {
       console.error("ACTIVITY REPORT ERROR:", e);
       setRows([]);
@@ -134,6 +125,7 @@ export default function ActivityReport({ onNavigate }) {
     fontWeight: "600"
   };
 
+  // Badge Style Generator
   const getBadgeStyle = (act) => {
     switch (act) {
       case "DELETE":
@@ -248,28 +240,41 @@ export default function ActivityReport({ onNavigate }) {
                     const st = getBadgeStyle(r.action);
                     return (
                       <tr className="activity-row" key={r.id}>
+                        {/* 🕒 TIME COLUMN (FIXED) */}
                         <td style={{ padding: "12px 14px", fontWeight: 700, color: "#1e293b", whiteSpace: "nowrap" }}>
                           ⏱️ {fmtTime(r.created_at)}
                         </td>
+
+                        {/* 👤 USER COLUMN */}
                         <td style={{ padding: "12px 14px", fontWeight: 800, color: "#0f172a", whiteSpace: "nowrap" }}>
                           👤 {r.username && r.username !== "System User" ? r.username : "System User"}
                         </td>
+
+                        {/* 🏷️ ACTION BADGE */}
                         <td style={{ padding: "12px 14px" }}>
                           <span style={{ display: "inline-block", padding: "5px 12px", borderRadius: 999, fontSize: 10, fontWeight: 800, background: st.bg, color: st.color, border: `1px solid ${st.border}` }}>
                             {ACTION_LABELS[r.action] || r.action}
                           </span>
                         </td>
+
+                        {/* 📦 MODULE */}
                         <td style={{ padding: "12px 14px" }}>
                           <span style={{ background: "#f1f5f9", color: "#334155", borderRadius: 8, padding: "5px 10px", fontWeight: 700 }}>
                             {r.module || "-"}
                           </span>
                         </td>
+
+                        {/* 📝 DESCRIPTION */}
                         <td style={{ padding: "12px 14px", color: "#475569", minWidth: 280 }}>
                           {r.description || "-"}
                         </td>
+
+                        {/* 🔢 REFERENCE */}
                         <td style={{ padding: "12px 14px", fontFamily: "monospace", fontWeight: "700", color: "#2563eb" }}>
                           {r.reference_no || "-"}
                         </td>
+
+                        {/* 🌐 METHOD */}
                         <td style={{ padding: "12px 14px", color: "#64748b", fontWeight: "700" }}>
                           {r.method || "-"}
                         </td>
