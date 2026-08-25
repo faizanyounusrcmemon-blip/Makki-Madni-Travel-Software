@@ -635,6 +635,7 @@ const editRow = async (row) => {
       toDate: endDate,
       ledgerData: rows,
       title: "REGISTERED CUSTOMER LEDGER STATEMENT",
+      filePrefix: `Customer_Ledger_${customerName}`,
     });
   };
 
@@ -646,6 +647,7 @@ const editRow = async (row) => {
       toDate: endDate,
       ledgerData: rows,
       title: "REGISTERED CUSTOMER FINANCIAL LEDGER",
+      filePrefix: `Customer_Ledger_${customerName}`,
     });
   };
 

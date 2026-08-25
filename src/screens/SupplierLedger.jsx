@@ -535,16 +535,17 @@ const exportPDF = () => {
     return Swal.fire({ icon: "warning", text: "Please load a supplier first!" });
   }
 
-  // Pending list se supplier ka name find kar rahe hain
   const currentSupplier = pending.find((p) => p.supplier_code === supplierCode);
+  const supplierName = currentSupplier ? currentSupplier.supplier_name : "Supplier";
 
   handleExportPDF({
     code: supplierCode,
-    name: currentSupplier ? currentSupplier.supplier_name : "Supplier",
+    name: supplierName,
     fromDate: fromDate,
     toDate: toDate,
     ledgerData: ledgerView,
     title: "SUPPLIER LEDGER STATEMENT",
+    filePrefix: `Supplier_Ledger_${supplierName.replace(/\s+/g, "_")}`,
   });
 };
 
@@ -554,14 +555,16 @@ const exportExcel = () => {
   }
 
   const currentSupplier = pending.find((p) => p.supplier_code === supplierCode);
+  const supplierName = currentSupplier ? currentSupplier.supplier_name : "Supplier";
 
   handleExportExcel({
     code: supplierCode,
-    name: currentSupplier ? currentSupplier.supplier_name : "Supplier",
+    name: supplierName,
     fromDate: fromDate,
     toDate: toDate,
     ledgerData: ledgerView,
     title: "SUPPLIER FINANCIAL LEDGER",
+    filePrefix: `Supplier_Ledger_${supplierName.replace(/\s+/g, "_")}`,
   });
 };
 
