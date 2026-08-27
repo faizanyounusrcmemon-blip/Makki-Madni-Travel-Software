@@ -15,7 +15,7 @@ export default function Restore({ onNavigate }) {
     "transport","customers","purchase_entries","users","bank_transactions",
     "cash_transactions","customer_payments","purchase_payments",
     "supplier_payments","suppliers","ziyarat","archive_snapshots","archive_balances","archive_profit_monthly","archive_logs",
-    "authority_settings","system_passwords",
+    "authority_settings","system_passwords","activity_logs",
   ];
 
 
