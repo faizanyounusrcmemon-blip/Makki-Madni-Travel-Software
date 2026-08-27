@@ -124,6 +124,63 @@ export default function TransportVoucher({ onNavigate }) {
     }
   };
 
+  /* ================= HELPER FOR PDF / PRINT CANVAS ================= */
+  const generateCanvas = async () => {
+    return await html2canvas(voucherRef.current, {
+      scale: 3,
+      useCORS: true,
+      backgroundColor: "#ffffff",
+      ignoreElements: (el) => el.tagName === "CANVAS",
+      onclone: (doc) => {
+        // Fix background gradients
+        doc.querySelectorAll("*").forEach((el) => {
+          const bg = el.style.backgroundImage;
+          if (bg && bg.includes("gradient")) {
+            el.style.backgroundImage = "none";
+          }
+        });
+
+        // 🔥 FIX TEXTAREA AND INPUT HEIGHTS FOR PDF
+        doc.querySelectorAll("textarea").forEach((textarea) => {
+          const parent = textarea.parentElement;
+          if (parent) {
+            const div = doc.createElement("div");
+            div.style.whiteSpace = "pre-wrap";
+            div.style.wordBreak = "break-word";
+            div.style.minHeight = "38px";
+            div.style.padding = "6px 10px";
+            div.style.border = "1px solid #ced4da";
+            div.style.borderRadius = "6px";
+            div.style.fontSize = "13px";
+            div.style.color = "#212529";
+            div.style.backgroundColor = "#fff";
+            div.innerText = textarea.value;
+            textarea.style.display = "none";
+            parent.appendChild(div);
+          }
+        });
+
+        // FIX INPUT FIELDS APPEARANCE
+        doc.querySelectorAll("input.form-control").forEach((input) => {
+          const parent = input.parentElement;
+          if (parent && input.type !== "hidden") {
+            const div = doc.createElement("div");
+            div.style.minHeight = "31px";
+            div.style.padding = "4px 8px";
+            div.style.border = "1px solid #ced4da";
+            div.style.borderRadius = "6px";
+            div.style.fontSize = "13px";
+            div.style.color = "#212529";
+            div.style.backgroundColor = "#fff";
+            div.innerText = input.value;
+            input.style.display = "none";
+            parent.appendChild(div);
+          }
+        });
+      },
+    });
+  };
+
   /* ================= PDF (SINGLE PAGE AUTO FIT) ================= */
   const exportPDF = async () => {
     try {
@@ -142,40 +199,18 @@ export default function TransportVoucher({ onNavigate }) {
         didOpen: () => Swal.showLoading(),
       });
 
-      const element = voucherRef.current;
-
-      const canvas = await html2canvas(element, {
-        scale: 3,
-        useCORS: true,
-        backgroundColor: "#ffffff",
-
-        ignoreElements: (el) => el.tagName === "CANVAS",
-
-        onclone: (doc) => {
-          doc.querySelectorAll("*").forEach((el) => {
-            const bg = el.style.backgroundImage;
-
-            if (bg && bg.includes("gradient")) {
-              el.style.backgroundImage = "none";
-            }
-          });
-        },
-      });
-
+      const canvas = await generateCanvas();
       const imgData = canvas.toDataURL("image/png");
-
       const pdf = new jsPDF("p", "mm", "a4");
 
       const pageWidth = pdf.internal.pageSize.getWidth();
       const pageHeight = pdf.internal.pageSize.getHeight();
 
       const imgWidth = pageWidth;
-
       let imgHeight = (canvas.height * imgWidth) / canvas.width;
 
       if (imgHeight > pageHeight) {
         const scale = pageHeight / imgHeight;
-
         pdf.addImage(imgData, "PNG", 0, 0, imgWidth * scale, pageHeight);
       } else {
         pdf.addImage(imgData, "PNG", 0, 0, imgWidth, imgHeight);
@@ -248,24 +283,7 @@ export default function TransportVoucher({ onNavigate }) {
                     didOpen: () => Swal.showLoading(),
                   });
 
-                  const canvas = await html2canvas(voucherRef.current, {
-                    scale: 3,
-                    useCORS: true,
-                    backgroundColor: "#ffffff",
-
-                    ignoreElements: (el) => el.tagName === "CANVAS",
-
-                    onclone: (doc) => {
-                      doc.querySelectorAll("*").forEach((el) => {
-                        const bg = el.style.backgroundImage;
-
-                        if (bg && bg.includes("gradient")) {
-                          el.style.backgroundImage = "none";
-                        }
-                      });
-                    },
-                  });
-
+                  const canvas = await generateCanvas();
                   const imgData = canvas.toDataURL("image/png");
 
                   const pdf = new jsPDF("p", "mm", "a4");
@@ -274,12 +292,10 @@ export default function TransportVoucher({ onNavigate }) {
                   const pageHeight = pdf.internal.pageSize.getHeight();
 
                   const imgWidth = pageWidth;
-
                   let imgHeight = (canvas.height * imgWidth) / canvas.width;
 
                   if (imgHeight > pageHeight) {
                     const scale = pageHeight / imgHeight;
-
                     pdf.addImage(
                       imgData,
                       "PNG",
@@ -377,32 +393,32 @@ export default function TransportVoucher({ onNavigate }) {
             </div>
           </div>
 
-{/* CUSTOMER (EDITABLE INPUT) */}
-<div
-  style={{
-    background: "#f8fbff",
-    border: "1px solid #dbeafe",
-    borderLeft: "5px solid #0d6efd",
-    borderRadius: 12,
-    padding: 15,
-    marginBottom: 20,
-    position: "relative",
-    zIndex: 1,
-  }}
->
-  <label className="fw-bold mb-1 d-block" style={{ fontSize: 15 }}>
-    👤 Customer Name
-  </label>
-  <input
-    type="text"
-    className="form-control fw-bold"
-    value={data.customer_name || ""}
-    onChange={(e) =>
-      setData({ ...data, customer_name: e.target.value })
-    }
-    placeholder="Enter Customer Name"
-  />
-</div>
+          {/* CUSTOMER (EDITABLE INPUT) */}
+          <div
+            style={{
+              background: "#f8fbff",
+              border: "1px solid #dbeafe",
+              borderLeft: "5px solid #0d6efd",
+              borderRadius: 12,
+              padding: 15,
+              marginBottom: 20,
+              position: "relative",
+              zIndex: 1,
+            }}
+          >
+            <label className="fw-bold mb-1 d-block" style={{ fontSize: 15 }}>
+              👤 Customer Name
+            </label>
+            <input
+              type="text"
+              className="form-control fw-bold"
+              value={data.customer_name || ""}
+              onChange={(e) =>
+                setData({ ...data, customer_name: e.target.value })
+              }
+              placeholder="Enter Customer Name"
+            />
+          </div>
 
           {/* SERVICES */}
           {rows.map((r, i) => (
@@ -481,12 +497,20 @@ export default function TransportVoucher({ onNavigate }) {
                   <textarea
                     className="form-control form-control-sm"
                     rows={1}
-                    style={{ resize: "both", minHeight: "31px" }}
+                    style={{
+                      resize: "none",
+                      minHeight: "38px",
+                      overflow: "hidden",
+                      whiteSpace: "pre-wrap",
+                      wordBreak: "break-word",
+                    }}
                     placeholder="Enter details..."
                     value={details[i] || ""}
-                    onChange={(e) =>
-                      setDetails({ ...details, [i]: e.target.value })
-                    }
+                    onChange={(e) => {
+                      setDetails({ ...details, [i]: e.target.value });
+                      e.target.style.height = "auto";
+                      e.target.style.height = `${e.target.scrollHeight}px`;
+                    }}
                   />
                 </div>
               </div>
