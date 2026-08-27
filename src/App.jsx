@@ -56,6 +56,8 @@ import SaleChangeCheckReport from "./screens/SaleChangeCheckReport";
 import ItemLossZeroReport from "./screens/ItemLossZeroReport";
 import MonthlyProfitDashboard from "./screens/MonthlyProfitDashboard";
 import ActivityReport from "./screens/ActivityReport";
+import GiftingReportView from "./screens/GiftingReportView";
+import AgentCommReportView from "./screens/AgentCommReportView";
 
 // VOUCHERS
 import HotelVoucher from "./screens/HotelVoucher";
@@ -192,6 +194,8 @@ export default function App() {
       {page === "monthlyProfitDashboard" && <MonthlyProfitDashboard onNavigate={navigate} />}
       {page === "createUser" && <CreateUser onNavigate={navigate} />}
       {page === "activityReport" && <ActivityReport onNavigate={navigate} />}
+      {page === "giftingReportView" && <GiftingReportView onNavigate={navigate} />}
+      {page === "agentCommReportView" && <AgentCommReportView onNavigate={navigate} />}
       {page === "deletedReports" && (
         <DeletedReports onNavigate={navigate} />
       )}
