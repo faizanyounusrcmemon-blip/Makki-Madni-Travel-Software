@@ -12,8 +12,12 @@ const fmtDate = (d) =>
       })
     : "";
 
-export default function PackagesView({ id, onNavigate, fromPage }) {
+export default function PackagesViewSummary({ id, onNavigate, fromPage }) {
   const [data, setData] = useState(null);
+
+  // CONTROL SWITCHES
+  const [showGift, setShowGift] = useState(false);
+  const [showAgentComm, setShowAgentComm] = useState(false);
 
   const ref = useRef(null);
 
@@ -36,7 +40,7 @@ export default function PackagesView({ id, onNavigate, fromPage }) {
       });
   }, [id]);
 
-  if (!data) return <div className="p-4">Loading...</div>;
+  if (!data) return <div className="p-4">Loading Package Summary...</div>;
 
   /* ================= PACKAGE DURATION ================= */
   const flightDates = Array.isArray(data.flights)
@@ -74,76 +78,137 @@ export default function PackagesView({ id, onNavigate, fromPage }) {
     ziyarat: Number(data.ziyarat_sar_rate || 0),
   };
 
-  const flightPKR = flightTotal * rate.flight;
-  const hotelsPKR = hotelsTotal * rate.hotels;
-  const visaPKR = visaTotal * rate.visa;
-  const transportPKR = transportTotal * rate.transport;
-  const ziyaratPKR = ziyaratTotal * rate.ziyarat;
+  const flightPKR = Number(data.flight_pkr_total || flightTotal * rate.flight);
+  const hotelsPKR = Number(data.hotel_pkr_total || hotelsTotal * rate.hotels);
+  const visaPKR = Number(data.visa_pkr_total || visaTotal * rate.visa);
+  const transportPKR = Number(data.transport_pkr_total || transportTotal * rate.transport);
+  const ziyaratPKR = Number(data.ziyarat_pkr_total || ziyaratTotal * rate.ziyarat);
 
-  const grandPKR = flightPKR + hotelsPKR + visaPKR + transportPKR + ziyaratPKR;
+  // Gifting PKR Total
+  let giftPKR = Number(data.gifting_total || data.gifting_pkr_total || 0);
+  if (!giftPKR && Array.isArray(data.gifting)) {
+    giftPKR = data.gifting.reduce((acc, item) => {
+      const itemTotal = Number(item.total || Number(item.qty || 0) * Number(item.rate || 0));
+      return acc + (isNaN(itemTotal) ? 0 : itemTotal);
+    }, 0);
+  }
+
+  // Agent Commission PKR Total
+  let agentCommPKR = Number(data.agent_comm_total || data.agent_commission_pkr || 0);
+  if (!agentCommPKR && Array.isArray(data.agent_comm)) {
+    agentCommPKR = data.agent_comm.reduce((acc, item) => {
+      const itemTotal = Number(item.total || Number(item.persons || 0) * Number(item.rate || 0));
+      return acc + (isNaN(itemTotal) ? 0 : itemTotal);
+    }, 0);
+  }
+  if (isNaN(agentCommPKR)) agentCommPKR = 0;
+
+  // GRAND TOTAL INCLUDING AGENT COMM AND GIFTING (IF TOGGLED)
+  const grandPKR =
+    flightPKR +
+    hotelsPKR +
+    visaPKR +
+    transportPKR +
+    ziyaratPKR +
+    (showGift ? giftPKR : 0) +
+    (showAgentComm ? agentCommPKR : 0);
 
   // ================= PER PERSON CALCULATION =================
   const adultCount = Number(data.adult_count || 0);
   const childCount = Number(data.child_count || 0);
   const infantCount = Number(data.infant_count || 0);
 
-  // Total passengers (used to divide total visa cost correctly)
   const totalPassengers = adultCount + childCount + infantCount;
 
   const adultFlightPKR = adultCount * Number(data.adult_rate || 0) * rate.flight;
   const childFlightPKR = childCount * Number(data.child_rate || 0) * rate.flight;
   const infantFlightPKR = infantCount * Number(data.infant_rate || 0) * rate.flight;
 
-  // Visa divided equally among all passengers
+  // Visa & Agent Comm divided equally among all passengers
   const visaPerPerson = totalPassengers > 0 ? visaPKR / totalPassengers : 0;
+  const agentCommPerPerson =
+    showAgentComm && totalPassengers > 0 ? agentCommPKR / totalPassengers : 0;
 
-  // Hotels, Transport & Ziyarat shared only among adults
-  const sharedPKR = hotelsPKR + transportPKR + ziyaratPKR;
+  // Hotels, Transport, Ziyarat & Gift shared only among adults
+  const sharedPKR = hotelsPKR + transportPKR + ziyaratPKR + (showGift ? giftPKR : 0);
   const sharedPerAdult = adultCount > 0 ? sharedPKR / adultCount : 0;
 
   const adultPerPerson = Math.round(
-    adultCount > 0 ? adultFlightPKR / adultCount + visaPerPerson + sharedPerAdult : 0
+    adultCount > 0 ? adultFlightPKR / adultCount + visaPerPerson + sharedPerAdult + agentCommPerPerson : 0
   );
 
   const childPerPerson = Math.round(
-    childCount > 0 ? childFlightPKR / childCount + visaPerPerson : 0
+    childCount > 0 ? childFlightPKR / childCount + visaPerPerson + agentCommPerPerson : 0
   );
 
   const infantPerPerson = Math.round(
-    infantCount > 0 ? infantFlightPKR / infantCount + visaPerPerson : 0
+    infantCount > 0 ? infantFlightPKR / infantCount + visaPerPerson + agentCommPerPerson : 0
   );
 
   return (
     <div className="container mt-3 mb-5">
-      {/* ============ TOP ACTIONS ============ */}
-      <div className="d-flex justify-content-start mb-3 gap-2 flex-wrap">
-        <button
-          className="btn btn-sm text-white fw-bold shadow"
-          style={{
-            background: "linear-gradient(135deg,#000,#434343)",
-            borderRadius: 8,
-            padding: "6px 16px",
-          }}
-          onClick={() => onNavigate(fromPage || "allreports")}
-        >
-          ⬅ Back
-        </button>
+      {/* ============ TOP ACTIONS & TOGGLES ============ */}
+      <div className="d-flex justify-content-between mb-3 align-items-center flex-wrap gap-2">
+        <div className="d-flex gap-2">
+          <button
+            className="btn btn-sm text-white fw-bold shadow"
+            style={{
+              background: "linear-gradient(135deg,#000,#434343)",
+              borderRadius: 8,
+              padding: "6px 16px",
+            }}
+            onClick={() => onNavigate(fromPage || "allreports")}
+          >
+            ⬅ Back
+          </button>
+        </div>
 
-        <button
-          className="btn btn-success btn-sm fw-bold shadow"
-          style={{ borderRadius: 8, padding: "6px 16px" }}
-          onClick={exportPDF}
-        >
-          📄 Export PDF
-        </button>
+        {/* TOGGLE SWITCHES */}
+        <div className="d-flex gap-3 bg-white p-2 rounded shadow-sm border align-items-center">
+          <div className="form-check form-switch m-0">
+            <input 
+              className="form-check-input" 
+              type="checkbox" 
+              id="commCheck" 
+              checked={showAgentComm} 
+              onChange={(e) => setShowAgentComm(e.target.checked)} 
+            />
+            <label className="form-check-label fw-bold text-primary" htmlFor="commCheck">
+              🤝 Agent Commission
+            </label>
+          </div>
 
-        <button
-          className="btn btn-secondary btn-sm fw-bold shadow"
-          style={{ borderRadius: 8, padding: "6px 16px" }}
-          onClick={printPDF}
-        >
-          🖨️ Print
-        </button>
+          <div className="form-check form-switch m-0">
+            <input 
+              className="form-check-input" 
+              type="checkbox" 
+              id="giftCheck" 
+              checked={showGift} 
+              onChange={(e) => setShowGift(e.target.checked)} 
+            />
+            <label className="form-check-label fw-bold text-success" htmlFor="giftCheck">
+              🎁 Gifting
+            </label>
+          </div>
+        </div>
+
+        <div className="d-flex gap-2">
+          <button
+            className="btn btn-success btn-sm fw-bold shadow"
+            style={{ borderRadius: 8, padding: "6px 16px" }}
+            onClick={exportPDF}
+          >
+            📄 Export PDF
+          </button>
+
+          <button
+            className="btn btn-secondary btn-sm fw-bold shadow"
+            style={{ borderRadius: 8, padding: "6px 16px" }}
+            onClick={printPDF}
+          >
+            🖨️ Print
+          </button>
+        </div>
       </div>
 
       {/* ============ PDF CONTENT ============ */}
@@ -158,9 +223,9 @@ export default function PackagesView({ id, onNavigate, fromPage }) {
         {/* ===== PACKAGE INFO ===== */}
         <div className="mb-3">
           <h4 className="fw-bold">PACKAGE — {data.ref_no}</h4>
-          <p><b>Customer:</b> {data.customer_name}</p>
-          <p><b>Contact No:</b> {data.contact_no || "-"}</p>
-          <p><b>Booking Date:</b> {fmtDate(data.booking_date)}</p>
+          <p className="mb-1"><b>Customer:</b> {data.customer_name}</p>
+          <p className="mb-1"><b>Contact No:</b> {data.contact_no || "-"}</p>
+          <p className="mb-1"><b>Booking Date:</b> {fmtDate(data.booking_date)}</p>
           <div
             className="border rounded-3 p-3 mt-2 shadow-sm"
             style={{
@@ -204,7 +269,7 @@ export default function PackagesView({ id, onNavigate, fromPage }) {
               </div>
             ))
           ) : (
-            <p>No flights</p>
+            <p className="m-0">No flights</p>
           )}
         </div>
         <p>
@@ -212,7 +277,7 @@ export default function PackagesView({ id, onNavigate, fromPage }) {
           Child: {data.child_count} × {data.child_rate} <br />
           Infant: {data.infant_count} × {data.infant_rate} <br />
           <b>Flight SAR:</b> {flightTotal.toLocaleString()} <br />
-          <b>SAR Rate:</b>  {rate.flight} <br />
+          <b>SAR Rate:</b> {rate.flight} <br />
           <b>Flight PKR:</b> {flightPKR.toLocaleString()}
         </p>
 
@@ -227,16 +292,15 @@ export default function PackagesView({ id, onNavigate, fromPage }) {
               Check In Date: <span style={{ color: "#0d6efd", fontWeight: "bold" }}>{fmtDate(h.checkIn)}</span> → 
               Check Out Date: <span style={{ color: "#dc3545", fontWeight: "bold" }}>{fmtDate(h.checkOut)}</span><br />
               Nights: <b>{h.nights}</b>, Rooms: <b>{h.rooms}</b>, Type: <b>{h.type}</b><br />
-              Rate: {h.rate}   — Total: {h.total}
+              Rate: {h.rate} — Total: {h.total}
             </div>
           ))
         ) : (
           <p>No hotels</p>
         )}
-
         <p>
           <b>Hotel SAR:</b> {hotelsTotal.toLocaleString()} <br />
-          <b>SAR Rate:</b>  {rate.hotels} <br />
+          <b>SAR Rate:</b> {rate.hotels} <br />
           <b>Hotel PKR:</b> {hotelsPKR.toLocaleString()}
         </p>
 
@@ -255,7 +319,7 @@ export default function PackagesView({ id, onNavigate, fromPage }) {
         )}
         <p>
           <b>Visa SAR:</b> {visaTotal.toLocaleString()} <br />
-          <b>SAR Rate:</b>  {rate.visa} <br />
+          <b>SAR Rate:</b> {rate.visa} <br />
           <b>Visa PKR:</b> {visaPKR.toLocaleString()}
         </p>
 
@@ -274,7 +338,7 @@ export default function PackagesView({ id, onNavigate, fromPage }) {
         )}
         <p>
           <b>Transport SAR:</b> {transportTotal.toLocaleString()} <br />
-          <b>SAR Rate:</b>  {rate.transport} <br />
+          <b>SAR Rate:</b> {rate.transport} <br />
           <b>Transport PKR:</b> {transportPKR.toLocaleString()}
         </p>
 
@@ -293,14 +357,100 @@ export default function PackagesView({ id, onNavigate, fromPage }) {
         )}
         <p>
           <b>Ziyarat SAR:</b> {ziyaratTotal.toLocaleString()} <br />
-          <b>SAR Rate:</b>  {rate.ziyarat} <br />
+          <b>SAR Rate:</b> {rate.ziyarat} <br />
           <b>Ziyarat PKR:</b> {ziyaratPKR.toLocaleString()}
         </p>
+
+        {/* ===== GIFTING SECTION ===== */}
+        {showGift && (
+          <>
+            <hr />
+            <div className="my-3">
+              <div 
+                className="p-3 rounded-3 shadow-sm border-0 position-relative overflow-hidden"
+                style={{
+                  background: "linear-gradient(135deg, #fff7ed 0%, #fef3c7 100%)",
+                  borderLeft: "5px solid #f59e0b",
+                }}
+              >
+                <div className="d-flex align-items-center justify-content-between mb-2">
+                  <span className="fw-bold d-inline-flex align-items-center gap-1" style={{ color: "#b45309", fontSize: "15px" }}>
+                    🎁 <span className="text-uppercase tracking-wide">Complimentary Gift Inclusion</span>
+                  </span>
+                  <span className="badge bg-warning text-dark px-2 py-1 rounded-pill fw-semibold" style={{ fontSize: "11px" }}>
+                    Special Perk
+                  </span>
+                </div>
+
+                <div className="bg-white p-2.5 rounded-2 border border-warning-subtle shadow-sm mb-2">
+                  {Array.isArray(data.gifting) && data.gifting.length > 0 ? (
+                    data.gifting.map((g, i) => (
+                      <div key={i} className="d-flex justify-content-between align-items-center py-1 border-bottom border-light">
+                        <div className="d-flex align-items-center gap-2">
+                          <span className="text-warning">✦</span>
+                          <span className="fw-medium text-dark">{g.item || g.gift_item || g.name}</span>
+                          {g.qty && <span className="badge bg-light text-secondary border">Qty: {g.qty}</span>}
+                        </div>
+                        {g.rate ? (
+                          <span className="fw-semibold text-muted small">{Number(g.rate).toLocaleString()} PKR</span>
+                        ) : null}
+                      </div>
+                    ))
+                  ) : (
+                    <p className="m-0 text-secondary small d-flex align-items-center gap-2">
+                      <span className="text-warning">✦</span>
+                      {data.gift || data.gift_details || "Complimentary Gift Included"}
+                    </p>
+                  )}
+                </div>
+
+                <div className="d-flex justify-content-end align-items-center pt-1">
+                  <span className="small text-muted me-2">Gifting Value:</span>
+                  <span className="fw-bold text-dark fs-6" style={{ color: "#92400e" }}>
+                    {giftPKR.toLocaleString()} PKR
+                  </span>
+                </div>
+              </div>
+            </div>
+          </>
+        )}
+
+        {/* ===== AGENT COMMISSION SECTION ===== */}
+        {showAgentComm && (
+          <>
+            <hr />
+            <h5 className="fw-bold text-dark mb-2">💼 Agent Commission</h5>
+            <div className="border p-2 rounded mb-2 shadow-sm bg-light">
+              {Array.isArray(data.agent_comm) && data.agent_comm.length > 0 ? (
+                data.agent_comm.map((a, i) => (
+                  <div key={i} className="mb-1">
+                    <b>Type / Details:</b> {a.type || "Agent Commission"}{" "}
+                    {a.persons ? `(${a.persons} Persons)` : ""}
+                    {a.rate ? ` — Rate: ${a.rate} PKR` : ""}
+                  </div>
+                ))
+              ) : (
+                <p className="m-0">
+                  <b>Agent Name / Details:</b> {data.agent_name || "Agent Commission"}
+                </p>
+              )}
+              <p className="m-0 mt-1 fw-bold text-dark">
+                Commission Amount: {agentCommPKR.toLocaleString()} PKR
+              </p>
+            </div>
+          </>
+        )}
+
+        <hr />
+
+        <h4 className="fw-bold text-end text-success">
+          NET PKR TOTAL: {grandPKR.toLocaleString()} PKR
+        </h4>  
 
         <hr />
 
         {/* ===== SUMMARY TABLE ===== */}
-        <h6 className="section-title">📊 Summary</h6>
+        <h6 className="fw-bold mb-2">📊 Summary</h6>
         <table className="table table-sm mb-4">
           <thead>
             <tr>
@@ -341,6 +491,22 @@ export default function PackagesView({ id, onNavigate, fromPage }) {
               <td>{rate.ziyarat}</td>
               <td className="fw-bold">{ziyaratPKR.toLocaleString()}</td>
             </tr>
+            {showGift && (
+              <tr>
+                <td>Gifting</td>
+                <td>—</td>
+                <td>—</td>
+                <td className="fw-bold">{giftPKR.toLocaleString()}</td>
+              </tr>
+            )}
+            {showAgentComm && (
+              <tr>
+                <td>Agent Commission</td>
+                <td>—</td>
+                <td>—</td>
+                <td className="fw-bold">{agentCommPKR.toLocaleString()}</td>
+              </tr>
+            )}
             <tr className="table-info">
               <td className="fw-bold">Grand Total PKR</td>
               <td></td>
@@ -351,19 +517,19 @@ export default function PackagesView({ id, onNavigate, fromPage }) {
               <td className="fw-bold">Per Person (Adults)</td>
               <td>{adultCount}</td>
               <td></td>
-              <td className="fw-bold">{adultPerPerson.toLocaleString()}</td>
+              <td className="fw-bold">{adultPerPerson.toLocaleString()} PKR</td>
             </tr>
             <tr style={{ background: "#f1f1f1" }}>
               <td className="fw-bold">Per Person (Children)</td>
               <td>{childCount}</td>
               <td></td>
-              <td className="fw-bold">{childPerPerson.toLocaleString()}</td>
+              <td className="fw-bold">{childPerPerson.toLocaleString()} PKR</td>
             </tr>
             <tr style={{ background: "#f1f1f1" }}>
               <td className="fw-bold">Per Person (Infants)</td>
               <td>{infantCount}</td>
               <td></td>
-              <td className="fw-bold">{infantPerPerson.toLocaleString()}</td>
+              <td className="fw-bold">{infantPerPerson.toLocaleString()} PKR</td>
             </tr>
           </tbody>
         </table>
@@ -372,7 +538,7 @@ export default function PackagesView({ id, onNavigate, fromPage }) {
 
         {/* FOOTER NOTE */}
         <div
-          className="mt-2 p-2 text-center small"
+          className="mt-2 p-2 text-center small rounded"
           style={{ background: "#12c1d8", color: "white" }}
         >
           THESE ARE TENTATIVE RATES AND CAN CHANGE WITHOUT NOTICE.
