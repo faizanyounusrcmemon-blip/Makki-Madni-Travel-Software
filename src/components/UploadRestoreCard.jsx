@@ -36,6 +36,7 @@ export default function UploadRestoreCard() {
     "archive_logs",
     "authority_settings",
     "system_passwords",
+    "activity_logs",
   ];
 
 /* ================= UPLOAD REQUEST (WITH REAL-TIME UPLOAD + ETA COUNTER) ================= */
