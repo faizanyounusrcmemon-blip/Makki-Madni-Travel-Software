@@ -430,27 +430,74 @@ export default function Packages({ onNavigate }) {
         </div>
       </div>
 
+      {/* QUOTE CARD */}
       <div ref={quoteRef} style={styles.quoteCard}>
+
+
         <Header title="PACKAGE QUOTATION" />
 
-        {/* CUSTOMER INFO */}
+        {/* CUSTOMER INFO - WITH NEW AUTOCOMPLETE SEARCH DROPDOWN */}
         <div className="row g-3 mb-3">
           <div className="col-md-2">
             <label className="fw-bold mb-1">Ref No</label>
             <input className="form-control form-control-sm" value={refNo} readOnly />
           </div>
 
+          {/* Autocomplete Dynamic Dropdown */}
           <div className="col-md-3" ref={dropdownRef} style={{ position: "relative" }}>
             <label className="fw-bold mb-1 text-primary">🔍 Registered Customer</label>
             <div className="input-group input-group-sm">
-              <input className="form-control" placeholder="Search registered..." value={searchQuery} onFocus={() => setShowDropdown(true)} onChange={(e) => { setSearchQuery(e.target.value); setShowDropdown(true); }} />
-              {searchQuery && (<button className="btn btn-outline-danger btn-sm" type="button" onClick={() => { setSearchQuery(""); setCustomerCode(""); setCustomerName(""); }}>✕</button>)}
+              <input
+                className="form-control"
+                placeholder="Search registered..."
+                value={searchQuery}
+                onFocus={() => setShowDropdown(true)}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
+                  setShowDropdown(true);
+                }}
+              />
+              {searchQuery && (
+                <button 
+                  className="btn btn-outline-danger btn-sm" 
+                  type="button" 
+                  onClick={() => {
+                    setSearchQuery("");
+                    setCustomerCode("");
+                    setCustomerName("");
+                  }}
+                >
+                  ✕
+                </button>
+              )}
             </div>
+
             {showDropdown && (
-              <div className="dropdown-menu show shadow w-100 p-2" style={{ maxHeight: "200px", overflowY: "auto", position: "absolute", zIndex: 9999, background: "#fff" }}>
-                {filteredCustomers.length === 0 ? (<div className="dropdown-item text-muted text-center py-2">No customers found</div>) : (
+              <div 
+                className="dropdown-menu show shadow w-100 p-2" 
+                style={{ 
+                  maxHeight: "200px", 
+                  overflowY: "auto", 
+                  position: "absolute", 
+                  zIndex: 9999,
+                  background: "#fff"
+                }}
+              >
+                {filteredCustomers.length === 0 ? (
+                  <div className="dropdown-item text-muted text-center py-2">No customers found</div>
+                ) : (
                   filteredCustomers.map((c, i) => (
-                    <button key={i} type="button" className="dropdown-item d-flex justify-content-between align-items-center py-2 border-bottom" onClick={() => { setCustomerName(c.name); setCustomerCode(c.customer_code); setSearchQuery(`${c.name} (${c.customer_code})`); setShowDropdown(false); }}>
+                    <button
+                      key={i}
+                      type="button"
+                      className="dropdown-item d-flex justify-content-between align-items-center py-2 border-bottom"
+                      onClick={() => {
+                        setCustomerName(c.name); 
+                        setCustomerCode(c.customer_code); 
+                        setSearchQuery(`${c.name} (${c.customer_code})`);
+                        setShowDropdown(false);
+                      }}
+                    >
                       <span className="fw-bold text-dark">{c.name}</span>
                       <span className="badge bg-danger text-white">{c.customer_code}</span>
                     </button>
@@ -460,10 +507,32 @@ export default function Packages({ onNavigate }) {
             )}
           </div>
 
+          {/* Customer Manual Fallback Textbox */}
           <div className="col-md-3">
             <label className="fw-bold mb-1">Customer Name</label>
-            <input className="form-control form-control-sm" placeholder="Or write manually here..." value={customerName} onChange={(e) => { setCustomerName(e.target.value); if (customerCode) { setCustomerCode(""); setSearchQuery(""); } }} />
-            {customerCode ? (<small className="text-success d-block mt-1 fw-bold">✓ Linked ({customerCode})</small>) : (customerName && <small className="text-warning d-block mt-1 fw-bold">Manual Walk-In</small>)}
+            <input 
+              className="form-control form-control-sm" 
+              placeholder="Or write manually here..."
+              value={customerName} 
+              onChange={(e) => {
+                setCustomerName(e.target.value);
+                if (customerCode) {
+                  setCustomerCode("");
+                  setSearchQuery("");
+                }
+              }} 
+            />
+            {customerCode ? (
+              <small className="text-success d-block mt-1 fw-bold">
+                ✓ Linked ({customerCode})
+              </small>
+            ) : (
+              customerName && (
+                <small className="text-warning d-block mt-1 fw-bold">
+                  Manual Walk-In
+                </small>
+              )
+            )}
           </div>
 
           <div className="col-md-2">
@@ -475,6 +544,45 @@ export default function Packages({ onNavigate }) {
             <label className="fw-bold mb-1">Booking Date</label>
             <input type="date" className="form-control form-control-sm" value={bookingDate} onChange={(e) => setBookingDate(e.target.value)} />
             <small className="text-muted d-block mt-1">{showDate(bookingDate)}</small>
+          </div>
+
+          <div className="col-md-2">
+            <label className="fw-bold text-muted mb-1 d-block">
+              📅 Package Duration
+            </label>
+
+            <div
+              style={{
+                minWidth: "200px",
+                padding: "8px 12px",
+                borderRadius: "12px",
+                background: "#f8f9fa",
+                border: "2px solid #20c997",
+                textAlign: "center",
+                boxShadow: "0 2px 10px rgba(0,0,0,.08)",
+              }}
+            >
+              <div
+                style={{
+                  fontSize: "18px",
+                  fontWeight: "800",
+                  color: "#198754",
+                }}
+              >
+                {packageDays}
+                <span style={{ fontSize: "12px" }}> Days</span>
+              </div>
+
+              <div
+                style={{
+                  fontSize: "13px",
+                  color: "#6c757d",
+                  fontWeight: "600",
+                }}
+              >
+                🌙 {packageNights} Nights
+              </div>
+            </div>
           </div>
         </div>
 
