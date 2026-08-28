@@ -126,134 +126,99 @@ export default function PackagesView({ id, onNavigate, fromPage }) {
     ? Math.round((infantFlightPKR / infantCount) + visaPerPerson + agentCommPerPerson)
     : 0;
 
-  /* ================= COMMON GIFT COMPONENT ================= */
+/* ================= LIGHT ICE BLUE VOUCHER ================= */
   const GiftSection = () => (
     showGift ? (
-      <div className="my-2">
+      <div className="my-3">
         <div
-          className="position-relative overflow-hidden rounded-4"
+          className="rounded-4 overflow-hidden"
           style={{
-            background: "linear-gradient(135deg, #fff7ed 0%, #fef3c7 45%, #fce7f3 100%)",
-            border: "1px solid #f3c56b",
-            boxShadow: "0 5px 16px rgba(146,64,14,.10)",
+            backgroundColor: "#f0f9ff", // Soft Light Blue Tint
+            border: "1.5px solid #bae6fd",
+            boxShadow: "0 2px 8px rgba(14, 165, 233, 0.08)",
+            WebkitPrintColorAdjust: "exact",
+            printColorAdjust: "exact"
           }}
         >
-          <div className="position-absolute" style={{ width: "110px", height: "110px", right: "-40px", top: "-50px", borderRadius: "50%", background: "radial-gradient(circle, rgba(236,72,153,.18) 0%, rgba(236,72,153,.04) 65%, transparent 72%)", pointerEvents: "none" }} />
-          <div className="position-absolute" style={{ width: "85px", height: "85px", left: "-35px", bottom: "-40px", borderRadius: "50%", background: "radial-gradient(circle, rgba(59,130,246,.13) 0%, rgba(59,130,246,.03) 65%, transparent 72%)", pointerEvents: "none" }} />
-
-          <div className="px-3 py-2 position-relative">
-            <div className="d-flex justify-content-between align-items-center mb-2">
-              <div className="d-flex align-items-center gap-2">
-                <div
-                  className="d-flex align-items-center justify-content-center rounded-3 position-relative"
-                  style={{
-                    width: "39px",
-                    height: "39px",
-                    flexShrink: 0,
-                    background: "linear-gradient(135deg, #f59e0b 0%, #ef4444 55%, #ec4899 100%)",
-                    color: "#fff",
-                    fontSize: "18px",
-                    boxShadow: "0 4px 10px rgba(239,68,68,.25)",
-                    border: "2px solid rgba(255,255,255,.85)",
-                  }}
-                >
-                  🎁
-                  <span className="position-absolute" style={{ top: "-7px", right: "-6px", fontSize: "11px", lineHeight: 1 }}>✨</span>
-                </div>
-
-                <div>
-                  <div className="fw-bold" style={{ color: "#7c2d12", fontSize: "13px", lineHeight: "1.1", letterSpacing: ".5px" }}>
-                    COMPLIMENTARY GIFT
-                  </div>
-                  <div style={{ color: "#b45309", fontSize: "9px", marginTop: "3px" }}>
-                    Special gift included with your booking
-                  </div>
-                </div>
-              </div>
-
-              <span
-                className="d-inline-flex align-items-center rounded-pill px-2 py-1"
-                style={{
-                  background: "linear-gradient(135deg, #ec4899, #8b5cf6)",
-                  color: "#fff",
-                  fontSize: "8px",
-                  fontWeight: "800",
-                  letterSpacing: ".5px",
-                  boxShadow: "0 3px 8px rgba(139,92,246,.22)",
-                  whiteSpace: "nowrap",
-                }}
-              >
-                ✨ VIP
+          <div className="row g-0 align-items-stretch">
+            {/* LEFT VOUCHER STRIP */}
+            <div 
+              className="col-3 col-md-2 p-3 text-center d-flex flex-column justify-content-center align-items-center"
+              style={{
+                backgroundColor: "#e0f2fe",
+                borderRight: "2px dashed #7dd3fc",
+                WebkitPrintColorAdjust: "exact",
+                printColorAdjust: "exact"
+              }}
+            >
+              <span style={{ fontSize: "26px" }}>🎁</span>
+              <span className="fw-bold mt-1" style={{ fontSize: "10px", color: "#0369a1", letterSpacing: "0.5px" }}>
+                FREE GIFT
               </span>
             </div>
 
-            <div className="d-flex align-items-center gap-2 mb-2" style={{ opacity: 0.75 }}>
-              <div style={{ height: "1px", flex: 1, background: "linear-gradient(90deg, transparent, #eab308)" }} />
-              <span style={{ color: "#d97706", fontSize: "9px" }}>✦</span>
-              <div style={{ height: "1px", flex: 1, background: "linear-gradient(90deg, #eab308, transparent)" }} />
-            </div>
+            {/* RIGHT CONTENT AREA */}
+            <div className="col-9 col-md-10 p-3" style={{ backgroundColor: "#f0f9ff" }}>
+              <div className="d-flex justify-content-between align-items-center mb-2">
+                <div>
+                  <h6 className="fw-bold m-0" style={{ fontSize: "13px", color: "#0c4a6e", letterSpacing: ".3px" }}>
+                    COMPLIMENTARY PACKAGE BONUS
+                  </h6>
+                  <span style={{ color: "#0369a1", fontSize: "10px" }}>Special gift included with your booking</span>
+                </div>
+                <span 
+                  className="px-2 py-1 rounded-pill fw-bold" 
+                  style={{ fontSize: "9px", backgroundColor: "#e0f2fe", color: "#0369a1", border: "1px solid #7dd3fc" }}
+                >
+                  ★ INCLUDED
+                </span>
+              </div>
 
-            <div
-              className="rounded-3 overflow-hidden"
-              style={{
-                background: "linear-gradient(135deg, rgba(255,255,255,.95), rgba(255,251,235,.92))",
-                border: "1px solid rgba(245,158,11,.28)",
-                boxShadow: "0 3px 10px rgba(120,53,15,.05)",
-              }}
-            >
-              {Array.isArray(data.gifting) && data.gifting.length > 0 ? (
-                data.gifting.map((g, i) => (
-                  <div key={i} className="d-flex justify-content-between align-items-center px-2 py-2" style={{ borderBottom: i !== data.gifting.length - 1 ? "1px solid rgba(245,158,11,.15)" : "none" }}>
-                    <div className="d-flex align-items-center gap-2" style={{ minWidth: 0 }}>
-                      <span className="d-flex align-items-center justify-content-center rounded-circle" style={{ width: "25px", height: "25px", flexShrink: 0, background: "linear-gradient(135deg, #fef3c7, #fce7f3)", color: "#e11d48", fontSize: "11px", border: "1px solid #f9c2d5" }}>✦</span>
-                      <div style={{ minWidth: 0 }}>
-                        <div className="fw-semibold" style={{ color: "#3f3f46", fontSize: "11px", lineHeight: "1.15" }}>
-                          {g.item || g.gift_item || g.name || "Gift Item"}
-                        </div>
-                        {g.qty !== undefined && g.qty !== null && g.qty !== "" && (
-                          <span className="d-inline-flex align-items-center mt-1 px-2 py-1 rounded-pill" style={{ background: "linear-gradient(135deg, #fef3c7 0%, #fce7f3 100%)", color: "#9d174d", border: "1px solid #f5b7c9", fontSize: "9px", fontWeight: "800", lineHeight: "1", boxShadow: "0 2px 5px rgba(190,24,93,.08)", whiteSpace: "nowrap" }}>
-                            <span style={{ fontSize: "9px", marginRight: "3px" }}>🎁</span> QTY: {g.qty}
-                          </span>
-                        )}
-                      </div>
+              {/* ITEMS CONTAINER */}
+              <div className="rounded-3 p-2 my-2" style={{ backgroundColor: "#ffffff", border: "1px solid #bae6fd" }}>
+                {Array.isArray(data.gifting) && data.gifting.length > 0 ? (
+                  data.gifting.map((g, i) => (
+                    <div 
+                      key={i} 
+                      className="d-flex justify-content-between align-items-center py-1.5 px-2"
+                      style={{ borderBottom: i !== data.gifting.length - 1 ? "1px solid #f0f9ff" : "none" }}
+                    >
+                      <span className="fw-semibold" style={{ fontSize: "11px", color: "#1f2937" }}>
+                        <span style={{ color: "#0284c7", marginRight: "4px" }}>✦</span>
+                        {g.item || g.gift_item || g.name || "Gift Item"}
+                      </span>
+                      {g.qty && (
+                        <span 
+                          className="px-2 py-0.5 rounded-pill fw-bold" 
+                          style={{ fontSize: "9px", backgroundColor: "#e0f2fe", color: "#0369a1", border: "1px solid #bae6fd" }}
+                        >
+                          QTY: {g.qty}
+                        </span>
+                      )}
                     </div>
-
-                    {!hideAmounts && g.rate ? (
-                      <div className="text-end ms-2" style={{ minWidth: "75px", flexShrink: 0 }}>
-                        <div style={{ color: "#b45309", fontSize: "7px", fontWeight: "700", letterSpacing: ".5px" }}>GIFT VALUE</div>
-                        <div className="fw-bold text-nowrap" style={{ color: "#be123c", fontSize: "10px", marginTop: "1px" }}>
-                          {Number(g.rate).toLocaleString()}
-                          <span style={{ color: "#7c3aed", fontSize: "8px", marginLeft: "3px" }}>PKR</span>
-                        </div>
-                      </div>
-                    ) : null}
-                  </div>
-                ))
-              ) : (
-                <div className="px-2 py-2 d-flex align-items-center gap-2">
-                  <span className="d-flex align-items-center justify-content-center rounded-circle" style={{ width: "26px", height: "26px", flexShrink: 0, background: "linear-gradient(135deg,#fef3c7,#fce7f3)", color: "#e11d48", fontSize: "11px", border: "1px solid #f9c2d5" }}>✦</span>
-                  <span className="fw-semibold" style={{ color: "#3f3f46", fontSize: "11px" }}>
+                  ))
+                ) : (
+                  <span className="fw-semibold" style={{ fontSize: "11px", color: "#1f2937" }}>
+                    <span style={{ color: "#0284c7", marginRight: "4px" }}>✦</span>
                     {data.gift || data.gift_details || "Complimentary Gift Included"}
+                  </span>
+                )}
+              </div>
+
+              {/* FOOTER TOTAL */}
+              {!hideAmounts && (
+                <div className="d-flex justify-content-between align-items-center mt-2 pt-1">
+                  <span style={{ fontSize: "10px", color: "#0369a1", fontWeight: "700", letterSpacing: "0.5px" }}>
+                    TOTAL GIFT VALUE:
+                  </span>
+                  <span 
+                    className="fw-bold px-2.5 py-1 rounded-3" 
+                    style={{ backgroundColor: "#0284c7", color: "#ffffff", fontSize: "11px", boxShadow: "0 1px 3px rgba(0,0,0,0.1)" }}
+                  >
+                    {giftPKR.toLocaleString()} PKR
                   </span>
                 </div>
               )}
-            </div>
-
-            {!hideAmounts && (
-              <div className="d-flex justify-content-between align-items-center mt-2 pt-2" style={{ borderTop: "1px dashed rgba(217,119,6,.35)" }}>
-                <div>
-                  <div className="fw-bold" style={{ color: "#c2410c", fontSize: "8px", letterSpacing: ".7px" }}>🎀 GIFT VALUE</div>
-                  <div style={{ color: "#a16207", fontSize: "8px", marginTop: "2px" }}>Complimentary benefit included</div>
-                </div>
-
-                <div className="fw-bold px-2 py-1 rounded-3" style={{ background: "linear-gradient(135deg,#fef3c7,#fce7f3)", color: "#be123c", border: "1px solid #f5c2d7", fontSize: "13px", boxShadow: "0 2px 7px rgba(190,24,93,.08)", whiteSpace: "nowrap" }}>
-                  {giftPKR.toLocaleString()} <span style={{ fontSize: "8px", marginLeft: "3px", color: "#7c3aed" }}>PKR</span>
-                </div>
-              </div>
-            )}
-
-            <div className="text-center mt-1" style={{ color: "#c2410c", fontSize: "7px", letterSpacing: ".6px" }}>
-              ✨ WITH OUR COMPLIMENTS ✨
             </div>
           </div>
         </div>
