@@ -29,6 +29,7 @@ import PurchaseDetail from "./screens/PurchaseDetail";
 import PendingPurchase from "./screens/PendingPurchase";
 import Supplier from "./screens/Supplier";
 import CustomersList from "./screens/CustomersList";
+import BankProfiles from "./screens/BankProfiles";
 
 // LEDGERS
 import CustomerLedger from "./screens/CustomerLedger";
@@ -166,6 +167,7 @@ export default function App() {
       {page === "supplier" && <Supplier onNavigate={navigate} />}
       {page === "customersList" && <CustomersList onNavigate={navigate} />}
       {page === "purchaseList" && <PurchaseList onNavigate={navigate} />}
+      {page === "bankProfiles" && <BankProfiles onNavigate={navigate} />}
       {page === "pendingPurchase" && <PendingPurchase onNavigate={navigate} />}
       {page === "purchase_detail" && (
         <PurchaseDetail refNo={detail} onNavigate={navigate} />
