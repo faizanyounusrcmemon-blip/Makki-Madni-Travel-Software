@@ -59,17 +59,7 @@ const styles = {
     borderBottom: "1px solid #eee",
     background: "#fff",
   },
-  button: {
-    borderRadius: "50px",
-    padding: "7px 18px",
-    fontWeight: "600",
-    border: "none",
-    color: "#fff",
-    background: "linear-gradient(to right, #d4af37, #f5d76e)",
-    boxShadow: "0 5px 15px rgba(0,0,0,0.15)",
-    cursor: "pointer",
-    transition: "0.3s",
-  },
+
 };
 
 export default function Card({ onNavigate }) {
