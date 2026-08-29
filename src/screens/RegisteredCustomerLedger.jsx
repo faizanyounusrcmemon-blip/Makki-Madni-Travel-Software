@@ -2,7 +2,6 @@ import React, { useState, useEffect } from "react";
 import useLedgerExport from "../hooks/useLedgerExport";
 import Swal from "sweetalert2";
 
-
 /* ================= DATE HELPER FUNCTIONS ================= */
 
 const toInputDate = (d) => {
@@ -34,6 +33,7 @@ const getTripDurationText = (dates) => {
   return `${diff + 1} Days / ${diff} Nights`;
 };
 
+
 const getRowDate = (r) => {
   if (!r) return "-";
   return formatDate(r.date || r.payment_date || r.created_at);
@@ -64,11 +64,12 @@ const numberToWords = (num) => {
 const getTodayInputDate = () => toInputDate(new Date());
 
 export default function RegisteredCustomerLedger({ onNavigate }) {
+  const { exportPDF: handleExportPDF, exportExcel: handleExportExcel } = useLedgerExport();
   const [customerCode, setCustomerCode] = useState("");
   const [customerName, setCustomerName] = useState("");
   const [rows, setRows] = useState([]);
   const [pending, setPending] = useState([]);
-  const { exportPDF: handleExportPDF, exportExcel: handleExportExcel } = useLedgerExport();
+  const [pendingSearch, setPendingSearch] = useState("");
 
   // Date Filters
   const [startDate, setStartDate] = useState("");
@@ -79,7 +80,9 @@ export default function RegisteredCustomerLedger({ onNavigate }) {
   const [amountDisp, setAmountDisp] = useState("");
   const [date, setDate] = useState(getTodayInputDate());
   const [type, setType] = useState("payment");
-  const [method, setMethod] = useState("Bank");
+  const [method, setMethod] = useState("Cash");
+  const [bankProfiles, setBankProfiles] = useState([]);
+  const [selectedBankProfile, setSelectedBankProfile] = useState("");
   const [saving, setSaving] = useState(false);
 
   // Dynamic Detail Modal States
@@ -87,29 +90,74 @@ export default function RegisteredCustomerLedger({ onNavigate }) {
   const [detailType, setDetailType] = useState("");
   const [detailLoading, setDetailLoading] = useState(false);
   const [detailData, setDetailData] = useState(null);
+
   const getModalTotalSar = () => Number(detailData?.total_sar || detailData?.grand_total_sar || 0);
   const getModalPkrRate = () => Number(detailData?.pkr_rate || detailData?.rate || 0);
   const getModalTotalPkr = () => Number(detailData?.total_pkr || detailData?.grand_total || detailData?.total_amount || 0);
 
-
   /* =========================
-     LOAD PENDING CUSTOMERS
+     LOAD BANK PROFILES
   ========================== */
-  const loadPending = async () => {
-    try {
-      const r = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/registered-ledger/pending/list`);
-      const d = await r.json();
-      if (d.success) {
-        setPending(d.rows || []);
-      }
-    } catch (e) {
-      console.error("Error loading pending registered users:", e);
+  useEffect(() => {
+    fetch(`${import.meta.env.VITE_BACKEND_URL}/api/bank-ledger/profiles`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success) {
+          setBankProfiles(data.profiles || []);
+        }
+      })
+      .catch((err) => console.error("Error loading bank profiles:", err));
+  }, []);
+
+/* =========================
+   FIXED: LOAD PENDING CUSTOMERS ONLY BY CODE
+========================== */
+const loadPending = async () => {
+  try {
+    const r = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/registered-ledger/pending/list`);
+    const d = await r.json();
+    if (d.success) {
+      const rawList = d.rows || [];
+      const uniqueCustomersMap = new Map();
+
+      rawList.forEach((item) => {
+        const code = String(item.customer_code || "").trim().toUpperCase();
+        const isIndividualInvoiceRef = /^(HOT-|PKG-|TIC-|VISA-|ZIY-|TRN-|CARD-|GRP-)/i.test(code);
+
+        if (!code || isIndividualInvoiceRef) return;
+
+        const bal = Number(item.remaining_balance || item.balance || 0);
+
+        if (!uniqueCustomersMap.has(code)) {
+          uniqueCustomersMap.set(code, {
+            customer_code: code,
+            customer_name: item.customer_name || "Registered Customer",
+            remaining_balance: bal,
+            payment_status: item.payment_status || (bal < 0 ? "EXTRA PAID" : "PENDING")
+          });
+        }
+      });
+
+      setPending(Array.from(uniqueCustomersMap.values()));
     }
-  };
+  } catch (e) {
+    console.error("Error loading pending registered users:", e);
+  }
+};
 
   useEffect(() => {
     loadPending();
   }, []);
+
+// Filtered Pending List Search Logic
+const filteredPending = pending.filter((p) => {
+  const query = pendingSearch.trim().toLowerCase();
+  if (!query) return true;
+  return (
+    (p.customer_code && p.customer_code.toLowerCase().includes(query)) ||
+    (p.customer_name && p.customer_name.toLowerCase().includes(query))
+  );
+});
 
   /* =========================
      LOAD SPECIFIC LEDGER
@@ -312,11 +360,14 @@ const fetchSaleDetail = async (id, description) => {
     if (amountRaw <= 0) {
       return Swal.fire({ width: "300px", icon: "warning", text: "Please enter a valid amount" });
     }
+    if (method === "Bank" && !selectedBankProfile) {
+      return Swal.fire({ width: "300px", icon: "warning", text: "Please select a Bank Profile" });
+    }
 
     setSaving(true);
     Swal.fire({
       width: "250px",
-      title: "Saving Entry...",
+      title: "Saving Receipt...",
       allowOutsideClick: false,
       didOpen: () => Swal.showLoading()
     });
@@ -330,6 +381,7 @@ const fetchSaleDetail = async (id, description) => {
           amount: Number(amountRaw),
           payment_date: date || getTodayInputDate(),
           payment_method: method,
+          bank_profile_id: method === "Bank" ? selectedBankProfile : null,
           type
         }),
       });
@@ -341,6 +393,7 @@ const fetchSaleDetail = async (id, description) => {
         setAmountRaw(0);
         setAmountDisp("");
         setDate(getTodayInputDate());
+        setSelectedBankProfile("");
         await loadLedger(customerCode);
         await loadPending();
         Swal.fire({ width: "280px", icon: "success", text: "Transaction Saved Successfully!" });
@@ -377,7 +430,7 @@ const fetchSaleDetail = async (id, description) => {
       width: "320px",
       html: `
         <div style="text-align:left;">
-          <label style="font-size:13px; font-weight:bold;">Enter Authorization Password:</label>
+          <label style="font-size:13px; font-weight:bold;">🔐Enter Delete Password:</label>
           <div style="position:relative; margin-top:8px;">
             <input id="swal-pass" type="password" class="swal2-input" 
               style="width:100%; height:38px; margin:0; padding-right:40px; font-size:14px;" placeholder="Password" />
@@ -440,40 +493,41 @@ const fetchSaleDetail = async (id, description) => {
   };
 
 /* =========================
-   EDIT ROW (STEP 1: PASSWORD -> STEP 2: EDIT FORM)
+   EDIT ROW (2-STEP VERIFICATION FLOW)
 ========================== */
 const editRow = async (row) => {
   if (
-    String(row.id).startsWith("SALE-") || 
-    String(row.id).startsWith("TIC-") || 
-    String(row.id).startsWith("HOT-") ||
-    String(row.id).startsWith("SNAPSHOT")
+    String(row.id).startsWith("SALE-") ||
+    String(row.id).startsWith("TIC-") ||
+    String(row.id).startsWith("HOT-")
   ) {
-    return Swal.fire({ 
-      width: "300px", 
-      icon: "warning", 
-      text: "Invoice / Snapshot entries cannot be edited here. Edit from original module." 
+    return Swal.fire({
+      width: "300px",
+      icon: "warning",
+      text: "Invoice entry cannot be edited here. Edit from original module.",
     });
   }
 
-  // STEP 1: Pehle Password Pop-up Khulega
+  // ----------------------------------------------------
+  // STEP 1: PASSWORD VERIFICATION POPUP
+  // ----------------------------------------------------
   const { value: passInput } = await Swal.fire({
     width: "320px",
-    title: "🔒 Authorization Required",
+    title: "🔐 Enter Edit Password",
     html: `
       <div style="text-align:left;">
-        <label style="font-size:13px; font-weight:bold;">Enter Password to Edit:</label>
+        <label style="font-size:13px; font-weight:bold;">Enter Password to Unlock Edit:</label>
         <div style="position:relative; margin-top:8px;">
-          <input id="swal-pass-edit" type="password" class="swal2-input" 
+          <input id="swal-edit-auth-pass" type="password" class="swal2-input" 
             style="width:100%; height:38px; margin:0; padding-right:40px; font-size:14px;" placeholder="Password" />
-          <span id="eye-toggle-edit-step1" style="position:absolute; right:12px; top:50%; transform:translateY(-50%); cursor:pointer; font-size:16px; user-select:none;">👁</span>
+          <span id="eye-toggle-auth" style="position:absolute; right:12px; top:50%; transform:translateY(-50%); cursor:pointer; font-size:16px; user-select:none;">👁</span>
         </div>
       </div>
     `,
     showCancelButton: true,
     confirmButtonText: "Verify Password",
     preConfirm: () => {
-      const val = document.getElementById("swal-pass-edit").value.trim();
+      const val = document.getElementById("swal-edit-auth-pass").value;
       if (!val) {
         Swal.showValidationMessage("Password cannot be empty");
         return false;
@@ -481,47 +535,60 @@ const editRow = async (row) => {
       return val;
     },
     didOpen: () => {
-      const input = document.getElementById("swal-pass-edit");
-      const eye = document.getElementById("eye-toggle-edit-step1");
+      const input = document.getElementById("swal-edit-auth-pass");
+      const eye = document.getElementById("eye-toggle-auth");
       let visible = false;
       eye.addEventListener("click", () => {
         visible = !visible;
         input.type = visible ? "text" : "password";
         eye.textContent = visible ? "🙈" : "👁";
       });
-    }
+    },
   });
 
-  if (!passInput) return;
+  if (!passInput) return; // Agar user cancel kare ya password na daale
 
-  // Backend par Password Check Karein
+  // Password verify hote hi brief loading indicator
   Swal.fire({
     width: "250px",
     title: "Verifying...",
     allowOutsideClick: false,
-    didOpen: () => Swal.showLoading()
+    didOpen: () => Swal.showLoading(),
   });
 
+  // Backend password check
   try {
-    const verifyRes = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/registered-ledger/verify-password`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ password: passInput })
-    });
+    const verifyRes = await fetch(
+      `${import.meta.env.VITE_BACKEND_URL}/api/registered-ledger/verify-password`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password: passInput }),
+      }
+    );
     const verifyData = await verifyRes.json();
-    Swal.close();
 
     if (!verifyData.success) {
-      return Swal.fire({ width: "300px", icon: "error", text: verifyData.error || "Wrong Password!" });
+      return Swal.fire({
+        width: "300px",
+        icon: "error",
+        text: verifyData.error || "Incorrect Authorization Password!",
+      });
     }
   } catch (err) {
-    Swal.close();
-    return Swal.fire({ width: "300px", icon: "error", text: "Network verification error" });
+    return Swal.fire({
+      width: "300px",
+      icon: "error",
+      text: "Network error during password verification",
+    });
   }
 
-  // STEP 2: Password Sahi Hone par Form Khulega
-  const formattedDate = toInputDate(row.date || row.payment_date) || getTodayInputDate();
-  const currentType = (row.type || "payment").toLowerCase();
+  // ----------------------------------------------------
+  // STEP 2: EDIT FORM POPUP (Password Verified True!)
+  // ----------------------------------------------------
+  const formattedDate =
+    toInputDate(row.date || row.payment_date) || getTodayInputDate();
+  const currentType = row.type || "payment";
 
   const { value: formValues } = await Swal.fire({
     width: "360px",
@@ -530,7 +597,23 @@ const editRow = async (row) => {
       <div style="text-align:left; font-size:12px;" class="d-flex flex-column gap-2">
         <div>
           <label class="fw-bold mb-1">Amount (PKR)</label>
-          <input id="swal-edit-amount" type="number" class="form-control form-control-sm" value="${row.debit || row.credit || 0}" />
+          <input id="swal-edit-amount" type="number" class="form-control form-control-sm" value="${
+            row.debit || row.credit || 0
+          }" />
+        </div>
+        <div>
+          <label class="fw-bold mb-1">Transaction Type</label>
+          <select id="swal-edit-type" class="form-select form-select-sm">
+            <option value="payment" ${
+              currentType === "payment" ? "selected" : ""
+            }>payment</option>
+            <option value="adjustment" ${
+              currentType === "adjustment" ? "selected" : ""
+            }>adjustment</option>
+            <option value="opening_balance" ${
+              currentType === "opening_balance" ? "selected" : ""
+            }>🔑 opening_balance (Credit)</option>
+          </select>
         </div>
         <div>
           <label class="fw-bold mb-1">Receipt Date</label>
@@ -540,18 +623,31 @@ const editRow = async (row) => {
           </div>
         </div>
         <div>
-          <label class="fw-bold mb-1">Transaction Type</label>
-          <select id="swal-edit-type" class="form-select form-select-sm">
-            <option value="payment" ${currentType.includes("payment") ? "selected" : ""}>Payment (Debit)</option>
-            <option value="adjustment" ${currentType.includes("adjustment") ? "selected" : ""}>Adjustment (Debit)</option>
-            <option value="opening_balance" ${currentType.includes("opening") ? "selected" : ""}>🔑 Opening Balance (Credit)</option>
-          </select>
-        </div>
-        <div>
-          <label class="fw-bold mb-1">Payment Method</label>
+          <label class="fw-bold mb-1">Payment Method / Bank</label>
           <select id="swal-edit-method" class="form-select form-select-sm">
-            <option value="Bank" ${row.description?.includes("Bank") ? "selected" : ""}>Bank</option>
-            <option value="Cash" ${row.description?.includes("Cash") ? "selected" : ""}>Cash</option>
+            <option value="Cash" ${
+              !row.bank_profile_id &&
+              (row.description?.includes("Cash") ||
+                !row.description?.includes("Bank"))
+                ? "selected"
+                : ""
+            }>💵 Cash</option>
+            ${
+              bankProfiles.length > 0
+                ? bankProfiles
+                    .map(
+                      (p) => `
+                      <option 
+                        value="Bank_${p.id}" 
+                        ${row.bank_profile_id == p.id ? "selected" : ""}
+                      >
+                        🏦 ${p.bank_name} (${p.account_number})
+                      </option>
+                    `
+                    )
+                    .join("")
+                : `<option disabled>No Bank Profiles Found</option>`
+            }
           </select>
         </div>
       </div>
@@ -562,15 +658,16 @@ const editRow = async (row) => {
     didOpen: () => {
       const dateInput = document.getElementById("swal-edit-date");
       const dateTextLabel = document.getElementById("swal-edit-date-text");
+
       dateInput.addEventListener("change", (e) => {
         dateTextLabel.textContent = formatDate(e.target.value);
       });
     },
     preConfirm: () => {
       const amount = document.getElementById("swal-edit-amount").value;
+      const selectedType = document.getElementById("swal-edit-type").value;
       const payment_date = document.getElementById("swal-edit-date").value;
-      const payment_method = document.getElementById("swal-edit-method").value;
-      const type = document.getElementById("swal-edit-type").value;
+      const selectedVal = document.getElementById("swal-edit-method").value;
 
       if (!amount || Number(amount) <= 0) {
         Swal.showValidationMessage("Valid amount required");
@@ -581,32 +678,43 @@ const editRow = async (row) => {
         return false;
       }
 
+      let payment_method = "Cash";
+      let bank_profile_id = null;
+
+      if (selectedVal.startsWith("Bank_")) {
+        payment_method = "Bank";
+        bank_profile_id = selectedVal.split("_")[1];
+      }
+
       return {
         amount: Number(amount),
         payment_date,
         payment_method,
-        type,
-        password: passInput // Pehle step se verified password bhej rahe hain
+        bank_profile_id,
+        type: selectedType,
       };
-    }
+    },
   });
 
   if (!formValues) return;
 
-  // STEP 3: Submit Update
+  // Submit to Backend
   Swal.fire({
     width: "250px",
     title: "Updating...",
     allowOutsideClick: false,
-    didOpen: () => Swal.showLoading()
+    didOpen: () => Swal.showLoading(),
   });
 
   try {
-    const r = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/registered-ledger/edit/${row.id}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(formValues)
-    });
+    const r = await fetch(
+      `${import.meta.env.VITE_BACKEND_URL}/api/registered-ledger/edit/${row.id}`,
+      {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formValues),
+      }
+    );
 
     const d = await r.json();
     Swal.close();
@@ -614,13 +722,25 @@ const editRow = async (row) => {
     if (d.success) {
       await loadLedger(customerCode);
       await loadPending();
-      Swal.fire({ width: "280px", icon: "success", text: "Transaction Updated Successfully" });
+      Swal.fire({
+        width: "280px",
+        icon: "success",
+        text: "Transaction Updated Successfully",
+      });
     } else {
-      Swal.fire({ width: "300px", icon: "error", text: d.error || "Update Failed!" });
+      Swal.fire({
+        width: "300px",
+        icon: "error",
+        text: d.error || "Update Failed!",
+      });
     }
   } catch (err) {
     Swal.close();
-    Swal.fire({ width: "300px", icon: "error", text: "Network communication error" });
+    Swal.fire({
+      width: "300px",
+      icon: "error",
+      text: "Network communication error",
+    });
   }
 };
 
@@ -673,30 +793,49 @@ const editRow = async (row) => {
               <span>⏳ Outstanding Ledgers</span>
               <button className="btn btn-outline-light btn-sm py-0 px-2" onClick={loadPending}>🔄</button>
             </div>
-            <div className="card-body p-2" style={{ maxHeight: "75vh", overflowY: "auto" }}>
-              {pending.length === 0 ? (
-                <div className="p-3 text-center text-muted">
-                  <h6>✅ No Pending Ledger</h6>
-                  <p className="small mb-0">All registered customers are clear!</p>
-                </div>
-              ) : (
-                <div className="list-group list-group-flush">
-                  {pending.map((p, i) => (
-                    <div
-                      key={i}
-                      onClick={() => {
-                        setCustomerCode(p.customer_code);
-                        loadLedger(p.customer_code);
-                      }}
-                      className="list-group-item list-group-item-action p-2 mb-2 rounded border-start border-4 cursor-pointer"
-                      style={{
-                        cursor: "pointer",
-                        borderStartColor: p.payment_status === "PENDING" ? "#dc3545" : "#ffc107",
-                        backgroundColor: p.customer_code === customerCode ? "#e2eafd" : "#f8f9fa"
-                      }}
-                    >
+
+{/* YE SEARCH BOX ADD KAREIN */}
+<div className="p-2 border-bottom bg-light">
+  <input
+    type="text"
+    className="form-control form-control-sm"
+    placeholder="🔍 Search Customer Code or Name..."
+    value={pendingSearch}
+    onChange={(e) => setPendingSearch(e.target.value)}
+  />
+</div>
+
+<div className="card-body p-2" style={{ maxHeight: "70vh", overflowY: "auto" }}>
+  {filteredPending.length === 0 ? (
+    <div className="p-3 text-center text-muted">
+      <h6>{pending.length === 0 ? "✅ No Pending Ledger" : "🔍 No Customer Found"}</h6>
+      <p className="small mb-0">
+        {pending.length === 0 ? "All registered customers are clear!" : "Try searching with a different code or name."}
+      </p>
+    </div>
+  ) : (
+    <div className="list-group list-group-flush">
+      {/* PENDING KI JAGAH FILTEREDPENDING USE KAREIN */}
+      {filteredPending.map((p, i) => (
+        <div
+          key={i}
+          onClick={() => {
+            setCustomerCode(p.customer_code);
+            loadLedger(p.customer_code);
+          }}
+          className="list-group-item list-group-item-action p-2 mb-2 rounded border-start border-4 cursor-pointer"
+          style={{
+            cursor: "pointer",
+            borderStartColor: p.payment_status === "PENDING" ? "#dc3545" : "#ffc107",
+            backgroundColor: p.customer_code === customerCode ? "#e2eafd" : "#f8f9fa"
+          }}
+        >
                       <div className="d-flex justify-content-between align-items-start mb-1">
-                        <span className="badge bg-dark font-monospace" style={{ fontSize: "0.75rem" }}>{p.customer_code}</span>
+                        {/* Always displays unique Customer Code */}
+                        {/* Always displays strictly Customer Code */}
+<span className="badge bg-dark font-monospace" style={{ fontSize: "0.75rem" }}>
+  {p.customer_code}
+</span>
                         <span className={`badge py-0 px-1 ${
                           p.payment_status === "PENDING" ? "bg-danger" :
                           p.payment_status === "EXTRA PAID" ? "bg-success" : "bg-warning text-dark"
@@ -763,10 +902,10 @@ const editRow = async (row) => {
           </div>
 
           <div className={`card shadow-sm mb-3 ${!customerCode ? "opacity-50" : ""}`} style={{ pointerEvents: !customerCode ? "none" : "auto" }}>
-            <div className="card-header bg-dark text-white fw-bold">📥 Post New Payment / Entry</div>
+            <div className="card-header bg-dark text-white fw-bold">📥 Post New Payment / Receipt</div>
             <div className="card-body">
               <div className="row g-2 mb-3">
-                <div className="col-md-3">
+                <div className="col-md-2">
                   <label className="form-label small text-muted mb-1">Receipt Date</label>
                   <input type="date" className="form-control" value={date} onChange={(e) => setDate(e.target.value)} />
                   <span className="text-primary fw-bold d-block mt-1" style={{ fontSize: "0.75rem" }}>
@@ -793,21 +932,38 @@ const editRow = async (row) => {
                     </div>
                   )}
                 </div>
-                <div className="col-md-3">
+                <div className="col-md-2">
                   <label className="form-label small text-muted mb-1">Transaction Type</label>
                   <select className="form-select" value={type} onChange={(e) => setType(e.target.value)}>
-                    <option value="payment">payment (Debit)</option>
-                    <option value="adjustment">adjustment (Debit)</option>
+                    <option value="payment">payment</option>
+                    <option value="adjustment">adjustment</option>
                     <option value="opening_balance">🔑 opening_balance (Credit)</option>
                   </select>
                 </div>
-                <div className="col-md-3">
+                <div className="col-md-2">
                   <label className="form-label small text-muted mb-1">Payment Method</label>
                   <select className="form-select" value={method} onChange={(e) => setMethod(e.target.value)}>
-                    <option value="Bank">Bank</option>
                     <option value="Cash">Cash</option>
+                    <option value="Bank">Bank</option>
                   </select>
                 </div>
+                {method === "Bank" && (
+                  <div className="col-md-3">
+                    <label className="form-label small text-muted mb-1">Select Bank Account</label>
+                    <select
+                      className="form-select fw-bold"
+                      value={selectedBankProfile}
+                      onChange={(e) => setSelectedBankProfile(e.target.value)}
+                    >
+                      <option value="">-- Choose Bank --</option>
+                      {bankProfiles.map((p) => (
+                        <option key={p.id} value={p.id}>
+                          {p.bank_name} ({p.account_number})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
               </div>
               <button className="btn btn-success px-4 fw-bold" disabled={saving || !customerCode} onClick={saveEntry}>
                 {saving ? "Saving Entry..." : "💾 Save Entry"}
@@ -825,8 +981,8 @@ const editRow = async (row) => {
 <thead className="table-dark">
   <tr>
     <th style={{ width: "12%" }}>Date</th>
-    <th style={{ width: "36%" }}>Details / Description</th>
-    <th style={{ width: "12%" }}>Method</th>  {/* 👈 Added */}
+    <th style={{ width: "38%" }}>Details / Description</th>
+    <th style={{ width: "12%" }}>Payment Method</th> {/* 👈 Ye new header add karein */}
     <th style={{ width: "12%" }} className="text-end">Debit (-)</th>
     <th style={{ width: "12%" }} className="text-end">Credit (+)</th>
     <th style={{ width: "12%" }} className="text-end">Balance</th>
@@ -845,27 +1001,20 @@ const editRow = async (row) => {
                       const idStr = String(r.id || "");
                       const isSale = idStr.startsWith("SALE-") || idStr.startsWith("BKG-") || idStr.startsWith("TIC-") || idStr.startsWith("HOT-") || idStr.startsWith("VIS-") || idStr.startsWith("PKG-") || idStr.startsWith("ZIY-") || idStr.startsWith("TRN-") || idStr.startsWith("CRD-") || idStr.startsWith("GRP-");
                       return (
-<tr key={r.id || i}>
-  <td>{getRowDate(r)}</td>
-  <td>{r.description}</td>
+                        <tr key={r.id || i}>
+                          <td>{getRowDate(r)}</td>
+                          <td>{r.description}</td>
 <td className="text-center small">
-  {r.payment_method && r.payment_method !== "-" ? (
-    <span
-      className={`badge ${
-        r.payment_method.toLowerCase() === "cash"
-          ? "bg-success"
-          : r.payment_method.toLowerCase() === "bank"
-          ? "bg-primary"
-          : "bg-info text-dark"
-      }`}
-    >
-      {r.payment_method}
-    </span>
-  ) : (
-    "-"
-  )}
-</td>
-  <td className="text-end text-danger fw-bold font-monospace">{r.debit > 0 ? fmtAmt(r.debit) : "-"}</td>
+        {r.payment_method && r.payment_method !== "-" ? (
+          <span className={`badge ${r.payment_method.toLowerCase() === "cash" ? "bg-success" : "bg-primary"}`}>
+            {r.bank_name ? `Bank: ${r.bank_name}` : r.payment_method}
+          </span>
+        ) : (
+          "-"
+        )}
+      </td>
+
+                          <td className="text-end text-danger fw-bold font-monospace">{r.debit > 0 ? fmtAmt(r.debit) : "-"}</td>
                           <td className="text-end text-success fw-bold font-monospace">{r.credit > 0 ? fmtAmt(r.credit) : "-"}</td>
                           <td className="text-end fw-bold font-monospace" style={{ backgroundColor: "#fdfdfd" }}>
                             {fmtAmt(r.balance)}

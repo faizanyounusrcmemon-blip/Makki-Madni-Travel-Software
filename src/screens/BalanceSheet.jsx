@@ -31,6 +31,7 @@ export default function BalanceSheet({ onNavigate }) {
   if (!data) return null;
 
   // Filters & Cleaning
+  const bankRows = data.banks || [];
   const standardRows = (data.customers || []).map(r => ({ ...r, balance: cleanBalance(r.balance) })).filter(r => r.balance !== 0);
   const registeredRows = (data.registeredCustomers || []).map(r => ({ ...r, balance: cleanBalance(r.balance) })).filter(r => r.balance !== 0);
   const supplierRows = (data.suppliers || []).map(r => ({ ...r, balance: cleanBalance(r.balance) })).filter(r => r.balance !== 0);
@@ -49,7 +50,6 @@ export default function BalanceSheet({ onNavigate }) {
   const cashInHand = Number(data.summary?.cash_in_hand || 0);
   const bankBalance = Number(data.summary?.bank_balance || 0);
   
-  // Split Receivables Breakdown
   const walkinReceivable = Number(data.summary?.walkin_receivable || 0);
   const registeredReceivable = Number(data.summary?.registered_receivable || 0);
   const totalReceivable = Number(data.summary?.total_receivable || (walkinReceivable + registeredReceivable));
@@ -123,6 +123,45 @@ export default function BalanceSheet({ onNavigate }) {
               <h5 className="fw-bold text-danger mt-1 mb-0">PKR {fmt(totalPayable)}</h5>
             </div>
           </div>
+        </div>
+      </div>
+
+{/* BANK ACCOUNTS LIST SECTION */}
+      <div className="card shadow-sm mb-4 border-start border-primary border-3">
+        <div className="card-header bg-white fw-bold text-primary d-flex justify-content-between align-items-center">
+          <span>🏦 Active Bank Accounts Breakdown</span>
+          <span className="badge bg-primary-subtle text-primary border border-primary">Bank Profiles</span>
+        </div>
+        <div className="table-responsive">
+          <table className="table table-hover align-middle mb-0">
+            <thead className="table-light">
+              <tr>
+                <th>#</th>
+                <th>Bank Name</th>
+                <th>Account Title</th>
+                <th>Account Number</th>
+                <th className="text-end">Available Balance</th>
+              </tr>
+            </thead>
+            <tbody>
+              {bankRows.length === 0 && <tr><td colSpan="5" className="text-center text-muted py-3">No active bank accounts found.</td></tr>}
+              {bankRows.map((b, i) => (
+                <tr key={i}>
+                  <td>{i + 1}</td>
+                  <td className="fw-bold text-dark">{b.bank_name}</td>
+                  <td className="fw-semibold text-secondary">{b.account_title}</td>
+                  <td className="text-muted">{b.account_number}</td>
+                  <td className={`text-end fw-bold ${b.balance < 0 ? "text-danger" : "text-primary"}`}> {fmt(b.balance)}</td>
+                </tr>
+              ))}
+            </tbody>
+            <tfoot className="table-light fw-bold">
+              <tr>
+                <td colSpan="4" className="text-end">Combined Total Bank Balance:</td>
+                <td className={`text-end fs-6 ${bankBalance < 0 ? "text-danger" : "text-primary"}`}> {fmt(bankBalance)}</td>
+              </tr>
+            </tfoot>
+          </table>
         </div>
       </div>
 
@@ -253,12 +292,12 @@ export default function BalanceSheet({ onNavigate }) {
                 <td>💵 Cash in Hand Balance</td>
                 <td className="text-end fw-bold text-success">{fmt(cashInHand)}</td>
               </tr>
-              <tr>
-                <td>🏦 Bank Account Balance</td>
-                <td className="text-end fw-bold text-primary">{fmt(bankBalance)}</td>
+              <tr className="fw-bold bg-light">
+                <td>🏛️ Total Combined Bank Balance</td>
+                <td className="text-end text-primary">{fmt(bankBalance)}</td>
               </tr>
               <tr className="table-success table-opacity-10 fw-bold">
-                <td>💰 Total Liquid Funds (Cash + Bank)</td>
+                <td>💰 Total Liquid Funds (Cash + Total Banks)</td>
                 <td className="text-end text-success">{fmt(cashInHand + bankBalance)}</td>
               </tr>
 

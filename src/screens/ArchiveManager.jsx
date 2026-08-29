@@ -305,7 +305,8 @@ export default function ArchiveManager({ onNavigate }) {
           opening_bank: res.data.opening_bank !== undefined ? res.data.opening_bank : prev?.opening_bank,
           opening_profit: res.data.opening_profit !== undefined ? res.data.opening_profit : prev?.opening_profit,
           customers: res.data.customers || prev?.customers || [],
-          suppliers: res.data.suppliers || prev?.suppliers || []
+          suppliers: res.data.suppliers || prev?.suppliers || [],
+          bank_balances: res.data.bank_balances || prev?.bank_balances || []
         }));
 
         await Swal.fire({
@@ -628,7 +629,7 @@ export default function ArchiveManager({ onNavigate }) {
               <h3 style={styles.blockValue}>PKR {Number(preview.opening_cash || 0).toLocaleString()}</h3>
             </div>
             <div style={styles.summaryBlock}>
-              <span style={styles.blockLabel}>Opening Bank</span>
+              <span style={styles.blockLabel}>Opening Bank (Total)</span>
               <h3 style={styles.blockValue}>PKR {Number(preview.opening_bank || 0).toLocaleString()}</h3>
             </div>
             <div style={styles.summaryBlock}>
@@ -637,20 +638,40 @@ export default function ArchiveManager({ onNavigate }) {
             </div>
           </div>
 
+          {/* 🏦 INDIVIDUAL BANK ACCOUNTS BREAKDOWN */}
+          {preview.bank_balances && preview.bank_balances.length > 0 && (
+            <div style={{ marginBottom: "20px" }}>
+              <h4 style={{ color: "#38bdf8", fontSize: "13px", fontWeight: "700", marginBottom: "10px" }}>
+                🏦 INDIVIDUAL BANK ACCOUNTS BREAKDOWN
+              </h4>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "10px" }}>
+                {preview.bank_balances.map((b) => (
+                  <div key={b.id} style={{ background: "#0f172a", padding: "10px 14px", borderRadius: "8px", border: "1px solid #334155" }}>
+                    <div style={{ fontSize: "12px", color: "#f8fafc", fontWeight: "700" }}>{b.bank_name}</div>
+                    <div style={{ fontSize: "11px", color: "#94a3b8" }}>{b.account_title} ({b.account_number || "N/A"})</div>
+                    <div style={{ fontSize: "14px", color: "#38bdf8", fontWeight: "700", marginTop: "4px" }}>
+                      PKR {Number(b.balance || 0).toLocaleString()}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* CUSTOMERS & SUPPLIERS GRID */}
           <div style={styles.tableGrid}>
             {/* CUSTOMERS PANEL */}
             <div style={styles.panelBox}>
               <div style={styles.panelHeader}>
-                <span>👤 CUSTOMERS ({preview.customer_count || preview.customerCount || 0})</span>
+                <span>👥 CUSTOMERS ({preview.customer_count || preview.customerCount || 0})</span>
               </div>
               <div style={styles.panelBody}>
                 {preview.customers && preview.customers.length > 0 ? (
                   preview.customers.map((c, i) => (
                     <div key={i} style={styles.listItemSub}>
                       <div>
-                        <b style={{ color: "#38bdf8", fontSize: "13px" }}>{c.customer_code || c.ref_no || "REG-CUST"}</b>
-                        <span style={{ color: "#cbd5e1", marginLeft: "6px", fontSize: "13px" }}>{c.customer_name}</span>
-                        <div style={{ fontSize: "11px", color: "#64748b" }}>Type: {c.customer_type || 'Standard'}</div>
+                        <b style={{ color: "#f8fafc", fontSize: "13px" }}>{c.customer_name}</b>
+                        <div style={{ fontSize: "11px", color: "#64748b" }}>Code: {c.customer_code || 'N/A'}</div>
                       </div>
                       <b style={{ color: "#f8fafc", fontSize: "13px" }}>{Number(c.balance || 0).toLocaleString()}</b>
                     </div>
@@ -921,13 +942,13 @@ const styles = {
     maxHeight: "220px",
     overflowY: "auto"
   },
-  listItemSub: {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    padding: "8px 12px",
-    borderBottom: "1px solid #1e293b"
-  },
+listItemSub: {
+  display: "flex",
+  justifyContent: "space-between", // Fixed
+  alignItems: "center",
+  padding: "8px 12px",
+  borderBottom: "1px solid #1e293b"
+},
   emptyText: {
     padding: "20px",
     color: "#64748b",

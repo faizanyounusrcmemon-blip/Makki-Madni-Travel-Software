@@ -17,7 +17,7 @@ const parseAmt = (v) => {
   return normalizeZero(Math.round(n || 0));
 };
 
-/* ================= DATE FORMATTER: DD/MMM/YYYY (e.g. 20/Jul/2026) ================= */
+/* ================= DATE FORMATTER: DD/MMM/YYYY ================= */
 const formatDate = (d) => {
   if (!d) return "-";
   const dt = new Date(d);
@@ -52,7 +52,6 @@ const numberToWords = (num) => {
 const today = new Date().toISOString().split("T")[0];
 
 export default function SupplierLedger({ onNavigate }) {
-
   const { exportPDF: handleExportPDF, exportExcel: handleExportExcel } = useLedgerExport();
   const [supplierCode, setSupplierCode] = useState("");
   const [ledger, setLedger] = useState([]);
@@ -70,6 +69,24 @@ export default function SupplierLedger({ onNavigate }) {
   const [snapshotDate, setSnapshotDate] = useState(null);
   const [openingBalance, setOpeningBalance] = useState(0);
 
+  // Bank Profiles state
+  const [bankProfiles, setBankProfiles] = useState([]);
+  const [selectedBankProfile, setSelectedBankProfile] = useState("");
+
+  /* =========================
+     LOAD BANK PROFILES
+  ========================== */
+  useEffect(() => {
+    fetch(`${import.meta.env.VITE_BACKEND_URL}/api/bank-ledger/profiles`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success) {
+          setBankProfiles(data.profiles || []);
+        }
+      })
+      .catch((err) => console.error("Error loading bank profiles:", err));
+  }, []);
+
 /* =========================
    LOAD PENDING / PARTIAL
 ========================== */
@@ -85,8 +102,8 @@ const loadPendingAlways = async () => {
           total_purchase: normalizeZero(p.total_purchase),
           total_paid: normalizeZero(p.total_paid)
         }))
-        // Filter handles zero-check cleanly for both unpaid purchases & opening balance entries
-        .filter(p => p.status !== "PAID" || Math.abs(p.pending_amount) > 0.5)
+        // ✨ Filter out zero balance and PAID status
+        .filter(p => p.status !== "PAID" && Math.abs(p.pending_amount) > 0.5)
         .sort((a, b) => b.pending_amount - a.pending_amount);
       setPending(clean);
     }
@@ -214,6 +231,9 @@ const loadPendingAlways = async () => {
   const saveEntry = async () => {
     if (!supplierCode) return Swal.fire({ icon: "warning", text: "Supplier Code required" });
     if (!amountRaw || amountRaw <= 0) return Swal.fire({ icon: "warning", text: "Amount required" });
+    if (method === "Bank" && !selectedBankProfile) {
+      return Swal.fire({ icon: "warning", text: "Please select a Bank Profile" });
+    }
 
     setSaving(true);
     try {
@@ -226,6 +246,7 @@ const loadPendingAlways = async () => {
             supplier_code: supplierCode,
             payment_date: payDate,
             payment_method: method,
+            bank_profile_id: method === "Bank" ? selectedBankProfile : null,
             amount: amountRaw,
             type
           }),
@@ -240,6 +261,7 @@ const loadPendingAlways = async () => {
 
       setAmountRaw(0);
       setAmountDisp("");
+      setSelectedBankProfile("");
       await loadLedger();
       await loadPendingAlways();
       Swal.fire({ icon: "success", text: "Entry saved" });
@@ -251,7 +273,7 @@ const loadPendingAlways = async () => {
   /* ====================================================
      DELETE ENTRY WITH PASSWORD
   ==================================================== */
-  const askPassword = async (title = "Enter Password") => {
+  const askPassword = async (title = "🔐 Enter Delete Password") => {
     const { value } = await Swal.fire({
       width: "300px",
       html: `
@@ -286,16 +308,6 @@ const loadPendingAlways = async () => {
           toggle.textContent = show ? "🙈" : "👁";
         };
         setTimeout(() => input.focus(), 100);
-        const handleEnter = (e) => {
-          if (e.key === "Enter") {
-            e.preventDefault();
-            document.querySelector(".swal2-confirm").click();
-          }
-        };
-        document.addEventListener("keydown", handleEnter);
-        Swal.getPopup().addEventListener("remove", () => {
-          document.removeEventListener("keydown", handleEnter);
-        });
       }
     });
     return value;
@@ -352,29 +364,31 @@ const loadPendingAlways = async () => {
   };
 
 /* ====================================================
-   EDIT ENTRY (STEP 1: PASSWORD -> STEP 2: EDIT FORM)
+   EDIT ENTRY (2-STEP VERIFICATION FLOW)
 ==================================================== */
 const editEntry = async (entry) => {
   if (entry.entry_type !== "payment" || !entry.id) return;
 
-  // STEP 1: Pehle Password Pop-up Khulega
+  // ----------------------------------------------------
+  // STEP 1: PASSWORD VERIFICATION POPUP
+  // ----------------------------------------------------
   const { value: passInput } = await Swal.fire({
     width: "320px",
-    title: "🔒 Authorization Required",
+    title: "🔐 Enter Edit Password",
     html: `
       <div style="text-align:left;">
-        <label style="font-size:13px; font-weight:bold;">Enter Password to Edit:</label>
+        <label style="font-size:13px; font-weight:bold;">Enter Password to Unlock Edit:</label>
         <div style="position:relative; margin-top:8px;">
-          <input id="swal-pass-edit" type="password" class="swal2-input" 
+          <input id="swal-edit-auth-pass" type="password" class="swal2-input" 
             style="width:100%; height:38px; margin:0; padding-right:40px; font-size:14px;" placeholder="Password" />
-          <span id="eye-toggle-edit-step1" style="position:absolute; right:12px; top:50%; transform:translateY(-50%); cursor:pointer; font-size:16px; user-select:none;">👁</span>
+          <span id="eye-toggle-auth" style="position:absolute; right:12px; top:50%; transform:translateY(-50%); cursor:pointer; font-size:16px; user-select:none;">👁</span>
         </div>
       </div>
     `,
     showCancelButton: true,
     confirmButtonText: "Verify Password",
     preConfirm: () => {
-      const val = document.getElementById("swal-pass-edit").value.trim();
+      const val = document.getElementById("swal-edit-auth-pass").value;
       if (!val) {
         Swal.showValidationMessage("Password cannot be empty");
         return false;
@@ -382,47 +396,68 @@ const editEntry = async (entry) => {
       return val;
     },
     didOpen: () => {
-      const input = document.getElementById("swal-pass-edit");
-      const eye = document.getElementById("eye-toggle-edit-step1");
+      const input = document.getElementById("swal-edit-auth-pass");
+      const eye = document.getElementById("eye-toggle-auth");
       let visible = false;
       eye.addEventListener("click", () => {
         visible = !visible;
         input.type = visible ? "text" : "password";
         eye.textContent = visible ? "🙈" : "👁";
       });
-    }
+    },
   });
 
-  if (!passInput) return;
+  if (!passInput) return; // Agar user cancel kare ya enter na kare
 
-  // Backend par Password Check Karein
+  // Verification loading state
   Swal.fire({
     width: "250px",
     title: "Verifying...",
     allowOutsideClick: false,
-    didOpen: () => Swal.showLoading()
+    didOpen: () => Swal.showLoading(),
   });
 
+  // Verify password with backend
   try {
-    const verifyRes = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/supplier-ledger/verify-password`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ password: passInput })
-    });
+    const verifyRes = await fetch(
+      `${import.meta.env.VITE_BACKEND_URL}/api/supplier-ledger/verify-password`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password: passInput }),
+      }
+    );
     const verifyData = await verifyRes.json();
-    Swal.close();
 
     if (!verifyData.success) {
-      return Swal.fire({ width: "300px", icon: "error", text: verifyData.error || "Wrong Password!" });
+      return Swal.fire({
+        width: "300px",
+        icon: "error",
+        text: verifyData.error || "Incorrect Authorization Password!",
+      });
     }
   } catch (err) {
-    Swal.close();
-    return Swal.fire({ width: "300px", icon: "error", text: "Network verification error" });
+    return Swal.fire({
+      width: "300px",
+      icon: "error",
+      text: "Network error during password verification",
+    });
   }
 
-  // STEP 2: Password Sahi Hone par Form Khulega
-  const formattedDate = entry.date ? new Date(entry.date).toISOString().split('T')[0] : today;
-  const currentType = (entry.type || "payment").toLowerCase();
+  // ----------------------------------------------------
+  // STEP 2: EDIT FORM POPUP (Password Verified True!)
+  // ----------------------------------------------------
+  const formattedDate = entry.date
+    ? new Date(entry.date).toISOString().split("T")[0]
+    : today;
+
+  let currentTypeVal = "payment";
+  const rawType = (entry.type || "").toLowerCase();
+  if (rawType.includes("opening")) {
+    currentTypeVal = "opening_balance";
+  } else if (rawType.includes("adjust")) {
+    currentTypeVal = "adjustment";
+  }
 
   const { value: formValues } = await Swal.fire({
     width: "360px",
@@ -431,7 +466,9 @@ const editEntry = async (entry) => {
       <div style="text-align:left; font-size:12px;" class="d-flex flex-column gap-2">
         <div>
           <label class="fw-bold mb-1">Amount (PKR)</label>
-          <input id="swal-edit-amount" type="number" class="form-control form-control-sm" value="${entry.debit || entry.credit || 0}" />
+          <input id="swal-edit-amount" type="number" class="form-control form-control-sm" value="${
+            entry.debit || entry.credit || 0
+          }" />
         </div>
         <div>
           <label class="fw-bold mb-1">Payment Date</label>
@@ -441,28 +478,56 @@ const editEntry = async (entry) => {
           </div>
         </div>
         <div>
-          <label class="fw-bold mb-1">Transaction Type</label>
+          <label class="fw-bold mb-1">Entry Type</label>
           <select id="swal-edit-type" class="form-select form-select-sm">
-            <option value="payment" ${currentType.includes("payment") ? "selected" : ""}>Payment</option>
-            <option value="adjustment" ${currentType.includes("adjustment") ? "selected" : ""}>Adjustment</option>
-            <option value="opening_balance" ${currentType.includes("opening") ? "selected" : ""}>🔑 Opening Balance (Debit)</option>
+            <option value="payment" ${
+              currentTypeVal === "payment" ? "selected" : ""
+            }>Payment</option>
+            <option value="adjustment" ${
+              currentTypeVal === "adjustment" ? "selected" : ""
+            }>Adjustment</option>
+            <option value="opening_balance" ${
+              currentTypeVal === "opening_balance" ? "selected" : ""
+            }>🔑 Opening Balance</option>
           </select>
         </div>
         <div>
-          <label class="fw-bold mb-1">Method</label>
+          <label class="fw-bold mb-1">Payment Method / Bank</label>
           <select id="swal-edit-method" class="form-select form-select-sm">
-            <option value="Bank" ${entry.payment_method === "Bank" ? "selected" : ""}>Bank</option>
-            <option value="Cash" ${entry.payment_method === "Cash" ? "selected" : ""}>Cash</option>
+            <option value="Cash" ${
+              !entry.bank_profile_id && entry.payment_method === "Cash"
+                ? "selected"
+                : ""
+            }>
+              💵 Cash
+            </option>
+            ${
+              bankProfiles.length > 0
+                ? bankProfiles
+                    .map(
+                      (p) => `
+                      <option 
+                        value="Bank_${p.id}" 
+                        ${entry.bank_profile_id == p.id ? "selected" : ""}
+                      >
+                        🏦 ${p.bank_name} (${p.account_number})
+                      </option>
+                    `
+                    )
+                    .join("")
+                : `<option disabled>No Bank Profiles Found</option>`
+            }
           </select>
         </div>
       </div>
     `,
     showCancelButton: true,
-    confirmButtonText: "Update",
+    confirmButtonText: "Update Entry",
     focusConfirm: false,
     didOpen: () => {
       const dateInput = document.getElementById("swal-edit-date");
       const dateTextLabel = document.getElementById("swal-edit-date-text");
+
       dateInput.addEventListener("change", (e) => {
         dateTextLabel.textContent = formatDate(e.target.value);
       });
@@ -470,36 +535,40 @@ const editEntry = async (entry) => {
     preConfirm: () => {
       const amount = document.getElementById("swal-edit-amount").value;
       const payment_date = document.getElementById("swal-edit-date").value;
-      const payment_method = document.getElementById("swal-edit-method").value;
-      const type = document.getElementById("swal-edit-type").value;
+      const selectedVal = document.getElementById("swal-edit-method").value;
+      const selectedType = document.getElementById("swal-edit-type").value;
 
       if (!amount || Number(amount) <= 0) {
         Swal.showValidationMessage("Valid amount required");
         return false;
       }
-      if (!payment_date) {
-        Swal.showValidationMessage("Valid date required");
-        return false;
+
+      let payment_method = "Cash";
+      let bank_profile_id = null;
+
+      if (selectedVal.startsWith("Bank_")) {
+        payment_method = "Bank";
+        bank_profile_id = selectedVal.split("_")[1];
       }
 
       return {
         amount: Number(amount),
         payment_date,
         payment_method,
-        type,
-        password: passInput // Step 1 ka verified password pass kar rahe hain
+        bank_profile_id,
+        type: selectedType,
       };
-    }
+    },
   });
 
   if (!formValues) return;
 
-  // STEP 3: Save Update
+  // Submit updated values
   Swal.fire({
-    width: "260px",
+    width: "250px",
     title: "Updating...",
     allowOutsideClick: false,
-    didOpen: () => Swal.showLoading()
+    didOpen: () => Swal.showLoading(),
   });
 
   try {
@@ -570,7 +639,6 @@ const exportExcel = () => {
 
   return (
     <div className="container-fluid p-3">
-      {/* HEADER CARD */}
       <div className="card shadow-sm mb-3">
         <div className="card-body d-flex justify-content-between align-items-center py-2">
           <h4 className="fw-bold mb-0 text-primary">📘 SUPPLIER LEDGER SYSTEM</h4>
@@ -579,7 +647,7 @@ const exportExcel = () => {
       </div>
 
       <div className="row g-3">
-        {/* LEFT COLUMN */}
+        {/* LEFT COLUMN - PENDING */}
         <div className="col-lg-3 col-md-4 col-12">
           <div className="card shadow-sm" style={{ maxHeight: "calc(100vh - 120px)", overflowY: "auto" }}>
             <div className="card-header fw-bold text-danger bg-light sticky-top">⏳ Pending / Partial List</div>
@@ -642,7 +710,6 @@ const exportExcel = () => {
               <div className="col-md-2">
                 <label className="form-label small fw-bold mb-1">Payment Date</label>
                 <input type="date" className="form-control form-control-sm" value={payDate} onChange={e => setPayDate(e.target.value)} />
-                {/* LIVE FORMATTED DATE TEXT DISPLAY */}
                 <span className="text-primary fw-bold d-block mt-1" style={{ fontSize: "0.75rem" }}>
                   {formatDate(payDate)}
                 </span>
@@ -661,21 +728,41 @@ const exportExcel = () => {
                   </span>
                 )}
               </div>
-              <div className="col-md-3">
-                <label className="form-label small text-muted mb-1">Transaction Type</label>
+              <div className="col-md-2">
+                <label className="form-label small text-muted mb-1">Type</label>
                 <select className="form-select form-select-sm" value={type} onChange={(e) => setType(e.target.value)}>
                   <option value="payment">Payment</option>
                   <option value="adjustment">Adjustment</option>
-                  <option value="opening_balance">🔑 opening_balance (Debit)</option>
+                  <option value="opening_balance">🔑 opening_balance</option>
                 </select>
               </div>
               <div className="col-md-2">
                 <label className="form-label small fw-bold mb-1">Method</label>
-                <select className="form-control form-control-sm" value={method} onChange={e => setMethod(e.target.value)}>
-                  <option>Bank</option>
-                  <option>Cash</option>
+                <select className="form-select form-select-sm" value={method} onChange={e => setMethod(e.target.value)}>
+                  <option value="Bank">Bank</option>
+                  <option value="Cash">Cash</option>
                 </select>
               </div>
+              
+              {/* ✨ Dynamic Bank Selection List */}
+              {method === "Bank" && (
+                <div className="col-md-3">
+                  <label className="form-label small text-muted mb-1">Select Bank Account</label>
+                  <select
+                    className="form-select form-select-sm fw-bold"
+                    value={selectedBankProfile}
+                    onChange={(e) => setSelectedBankProfile(e.target.value)}
+                  >
+                    <option value="">-- Choose Bank --</option>
+                    {bankProfiles.map((p) => (
+                      <option key={p.id} value={p.id}>
+                        {p.bank_name} ({p.account_number})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
               <div className="col-md-2">
                 <button className="btn btn-success btn-sm w-100" disabled={saving} onClick={saveEntry}>
                   {saving ? "Saving..." : "💾 Save"}
@@ -684,7 +771,7 @@ const exportExcel = () => {
             </div>
           </div>
 
-          {/* LEDGER TABLE CARD */}
+          {/* LEDGER TABLE */}
           <div ref={pdfRef} className="card shadow-sm">
             <div className="table-responsive">
               <table className="table table-bordered table-sm mb-0 text-end" style={{ fontSize: "0.85rem" }}>
@@ -742,7 +829,9 @@ const exportExcel = () => {
                         <td className="text-start fw-bold text-success small">{itemDetail}</td>
                         <td className="text-center small">
                           {r.payment_method && r.payment_method !== "-" ? (
-                            <span className={`badge ${r.payment_method.toLowerCase() === "cash" ? "bg-success" : "bg-primary"}`}>{r.payment_method}</span>
+                            <span className={`badge ${r.payment_method.toLowerCase() === "cash" ? "bg-success" : "bg-primary"}`}>
+                              {r.bank_name ? `Bank: ${r.bank_name}` : r.payment_method}
+                            </span>
                           ) : "-"}
                         </td>
                         <td className={normalizeZero(r.debit) > 0 ? "text-danger fw-bold" : ""}>{fmtAmt(r.debit)}</td>
@@ -775,7 +864,6 @@ const exportExcel = () => {
               </table>
             </div>
 
-            {/* LEDGER FOOTER METADATA OUTSIDE TABLE HTML */}
             <div className="card p-2 m-2 bg-light border-0">
               <div className="row text-center text-md-start">
                 <div className="col-md-4">

@@ -58,7 +58,7 @@ const numberToWords = (num) => {
 const today = new Date().toISOString().split("T")[0];
 
 export default function CustomerLedger({ onNavigate }) {
-
+  // Hook initialization
   const exportUtils = useLedgerExport();
   const handleExportPDF = exportUtils?.handleExportPDF || exportUtils?.exportPDF;
   const handleExportExcel = exportUtils?.handleExportExcel || exportUtils?.exportExcel;
@@ -70,10 +70,26 @@ export default function CustomerLedger({ onNavigate }) {
   const [amountDisp, setAmountDisp] = useState("");
   const [date, setDate] = useState(today);
   const [type, setType] = useState("payment");
-  const [method, setMethod] = useState("Bank");
+  const [method, setMethod] = useState("Cash");
   const [saving, setSaving] = useState(false);
   const [paymentStatus, setPaymentStatus] = useState("");
+  const [bankProfiles, setBankProfiles] = useState([]);
+  const [selectedBankProfile, setSelectedBankProfile] = useState("");
   const pdfRef = useRef(null);
+
+  /* =========================
+     LOAD BANK PROFILES
+  ========================== */
+  useEffect(() => {
+    fetch(`${import.meta.env.VITE_BACKEND_URL}/api/bank-ledger/profiles`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success) {
+          setBankProfiles(data.profiles || []);
+        }
+      })
+      .catch((err) => console.error("Error loading bank profiles:", err));
+  }, []);
 
   /* =========================
      LOAD PENDING LIST
@@ -90,7 +106,9 @@ export default function CustomerLedger({ onNavigate }) {
     }
   };
 
-  useEffect(() => { loadPending(); }, []);
+  useEffect(() => {
+    loadPending();
+  }, []);
 
   /* =========================
      LOAD LEDGER
@@ -129,12 +147,12 @@ export default function CustomerLedger({ onNavigate }) {
       }
 
       setRows(d.rows || []);
-      const pendingItem = pending.find(x => x.ref_no === r);
+      const pendingItem = pending.find((x) => x.ref_no === r);
       const currentStatus = pendingItem?.payment_status || "CLEARED";
       setPaymentStatus(currentStatus);
 
       let customerName = "Unknown Customer";
-      const customerRow = (d.rows || []).find(x => x.id === "CUSTOMER");
+      const customerRow = (d.rows || []).find((x) => x.id === "CUSTOMER");
       if (customerRow?.description) {
         customerName = customerRow.description;
       }
@@ -191,6 +209,9 @@ export default function CustomerLedger({ onNavigate }) {
     if (!date) {
       return Swal.fire({ width: "300px", icon: "warning", text: "Date required" });
     }
+    if (method === "Bank" && !selectedBankProfile) {
+      return Swal.fire({ width: "300px", icon: "warning", text: "Please select a Bank Profile" });
+    }
 
     setSaving(true);
     Swal.fire({
@@ -209,6 +230,7 @@ export default function CustomerLedger({ onNavigate }) {
           amount: Number(amountRaw),
           payment_date: date,
           payment_method: method,
+          bank_profile_id: method === "Bank" ? selectedBankProfile : null,
           type
         }),
       });
@@ -222,6 +244,7 @@ export default function CustomerLedger({ onNavigate }) {
         setAmountRaw(0);
         setAmountDisp("");
         setDate(today);
+        setSelectedBankProfile("");
 
         await loadLedger(refNo);
         await loadPending();
@@ -250,7 +273,7 @@ export default function CustomerLedger({ onNavigate }) {
         </div>
       `,
       showCancelButton: true,
-      confirmButtonText: "Delete",
+      confirmButtonText: "Confirm",
       focusConfirm: false,
       preConfirm: () => {
         const input = document.getElementById("swal-pass");
@@ -290,7 +313,7 @@ export default function CustomerLedger({ onNavigate }) {
 
     if (!confirmDelete.isConfirmed) return;
 
-    const pass = await askPassword("Enter Delete Password");
+    const pass = await askPassword("🔐 Enter Delete Password");
     if (!pass) return;
 
     Swal.fire({
@@ -323,9 +346,7 @@ export default function CustomerLedger({ onNavigate }) {
     }
   };
 
-/* =========================
-     EDIT PAYMENT ENTRY
-  ========================== */
+  /* ================= EDIT PAYMENT ENTRY ================= */
   const editRow = async (row) => {
     if (row.id === "SALE" || row.id === "CUSTOMER") {
       return Swal.fire({
@@ -335,42 +356,42 @@ export default function CustomerLedger({ onNavigate }) {
       });
     }
 
-    // 1. Password input prompt
-    const pass = await askPassword("Enter Authorization Password");
-    if (!pass) return;
+    const passInput = await askPassword("🔐 Enter Edit Password");
+    if (!passInput) return;
 
-    // 2. Verify password with backend BEFORE opening edit modal
     Swal.fire({
-      width: "260px",
-      title: "Verifying Password...",
+      width: "250px",
+      title: "Verifying...",
       allowOutsideClick: false,
-      didOpen: () => Swal.showLoading()
+      didOpen: () => Swal.showLoading(),
     });
 
     try {
-      const verifyRes = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/customer-ledger/verify-password`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ password: pass })
-      });
-
+      const verifyRes = await fetch(
+        `${import.meta.env.VITE_BACKEND_URL}/api/customer-ledger/verify-password`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ password: passInput }),
+        }
+      );
       const verifyData = await verifyRes.json();
-      Swal.close();
 
-      // Galat password par yahan se hi wapis ho jayega, edit modal nahi khulega
       if (!verifyData.success) {
         return Swal.fire({
           width: "300px",
           icon: "error",
-          text: verifyData.error || "Wrong Password!"
+          text: verifyData.error || "Incorrect Authorization Password!",
         });
       }
     } catch (err) {
-      Swal.close();
-      return Swal.fire({ width: "300px", icon: "error", text: "Network Error" });
+      return Swal.fire({
+        width: "300px",
+        icon: "error",
+        text: "Network error during password verification",
+      });
     }
 
-    // 3. Agar password sahi hai tabhi edit modal khulega
     const formattedDate = toInputDate(row.date || row.payment_date) || today;
     const isAdjustment = row.description === "Adjustment";
 
@@ -398,10 +419,27 @@ export default function CustomerLedger({ onNavigate }) {
             </select>
           </div>
           <div>
-            <label class="fw-bold mb-1">Payment Method</label>
+            <label class="fw-bold mb-1">Payment Method / Bank</label>
             <select id="swal-edit-method" class="form-select form-select-sm">
-              <option value="Bank" ${row.description?.includes("Bank") ? "selected" : ""}>Bank</option>
-              <option value="Cash" ${row.description?.includes("Cash") ? "selected" : ""}>Cash</option>
+              <option value="Cash" ${!row.bank_profile_id && (row.description?.includes("Cash") || !row.description?.includes("Bank")) ? "selected" : ""}>
+                💵 Cash
+              </option>
+              ${
+                bankProfiles.length > 0
+                  ? bankProfiles
+                      .map(
+                        (p) => `
+                        <option 
+                          value="Bank_${p.id}" 
+                          ${row.bank_profile_id == p.id ? "selected" : ""}
+                        >
+                          🏦 ${p.bank_name} (${p.account_number})
+                        </option>
+                      `
+                      )
+                      .join("")
+                  : `<option disabled>No Bank Profiles Found</option>`
+              }
             </select>
           </div>
         </div>
@@ -421,7 +459,7 @@ export default function CustomerLedger({ onNavigate }) {
         const amount = document.getElementById("swal-edit-amount").value;
         const payment_date = document.getElementById("swal-edit-date").value;
         const type = document.getElementById("swal-edit-type").value;
-        const payment_method = document.getElementById("swal-edit-method").value;
+        const selectedVal = document.getElementById("swal-edit-method").value;
 
         if (!amount || Number(amount) <= 0) {
           Swal.showValidationMessage("Valid amount required");
@@ -432,12 +470,20 @@ export default function CustomerLedger({ onNavigate }) {
           return false;
         }
 
+        let payment_method = "Cash";
+        let bank_profile_id = null;
+
+        if (selectedVal.startsWith("Bank_")) {
+          payment_method = "Bank";
+          bank_profile_id = selectedVal.split("_")[1];
+        }
+
         return {
           amount: Number(amount),
           payment_date,
           type,
           payment_method,
-          password: pass
+          bank_profile_id,
         };
       }
     });
@@ -587,7 +633,7 @@ export default function CustomerLedger({ onNavigate }) {
           </div>
         </div>
 
-{/* MAIN PANEL */}
+        {/* MAIN PANEL */}
         <div className="col-lg-9 col-md-8">
           <div className="card shadow-sm mb-3">
             <div className="card-body py-3">
@@ -631,7 +677,7 @@ export default function CustomerLedger({ onNavigate }) {
             <div className="card-header bg-light fw-bold text-secondary">📥 Add Payment / Adjustment Receipt</div>
             <div className="card-body">
               <div className="row g-2 mb-3">
-                <div className="col-md-3">
+                <div className="col-md-2">
                   <label className="form-label small text-muted mb-1">Date</label>
                   <input type="date" className="form-control" value={date} onChange={(e) => setDate(e.target.value)} />
                   <span className="text-primary fw-bold d-block mt-1" style={{ fontSize: "0.75rem" }}>
@@ -658,20 +704,37 @@ export default function CustomerLedger({ onNavigate }) {
                     </div>
                   )}
                 </div>
-                <div className="col-md-3">
+                <div className="col-md-2">
                   <label className="form-label small text-muted mb-1">Type</label>
                   <select className="form-select" value={type} onChange={(e) => setType(e.target.value)}>
                     <option value="payment">Payment</option>
                     <option value="adjustment">Adjustment</option>
                   </select>
                 </div>
-                <div className="col-md-3">
-                  <label className="form-label small text-muted mb-1">Payment Method</label>
+                <div className="col-md-2">
+                  <label className="form-label small text-muted mb-1">Method</label>
                   <select className="form-select" value={method} onChange={(e) => setMethod(e.target.value)}>
-                    <option>Bank</option>
-                    <option>Cash</option>
+                    <option value="Cash">Cash</option>
+                    <option value="Bank">Bank</option>
                   </select>
                 </div>
+                {method === "Bank" && (
+                  <div className="col-md-3">
+                    <label className="form-label small text-muted mb-1">Select Bank Account</label>
+                    <select
+                      className="form-select fw-bold"
+                      value={selectedBankProfile}
+                      onChange={(e) => setSelectedBankProfile(e.target.value)}
+                    >
+                      <option value="">-- Choose Bank --</option>
+                      {bankProfiles.map((p) => (
+                        <option key={p.id} value={p.id}>
+                          {p.bank_name} ({p.account_number})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
               </div>
               <button className="btn btn-success px-4 py-2 fw-bold" disabled={saving || !refNo} onClick={saveEntry}>
                 {saving ? "Saving..." : "💾 Save Transaction"}
@@ -681,84 +744,81 @@ export default function CustomerLedger({ onNavigate }) {
 
           <div ref={pdfRef} className="card shadow-sm overflow-hidden">
             <div className="table-responsive">
-<table className="table table-striped table-hover table-bordered mb-0 align-middle">
-  <thead className="table-dark">
-    <tr>
-      <th style={{ width: "12%" }}>Date</th>
-      <th style={{ width: "35%" }}>Description</th>
-      <th style={{ width: "12%" }} className="text-center">Method</th> {/* 👈 Naya Header */}
-      <th style={{ width: "11%" }} className="text-end">Debit (-)</th>
-      <th style={{ width: "11%" }} className="text-end">Credit (+)</th>
-      <th style={{ width: "11%" }} className="text-end">Balance</th>
-      <th style={{ width: "8%" }} className="text-center">Action</th>
-    </tr>
-  </thead>
-  <tbody>
-    {rows.length === 0 ? (
-      <tr>
-        <td colSpan="7" className="text-center p-4 text-muted fs-5">
-          No ledger entries loaded. Enter a valid Ref No above and click "Load".
-        </td>
-      </tr>
-    ) : (
-      rows.map((r, i) => (
-        <tr key={r.id || i}>
-          <td>{getRowDate(r)}</td>
-          <td className={r.id === "CUSTOMER" ? "fw-bold text-primary" : ""}>
-            {r.description}
-          </td>
+              <table className="table table-striped table-hover table-bordered mb-0 align-middle">
+<thead className="table-dark">
+  <tr>
+    <th style={{ width: "12%" }}>Date</th>
+    <th style={{ width: "35%" }}>Description</th>
+    <th style={{ width: "15%" }}>Method</th> {/* 👈 Naya Column Header */}
+    <th style={{ width: "11%" }} className="text-end">Debit (-)</th>
+    <th style={{ width: "11%" }} className="text-end">Credit (+)</th>
+    <th style={{ width: "11%" }} className="text-end">Balance</th>
+    <th style={{ width: "5%" }} className="text-center">Action</th>
+  </tr>
+                </thead>
+                <tbody>
+                  {rows.length === 0 ? (
+                    <tr>
+                      <td colSpan="6" className="text-center p-4 text-muted fs-5">
+                        No ledger entries loaded. Enter a valid Ref No above and click "Load".
+                      </td>
+                    </tr>
+                  ) : (
+                    rows.map((r, i) => (
+                      <tr key={r.id || i}>
+                        <td>{getRowDate(r)}</td>
+{/* Description Cell */}
+<td className={r.id === "CUSTOMER" ? "fw-bold text-primary" : ""}>
+  {r.description}
+</td>
 
-          {/* 👈 Naya Colored Badge Column */}
-          <td className="text-center small">
-            {r.payment_method && r.payment_method !== "-" ? (
-              <span
-                className={`badge ${
-                  r.payment_method.toLowerCase() === "cash"
-                    ? "bg-success"
-                    : r.payment_method.toLowerCase() === "bank"
-                    ? "bg-primary"
-                    : "bg-info text-dark"
-                }`}
-              >
-                {r.payment_method}
-              </span>
-            ) : (
-              "-"
-            )}
-          </td>
+{/* 👈 NAYA PAYMENT METHOD CELL */}
+<td>
+  {r.payment_method?.toLowerCase() === "bank" ? (
+    <span className="badge bg-primary">
+      🏦 {r.bank_name || "Bank"}
+    </span>
+  ) : r.payment_method?.toLowerCase() === "cash" ? (
+    <span className="badge bg-success">💵 Cash</span>
+  ) : (
+    <span className="text-muted">-</span>
+  )}
+</td>
 
-          <td className="text-end text-danger fw-bold">{r.debit > 0 ? fmtAmt(r.debit) : "-"}</td>
-          <td className="text-end text-success fw-bold">{r.credit > 0 ? fmtAmt(r.credit) : "-"}</td>
-          <td className="text-end fw-bold" style={{ backgroundColor: "#f8f9fa" }}>
-            {fmtAmt(r.balance)}
-          </td>
-          <td className="text-center">
-            {r.id !== "SALE" && r.id !== "CUSTOMER" ? (
-              <div className="d-flex gap-1 justify-content-center">
-                <button
-                  className="btn btn-outline-primary btn-sm py-0 px-1"
-                  style={{ fontSize: "11px" }}
-                  onClick={() => editRow(r)}
-                >
-                  Edit
-                </button>
-                <button
-                  className="btn btn-outline-danger btn-sm py-0 px-1"
-                  style={{ fontSize: "11px" }}
-                  onClick={() => del(r.id)}
-                >
-                  Del
-                </button>
-              </div>
-            ) : (
-              <span className="text-muted small">-</span>
-            )}
-          </td>
-        </tr>
-      ))
-    )}
-  </tbody>
-</table>
+{/* Debit Cell */}
+
+                        <td className="text-end text-danger fw-bold">{r.debit > 0 ? fmtAmt(r.debit) : "-"}</td>
+                        <td className="text-end text-success fw-bold">{r.credit > 0 ? fmtAmt(r.credit) : "-"}</td>
+                        <td className="text-end fw-bold" style={{ backgroundColor: "#f8f9fa" }}>
+                          {fmtAmt(r.balance)}
+                        </td>
+                        <td className="text-center">
+                          {r.id !== "SALE" && r.id !== "CUSTOMER" ? (
+                            <div className="d-flex gap-1 justify-content-center">
+                              <button
+                                className="btn btn-outline-primary btn-sm py-0 px-1"
+                                style={{ fontSize: "11px" }}
+                                onClick={() => editRow(r)}
+                              >
+                                Edit
+                              </button>
+                              <button
+                                className="btn btn-outline-danger btn-sm py-0 px-1"
+                                style={{ fontSize: "11px" }}
+                                onClick={() => del(r.id)}
+                              >
+                                Del
+                              </button>
+                            </div>
+                          ) : (
+                            <span className="text-muted small">-</span>
+                          )}
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
             </div>
           </div>
         </div>
