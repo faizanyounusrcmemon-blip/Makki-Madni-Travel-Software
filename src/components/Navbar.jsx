@@ -192,6 +192,7 @@ export default function Navbar({ onNavigate }) {
               {can("manage_users") && <a onClick={() => go("manageUsers")}>🛠 Manage Users</a>}
               {can("supplier") && <a onClick={() => go("supplier")}>🏷 Supplier Profile</a>}
               {can("customers_list") && <a onClick={() => go("customersList")}>🏷 Customer Profile</a>}
+              {can("bank_profiles") && <a onClick={() => go("bankProfiles")}>🏦 Bank Profiles</a>}
               {can("deleted_reports") && <a onClick={() => go("deletedReports")}>🗑 Deleted Reports</a>}
               {can("system_storage") && <a onClick={() => go("systemStorage")}>💾 System Storage</a>}
               {can("password_settings") && <a onClick={() => go("passwordSettings")}>🛠 Password Settings</a>}

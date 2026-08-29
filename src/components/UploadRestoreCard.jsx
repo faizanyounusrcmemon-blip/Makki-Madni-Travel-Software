@@ -13,6 +13,7 @@ export default function UploadRestoreCard() {
   const [progress, setProgress] = useState(0);
 
   const TABLES = [
+    "banks",
     "bookings",
     "expense_ledger",
     "hotels",
