@@ -16,28 +16,28 @@ const styles = {
   container: {
     minHeight: "100vh",
     padding: "25px",
-    background: "linear-gradient(135deg, #eef2ff, #ffffff)",
+    background: "linear-gradient(135deg, #f0f7ff, #fafcff)",
     fontFamily: "'Cairo', sans-serif",
   },
   card: {
     maxWidth: 1100,
     margin: "0 auto",
-    background: "linear-gradient(to bottom, #ffffff, #f8fbff)",
+    background: "#ffffff",
     borderRadius: 22,
     padding: 35,
-    boxShadow: "0 12px 35px rgba(0,0,0,0.12)",
-    border: "1px solid rgba(212,175,55,0.4)",
+    boxShadow: "0 10px 30px rgba(186, 210, 240, 0.25)",
+    border: "1px solid #e2ebd8",
   },
   sectionHeader: {
-    background: "linear-gradient(to right, #0b3d91, #1e5eff)",
-    color: "#fff",
+    background: "linear-gradient(90deg, #60a5fa, #93c5fd)",
+    color: "#ffffff",
     padding: "7px 14px",
     borderRadius: "8px",
     marginTop: 25,
     marginBottom: 12,
     fontWeight: "600",
     letterSpacing: 1,
-    boxShadow: "0 4px 10px rgba(0,0,0,0.1)",
+    boxShadow: "0 4px 12px rgba(147, 197, 253, 0.35)",
   },
   table: {
     width: "100%",
@@ -45,21 +45,21 @@ const styles = {
     borderSpacing: "0",
     borderRadius: "12px",
     overflow: "hidden",
-    boxShadow: "0 5px 15px rgba(0,0,0,0.06)",
+    boxShadow: "0 4px 12px rgba(0, 0, 0, 0.03)",
   },
   th: {
-    background: "linear-gradient(to right, #0b3d91, #1e5eff)",
-    color: "#fff",
+    background: "linear-gradient(90deg, #3b82f6, #60a5fa)",
+    color: "#ffffff",
     padding: "10px",
     textAlign: "left",
     fontWeight: "600",
   },
   td: {
     padding: "10px",
-    borderBottom: "1px solid #eee",
-    background: "#fff",
+    borderBottom: "1px solid #f1f5f9",
+    background: "#ffffff",
+    color: "#475569",
   },
-
 };
 
 export default function Card({ onNavigate }) {
@@ -306,6 +306,7 @@ export default function Card({ onNavigate }) {
           />
           <button className="btn btn-warning btn-sm" style={styles.button} onClick={loadCard}>🔄 Load / Edit</button>
           
+{/* 📄 Export PDF (With Uplift Effect) */}
           <button
             className="btn fw-bold text-white shadow"
             style={{
@@ -313,13 +314,22 @@ export default function Card({ onNavigate }) {
               border: "none",
               borderRadius: "12px",
               padding: "8px 18px",
-              transition: "0.3s",
+              transition: "transform 0.2s ease, box-shadow 0.2s ease",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = "translateY(-2px) scale(1.03)";
+              e.currentTarget.style.boxShadow = "0 6px 15px rgba(40, 167, 69, 0.4)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = "translateY(0) scale(1)";
+              e.currentTarget.style.boxShadow = "0 4px 10px rgba(0,0,0,0.15)";
             }}
             onClick={exportPDF}
           >
             📄 Export PDF
           </button>
 
+          {/* 🖨️ Print (With Uplift Effect) */}
           <button
             className="btn fw-bold text-white shadow"
             style={{
@@ -327,7 +337,15 @@ export default function Card({ onNavigate }) {
               border: "none",
               borderRadius: "12px",
               padding: "8px 18px",
-              transition: "0.3s",
+              transition: "transform 0.2s ease, box-shadow 0.2s ease",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = "translateY(-2px) scale(1.03)";
+              e.currentTarget.style.boxShadow = "0 6px 15px rgba(108, 117, 125, 0.4)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = "translateY(0) scale(1)";
+              e.currentTarget.style.boxShadow = "0 4px 10px rgba(0,0,0,0.15)";
             }}
             onClick={printPDF}
           >

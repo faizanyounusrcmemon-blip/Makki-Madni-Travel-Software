@@ -317,8 +317,51 @@ export default function Groups({ onNavigate }) {
           </button>
           <input className="form-control form-control-sm" style={{ width: 140, borderRadius: 50 }} placeholder="Search Ref" value={searchRef} onChange={(e) => setSearchRef(e.target.value)} />
           <button className="btn btn-warning btn-sm" style={styles.button} onClick={loadGroups}>🔄 Load / Edit</button>
-          <button className="btn fw-bold text-white shadow" style={{ background: "linear-gradient(135deg,#28a745,#20c997)", border: "none", borderRadius: "12px", padding: "8px 18px", transition: "0.3s" }} onClick={exportPDF}>📄 Export PDF</button>
-          <button className="btn fw-bold text-white shadow" style={{ background: "linear-gradient(135deg,#6c757d,#343a40)", border: "none", borderRadius: "12px", padding: "8px 18px", transition: "0.3s" }} onClick={printPDF}>🖨️ Print</button>
+{/* 📄 Export PDF (With Uplift Effect) */}
+          <button
+            className="btn fw-bold text-white shadow"
+            style={{
+              background: "linear-gradient(135deg,#28a745,#20c997)",
+              border: "none",
+              borderRadius: "12px",
+              padding: "8px 18px",
+              transition: "transform 0.2s ease, box-shadow 0.2s ease",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = "translateY(-2px) scale(1.03)";
+              e.currentTarget.style.boxShadow = "0 6px 15px rgba(40, 167, 69, 0.4)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = "translateY(0) scale(1)";
+              e.currentTarget.style.boxShadow = "0 4px 10px rgba(0,0,0,0.15)";
+            }}
+            onClick={exportPDF}
+          >
+            📄 Export PDF
+          </button>
+
+          {/* 🖨️ Print (With Uplift Effect) */}
+          <button
+            className="btn fw-bold text-white shadow"
+            style={{
+              background: "linear-gradient(135deg,#6c757d,#343a40)",
+              border: "none",
+              borderRadius: "12px",
+              padding: "8px 18px",
+              transition: "transform 0.2s ease, box-shadow 0.2s ease",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = "translateY(-2px) scale(1.03)";
+              e.currentTarget.style.boxShadow = "0 6px 15px rgba(108, 117, 125, 0.4)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = "translateY(0) scale(1)";
+              e.currentTarget.style.boxShadow = "0 4px 10px rgba(0,0,0,0.15)";
+            }}
+            onClick={printPDF}
+          >
+            🖨️ Print
+          </button>
         </div>
       </div>
 

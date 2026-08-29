@@ -61,12 +61,7 @@ const styles = {
     padding: "8px",
     borderBottom: "1px solid #ddd",
   },
-  button: {
-    borderRadius: "50px",
-    padding: "5px 15px",
-    fontWeight: "bold",
-    boxShadow: "0 4px 10px rgba(0,0,0,0.1)",
-  },
+
 };
 
 export default function Visa({ onNavigate }) {
@@ -331,6 +326,7 @@ export default function Visa({ onNavigate }) {
           />
           <button className="btn btn-warning btn-sm" style={styles.button} onClick={loadVisa}>🔄 Load / Edit</button>
           
+{/* 📄 Export PDF (With Uplift Effect) */}
           <button
             className="btn fw-bold text-white shadow"
             style={{
@@ -338,13 +334,22 @@ export default function Visa({ onNavigate }) {
               border: "none",
               borderRadius: "12px",
               padding: "8px 18px",
-              transition: "0.3s",
+              transition: "transform 0.2s ease, box-shadow 0.2s ease",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = "translateY(-2px) scale(1.03)";
+              e.currentTarget.style.boxShadow = "0 6px 15px rgba(40, 167, 69, 0.4)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = "translateY(0) scale(1)";
+              e.currentTarget.style.boxShadow = "0 4px 10px rgba(0,0,0,0.15)";
             }}
             onClick={exportPDF}
           >
             📄 Export PDF
           </button>
 
+          {/* 🖨️ Print (With Uplift Effect) */}
           <button
             className="btn fw-bold text-white shadow"
             style={{
@@ -352,7 +357,15 @@ export default function Visa({ onNavigate }) {
               border: "none",
               borderRadius: "12px",
               padding: "8px 18px",
-              transition: "0.3s",
+              transition: "transform 0.2s ease, box-shadow 0.2s ease",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = "translateY(-2px) scale(1.03)";
+              e.currentTarget.style.boxShadow = "0 6px 15px rgba(108, 117, 125, 0.4)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = "translateY(0) scale(1)";
+              e.currentTarget.style.boxShadow = "0 4px 10px rgba(0,0,0,0.15)";
             }}
             onClick={printPDF}
           >
