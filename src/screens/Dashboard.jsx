@@ -8,6 +8,16 @@ export default function Dashboard({ onNavigate }) {
   const [loading, setLoading] = useState(false);
   const [progress, setProgress] = useState(0);
 
+  // LIVE CLOCK STATE
+  const [currentTime, setCurrentTime] = useState(new Date());
+
+  useEffect(() => {
+    const clockTimer = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 1000);
+    return () => clearInterval(clockTimer);
+  }, []);
+
   // BACKGROUND IMAGES
   const images = [
     "/images/haram1.jpg", "/images/haram2.jpg", "/images/haram3.jpg",
@@ -36,6 +46,86 @@ export default function Dashboard({ onNavigate }) {
 
   const formatDate = (d) =>
     d ? new Date(d).toLocaleString("en-GB", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: true }) : "-";
+
+  /* ================= MODERN CUSTOM CALENDAR POPUP ================= */
+  const openCalendarModal = () => {
+    let currYear = new Date().getFullYear();
+    let currMonth = new Date().getMonth();
+
+    const renderCalendarHTML = (year, month) => {
+      const firstDay = new Date(year, month, 1).getDay();
+      const lastDate = new Date(year, month + 1, 0).getDate();
+      const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+      const today = new Date();
+
+      let daysHtml = "";
+      for (let i = 0; i < firstDay; i++) {
+        daysHtml += `<div style="padding:10px;"></div>`;
+      }
+
+      for (let day = 1; day <= lastDate; day++) {
+        const isToday = today.getDate() === day && today.getMonth() === month && today.getFullYear() === year;
+        const bg = isToday ? "linear-gradient(135deg, #2563eb, #1d4ed8)" : "transparent";
+        const color = isToday ? "#ffffff" : "#334155";
+        const border = isToday ? "none" : "1px solid #e2e8f0";
+        const shadow = isToday ? "0 4px 12px rgba(37,99,235,0.4)" : "none";
+
+        daysHtml += `
+          <div style="
+            background: ${bg}; 
+            color: ${color}; 
+            border: ${border}; 
+            box-shadow: ${shadow};
+            border-radius: 10px; 
+            padding: 10px 0; 
+            font-weight: ${isToday ? "bold" : "600"}; 
+            font-size: 14px;
+            text-align: center;
+            transition: all 0.2s;
+          ">${day}</div>
+        `;
+      }
+
+      return `
+        <div style="font-family: 'Segoe UI', sans-serif; padding: 10px 5px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <button id="cal-prev" style="background:#f1f5f9; border:none; padding:8px 14px; border-radius:8px; cursor:pointer; font-weight:bold;">◀</button>
+            <h4 style="margin:0; font-weight:700; color:#0f172a;">${monthNames[month]} ${year}</h4>
+            <button id="cal-next" style="background:#f1f5f9; border:none; padding:8px 14px; border-radius:8px; cursor:pointer; font-weight:bold;">▶</button>
+          </div>
+          <div style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; font-weight: 700; color: #64748b; font-size: 13px; margin-bottom: 10px;">
+            <span>Sun</span><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span>
+          </div>
+          <div style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px;">
+            ${daysHtml}
+          </div>
+        </div>
+      `;
+    };
+
+    const showModal = () => {
+      Swal.fire({
+        width: "480px",
+        html: renderCalendarHTML(currYear, currMonth),
+        showConfirmButton: false,
+        showCloseButton: true,
+        didOpen: () => {
+          document.getElementById("cal-prev").onclick = () => {
+            currMonth--;
+            if (currMonth < 0) { currMonth = 11; currYear--; }
+            showModal();
+          };
+          document.getElementById("cal-next").onclick = () => {
+            currMonth++;
+            if (currMonth > 11) { currMonth = 0; currYear++; }
+            showModal();
+          };
+        }
+      });
+    };
+
+    showModal();
+  };
 
   // SHARED SWEETALERT FOR SYSTEM PASSWORD VERIFICATION
   const askPassword = async (titleText, subText) => {
@@ -156,7 +246,7 @@ export default function Dashboard({ onNavigate }) {
     }
   };
 
-  // 2. DOWNLOAD ZIP TO PC FUNCTION (WITH PROGRESS BAR)
+  // 2. DOWNLOAD ZIP TO PC FUNCTION
   const downloadPCBackup = async () => {
     const { value: pass, isDismissed } = await askPassword("📥 Download ZIP", "Enter password to download backup to PC");
     if (isDismissed || !pass) return;
@@ -177,7 +267,6 @@ export default function Dashboard({ onNavigate }) {
       showConfirmButton: false,
     });
 
-    // Simulated initial loader before download stream starts
     let percent = 0;
     const timer = setInterval(() => {
       if (percent >= 85) return;
@@ -216,7 +305,6 @@ export default function Dashboard({ onNavigate }) {
       await new Promise((r) => setTimeout(r, 400));
       Swal.close();
 
-      // Trigger ZIP file download on browser
       const blob = new Blob([response.data], { type: "application/zip" });
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement("a");
@@ -258,32 +346,73 @@ export default function Dashboard({ onNavigate }) {
 
       {/* CONTENT */}
       <div style={{ position: "relative", zIndex: 2, padding: 20 }}>
-        {/* HEADER */}
-        <div style={{ textAlign: "center", paddingTop: 40 }}>
-          <h2 style={{ fontSize: 32, margin: 0 }}>Makki Madni Travel & Toure</h2>
-          <i>Live Travel Management Dashboard</i>
-        </div>
+        
+{/* TOP BAR: CLOCK ON LEFT, BACKUPS ON RIGHT */}
+<div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginTop: 10, position: "relative", zIndex: 10 }}>
+  
+  {/* ELEGANT LIVE DATE & TIME WIDGET WITH CALENDAR BUTTON */}
+  <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: "8px" }}>
+    <div style={{
+      background: "rgba(0, 0, 0, 0.55)",
+      backdropFilter: "blur(12px)",
+      WebkitBackdropFilter: "blur(12px)",
+      padding: "12px 22px",
+      borderRadius: "16px",
+      border: "1px solid rgba(255, 255, 255, 0.18)",
+      boxShadow: "0 8px 32px 0 rgba(0, 0, 0, 0.37)"
+    }}>
+      <div style={{
+        fontSize: "26px",
+        fontWeight: "700",
+        letterSpacing: "1px",
+        fontFamily: "monospace, monospace",
+        color: "#ffffff",
+        textShadow: "0 2px 4px rgba(0,0,0,0.5)"
+      }}>
+        {currentTime.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: true })}
+      </div>
+      <div style={{
+        fontSize: "12px",
+        fontWeight: "500",
+        color: "#e2e8f0",
+        textTransform: "uppercase",
+        letterSpacing: "1px",
+        marginTop: "2px"
+      }}>
+        📅 {currentTime.toLocaleDateString("en-US", { weekday: "short", day: "2-digit", month: "short", year: "numeric" })}
+      </div>
+    </div>
 
-        {/* CLOUDS */}
-        <div className="cloud cloud1"></div>
-        <div className="cloud cloud2"></div>
-        <div className="cloud cloud3"></div>
+    {/* CALENDAR BUTTON */}
+    <button 
+      onClick={openCalendarModal}
+      style={{
+        padding: "8px 16px",
+        fontSize: "13px",
+        fontWeight: "600",
+        borderRadius: "10px",
+        border: "1px solid rgba(255,255,255,0.3)",
+        background: "rgba(0, 0, 0, 0.55)",
+        backdropFilter: "blur(8px)",
+        color: "white",
+        cursor: "pointer",
+        boxShadow: "0 4px 12px rgba(0,0,0,0.2)",
+        transition: "all 0.2s ease"
+      }}
+      onMouseOver={(e) => e.target.style.background = "rgba(255, 255, 255, 0.3)"}
+      onMouseOut={(e) => e.target.style.background = "rgba(0, 0, 0, 0.55)"}
+    >
+      📅 View Calendar
+    </button>
+  </div>
 
-        {/* AIRPLANE */}
-        <div className="airplane">
-          <img src="/images/plane.png" alt="plane" />
-          <div className="trail"></div>
-        </div>
 
-        {/* TOP BAR */}
-        <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 20 }}>
+          {/* BACKUP BUTTONS */}
           <div className="backup-side-box" style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-            
             <button className="vip-backup-btn" onClick={runBackup} disabled={loading}>
               {loading ? (<><span className="btn-loader"></span> Backing up...</>) : "Cloud Backup Now"}
             </button>
 
-            {/* PC Download Button with Progress Modal */}
             <button className="vip-backup-btn" onClick={downloadPCBackup} style={{ background: "linear-gradient(135deg, #0284c7, #0369a1)" }}>
               📥 Download ZIP to PC
             </button>
@@ -299,6 +428,23 @@ export default function Dashboard({ onNavigate }) {
               </div>
             )}
           </div>
+        </div>
+
+        {/* HEADER */}
+        <div style={{ textAlign: "center", paddingTop: 10 }}>
+          <h2 style={{ fontSize: 32, margin: 0, textShadow: "0 2px 8px rgba(0,0,0,0.6)" }}>Makki Madni Travel & Toure</h2>
+          <i style={{ opacity: 0.9 }}>Live Travel Management Dashboard</i>
+        </div>
+
+        {/* CLOUDS */}
+        <div className="cloud cloud1"></div>
+        <div className="cloud cloud2"></div>
+        <div className="cloud cloud3"></div>
+
+        {/* AIRPLANE */}
+        <div className="airplane">
+          <img src="/images/plane.png" alt="plane" />
+          <div className="trail"></div>
         </div>
       </div>
     </div>

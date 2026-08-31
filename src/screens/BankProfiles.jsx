@@ -160,47 +160,79 @@ export default function BankProfiles({ onNavigate }) {
     }
   };
 
-  /* ================= DELETE BANK (PASSWORD PROTECTED) ================= */
-  const handleDelete = async (id) => {
-    const { value: password } = await Swal.fire({
-      width: "320px",
-      title: "Delete Bank Profile?",
-      text: "Enter authorization password to confirm:",
-      input: "password",
-      inputPlaceholder: "Enter Password",
-      showCancelButton: true,
-      confirmButtonText: "Delete",
-      confirmButtonColor: "#dc3545",
-      inputValidator: (val) => {
-        if (!val) return "Password is required!";
-      },
+/* ================= DELETE BANK (PASSWORD PROTECTED) ================= */
+const handleDelete = async (id) => {
+  const { value: password } = await Swal.fire({
+    width: "340px",
+    title: "Delete Bank Profile?",
+    text: "Enter authorization password to confirm:",
+    html: `
+      <div style="width: 85%; margin: 15px auto 0;">
+        <div style="position: relative;">
+          <input 
+            id="swal-del-pass" 
+            type="password" 
+            class="swal2-input" 
+            placeholder="Enter Password" 
+            style="margin: 0; width: 100%; padding-right: 40px; box-sizing: border-box;"
+          />
+          <span 
+            id="toggle-del-pass" 
+            style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); cursor: pointer; user-select: none; font-size: 16px; z-index: 10;"
+          >👁️</span>
+        </div>
+      </div>
+    `,
+    showCancelButton: true,
+    confirmButtonText: "Delete",
+    confirmButtonColor: "#dc3545",
+    focusConfirm: false,
+    didOpen: () => {
+      const input = document.getElementById("swal-del-pass");
+      const toggleBtn = document.getElementById("toggle-del-pass");
+      let isVisible = false;
+
+      toggleBtn.addEventListener("click", () => {
+        isVisible = !isVisible;
+        input.type = isVisible ? "text" : "password";
+        toggleBtn.innerHTML = isVisible ? "🙈" : "👁️";
+      });
+    },
+    preConfirm: () => {
+      const pass = document.getElementById("swal-del-pass").value.trim();
+      if (!pass) {
+        Swal.showValidationMessage("Password is required!");
+        return false;
+      }
+      return pass;
+    },
+  });
+
+  if (!password) return;
+
+  Swal.fire({ width: "260px", title: "Deleting...", allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+
+  try {
+    const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/banks/${id}`, {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ password }),
     });
 
-    if (!password) return;
+    const data = await res.json();
+    Swal.close();
 
-    Swal.fire({ width: "260px", title: "Deleting...", allowOutsideClick: false, didOpen: () => Swal.showLoading() });
-
-    try {
-      const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/banks/${id}`, {
-        method: "DELETE",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ password }),
-      });
-
-      const data = await res.json();
-      Swal.close();
-
-      if (data.success) {
-        loadBanks();
-        Swal.fire({ width: "280px", icon: "success", text: "Bank Profile Deleted" });
-      } else {
-        Swal.fire({ width: "300px", icon: "error", text: data.error || "Delete Failed" });
-      }
-    } catch (err) {
-      Swal.close();
-      Swal.fire({ width: "300px", icon: "error", text: "Network Error" });
+    if (data.success) {
+      loadBanks();
+      Swal.fire({ width: "280px", icon: "success", text: "Bank Profile Deleted" });
+    } else {
+      Swal.fire({ width: "300px", icon: "error", text: data.error || "Delete Failed" });
     }
-  };
+  } catch (err) {
+    Swal.close();
+    Swal.fire({ width: "300px", icon: "error", text: "Network Error" });
+  }
+};
 
   const filteredBanks = banks.filter(
     (b) =>

@@ -982,7 +982,7 @@ const editRow = async (row) => {
   <tr>
     <th style={{ width: "12%" }}>Date</th>
     <th style={{ width: "38%" }}>Details / Description</th>
-    <th style={{ width: "12%" }}>Payment Method</th> {/* 👈 Ye new header add karein */}
+    <th style={{ width: "12%" }}>Payment Method</th>
     <th style={{ width: "12%" }} className="text-end">Debit (-)</th>
     <th style={{ width: "12%" }} className="text-end">Credit (+)</th>
     <th style={{ width: "12%" }} className="text-end">Balance</th>
