@@ -406,9 +406,9 @@ const savePurchase = async () => {
     label: s.supplier_name,
   }));
 
-  /* ================= UI ================= */
+/* ================= UI ================= */
   return (
-    <div className="container py-3" style={{ fontSize: "13px" }}>
+    <div className="container-fluid py-3" style={{ fontSize: "13px" }}>
       {/* HEADER */}
       <div
         className="mb-3 p-3 rounded-4 text-white shadow"
@@ -431,208 +431,222 @@ const savePurchase = async () => {
         </div>
       </div>
 
-      {/* PARTIAL ALERT */}
-      {isPartial && (
-        <div className="alert alert-warning fw-bold shadow-sm rounded-3">
-          ⚠️ Purchase PARTIAL hai
-        </div>
-      )}
+      {/* MAIN GRID LAYOUT */}
+      <div className="row g-3">
+        {/* LEFT COLUMN: PENDING LIST (SLIMMER / CHOTI WIDTH) */}
+        <div className="col-lg-3 col-md-4">
+          <div className="card border-0 shadow-sm rounded-4 sticky-top" style={{ top: "15px" }}>
+            <div className="card-header bg-danger text-white fw-bold rounded-top-4 py-2 px-3" style={{ fontSize: "12px" }}>
+              ⏳ Pending / Partial Purchases
+            </div>
 
-      {/* PENDING */}
-      <div className="card border-0 shadow-sm rounded-4 mb-3">
-        <div className="card-header bg-danger text-white fw-bold rounded-top-4">
-          ⏳ Pending / Partial Purchases
-        </div>
+            <div className="card-body p-2" style={{ maxHeight: "calc(100vh - 120px)", overflowY: "auto" }}>
+              {pending.length === 0 ? (
+                <p className="text-success mb-0 p-2">✅ No pending</p>
+              ) : (
+                <ul className="list-group list-group-flush">
+                  {pending.map((p, i) => (
+                    <li
+                      key={i}
+                      className="list-group-item d-flex justify-content-between align-items-center px-2 py-2"
+                    >
+                      <div className="fw-bold" style={{ fontSize: "11px", minWidth: 0 }}>
+                        <div className="d-flex align-items-center gap-1 mb-1">
+                          <span className="badge bg-dark" style={{ fontSize: "10px" }}>{p.ref_no}</span>
+                          <span
+                            className={`badge ${
+                              p.purchase_status === "PENDING"
+                                ? "bg-danger"
+                                : p.purchase_status === "PARTIAL"
+                                ? "bg-warning text-dark"
+                                : "bg-success"
+                            }`}
+                            style={{ fontSize: "9px" }}
+                          >
+                            {p.purchase_status}
+                          </span>
+                        </div>
+                        <div className="text-primary text-truncate" style={{ maxWidth: "120px" }}>
+                          {p.customer_name}
+                        </div>
+                      </div>
 
-        <div className="card-body p-2">
-          {pending.length === 0 ? (
-            <p className="text-success mb-0">✅ No pending</p>
-          ) : (
-            <ul className="list-group list-group-flush">
-              {pending.map((p, i) => (
-                <li
-                  key={i}
-                  className="list-group-item d-flex justify-content-between align-items-center"
-                >
-                  <div className="fw-bold">
-                    <span className="badge bg-dark me-2">{p.ref_no}</span>
-                    <span className="text-primary">{p.customer_name}</span>
-<span
-  className={`badge ms-2 ${
-    p.purchase_status === "PENDING"
-      ? "bg-danger"
-      : p.purchase_status === "PARTIAL"
-      ? "bg-warning text-dark"
-      : "bg-success"
-  }`}
->
-  {p.purchase_status}
-</span>
-                  </div>
-
-                  <button
-                    className="btn btn-sm btn-outline-primary"
-                    onClick={() => loadPackage(p.ref_no)}
-                  >
-                    Load
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-      </div>
-
-      {/* REF INPUT */}
-      <div className="card border-0 shadow-sm rounded-4 mb-3">
-        <div className="card-header bg-info text-white fw-bold rounded-top-4">
-          🔢 Enter Ref No
-        </div>
-
-        <div className="card-body d-flex gap-2">
-          <input
-            className="form-control form-control-sm"
-            placeholder="Enter Ref No..."
-            value={refNo}
-            onChange={(e) => setRefNo(e.target.value)}
-          />
-          <button className="btn btn-primary btn-sm fw-bold" onClick={() => loadPackage()}>
-            Load
-          </button>
-        </div>
-      </div>
-
-      {/* SAVE */}
-      <div className="card border-0 shadow-sm rounded-4 mb-3">
-        <div className="card-body d-flex justify-content-between align-items-center">
-          <h6 className="fw-bold mb-0">
-            💾 {isEdit ? "Update Purchase" : "Save Purchase"}
-          </h6>
-
-          <div className="d-flex gap-2">
-            <button
-              className={`btn btn-sm fw-bold ${isEdit ? "btn-warning text-dark" : "btn-success"}`}
-              onClick={savePurchase}
-            >
-              {isEdit ? "✏ Update Purchase" : "💾 Save Purchase"}
-            </button>
-
-            {isEdit && (
-              <button
-                className="btn btn-secondary btn-sm"
-                onClick={() => {
-                  setRows([]);
-                  setRefNo("");
-                  setIsEdit(false);
-                }}
-              >
-                Cancel
-              </button>
-            )}
+                      <button
+                        className="btn btn-xs btn-outline-primary fw-bold py-1 px-2"
+                        style={{ fontSize: "11px" }}
+                        onClick={() => loadPackage(p.ref_no)}
+                      >
+                        Load
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* TABLE */}
-      <div className="card border-0 shadow rounded-4 overflow-hidden">
-        <div className="table-responsive">
-          <table className="table table-sm table-hover align-middle mb-0">
-            <thead
-              className="text-white"
-              style={{ background: "linear-gradient(135deg,#000,#434343)", fontSize: "12px" }}
-            >
-              <tr>
-                <th>Item</th>
-                <th>Sale SAR</th>
-                <th>Rate</th>
-                <th>Sale PKR</th>
-                <th>Purchase SAR</th>
-                <th>Purchase Rate</th>
-                <th>Purchase PKR</th>
-                <th>Profit</th>
-                <th>Supplier</th>
-              </tr>
-            </thead>
+        {/* RIGHT COLUMN: MAIN FORM & TABLE (WIDER) */}
+        <div className="col-lg-9 col-md-8">
+          {/* PARTIAL ALERT */}
+          {isPartial && (
+            <div className="alert alert-warning fw-bold shadow-sm rounded-3 py-2 px-3 mb-2" style={{ fontSize: "12px" }}>
+              ⚠️ Purchase PARTIAL hai
+            </div>
+          )}
 
-            <tbody>
-              {rows
-                .map((r, i) => ({ ...r, originalIndex: i }))
-                .filter(
-                  (r) =>
-                    parseNumber(r.sale_sar) !== 0 ||
-                    parseNumber(r.sale_rate) !== 0 ||
-                    parseNumber(r.sale_pkr) !== 0
-                )
-                .map((r, i) => {
-                  const isIncomplete =
-                    (parseNumber(r.sale_sar) !== 0 ||
-                      parseNumber(r.sale_rate) !== 0 ||
-                      parseNumber(r.sale_pkr) !== 0) &&
-                    (!parseNumber(r.purchase_sar) || !parseNumber(r.purchase_rate));
+          {/* REF INPUT */}
+          <div className="card border-0 shadow-sm rounded-4 mb-3">
+            <div className="card-header bg-info text-white fw-bold rounded-top-4 py-2 px-3" style={{ fontSize: "12px" }}>
+              🔢 Enter Ref No
+            </div>
 
-                  return (
-                    <tr
-                      key={i}
-                      className={isIncomplete ? "table-danger" : ""}
-                      style={{ transition: "0.2s", cursor: "pointer" }}
-                    >
-                      <td className="fw-bold" style={{ color: itemCategoryColor(r.item_label || r.item) }}>
-                        {r.item_label || r.item}
-                      </td>
+            <div className="card-body d-flex gap-2 py-2">
+              <input
+                className="form-control form-control-sm"
+                placeholder="Enter Ref No..."
+                value={refNo}
+                onChange={(e) => setRefNo(e.target.value)}
+              />
+              <button className="btn btn-primary btn-sm fw-bold px-3" onClick={() => loadPackage()}>
+                Load
+              </button>
+            </div>
+          </div>
 
-                      <td>{r.sale_sar}</td>
-                      <td>{r.sale_rate}</td>
-                      <td className="fw-bold text-primary">{r.sale_pkr.toLocaleString()}</td>
+          {/* SAVE */}
+          <div className="card border-0 shadow-sm rounded-4 mb-3">
+            <div className="card-body d-flex justify-content-between align-items-center py-2 px-3">
+              <h6 className="fw-bold mb-0" style={{ fontSize: "13px" }}>
+                💾 {isEdit ? "Update Purchase" : "Save Purchase"}
+              </h6>
 
-                      <td>
-                        <input
-                          className="form-control form-control-sm"
-                          value={r.purchase_sar}
-                          onChange={(e) => updateRow(r.originalIndex, "purchase_sar", e.target.value)}
-                        />
-                      </td>
+              <div className="d-flex gap-2">
+                <button
+                  className={`btn btn-sm fw-bold ${isEdit ? "btn-warning text-dark" : "btn-success"}`}
+                  onClick={savePurchase}
+                >
+                  {isEdit ? "✏ Update Purchase" : "💾 Save Purchase"}
+                </button>
 
-                      <td>
-                        <input
-                          className="form-control form-control-sm"
-                          value={r.purchase_rate}
-                          onChange={(e) => updateRow(r.originalIndex, "purchase_rate", e.target.value)}
-                        />
-                      </td>
+                {isEdit && (
+                  <button
+                    className="btn btn-secondary btn-sm"
+                    onClick={() => {
+                      setRows([]);
+                      setRefNo("");
+                      setIsEdit(false);
+                    }}
+                  >
+                    Cancel
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
 
-                      <td className="fw-bold">{r.purchase_pkr.toLocaleString()}</td>
+          {/* TABLE */}
+          <div className="card border-0 shadow rounded-4 overflow-hidden mb-3">
+            <div className="table-responsive">
+              <table className="table table-sm table-hover align-middle mb-0">
+                <thead
+                  className="text-white"
+                  style={{ background: "linear-gradient(135deg,#000,#434343)", fontSize: "12px" }}
+                >
+                  <tr>
+                    <th>Item</th>
+                    <th>Sale SAR</th>
+                    <th>Rate</th>
+                    <th>Sale PKR</th>
+                    <th>Purchase SAR</th>
+                    <th>Purchase Rate</th>
+                    <th>Purchase PKR</th>
+                    <th>Profit</th>
+                    <th>Supplier</th>
+                  </tr>
+                </thead>
 
-                      <td className={`fw-bold ${r.profit >= 0 ? "text-success" : "text-danger"}`}>
-                        {r.profit.toLocaleString()}
-                      </td>
+                <tbody>
+                  {rows
+                    .map((r, i) => ({ ...r, originalIndex: i }))
+                    .filter(
+                      (r) =>
+                        parseNumber(r.sale_sar) !== 0 ||
+                        parseNumber(r.sale_rate) !== 0 ||
+                        parseNumber(r.sale_pkr) !== 0
+                    )
+                    .map((r, i) => {
+                      const isIncomplete =
+                        (parseNumber(r.sale_sar) !== 0 ||
+                          parseNumber(r.sale_rate) !== 0 ||
+                          parseNumber(r.sale_pkr) !== 0) &&
+                        (!parseNumber(r.purchase_sar) || !parseNumber(r.purchase_rate));
 
-                      <td style={{ minWidth: "220px" }}>
-<Select
-  options={supplierOptions}
-  value={supplierOptions.find((opt) => opt.value === r.supplier_code) || null}
-  onChange={(selected) =>
-    updateRow(
-      r.originalIndex,
-      "supplier_code",
-      selected ? selected.value : ""
-    )
-  }
-  placeholder="🔍 Select Supplier..."
-  isClearable
-  isSearchable
-  menuPortalTarget={document.body}
-  styles={{
-    ...customSelectStyles,
-    menuPortal: (base) => ({ ...base, zIndex: 9999 }),
-  }}
-  theme={customTheme}
-/>
-                      </td>
-                    </tr>
-                  );
-                })}
-            </tbody>
-          </table>
+                      return (
+                        <tr
+                          key={i}
+                          className={isIncomplete ? "table-danger" : ""}
+                          style={{ transition: "0.2s", cursor: "pointer" }}
+                        >
+                          <td className="fw-bold" style={{ color: itemCategoryColor(r.item_label || r.item) }}>
+                            {r.item_label || r.item}
+                          </td>
+
+                          <td>{r.sale_sar}</td>
+                          <td>{r.sale_rate}</td>
+                          <td className="fw-bold text-primary">{r.sale_pkr.toLocaleString()}</td>
+
+                          <td>
+                            <input
+                              className="form-control form-control-sm"
+                              value={r.purchase_sar}
+                              onChange={(e) => updateRow(r.originalIndex, "purchase_sar", e.target.value)}
+                            />
+                          </td>
+
+                          <td>
+                            <input
+                              className="form-control form-control-sm"
+                              value={r.purchase_rate}
+                              onChange={(e) => updateRow(r.originalIndex, "purchase_rate", e.target.value)}
+                            />
+                          </td>
+
+                          <td className="fw-bold">{r.purchase_pkr.toLocaleString()}</td>
+
+                          <td className={`fw-bold ${r.profit >= 0 ? "text-success" : "text-danger"}`}>
+                            {r.profit.toLocaleString()}
+                          </td>
+
+                          <td style={{ minWidth: "200px" }}>
+                            <Select
+                              options={supplierOptions}
+                              value={supplierOptions.find((opt) => opt.value === r.supplier_code) || null}
+                              onChange={(selected) =>
+                                updateRow(
+                                  r.originalIndex,
+                                  "supplier_code",
+                                  selected ? selected.value : ""
+                                )
+                              }
+                              placeholder="🔍 Select..."
+                              isClearable
+                              isSearchable
+                              menuPortalTarget={document.body}
+                              styles={{
+                                ...customSelectStyles,
+                                menuPortal: (base) => ({ ...base, zIndex: 9999 }),
+                              }}
+                              theme={customTheme}
+                            />
+                          </td>
+                        </tr>
+                      );
+                    })}
+                </tbody>
+              </table>
+            </div>
+          </div>
         </div>
       </div>
     </div>
