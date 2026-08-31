@@ -432,7 +432,7 @@ export default function Dashboard({ onNavigate }) {
 
         {/* HEADER */}
         <div style={{ textAlign: "center", paddingTop: 10 }}>
-          <h2 style={{ fontSize: 32, margin: 0, textShadow: "0 2px 8px rgba(0,0,0,0.6)" }}>Makki Madni Travel & Toure</h2>
+          <h2 style={{ fontSize: 32, margin: 0, textShadow: "0 2px 8px rgba(0,0,0,0.6)" }}>Makki Madni Travel & Tours</h2>
           <i style={{ opacity: 0.9 }}>Live Travel Management Dashboard</i>
         </div>
 
