@@ -152,30 +152,33 @@ export default function SupplierPurchasedetailreport({ onNavigate }) {
     loadSuppliers();
   }, []);
 
-  /* ================= FILTER ================= */
-  const filtered = rows.filter((r) => {
-    // Hide 0 purchase records
-    if (Number(r.purchase_sar || 0) <= 0 && Number(r.purchase_pkr || 0) <= 0) {
-      return false;
-    }
+/* ================= FILTER & SORT ================= */
+  const filtered = rows
+    .filter((r) => {
+      // Hide 0 purchase records
+      if (Number(r.purchase_sar || 0) <= 0 && Number(r.purchase_pkr || 0) <= 0) {
+        return false;
+      }
 
-    if (supplier !== "ALL" && r.supplier_name?.trim() !== supplier.trim()) return false;
-    if (itemType !== "ALL" && !r.item?.toLowerCase().includes(itemType.toLowerCase())) return false;
+      if (supplier !== "ALL" && r.supplier_name?.trim() !== supplier.trim()) return false;
+      if (itemType !== "ALL" && !r.item?.toLowerCase().includes(itemType.toLowerCase())) return false;
 
-    const d = r.booking_date ? new Date(r.booking_date) : null;
-    if (from && d && d < new Date(from)) return false;
-    if (to && d && d > new Date(to)) return false;
+      const d = r.booking_date ? new Date(r.booking_date) : null;
+      if (from && d && d < new Date(from)) return false;
+      if (to && d && d > new Date(to)) return false;
 
-    if (search) {
-      const s = search.toLowerCase();
-      return (
-        r.ref_no?.toLowerCase().includes(s) ||
-        r.item?.toLowerCase().includes(s) ||
-        r.supplier_name?.toLowerCase().includes(s)
-      );
-    }
-    return true;
-  });
+      if (search) {
+        const s = search.toLowerCase();
+        return (
+          r.ref_no?.toLowerCase().includes(s) ||
+          r.item?.toLowerCase().includes(s) ||
+          r.supplier_name?.toLowerCase().includes(s)
+        );
+      }
+      return true;
+    })
+    // 🔹 DATE SORTING (Ascending order)
+    .sort((a, b) => new Date(a.booking_date) - new Date(b.booking_date));
 
   /* ================= TOTALS ================= */
   const totals = filtered.reduce(

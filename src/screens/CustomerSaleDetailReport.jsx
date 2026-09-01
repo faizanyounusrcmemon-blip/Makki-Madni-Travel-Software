@@ -145,43 +145,47 @@ export default function CustomerSaleDetailReport({ onNavigate }) {
     loadReport();
   }, []);
 
-  /* ================= FILTER LOGIC ================= */
-  const filtered = rows.filter((r) => {
-    // 🔹 HIDE ZERO SALES (Skip rows where Sale SAR/PKR is 0)
-    if (Number(r.sale_sar || 0) <= 0 && Number(r.sale_pkr || 0) <= 0) {
-      return false;
-    }
+/* ================= FILTER & SORT LOGIC ================= */
+  const filtered = rows
+    .filter((r) => {
+      // 🔹 HIDE ZERO SALES (Skip rows where Sale SAR/PKR is 0)
+      if (Number(r.sale_sar || 0) <= 0 && Number(r.sale_pkr || 0) <= 0) {
+        return false;
+      }
 
-    // 1. Customer Smart Dropdown Filter
-    if (customer !== "ALL" && r.customer_name?.trim() !== customer.trim()) {
-      return false;
-    }
+      // 1. Customer Smart Dropdown Filter
+      if (customer !== "ALL" && r.customer_name?.trim() !== customer.trim()) {
+        return false;
+      }
 
-    // 2. Category Filter
-    if (
-      itemType !== "ALL" &&
-      !r.item?.toLowerCase().includes(itemType.toLowerCase())
-    ) {
-      return false;
-    }
+      // 2. Category Filter
+      if (
+        itemType !== "ALL" &&
+        !r.item?.toLowerCase().includes(itemType.toLowerCase())
+      ) {
+        return false;
+      }
 
-    // 3. Date Range Filter
-    const d = r.booking_date ? new Date(r.booking_date) : null;
-    if (from && d && d < new Date(from)) return false;
-    if (to && d && d > new Date(to)) return false;
+      // 3. Date Range Filter
+      const d = r.booking_date ? new Date(r.booking_date) : null;
+      if (from && d && d < new Date(from)) return false;
+      if (to && d && d > new Date(to)) return false;
 
-    // 4. Live Search Box (Walk-in Customer, Customer Name, Ref No, Item)
-    if (search) {
-      const s = search.toLowerCase();
-      return (
-        r.ref_no?.toLowerCase().includes(s) ||
-        r.item?.toLowerCase().includes(s) ||
-        r.customer_name?.toLowerCase().includes(s)
-      );
-    }
+      // 4. Live Search Box
+      if (search) {
+        const s = search.toLowerCase();
+        return (
+          r.ref_no?.toLowerCase().includes(s) ||
+          r.item?.toLowerCase().includes(s) ||
+          r.customer_name?.toLowerCase().includes(s)
+        );
+      }
 
-    return true;
-  });
+      return true;
+    })
+    .sort((a, b) => new Date(a.booking_date) - new Date(b.booking_date)); 
+
+
 
   /* ================= TOTALS ================= */
   const totals = filtered.reduce(
