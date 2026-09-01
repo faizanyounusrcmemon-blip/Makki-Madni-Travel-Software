@@ -294,10 +294,10 @@ export default function PackagesView({ id, onNavigate, fromPage }) {
           <div className="bg-white p-4 p-md-5 rounded-4 shadow-lg border" style={{ margin: "auto", fontFamily: "'Segoe UI', Roboto, sans-serif", color: "#2d3748" }}>
             <Header title="PACKAGE QUOTATION" />
 
-            <div className="p-3 mb-4 rounded-4" style={{ background: "#f8fafc", border: "1px solid #e2e8f0" }}>
+<div className="p-3 mb-4 rounded-4" style={{ background: "#f8fafc", border: "1px solid #e2e8f0" }}>
               <div className="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-3">
                 <div>
-                  <span className="badge bg-primary bg-gradient px-3 py-2 rounded-pill fs-6 mb-2">
+                  <span className="badge bg-primary px-3 py-2 rounded-pill fs-6 mb-2">
                     PACKAGE — {data.ref_no}
                   </span>
                   <h4 className="fw-bold mb-1 text-dark">{data.customer_name}</h4>
@@ -306,9 +306,22 @@ export default function PackagesView({ id, onNavigate, fromPage }) {
                   </div>
                 </div>
 
-                <div className="px-4 py-2 rounded-4 text-center shadow-sm" style={{ background: "linear-gradient(135deg, #10b981 0%, #059669 100%)", color: "#ffffff" }}>
-                  <div style={{ fontSize: "11px", textTransform: "uppercase", letterSpacing: "1px", opacity: 0.9 }}>Duration</div>
-                  <div style={{ fontSize: "18px", fontWeight: "800" }}>📅 {packageDays} Days / 🌙 {packageNights} Nights</div>
+                {/* PDF & PRINT FRIENDLY DURATION BOX */}
+                <div 
+                  className="px-4 py-2 rounded-4 text-center shadow-sm" 
+                  style={{ 
+                    backgroundColor: "#059669", 
+                    color: "#ffffff",
+                    WebkitPrintColorAdjust: "exact",
+                    printColorAdjust: "exact" 
+                  }}
+                >
+                  <div style={{ fontSize: "11px", textTransform: "uppercase", letterSpacing: "1px", color: "#ffffff", opacity: 0.9 }}>
+                    Duration
+                  </div>
+                  <div style={{ fontSize: "18px", fontWeight: "800", color: "#ffffff" }}>
+                    📅 {packageDays} Days / 🌙 {packageNights} Nights
+                  </div>
                 </div>
               </div>
             </div>
