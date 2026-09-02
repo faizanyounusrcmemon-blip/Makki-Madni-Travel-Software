@@ -8,26 +8,26 @@ export default function AllReportsToday({ onNavigate }) {
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
   const [typeFilter, setTypeFilter] = useState("");
+  const [custTypeFilter, setCustTypeFilter] = useState("");
   const [currentAuthorityDays, setCurrentAuthorityDays] = useState("-");
 
   const [loading, setLoading] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(25);
 
-/* ================= LOAD DATA & SYSTEM ACCESS (FIXED) ================= */
+  /* ================= LOAD DATA & SYSTEM ACCESS ================= */
   const loadData = async () => {
     try {
       setLoading(true);
       
-      // Check 1: Get Days Authority (Double /api/reports fix)
       const setRes = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/reports/authority/get-days`);
-      if (!setRes.ok) throw new Error("Authority route missing");
-      const setData = await setRes.json();
-      if(setData.success) {
-        setCurrentAuthorityDays(setData.days);
+      if (setRes.ok) {
+        const setData = await setRes.json();
+        if(setData.success) {
+          setCurrentAuthorityDays(setData.days);
+        }
       }
 
-      // Check 2: Get Restricted Data (Double /api/reports fix)
       const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/reports/today-restricted`);
       if (!res.ok) throw new Error("Data route missing");
       const data = await res.json();
@@ -75,44 +75,41 @@ export default function AllReportsToday({ onNavigate }) {
     setFromDate("");
     setToDate("");
     setTypeFilter("");
+    setCustTypeFilter("");
   };
 
   /* ================= PASSWORD PROMPT ================= */
   const askPassword = async (type, ref_no, customer_name, total_pkr) => {
     const { value: password } = await Swal.fire({
-      width: "360px",
-      padding: "1em",
+      width: "380px",
+      padding: "1.25em",
+      customClass: { popup: "rounded-4 border-0 shadow-lg" },
       html: `
-        <div style="text-align:left;font-size:13px;line-height:1.5">
-          <div style="margin-bottom:8px">
-            <b style="color:#dc3545">🗑 DELETE SALE</b>
+        <div style="text-align:left; font-size:13px; line-height:1.6; color: #1e293b;">
+          <div style="margin-bottom:12px; font-size:16px; font-weight:700; color:#e11d48; display:flex; align-items:center; gap:8px;">
+            <span>🗑️</span> Confirm Deletion
           </div>
-          <div style="font-size:12px;margin-bottom:6px"><b>Type:</b> ${type}</div>
-          <div style="font-size:12px;margin-bottom:6px"><b>REF NO:</b> ${ref_no}</div>
-          <div style="font-size:12px;margin-bottom:6px"><b>Customer:</b> ${customer_name}</div>
-          <div style="font-size:12px;margin-bottom:8px">💰 <b>Amount:</b> ${total_pkr}</div>
-          <div style="position:relative;margin-top:8px">
-            <input id="swal-pass" type="password" class="swal2-input" style="height:34px;font-size:13px;width:100%;box-sizing:border-box;padding-right:40px;margin:0;" placeholder="Enter password"/>
+          <div style="background:#f8fafc; padding:12px; border-radius:12px; border:1px solid #e2e8f0; margin-bottom:12px;">
+            <div><b>Type:</b> ${type}</div>
+            <div><b>Ref:</b> <span style="color:#2563eb; font-weight:600;">${ref_no}</span></div>
+            <div><b>Customer:</b> ${customer_name || "-"}</div>
+            <div><b>Amount:</b> <span style="color:#059669; font-weight:700;">PKR ${total_pkr}</span></div>
+          </div>
+          <div style="position:relative;">
+            <input id="swal-pass" type="password" class="swal2-input" 
+              style="height:38px; font-size:13px; width:100%; box-sizing:border-box; padding-right:40px; margin:0; border-radius:8px;" 
+              placeholder="Enter Admin Password"/>
             <span id="toggle-pass" style="
-              position:absolute;
-              right:12px;
-              top:50%;
-              transform:translateY(-50%);
-              cursor:pointer;
-              font-size:14px;
-              user-select:none;
+              position:absolute; right:12px; top:50%; transform:translateY(-50%);
+              cursor:pointer; font-size:14px; user-select:none; color:#64748b;
             ">👁</span>
           </div>
         </div>
       `,
       showCancelButton: true,
-      confirmButtonText: "Delete",
+      confirmButtonText: "Delete Record",
+      confirmButtonColor: "#e11d48",
       focusConfirm: false,
-      buttonsStyling: false,
-      customClass: { 
-        confirmButton: "swal-btn-delete",
-        cancelButton: "swal-btn-cancel"
-      },
       preConfirm: () => {
         const val = document.getElementById("swal-pass").value;
         if (!val || val.trim() === "") {
@@ -138,7 +135,7 @@ export default function AllReportsToday({ onNavigate }) {
   /* ================= LOADER ================= */
   const showLoader = (text = "Processing...") => {
     Swal.fire({
-      width: "300px",
+      width: "280px",
       title: text,
       allowOutsideClick: false,
       didOpen: () => Swal.showLoading(),
@@ -149,23 +146,6 @@ export default function AllReportsToday({ onNavigate }) {
   const handleDelete = async (type, ref_no, customer_name, total_pkr) => {
     const password = await askPassword(type, ref_no, customer_name, total_pkr);
     if (!password) return;
-
-    const confirm = await Swal.fire({
-      width: "320px",
-      title: "Are you sure?",
-      html: `REF NO: <b>${ref_no}</b><br>Customer: <b>${customer_name}</b>`,
-      icon: "warning",
-      showCancelButton: true,
-      confirmButtonText: "Yes, Delete",
-      cancelButtonText: "Cancel",
-      buttonsStyling: false,
-      customClass: {
-        confirmButton: "swal-btn-delete",
-        cancelButton: "swal-btn-cancel"
-      }
-    });
-
-    if (!confirm.isConfirmed) return;
 
     const map = {
       Packages: "bookings",
@@ -186,10 +166,8 @@ export default function AllReportsToday({ onNavigate }) {
         `${import.meta.env.VITE_BACKEND_URL}/api/${endpoint}/delete/${ref_no}`,
         { 
           method: "DELETE",
-          headers: {
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify({ password: password })
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ password })
         }
       );
       const data = await res.json();
@@ -199,11 +177,17 @@ export default function AllReportsToday({ onNavigate }) {
         return Swal.fire("Error", data.message || data.error || "Delete failed", "error");
       }
 
-      Swal.fire("Deleted", `REF NO: ${ref_no}`, "success");
+      Swal.fire({
+        icon: "success",
+        title: "Deleted Successfully",
+        text: `REF NO: ${ref_no}`,
+        timer: 1500,
+        showConfirmButton: false,
+      });
       loadData();
     } catch (err) {
       Swal.close();
-      Swal.fire("Error", "Delete failed", "error");
+      Swal.fire("Error", "Server error on delete", "error");
     }
   };
 
@@ -230,12 +214,17 @@ export default function AllReportsToday({ onNavigate }) {
   /* ================= FILTERS EFFECT ================= */
   useEffect(() => {
     let temp = [...rows];
-    if (search)
+    
+    if (search) {
+      const query = search.toLowerCase();
       temp = temp.filter(
         (r) =>
-          (r.ref_no || "").toLowerCase().includes(search.toLowerCase()) ||
-          (r.customer_name || "").toLowerCase().includes(search.toLowerCase())
+          (r.ref_no || "").toLowerCase().includes(query) ||
+          (r.customer_name || "").toLowerCase().includes(query) ||
+          (r.customer_code || "").toLowerCase().includes(query)
       );
+    }
+    
     if (fromDate)
       temp = temp.filter((r) => new Date(r.booking_date) >= new Date(fromDate));
     if (toDate)
@@ -243,9 +232,21 @@ export default function AllReportsToday({ onNavigate }) {
     if (typeFilter)
       temp = temp.filter((r) => r.type === typeFilter);
 
+    if (custTypeFilter) {
+      temp = temp.filter((r) => {
+        if (custTypeFilter === "Registered") {
+          return r.customer_code && r.customer_code.trim() !== "";
+        }
+        if (custTypeFilter === "Walk-in") {
+          return !r.customer_code || r.customer_code.trim() === "";
+        }
+        return true;
+      });
+    }
+
     setFiltered(temp);
     setCurrentPage(1);
-  }, [search, fromDate, toDate, typeFilter, rows]);
+  }, [search, fromDate, toDate, typeFilter, custTypeFilter, rows]);
 
   /* ================= PAGINATION LOGIC ================= */
   const totalPages = Math.ceil(filtered.length / rowsPerPage);
@@ -287,127 +288,258 @@ export default function AllReportsToday({ onNavigate }) {
   const fmtPKR = (v) => Number(v || 0).toLocaleString("en-PK");
 
   const typeIcon = (type) => {
-    const map = { Packages: "📦", Hotels: "🏨", Ticketing: "✈️", Transport: "🚐", Ziyarat: "🕌", Visa: "🛂", Card: "💳", Groups: "👨‍👩‍👧‍👦" };
+    const map = { Packages: "📦", Hotels: "🏨", Ticketing: "✈️", Transport: "🚐", Ziyarat: "🕌", Visa: "🛂", Card: "💳", Groups: "👥" };
     return map[type] || "📄";
   };
 
   return (
-    <div className="container py-4">
-      {/* SAME SAME UI HEADER */}
-      <div className="card shadow-sm border-0 mb-3">
-        <div
-          className="card-body d-flex justify-content-between align-items-center"
-          style={{ background: "linear-gradient(135deg, #e11d48, #9f1239)", color: "#fff", borderRadius: "12px" }}
-        >
+    <div style={{ backgroundColor: "#f8fafc", minHeight: "100vh", fontFamily: "'Inter', sans-serif" }} className="p-3 p-lg-4">
+      
+      {/* 🚀 BANNER HEADER */}
+      <div 
+        className="card border-0 shadow-sm mb-4" 
+        style={{ 
+          background: "linear-gradient(135deg, #e11d48 0%, #9f1239 100%)", 
+          borderRadius: "16px",
+          color: "#ffffff" 
+        }}
+      >
+        <div className="card-body p-4 d-flex flex-wrap align-items-center justify-content-between gap-3">
           <div>
-            <h5 className="fw-bold mb-0">🕒 All Reports Today</h5>
-            <small style={{ fontSize: "11px", opacity: 0.9 }}>
-              🛡️ Restricted View: Locked to Last <b>{currentAuthorityDays} Days</b> by Manager
-            </small>
+            <div className="d-flex align-items-center gap-2">
+              <span className="p-2 rounded-3" style={{ background: "rgba(255, 255, 255, 0.2)" }}>🕒</span>
+              <h3 className="fw-bold mb-0">All Reports Today</h3>
+            </div>
+            <p className="text-white-50 small mb-0 mt-1">
+              Restricted View: Locked to Last <strong className="text-warning">{currentAuthorityDays} Days</strong> by Manager
+            </p>
           </div>
-          <button className="btn btn-light btn-sm" onClick={() => onNavigate("dashboard")}>
+
+          <button 
+            className="btn btn-outline-light btn-sm rounded-pill px-3 py-2"
+            onClick={() => onNavigate("dashboard")}
+          >
             ← Back
           </button>
         </div>
       </div>
 
-      {/* FILTER */}
-      <div className="card shadow-sm mb-2">
-        <div className="card-body">
-          <div className="row g-2">
-            <div className="col-md-4">
-              <input
-                className="form-control form-control-sm"
-                placeholder="🔍 Search Ref / Customer"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-              />
+      {/* 💳 SUMMARY STATS CARDS */}
+      <div className="row g-3 mb-4">
+        <div className="col-md-6 col-lg-4">
+          <div className="card border-0 shadow-sm p-3 rounded-4" style={{ background: "#ffffff" }}>
+            <div className="d-flex align-items-center justify-content-between">
+              <div>
+                <div className="text-muted small fw-semibold">TOTAL REVENUE</div>
+                <div className="h4 fw-bold text-success mb-0">PKR {fmtPKR(totalPKR)}</div>
+              </div>
+              <div className="bg-success-subtle p-3 rounded-circle text-success fw-bold fs-4">💰</div>
             </div>
-            <div className="col-md-2">
-              <input type="date" className="form-control form-control-sm" value={fromDate} onChange={(e) => setFromDate(e.target.value)} />
-            </div>
-            <div className="col-md-2">
-              <input type="date" className="form-control form-control-sm" value={toDate} onChange={(e) => setToDate(e.target.value)} />
-            </div>
-            <div className="col-md-4">
-              <select className="form-control form-control-sm" value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)}>
-                <option value="">All Types</option>
-                <option>Packages</option>
-                <option>Hotels</option>
-                <option>Ticketing</option>
-                <option>Transport</option>
-                <option>Ziyarat</option>
-                <option>Visa</option>
-                <option>Card</option>
-                <option>Groups</option>
-              </select>
+          </div>
+        </div>
+
+        <div className="col-md-6 col-lg-4">
+          <div className="card border-0 shadow-sm p-3 rounded-4" style={{ background: "#ffffff" }}>
+            <div className="d-flex align-items-center justify-content-between">
+              <div>
+                <div className="text-muted small fw-semibold">FILTERED RECORDS</div>
+                <div className="h4 fw-bold text-primary mb-0">{filtered.length} Bookings</div>
+              </div>
+              <div className="bg-primary-subtle p-3 rounded-circle text-primary fw-bold fs-4">📋</div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* DATE PRESETS */}
-      <div className="d-flex gap-2 mb-3 flex-wrap">
-        <button className="btn btn-outline-primary btn-sm" onClick={setToday}>📅 Today</button>
-        <button className="btn btn-outline-success btn-sm" onClick={setWeek}>📆 This Week</button>
-        <button className="btn btn-outline-warning btn-sm" onClick={setMonth}>🗓 This Month</button>
-        <button className="btn btn-outline-danger btn-sm" onClick={resetFilters}>♻ Reset</button>
+      {/* 🎛️ SEARCH & FILTERS CARD */}
+      <div className="card border-0 shadow-sm mb-4 rounded-4 p-3" style={{ background: "#ffffff" }}>
+        <div className="row g-2 mb-3">
+          <div className="col-lg-3 col-md-6">
+            <input
+              type="text"
+              className="form-control border-light-subtle bg-light shadow-none"
+              style={{ fontSize: "13px", padding: "10px 14px", borderRadius: "10px" }}
+              placeholder="🔍 Search Ref / Customer / Code..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+          </div>
+          <div className="col-lg-2 col-md-3">
+            <input
+              type="date"
+              className="form-control border-light-subtle bg-light shadow-none"
+              style={{ fontSize: "13px", padding: "10px 14px", borderRadius: "10px" }}
+              value={fromDate}
+              onChange={(e) => setFromDate(e.target.value)}
+            />
+          </div>
+          <div className="col-lg-2 col-md-3">
+            <input
+              type="date"
+              className="form-control border-light-subtle bg-light shadow-none"
+              style={{ fontSize: "13px", padding: "10px 14px", borderRadius: "10px" }}
+              value={toDate}
+              onChange={(e) => setToDate(e.target.value)}
+            />
+          </div>
+          <div className="col-lg-2 col-md-6">
+            <select
+              className="form-select border-light-subtle bg-light shadow-none"
+              style={{ fontSize: "13px", padding: "10px 14px", borderRadius: "10px" }}
+              value={typeFilter}
+              onChange={(e) => setTypeFilter(e.target.value)}
+            >
+              <option value="">All Services</option>
+              <option>Packages</option>
+              <option>Hotels</option>
+              <option>Ticketing</option>
+              <option>Transport</option>
+              <option>Ziyarat</option>
+              <option>Visa</option>
+              <option>Card</option>
+              <option>Groups</option>
+            </select>
+          </div>
+          <div className="col-lg-3 col-md-6">
+            <select
+              className="form-select border-light-subtle bg-light shadow-none"
+              style={{ fontSize: "13px", padding: "10px 14px", borderRadius: "10px" }}
+              value={custTypeFilter}
+              onChange={(e) => setCustTypeFilter(e.target.value)}
+            >
+              <option value="">All Customer Types</option>
+              <option value="Registered">👤 Registered Customers</option>
+              <option value="Walk-in">🚶 Walk-in Customers</option>
+            </select>
+          </div>
+        </div>
+
+        <div className="d-flex justify-content-between align-items-center flex-wrap gap-2 pt-2 border-top">
+          <div className="d-flex gap-2">
+            <button className="btn btn-sm btn-light border fw-semibold rounded-pill px-3" style={{ fontSize: "12px" }} onClick={setToday}>📅 Today</button>
+            <button className="btn btn-sm btn-light border fw-semibold rounded-pill px-3" style={{ fontSize: "12px" }} onClick={setWeek}>📆 This Week</button>
+            <button className="btn btn-sm btn-light border fw-semibold rounded-pill px-3" style={{ fontSize: "12px" }} onClick={setMonth}>🗓️ This Month</button>
+          </div>
+          <button className="btn btn-sm btn-link text-danger text-decoration-none fw-semibold" style={{ fontSize: "12px" }} onClick={resetFilters}>
+            ♻️ Reset Filters
+          </button>
+        </div>
       </div>
 
-      {/* TABLE DATA STRUCTURE */}
-      <div className="card shadow-sm">
+      {/* 📊 ELEGANT TABLE CONTAINER */}
+      <div className="card border-0 shadow-sm rounded-4 overflow-hidden" style={{ background: "#ffffff" }}>
         <div className="table-responsive">
-          <table className="table table-hover table-sm mb-0 align-middle">
-            <thead className="table-light">
+          <table className="table align-middle mb-0" style={{ fontSize: "13px" }}>
+            <thead className="table-light text-secondary">
               <tr>
-                <th className="text-center">SR#</th>
-                <th className="text-center">Type</th>
-                <th className="text-center">Ref</th>
-                <th className="text-center">Customer</th>
-                <th className="text-center">Date</th>
-                <th className="text-center">PKR</th>
-                <th className="text-center">Summary</th>
-                <th className="text-center">View</th>
-                <th className="text-center">Delete</th>
+                <th className="py-3 px-3 text-center" style={{ width: "50px" }}>SR#</th>
+                <th className="py-3">Type</th>
+                <th className="py-3">Ref No</th>
+                <th className="py-3">Customer Name</th>
+                <th className="py-3 text-center">Code / Status</th>
+                <th className="py-3 text-center">Booking Date</th>
+                <th className="py-3 text-end px-3">Total Amount</th>
+                <th className="py-3 text-center" style={{ width: "220px" }}>Actions</th>
               </tr>
             </thead>
 
             <tbody>
               {loading && (
                 <tr>
-                  <td colSpan={9} className="text-center py-3">Loading secure channel...</td>
+                  <td colSpan={8} className="text-center py-5 text-muted">
+                    <div className="spinner-border spinner-border-sm text-danger me-2" role="status"></div>
+                    Loading secure channel...
+                  </td>
                 </tr>
               )}
 
-              {!loading && currentRows.map((r, i) => (
-                <tr key={i}>
-                  <td className="fw-bold text-muted" style={{ fontSize: "12px" }}>{i + 1 + indexOfFirst}</td>
-                  <td><span className="badge bg-info text-dark">{typeIcon(r.type)} {r.type}</span></td>
-                  <td className="fw-bold text-nowrap small-cell">{r.ref_no}</td>
-                  <td className="fw-semibold text-primary text-nowrap small-cell">{r.customer_name || "-"}</td>
-                  <td className="text-muted text-nowrap small-cell">{formatDate(r.booking_date)}</td>
-                  <td><span className="badge bg-success">💰 {fmtPKR(r.total_pkr)}</span></td>
-                  <td className="text-center">
-                    {r.type === "Packages" && (
-                      <button className="btn btn-outline-warning btn-sm" onClick={() => handleSumry(r.type, r.ref_no)}>📊 SUMMARY</button>
-                    )}
-                  </td>
-                  <td className="text-center"><button className="btn btn-outline-info btn-sm" onClick={() => handleView(r.type, r.ref_no)}>👁️ VIEW</button></td>
-                  <td className="text-center"><button className="btn btn-outline-danger btn-sm" onClick={() => handleDelete(r.type, r.ref_no, r.customer_name, r.total_pkr)}>🗑 DELETE</button></td>
-                </tr>
-              ))}
+              {!loading && currentRows.map((r, i) => {
+                const isRegistered = r.customer_code && r.customer_code.trim() !== "";
+                return (
+                  <tr key={i} className="align-middle">
+                    <td className="text-center text-muted fw-bold">{i + 1 + indexOfFirst}</td>
+                    <td>
+                      <span className="badge bg-light text-dark border px-2 py-1 rounded-3">
+                        {typeIcon(r.type)} {r.type}
+                      </span>
+                    </td>
+                    <td className="fw-bold text-dark">{r.ref_no}</td>
+                    
+                    {/* CUSTOMER NAME COLORS: Walk-in = BLUE (#2563eb), Registered = GREEN (#16a34a) */}
+                    <td className="fw-bold">
+                      <span style={{ color: isRegistered ? "#16a34a" : "#2563eb" }}>
+                        {r.customer_name || "-"}
+                      </span>
+                    </td>
+
+                    {/* CODE / STATUS COLUMN */}
+                    <td className="text-center">
+                      {isRegistered ? (
+                        <span className="badge bg-success-subtle text-success border border-success-subtle px-2 py-1 rounded-pill">
+                          👤 {r.customer_code}
+                        </span>
+                      ) : (
+                        <span className="badge bg-primary-subtle text-primary border border-primary-subtle px-2 py-1 rounded-pill">
+                          🚶 Walk-in
+                        </span>
+                      )}
+                    </td>
+
+                    <td className="text-center text-muted">{formatDate(r.booking_date)}</td>
+                    <td className="text-end fw-bold text-success px-3">PKR {fmtPKR(r.total_pkr)}</td>
+
+                    {/* STRICT COLUMN-BASED ALIGNMENT (GRID LAYOUT) */}
+                    <td className="text-center">
+                      <div 
+                        style={{ 
+                          display: "grid", 
+                          gridTemplateColumns: "75px 60px 65px", 
+                          gap: "4px", 
+                          justifyContent: "center", 
+                          alignItems: "center" 
+                        }}
+                      >
+                        {/* COLUMN 1: Summary Button or Empty Spacer */}
+                        {r.type === "Packages" ? (
+                          <button
+                            className="btn btn-sm btn-outline-warning rounded-pill px-1 py-1 fw-semibold w-100"
+                            style={{ fontSize: "11px", whiteSpace: "nowrap" }}
+                            onClick={() => handleSumry(r.type, r.ref_no)}
+                          >
+                            📊 Summary
+                          </button>
+                        ) : (
+                          <div></div>
+                        )}
+
+                        {/* COLUMN 2: View Button */}
+                        <button
+                          className="btn btn-sm btn-outline-primary rounded-pill px-1 py-1 fw-semibold w-100"
+                          style={{ fontSize: "11px", whiteSpace: "nowrap" }}
+                          onClick={() => handleView(r.type, r.ref_no)}
+                        >
+                          👁️ View
+                        </button>
+
+                        {/* COLUMN 3: Delete Button */}
+                        <button
+                          className="btn btn-sm btn-outline-danger rounded-pill px-1 py-1 fw-semibold w-100"
+                          style={{ fontSize: "11px", whiteSpace: "nowrap" }}
+                          onClick={() => handleDelete(r.type, r.ref_no, r.customer_name, r.total_pkr)}
+                        >
+                          🗑️ Delete
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
 
               {!loading && filtered.length === 0 && (
                 <tr>
-                  <td colSpan={9} className="text-center py-3 text-muted">No Authorized Records Found For Current Cycle</td>
-                </tr>
-              )}
-
-              {!loading && filtered.length > 0 && (
-                <tr className="table-dark">
-                  <td colSpan={5} className="text-end fw-bold">TOTAL</td>
-                  <td className="fw-bold">{fmtPKR(totalPKR)}</td>
-                  <td colSpan={3}></td>
+                  <td colSpan={8} className="text-center py-5 text-muted">
+                    No Authorized Records Found For Current Cycle
+                  </td>
                 </tr>
               )}
             </tbody>
@@ -415,50 +547,58 @@ export default function AllReportsToday({ onNavigate }) {
         </div>
       </div>
 
-      {/* SMART PAGINATION */}
-      <div className="d-flex justify-content-between align-items-center mt-3 flex-wrap gap-2">
-        <select
-          className="form-select form-select-sm"
-          style={{ width: "100px" }}
-          value={rowsPerPage}
-          onChange={(e) => { setRowsPerPage(Number(e.target.value)); setCurrentPage(1); }}
-        >
-          <option value={25}>25</option>
-          <option value={50}>50</option>
-          <option value={75}>75</option>
-          <option value={100}>100</option>
-          <option value={1000000}>Full View</option>
-        </select>
+      {/* 📑 FOOTER PAGINATION */}
+      <div className="d-flex justify-content-between align-items-center mt-3 flex-wrap gap-2 text-muted" style={{ fontSize: "13px" }}>
+        <div className="d-flex align-items-center gap-2">
+          <span>Displaying</span>
+          <select
+            className="form-select form-select-sm border-0 shadow-sm bg-white"
+            style={{ width: "80px", borderRadius: "8px" }}
+            value={rowsPerPage}
+            onChange={(e) => {
+              setRowsPerPage(Number(e.target.value));
+              setCurrentPage(1);
+            }}
+          >
+            <option value={25}>25</option>
+            <option value={50}>50</option>
+            <option value={75}>75</option>
+            <option value={100}>100</option>
+            <option value={1000000}>All</option>
+          </select>
+          <span>rows</span>
+        </div>
 
-        <div className="d-flex gap-1 align-items-center flex-wrap">
-          <button className="btn btn-sm btn-outline-primary" disabled={currentPage === 1} onClick={() => setCurrentPage(currentPage - 1)}>⬅ Prev</button>
+        <div className="d-flex align-items-center gap-1">
+          <button
+            className="btn btn-sm btn-white border shadow-sm rounded-pill px-3"
+            disabled={currentPage === 1}
+            onClick={() => setCurrentPage(currentPage - 1)}
+          >
+            Prev
+          </button>
+
           {getPagination().map((p, idx) => (
             <button
               key={idx}
-              className={`btn btn-sm ${p === currentPage ? "btn-primary" : "btn-outline-primary"}`}
+              className={`btn btn-sm rounded-pill px-3 ${
+                p === currentPage ? "btn-danger shadow-sm" : "btn-white border shadow-sm"
+              }`}
               disabled={p === "…"}
               onClick={() => typeof p === "number" && setCurrentPage(p)}
             >
               {p}
             </button>
           ))}
-          <button className="btn btn-sm btn-outline-primary" disabled={currentPage === totalPages || totalPages === 0} onClick={() => setCurrentPage(currentPage + 1)}>Next ➡</button>
-        </div>
 
-        <input
-          type="number"
-          min={1}
-          max={totalPages}
-          placeholder="Go"
-          className="form-control form-control-sm"
-          style={{ width: "70px" }}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") {
-              let val = Number(e.target.value);
-              if (val >= 1 && val <= totalPages) setCurrentPage(val);
-            }
-          }}
-        />
+          <button
+            className="btn btn-sm btn-white border shadow-sm rounded-pill px-3"
+            disabled={currentPage === totalPages || totalPages === 0}
+            onClick={() => setCurrentPage(currentPage + 1)}
+          >
+            Next
+          </button>
+        </div>
       </div>
     </div>
   );

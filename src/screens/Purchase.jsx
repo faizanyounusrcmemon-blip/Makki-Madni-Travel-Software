@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo, useRef } from "react";
 import Select from "react-select";
 import Swal from "sweetalert2";
 
@@ -7,7 +7,7 @@ import Swal from "sweetalert2";
 =============================== */
 const formatInput = (v) => {
   if (v === "" || v === null || v === undefined) return "";
-  let clean = v.replace(/[^0-9.]/g, "");
+  let clean = String(v).replace(/[^0-9.]/g, "");
   const parts = clean.split(".");
   if (parts.length > 2) clean = parts[0] + "." + parts[1];
   return clean;
@@ -18,106 +18,88 @@ const parseNumber = (v) => {
   return parseFloat(String(v).replace(/,/g, "")) || 0;
 };
 
+const fmt = (v) =>
+  v !== null && v !== undefined
+    ? Number(v).toLocaleString("en-US", { maximumFractionDigits: 2 })
+    : "0";
+
+/* 🎨 CUSTOM SELECT STYLES (ENHANCED FOR WIDER SUPPLIER DROP DOWN) */
 const customSelectStyles = {
   control: (base, state) => ({
     ...base,
-    minHeight: "34px",
-    fontSize: "12px",
-    borderRadius: "10px",
-    border: state.isFocused
-      ? "1px solid #0d6efd"
-      : "1px solid #ced4da",
-    boxShadow: state.isFocused
-      ? "0 0 0 2px rgba(13,110,253,0.15)"
-      : "none",
-    background: "#f8f9ff",
-    transition: "0.2s",
+    minHeight: "36px",
+    height: "36px",
+    fontSize: "13px",
+    borderRadius: "6px",
+    border: state.isFocused ? "2px solid #4f46e5" : "1px solid #94a3b8",
+    boxShadow: state.isFocused ? "0 0 0 3px rgba(79, 70, 229, 0.15)" : "none",
+    background: "#ffffff",
+    transition: "all 0.2s ease",
     "&:hover": {
-      border: "1px solid #0d6efd",
+      border: "1px solid #6366f1",
     },
   }),
-
   valueContainer: (base) => ({
     ...base,
-    padding: "2px 8px",
+    padding: "0 8px",
   }),
-
   input: (base) => ({
     ...base,
     margin: 0,
     padding: 0,
   }),
-
+  singleValue: (base) => ({
+    ...base,
+    color: "#0f172a",
+    fontWeight: "800",
+    fontSize: "13px",
+    whiteSpace: "nowrap",
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+  }),
   indicatorSeparator: () => ({
     display: "none",
   }),
-
   dropdownIndicator: (base, state) => ({
     ...base,
-    color: state.isFocused ? "#0d6efd" : "#888",
+    color: state.isFocused ? "#4f46e5" : "#64748b",
     padding: "4px",
-    "&:hover": {
-      color: "#0d6efd",
-    },
   }),
-
   menu: (base) => ({
     ...base,
-    borderRadius: "12px",
+    borderRadius: "8px",
     overflow: "hidden",
-    boxShadow: "0 10px 25px rgba(0,0,0,0.15)",
-    animation: "fadeIn 0.2s ease",
+    boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.2)",
+    zIndex: 9999,
   }),
-
-  menuList: (base) => ({
-    ...base,
-    padding: "4px",
-  }),
-
   option: (base, state) => ({
     ...base,
-    fontSize: "12px",
-    padding: "8px 10px",
-    borderRadius: "8px",
+    fontSize: "13px",
+    fontWeight: state.isSelected ? "800" : "700",
+    padding: "8px 12px",
     cursor: "pointer",
     background: state.isSelected
-      ? "linear-gradient(135deg,#0d6efd,#4dabf7)"
+      ? "#4f46e5"
       : state.isFocused
-      ? "#eef4ff"
-      : "#fff",
-    color: state.isSelected ? "#fff" : "#333",
-    transition: "0.15s",
-  }),
-
-  placeholder: (base) => ({
-    ...base,
-    color: "#888",
+      ? "#e0e7ff"
+      : "#ffffff",
+    color: state.isSelected
+      ? "#ffffff"
+      : state.isFocused
+      ? "#1e40af"
+      : "#1d4ed8",
   }),
 };
 
-const customTheme = (theme) => ({
-  ...theme,
-  borderRadius: 10,
-  colors: {
-    ...theme.colors,
-    primary: "#0d6efd",
-    primary25: "#eef4ff",
-  },
-});
-
-/* ===============================
-   ITEM CATEGORY COLOR
-=============================== */
-const itemCategoryColor = (text = "") => {
+const itemCategoryBadge = (text = "") => {
   const t = text.toLowerCase();
-  if (t.includes("transport")) return "#0d6efd";
-  if (t.includes("hotel")) return "#198754";
-  if (t.includes("visa")) return "#6f42c1";
-  if (t.includes("card")) return "#0b3d91";
-  if (t.includes("groups")) return "#212529";
-  if (t.includes("ticket")) return "#fd7e14";
-  if (t.includes("ziyarat")) return "#dc3545";
-  return "#212529";
+  if (t.includes("transport")) return { bg: "#e0f2fe", color: "#0369a1", icon: "🚌" };
+  if (t.includes("hotel")) return { bg: "#dcfce7", color: "#15803d", icon: "🏨" };
+  if (t.includes("visa")) return { bg: "#f3e8ff", color: "#6b21a8", icon: "📑" };
+  if (t.includes("card")) return { bg: "#e0e7ff", color: "#3730a3", icon: "💳" };
+  if (t.includes("ticket")) return { bg: "#ffedd5", color: "#c2410c", icon: "✈️" };
+  if (t.includes("ziyarat")) return { bg: "#ffe4e6", color: "#be123c", icon: "🕌" };
+  return { bg: "#f1f5f9", color: "#334155", icon: "📦" };
 };
 
 export default function Purchase({ onNavigate }) {
@@ -129,6 +111,11 @@ export default function Purchase({ onNavigate }) {
   const [isEdit, setIsEdit] = useState(false);
   const [pendingMap, setPendingMap] = useState({});
   const [customerName, setCustomerName] = useState("");
+  const [pendingSearch, setPendingSearch] = useState("");
+
+  // ⌨️ Navigation refs matrix: inputRefs.current[displayRowIndex][fieldIndex]
+  // 0: pur_sar, 1: pur_rate, 2: supplier_select
+  const inputRefs = useRef([]);
 
   /* ================= LOAD SUPPLIERS ================= */
   useEffect(() => {
@@ -138,26 +125,15 @@ export default function Purchase({ onNavigate }) {
   }, []);
 
   /* ================= LOAD PENDING ================= */
-  const getCustomerName = (refNo, data) => {
-    return (
-      pendingMap[refNo] ||
-      data.rows?.find((r) => r.customer_name)?.customer_name ||
-      data.rows?.[0]?.customer_name ||
-      "N/A"
-    );
-  };
-
   const loadPending = async () => {
-    const r = await fetch(
-      `${import.meta.env.VITE_BACKEND_URL}/api/purchase/pending`
-    );
-
-    const d = await r.json();
-
-    console.log("PENDING API:", d);
-
-    if (d.success) {
-      setPending(d.rows || []);
+    try {
+      const r = await fetch(
+        `${import.meta.env.VITE_BACKEND_URL}/api/purchase/pending`
+      );
+      const d = await r.json();
+      if (d.success) setPending(d.rows || []);
+    } catch (err) {
+      console.error("Pending fetch error:", err);
     }
   };
 
@@ -167,21 +143,19 @@ export default function Purchase({ onNavigate }) {
 
   useEffect(() => {
     const map = {};
-
     pending.forEach((p) => {
       map[p.ref_no] = p.customer_name;
     });
-
     setPendingMap(map);
   }, [pending]);
 
-  /* ================= LOAD PACKAGE (MANUAL) ================= */
+  /* ================= LOAD PACKAGE ================= */
   const loadPackage = async (r = refNo) => {
     if (!r) {
       return Swal.fire({
-        width: "300px",
+        width: "320px",
         icon: "warning",
-        text: "Ref No required",
+        text: "Please enter Ref No",
       });
     }
 
@@ -192,28 +166,21 @@ export default function Purchase({ onNavigate }) {
       const res = await fetch(
         `${import.meta.env.VITE_BACKEND_URL}/api/purchase/load/${r}`
       );
-
       const data = await res.json();
-
-      console.log("API RESPONSE:", data);
-
       setLoading(false);
 
       if (!data.success) {
         setRows([]);
         setCustomerName("");
-
         return Swal.fire({
-          width: "300px",
+          width: "320px",
           icon: "error",
           text: data.error || "Record not found",
         });
       }
 
-      // EDIT MODE
       setIsEdit(data.is_edit === true);
 
-      // ROWS SET
       setRows(
         (data.rows || []).map((x) => ({
           item: x.item,
@@ -237,7 +204,6 @@ export default function Purchase({ onNavigate }) {
         }))
       );
 
-      // CUSTOMER NAME SET
       const cName =
         data.customer_name ||
         data.customer ||
@@ -249,12 +215,11 @@ export default function Purchase({ onNavigate }) {
 
       setCustomerName(cName);
 
-      // SUCCESS POPUP
       Swal.fire({
-        width: "360px",
+        width: "380px",
         icon: "success",
         html: `
-        <div style="text-align:left; font-size:13px">
+        <div style="text-align:left; font-size:14px">
           <b>✅ Data Loaded Successfully</b><br/><br/>
           <b>Ref No:</b> ${r}<br/>
           <b>Customer:</b> ${cName}<br/>
@@ -263,11 +228,10 @@ export default function Purchase({ onNavigate }) {
       });
     } catch (err) {
       setLoading(false);
-
       Swal.fire({
-        width: "300px",
+        width: "320px",
         icon: "error",
-        text: "Network Error",
+        text: "Network Connection Error",
       });
     }
   };
@@ -295,13 +259,26 @@ export default function Purchase({ onNavigate }) {
     setRows(copy);
   };
 
+  /* QUICK COPY SALE VALUES TO PURCHASE */
+  const copySaleToPurchase = (i) => {
+    const copy = [...rows];
+    const r = copy[i];
+    r.purchase_sar = String(r.sale_sar || "");
+    r.purchase_rate = String(r.sale_rate || "");
+    const sar = parseNumber(r.purchase_sar);
+    const rate = parseNumber(r.purchase_rate);
+    r.purchase_pkr = sar * rate;
+    r.profit = r.sale_pkr - r.purchase_pkr;
+    setRows(copy);
+  };
+
   /* ================= SAVE ================= */
   const savePurchase = async () => {
     if (!rows.length) {
       return Swal.fire({
-        width: "300px",
+        width: "320px",
         icon: "warning",
-        text: "No data to save",
+        text: "No data rows available to save",
       });
     }
 
@@ -320,14 +297,14 @@ export default function Purchase({ onNavigate }) {
 
     if (!cleanRows.length) {
       return Swal.fire({
-        width: "300px",
+        width: "320px",
         icon: "warning",
-        text: "No valid rows to save",
+        text: "No valid rows found to save",
       });
     }
 
     Swal.fire({
-      width: "260px",
+      width: "280px",
       title: "Saving...",
       allowOutsideClick: false,
       didOpen: () => Swal.showLoading(),
@@ -344,16 +321,15 @@ export default function Purchase({ onNavigate }) {
       );
 
       const data = await res.json();
-
       Swal.close();
 
       if (data.success) {
         await Swal.fire({
-          width: "280px",
+          width: "320px",
           icon: "success",
           text: isEdit
-            ? "Purchase Updated Successfully"
-            : "Purchase Saved Successfully",
+            ? "Purchase Record Updated Successfully"
+            : "Purchase Record Saved Successfully",
         });
 
         setRows([]);
@@ -364,23 +340,34 @@ export default function Purchase({ onNavigate }) {
         onNavigate("purchase");
       } else {
         Swal.fire({
-          width: "300px",
+          width: "320px",
           icon: "error",
-          text: data.error || "Save failed",
+          text: data.error || "Failed to save record",
         });
       }
     } catch (err) {
       Swal.close();
-
       Swal.fire({
-        width: "300px",
+        width: "320px",
         icon: "error",
-        text: "Network Error",
+        text: "Network Connection Error",
       });
     }
   };
 
-  /* ================= PARTIAL CHECK ================= */
+  /* ================= CALCULATED SUMMARY TOTALS ================= */
+  const totals = useMemo(() => {
+    return rows.reduce(
+      (acc, r) => {
+        acc.salePkr += parseNumber(r.sale_pkr);
+        acc.purchasePkr += parseNumber(r.purchase_pkr);
+        acc.profit += parseNumber(r.profit);
+        return acc;
+      },
+      { salePkr: 0, purchasePkr: 0, profit: 0 }
+    );
+  }, [rows]);
+
   const isPartial = rows
     .filter(
       (r) =>
@@ -389,298 +376,457 @@ export default function Purchase({ onNavigate }) {
         parseNumber(r.sale_pkr) !== 0
     )
     .some(
-      (r) => !parseNumber(r.purchase_sar) || !parseNumber(r.purchase_rate)
+      (r) =>
+        !parseNumber(r.purchase_sar) ||
+        !parseNumber(r.purchase_rate) ||
+        !r.supplier_code
     );
+
+  const filteredPendingList = useMemo(() => {
+    if (!pendingSearch) return pending;
+    const q = pendingSearch.toLowerCase();
+    return pending.filter(
+      (p) =>
+        p.ref_no?.toLowerCase().includes(q) ||
+        p.customer_name?.toLowerCase().includes(q)
+    );
+  }, [pending, pendingSearch]);
 
   const supplierOptions = suppliers.map((s) => ({
     value: s.supplier_code,
     label: s.supplier_name,
   }));
 
-  /* ================= UI ================= */
-  return (
-    <div className="container-fluid py-3" style={{ fontSize: "13px" }}>
-      {/* HEADER */}
-      <div
-        className="mb-3 p-3 rounded-4 text-white shadow"
-        style={{ background: "linear-gradient(135deg,#1e3c72,#2a5298)" }}
-      >
-        <div className="d-flex justify-content-between align-items-center">
-          <h5 className="fw-bold mb-0">
-            🧾 Purchase Entry
-            {isEdit && (
-              <span className="badge bg-warning text-dark ms-2">
-                EDIT MODE
-              </span>
-            )}
-          </h5>
+  const visibleRows = useMemo(() => {
+    return rows
+      .map((r, i) => ({ ...r, originalIndex: i }))
+      .filter(
+        (r) =>
+          parseNumber(r.sale_sar) !== 0 ||
+          parseNumber(r.sale_rate) !== 0 ||
+          parseNumber(r.sale_pkr) !== 0
+      );
+  }, [rows]);
 
-          <button
-            className="btn btn-light btn-sm fw-bold"
+  /* ================= KEYBOARD NAVIGATION HANDLERS ================= */
+  const focusNextElement = (displayIdx, fieldIdx) => {
+    const el = inputRefs.current[displayIdx]?.[fieldIdx];
+    if (el) {
+      if (typeof el.focus === "function") {
+        el.focus();
+      }
+    }
+  };
+
+  return (
+    <div style={{ backgroundColor: "#f1f5f9", minHeight: "100vh", fontFamily: "'Inter', system-ui, sans-serif" }} className="p-3">
+      
+      {/* 🚀 BANNER HEADER */}
+      <div 
+        className="card border-0 shadow-sm mb-3 overflow-hidden" 
+        style={{ 
+          background: "linear-gradient(135deg, #0f172a 0%, #1e293b 100%)", 
+          borderRadius: "14px",
+          color: "#ffffff" 
+        }}
+      >
+        <div className="card-body p-3.5 d-flex flex-wrap align-items-center justify-content-between gap-2">
+          <div className="d-flex align-items-center gap-3">
+            <div className="p-2.5 rounded-3" style={{ background: "rgba(255, 255, 255, 0.12)" }}>
+              <span style={{ fontSize: "24px" }}>🧾</span>
+            </div>
+            <div>
+              <div className="d-flex align-items-center gap-2">
+                <h4 className="fw-extrabold mb-0 text-white" style={{ fontSize: "18px", fontWeight: "800" }}>Purchase Entry & Procurement</h4>
+                {isEdit && (
+                  <span className="badge text-dark rounded-pill px-3 py-1 fw-extrabold" style={{ fontSize: "11px", backgroundColor: "#f59e0b" }}>
+                    EDIT MODE
+                  </span>
+                )}
+              </div>
+              <p className="text-slate-300 mb-0 mt-0.5" style={{ fontSize: "12px", opacity: 0.9 }}>
+                Process supplier orders, compare margins, and sync package rates.
+              </p>
+            </div>
+          </div>
+
+          <button 
+            className="btn btn-outline-light btn-sm rounded-pill px-3 py-1.5 fw-bold"
+            style={{ fontSize: "12px", borderColor: "rgba(255,255,255,0.3)" }}
             onClick={() => onNavigate("dashboard")}
           >
-            ⬅ Back
+            ← Dashboard
           </button>
         </div>
       </div>
 
-      {/* MAIN GRID LAYOUT */}
+      {/* 💳 SUMMARY CARDS */}
+      <div className="row g-2 mb-3">
+        <div className="col-md-4">
+          <div className="card border-0 shadow-sm p-3 rounded-3 bg-white">
+            <div className="d-flex align-items-center justify-content-between">
+              <div>
+                <div className="text-uppercase text-muted fw-bold mb-0.5" style={{ fontSize: "11px" }}>TOTAL SALE</div>
+                <div style={{ fontSize: "18px", color: "#047857", fontWeight: "800" }}>
+                  <span className="text-muted fs-6 me-1">PKR</span>{fmt(totals.salePkr)}
+                </div>
+              </div>
+              <span className="fs-4">💵</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="col-md-4">
+          <div className="card border-0 shadow-sm p-3 rounded-3 bg-white">
+            <div className="d-flex align-items-center justify-content-between">
+              <div>
+                <div className="text-uppercase text-muted fw-bold mb-0.5" style={{ fontSize: "11px" }}>TOTAL PURCHASE</div>
+                <div style={{ fontSize: "18px", color: "#3730a3", fontWeight: "800" }}>
+                  <span className="text-muted fs-6 me-1">PKR</span>{fmt(totals.purchasePkr)}
+                </div>
+              </div>
+              <span className="fs-4">🛒</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="col-md-4">
+          <div className="card border-0 shadow-sm p-3 rounded-3 bg-white">
+            <div className="d-flex align-items-center justify-content-between">
+              <div>
+                <div className="text-uppercase text-muted fw-bold mb-0.5" style={{ fontSize: "11px" }}>ESTIMATED MARGIN</div>
+                <div style={{ fontSize: "18px", color: totals.profit >= 0 ? "#15803d" : "#be123c", fontWeight: "800" }}>
+                  <span className="text-muted fs-6 me-1">PKR</span>{fmt(totals.profit)}
+                </div>
+              </div>
+              <span className="fs-4">{totals.profit >= 0 ? "📈" : "📉"}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* 🧩 MAIN LAYOUT */}
       <div className="row g-3">
-        {/* LEFT COLUMN: PENDING LIST (CHOTI WIDTH) */}
-        <div className="col-lg-3 col-md-4">
-          <div
-            className="card border-0 shadow-sm rounded-4 sticky-top"
-            style={{ top: "15px" }}
-          >
-            <div
-              className="card-header bg-danger text-white fw-bold rounded-top-4 py-2 px-3"
-              style={{ fontSize: "12px" }}
-            >
-              ⏳ Pending / Partial Purchases
+        
+        {/* ⏳ PENDING QUEUE SIDEBAR */}
+        <div className="col-lg-2 col-md-3">
+          <div className="card border-0 shadow-sm rounded-3 overflow-hidden bg-white">
+            <div className="card-header bg-white py-3 px-2.5 d-flex justify-content-between align-items-center border-bottom">
+              <span className="fw-extrabold text-slate-800 d-flex align-items-center gap-1" style={{ fontSize: "12px", fontWeight: "800" }}>
+                ⏳ Pending Queue
+              </span>
+              <span className="badge rounded-pill px-2 py-1 fw-extrabold" style={{ fontSize: "11px", backgroundColor: "#e0e7ff", color: "#3730a3" }}>
+                {pending.length}
+              </span>
             </div>
 
-            <div
-              className="card-body p-2"
-              style={{ maxHeight: "calc(100vh - 120px)", overflowY: "auto" }}
-            >
-              {pending.length === 0 ? (
-                <p className="text-success mb-0 p-2">✅ No pending</p>
+            <div className="p-2 border-bottom bg-slate-50">
+              <input
+                type="text"
+                className="form-control form-control-sm border-slate-300 bg-white shadow-none"
+                style={{ fontSize: "12px", borderRadius: "6px", height: "32px" }}
+                placeholder="🔍 Search..."
+                value={pendingSearch}
+                onChange={(e) => setPendingSearch(e.target.value)}
+              />
+            </div>
+
+            <div className="card-body p-2 overflow-auto" style={{ maxHeight: "calc(100vh - 280px)" }}>
+              {filteredPendingList.length === 0 ? (
+                <div className="text-center py-4 text-muted" style={{ fontSize: "12px" }}>
+                  {pending.length === 0 ? "🎉 Empty" : "No results"}
+                </div>
               ) : (
-                <ul className="list-group list-group-flush">
-                  {pending.map((p, i) => (
-                    <li
-                      key={i}
-                      className="list-group-item d-flex justify-content-between align-items-center px-2 py-2"
+                <div className="d-flex flex-column gap-2">
+                  {filteredPendingList.map((p, i) => (
+                    <div 
+                      key={i} 
+                      className="p-2.5 rounded-3 border bg-white shadow-2xs transition-all"
+                      style={{ 
+                        borderColor: p.ref_no === refNo ? "#6366f1" : "#cbd5e1",
+                        backgroundColor: p.ref_no === refNo ? "#f5f3ff" : "#ffffff"
+                      }}
                     >
-                      <div
-                        className="fw-bold"
-                        style={{ fontSize: "11px", minWidth: 0 }}
-                      >
-                        <div className="d-flex align-items-center gap-1 mb-1">
-                          <span
-                            className="badge bg-dark"
-                            style={{ fontSize: "10px" }}
-                          >
-                            {p.ref_no}
-                          </span>
-                          <span
-                            className={`badge ${
-                              p.purchase_status === "PENDING"
-                                ? "bg-danger"
-                                : p.purchase_status === "PARTIAL"
-                                ? "bg-warning text-dark"
-                                : "bg-success"
-                            }`}
-                            style={{ fontSize: "9px" }}
-                          >
-                            {p.purchase_status}
-                          </span>
-                        </div>
-                        <div
-                          className="text-primary text-truncate"
-                          style={{ maxWidth: "120px" }}
+                      <div className="d-flex justify-content-between align-items-start mb-1">
+                        <span className="fw-extrabold" style={{ fontSize: "12px", color: "#0f172a", fontWeight: "800" }}>
+                          {p.ref_no}
+                        </span>
+                        <span 
+                          className="badge rounded-pill fw-bold px-2 py-0.5"
+                          style={{ 
+                            fontSize: "10px",
+                            backgroundColor: p.purchase_status === "PENDING" ? "#be123c" : "#b45309",
+                            color: "#ffffff"
+                          }}
                         >
-                          {p.customer_name}
-                        </div>
+                          {p.purchase_status}
+                        </span>
+                      </div>
+
+                      <div className="fw-bold mb-2 text-wrap" style={{ fontSize: "12.5px", lineHeight: "1.3", color: "#1d4ed8" }}>
+                        👤 {p.customer_name || "Walk-In Customer"}
                       </div>
 
                       <button
-                        className="btn btn-xs btn-outline-primary fw-bold py-1 px-2"
-                        style={{ fontSize: "11px" }}
+                        className="btn btn-sm w-100 fw-bold border-0 text-white rounded-2 py-1"
+                        style={{ fontSize: "11.5px", backgroundColor: "#4f46e5" }}
                         onClick={() => loadPackage(p.ref_no)}
                       >
-                        Load
+                        Load Reference
                       </button>
-                    </li>
+                    </div>
                   ))}
-                </ul>
+                </div>
               )}
             </div>
           </div>
         </div>
 
-        {/* RIGHT COLUMN: MAIN FORM & TABLE */}
-        <div className="col-lg-9 col-md-8">
-          {/* PARTIAL ALERT */}
-          {isPartial && (
-            <div
-              className="alert alert-warning fw-bold shadow-sm rounded-3 py-2 px-3 mb-2"
-              style={{ fontSize: "12px" }}
-            >
-              ⚠️ Purchase PARTIAL hai
+        {/* 📝 RIGHT FORM TABLE */}
+        <div className="col-lg-10 col-md-9">
+          
+          {isPartial && rows.length > 0 && (
+            <div className="alert border-0 rounded-3 p-2.5 px-3 mb-2 d-flex align-items-center gap-2 shadow-2xs" style={{ background: "#fffbebe6", borderLeft: "4px solid #f59e0b", color: "#b45309", fontSize: "12px" }}>
+              <span className="fs-6">⚠️</span>
+              <div>
+                <b>Incomplete Entries:</b> Highlighted red rows require purchase SAR, Rate, & Supplier details.
+              </div>
             </div>
           )}
 
-          {/* REF INPUT */}
-          <div className="card border-0 shadow-sm rounded-4 mb-3">
-            <div
-              className="card-header bg-info text-white fw-bold rounded-top-4 py-2 px-3"
-              style={{ fontSize: "12px" }}
-            >
-              🔢 Enter Ref No
-            </div>
-
-            <div className="card-body d-flex gap-2 py-2">
-              <input
-                className="form-control form-control-sm"
-                placeholder="Enter Ref No..."
-                value={refNo}
-                onChange={(e) => setRefNo(e.target.value)}
-              />
-              <button
-                className="btn btn-primary btn-sm fw-bold px-3"
-                onClick={() => loadPackage()}
-              >
-                Load
-              </button>
-            </div>
-          </div>
-
-          {/* SAVE / UPDATE PATTI WITH CUSTOMER NAME */}
-          <div className="card border-0 shadow-sm rounded-4 mb-3">
-            <div className="card-body d-flex justify-content-between align-items-center py-2 px-3">
-              <div className="d-flex align-items-center gap-2">
-                <h6 className="fw-bold mb-0" style={{ fontSize: "13px" }}>
-                  💾 {isEdit ? "Update Purchase" : "Save Purchase"}
-                </h6>
-                {customerName && (
-                  <span className="badge bg-primary text-white fw-bold px-3 py-1 rounded-pill" style={{ fontSize: "12px" }}>
-                    👤 {customerName}
-                  </span>
-                )}
+          {/* REF SEARCH HEADER */}
+          <div className="card border-0 shadow-sm rounded-3 mb-2 bg-white p-3">
+            <div className="row g-2 align-items-center">
+              <div className="col-md-5">
+                <div className="d-flex gap-2">
+                  <input
+                    className="form-control border-slate-300 bg-slate-50 shadow-none fw-bold"
+                    style={{ fontSize: "13px", borderRadius: "6px", height: "36px" }}
+                    placeholder="Enter Reference No..."
+                    value={refNo}
+                    onChange={(e) => setRefNo(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && loadPackage()}
+                  />
+                  <button
+                    className="btn fw-bold px-4 text-white shadow-2xs"
+                    style={{ fontSize: "12px", backgroundColor: "#4f46e5", height: "36px", whiteSpace: "nowrap" }}
+                    onClick={() => loadPackage()}
+                    disabled={loading}
+                  >
+                    {loading ? "..." : "Fetch"}
+                  </button>
+                </div>
               </div>
 
-              <div className="d-flex gap-2">
-                <button
-                  className={`btn btn-sm fw-bold ${
-                    isEdit ? "btn-warning text-dark" : "btn-success"
-                  }`}
-                  onClick={savePurchase}
-                >
-                  {isEdit ? "✏ Update Purchase" : "💾 Save Purchase"}
-                </button>
-
-                {isEdit && (
-                  <button
-                    className="btn btn-secondary btn-sm"
-                    onClick={() => {
-                      setRows([]);
-                      setRefNo("");
-                      setCustomerName("");
-                      setIsEdit(false);
+              <div className="col-md-7 d-flex align-items-center justify-content-md-end gap-2">
+                {customerName && (
+                  <div 
+                    className="px-3 py-1.5 rounded-2 fw-extrabold text-truncate border shadow-2xs d-flex align-items-center gap-1.5" 
+                    style={{ 
+                      fontSize: "13px", 
+                      maxWidth: "280px",
+                      backgroundColor: "#ecfdf5", 
+                      color: "#047857",
+                      borderColor: "#a7f3d0",
+                      fontWeight: "800"
                     }}
                   >
-                    Cancel
+                    <span>👤</span> {customerName}
+                  </div>
+                )}
+                
+                {rows.length > 0 && (
+                  <button
+                    className={`btn rounded-2 px-4 fw-bold shadow-2xs text-white`}
+                    style={{ fontSize: "12px", height: "36px", backgroundColor: isEdit ? "#d97706" : "#10b981", whiteSpace: "nowrap" }}
+                    onClick={savePurchase}
+                  >
+                    {isEdit ? "Update Entry" : "Save Purchase"}
                   </button>
                 )}
               </div>
             </div>
           </div>
 
-          {/* TABLE */}
-          <div className="card border-0 shadow rounded-4 overflow-hidden mb-3">
-            <div className="table-responsive">
-              <table className="table table-sm table-hover align-middle mb-0">
-                <thead
-                  className="text-white"
-                  style={{
-                    background: "linear-gradient(135deg,#000,#434343)",
-                    fontSize: "12px",
-                  }}
-                >
+          {/* 📊 FORM DATA TABLE */}
+          <div className="card border-0 shadow-sm rounded-3 overflow-hidden bg-white">
+            <div className="w-100">
+              <table className="table align-middle mb-0" style={{ fontSize: "13px", width: "100%", tableLayout: "fixed" }}>
+                <thead style={{ background: "#f8fafc", color: "#1e293b", borderBottom: "2px solid #e2e8f0" }}>
                   <tr>
-                    <th>Item</th>
-                    <th>Sale SAR</th>
-                    <th>Rate</th>
-                    <th>Sale PKR</th>
-                    <th>Purchase SAR</th>
-                    <th>Purchase Rate</th>
-                    <th>Purchase PKR</th>
-                    <th>Profit</th>
-                    <th>Supplier</th>
+                    <th className="py-2.5 px-3 fw-extrabold" style={{ width: "22%", fontWeight: "800" }}>Description</th>
+                    <th className="py-2.5 text-end fw-extrabold px-1" style={{ width: "5.5%", fontWeight: "800" }}>SAR</th>
+                    <th className="py-2.5 text-end fw-extrabold px-1" style={{ width: "5%", fontWeight: "800" }}>Rate</th>
+                    <th className="py-2.5 text-end fw-extrabold px-1" style={{ width: "8.5%", fontWeight: "800" }}>Sale PKR</th>
+                    <th className="py-2.5 text-center fw-extrabold px-1" style={{ width: "7.5%", fontWeight: "800" }}>Pur. SAR</th>
+                    <th className="py-2.5 text-center fw-extrabold px-1" style={{ width: "6.5%", fontWeight: "800" }}>Pur. Rate</th>
+                    <th className="py-2.5 text-end fw-extrabold px-1" style={{ width: "8.5%", fontWeight: "800" }}>Pur. PKR</th>
+                    <th className="py-2.5 text-end fw-extrabold px-1" style={{ width: "8.5%", fontWeight: "800" }}>Margin</th>
+                    <th className="py-2.5 fw-extrabold px-2" style={{ width: "28%", fontWeight: "800" }}>Supplier</th>
                   </tr>
                 </thead>
 
                 <tbody>
-                  {rows
-                    .map((r, i) => ({ ...r, originalIndex: i }))
-                    .filter(
-                      (r) =>
-                        parseNumber(r.sale_sar) !== 0 ||
-                        parseNumber(r.sale_rate) !== 0 ||
-                        parseNumber(r.sale_pkr) !== 0
-                    )
-                    .map((r, i) => {
-                      const isIncomplete =
-                        (parseNumber(r.sale_sar) !== 0 ||
-                          parseNumber(r.sale_rate) !== 0 ||
-                          parseNumber(r.sale_pkr) !== 0) &&
-                        (!parseNumber(r.purchase_sar) ||
-                          !parseNumber(r.purchase_rate));
+                  {visibleRows.length === 0 && (
+                    <tr>
+                      <td colSpan={9} className="text-center py-5 text-muted">
+                        <span className="fs-3">📦</span>
+                        <p className="mt-2 text-slate-500 mb-0 fw-bold" style={{ fontSize: "13px" }}>No purchase entry loaded.</p>
+                      </td>
+                    </tr>
+                  )}
 
-                      return (
-                        <tr
-                          key={i}
-                          className={isIncomplete ? "table-danger" : ""}
-                          style={{ transition: "0.2s", cursor: "pointer" }}
-                        >
-                          <td
-                            className="fw-bold"
-                            style={{
-                              color: itemCategoryColor(r.item_label || r.item),
+                  {visibleRows.map((r, displayIdx) => {
+                    const badge = itemCategoryBadge(r.item_label || r.item);
+                    
+                    const isIncomplete =
+                      !parseNumber(r.purchase_sar) ||
+                      !parseNumber(r.purchase_rate) ||
+                      !r.supplier_code;
+
+                    const rowBg = isIncomplete ? "#fef2f2" : "#ffffff";
+
+                    return (
+                      <tr
+                        key={r.originalIndex}
+                        style={{
+                          backgroundColor: rowBg,
+                          borderBottom: "1px solid #e2e8f0"
+                        }}
+                      >
+                        <td className="px-3 py-2.5" style={{ backgroundColor: rowBg }}>
+                          <div className="d-flex align-items-center gap-1.5">
+                            <span 
+                              className="badge rounded-2 p-1.5 text-wrap text-start lh-sm fw-bold"
+                              style={{ 
+                                background: badge.bg, 
+                                color: badge.color, 
+                                fontSize: "12px",
+                                wordBreak: "break-word"
+                              }}
+                            >
+                              {badge.icon} {r.item_label || r.item}
+                            </span>
+                            <button 
+                              className="btn btn-sm text-muted border-0 p-0 fs-6" 
+                              title="Copy Sale to Purchase"
+                              onClick={() => copySaleToPurchase(r.originalIndex)}
+                            >
+                              📋
+                            </button>
+                          </div>
+                        </td>
+
+                        {/* 🟢 COMPACT NUMERIC FIELDS */}
+                        <td className="text-end fw-bold px-1" style={{ backgroundColor: rowBg, color: "#475569", fontSize: "12.5px" }}>
+                          {fmt(r.sale_sar)}
+                        </td>
+                        <td className="text-end fw-bold px-1" style={{ backgroundColor: rowBg, color: "#475569", fontSize: "12.5px" }}>
+                          {fmt(r.sale_rate)}
+                        </td>
+                        <td className="text-end fw-extrabold px-1" style={{ color: "#047857", backgroundColor: rowBg, fontWeight: "800", fontSize: "13px" }}>
+                          {fmt(r.sale_pkr)}
+                        </td>
+
+                        {/* 🔵 INPUT FIELDS */}
+                        {/* 1. Pur. SAR Input */}
+                        <td className="px-1" style={{ backgroundColor: rowBg }}>
+                          <input
+                            ref={(el) => {
+                              if (!inputRefs.current[displayIdx]) inputRefs.current[displayIdx] = [];
+                              inputRefs.current[displayIdx][0] = el;
+                            }}
+                            type="text"
+                            className="form-control text-center shadow-none p-1 fw-extrabold"
+                            style={{ 
+                              borderRadius: "6px", 
+                              fontSize: "12.5px",
+                              height: "34px",
+                              fontWeight: "800",
+                              color: "#0f172a",
+                              borderColor: isIncomplete ? "#fca5a5" : "#cbd5e1",
+                              background: "#ffffff"
+                            }}
+                            value={r.purchase_sar}
+                            placeholder="0"
+                            onChange={(e) =>
+                              updateRow(
+                                r.originalIndex,
+                                "purchase_sar",
+                                e.target.value
+                              )
+                            }
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") {
+                                e.preventDefault();
+                                focusNextElement(displayIdx, 1);
+                              }
+                            }}
+                          />
+                        </td>
+
+                        {/* 2. Pur. Rate Input */}
+                        <td className="px-1" style={{ backgroundColor: rowBg }}>
+                          <input
+                            ref={(el) => {
+                              if (!inputRefs.current[displayIdx]) inputRefs.current[displayIdx] = [];
+                              inputRefs.current[displayIdx][1] = el;
+                            }}
+                            type="text"
+                            className="form-control text-center shadow-none p-1 fw-extrabold"
+                            style={{ 
+                              borderRadius: "6px", 
+                              fontSize: "12.5px",
+                              height: "34px",
+                              fontWeight: "800",
+                              color: "#0f172a",
+                              borderColor: isIncomplete ? "#fca5a5" : "#cbd5e1",
+                              background: "#ffffff"
+                            }}
+                            value={r.purchase_rate}
+                            placeholder="0"
+                            onChange={(e) =>
+                              updateRow(
+                                r.originalIndex,
+                                "purchase_rate",
+                                e.target.value
+                              )
+                            }
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") {
+                                e.preventDefault();
+                                focusNextElement(displayIdx, 2);
+                              }
+                            }}
+                          />
+                        </td>
+
+                        <td className="text-end fw-extrabold px-1" style={{ color: "#3730a3", backgroundColor: rowBg, fontWeight: "800", fontSize: "13px" }}>
+                          {fmt(r.purchase_pkr)}
+                        </td>
+
+                        <td className="text-end fw-extrabold px-1" style={{ backgroundColor: rowBg, color: r.profit >= 0 ? "#15803d" : "#be123c", fontWeight: "800", fontSize: "13px" }}>
+                          {fmt(r.profit)}
+                        </td>
+
+                        {/* 3. Supplier Select Input */}
+                        <td className="px-2" style={{ backgroundColor: rowBg }}>
+                          <div
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") {
+                                if (displayIdx + 1 < visibleRows.length) {
+                                  setTimeout(() => {
+                                    focusNextElement(displayIdx + 1, 0);
+                                  }, 50);
+                                }
+                              }
                             }}
                           >
-                            {r.item_label || r.item}
-                          </td>
-
-                          <td>{r.sale_sar}</td>
-                          <td>{r.sale_rate}</td>
-                          <td className="fw-bold text-primary">
-                            {r.sale_pkr.toLocaleString()}
-                          </td>
-
-                          <td>
-                            <input
-                              className="form-control form-control-sm"
-                              value={r.purchase_sar}
-                              onChange={(e) =>
-                                updateRow(
-                                  r.originalIndex,
-                                  "purchase_sar",
-                                  e.target.value
-                                )
-                              }
-                            />
-                          </td>
-
-                          <td>
-                            <input
-                              className="form-control form-control-sm"
-                              value={r.purchase_rate}
-                              onChange={(e) =>
-                                updateRow(
-                                  r.originalIndex,
-                                  "purchase_rate",
-                                  e.target.value
-                                )
-                              }
-                            />
-                          </td>
-
-                          <td className="fw-bold">
-                            {r.purchase_pkr.toLocaleString()}
-                          </td>
-
-                          <td
-                            className={`fw-bold ${
-                              r.profit >= 0 ? "text-success" : "text-danger"
-                            }`}
-                          >
-                            {r.profit.toLocaleString()}
-                          </td>
-
-                          <td style={{ minWidth: "200px" }}>
                             <Select
+                              ref={(el) => {
+                                if (!inputRefs.current[displayIdx]) inputRefs.current[displayIdx] = [];
+                                inputRefs.current[displayIdx][2] = el;
+                              }}
                               options={supplierOptions}
                               value={
                                 supplierOptions.find(
@@ -694,27 +840,49 @@ export default function Purchase({ onNavigate }) {
                                   selected ? selected.value : ""
                                 )
                               }
-                              placeholder="🔍 Select..."
+                              placeholder="Select Supplier..."
                               isClearable
                               isSearchable
                               menuPortalTarget={document.body}
                               styles={{
                                 ...customSelectStyles,
-                                menuPortal: (base) => ({
-                                  ...base,
-                                  zIndex: 9999,
+                                control: (base, state) => ({
+                                  ...customSelectStyles.control(base, state),
+                                  borderColor: isIncomplete && !r.supplier_code ? "#fca5a5" : base.borderColor,
                                 }),
+                                menuPortal: (base) => ({ ...base, zIndex: 9999 }),
                               }}
-                              theme={customTheme}
                             />
-                          </td>
-                        </tr>
-                      );
-                    })}
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
+
+                {rows.length > 0 && (
+                  <tfoot style={{ background: "#f8fafc", borderTop: "2px solid #cbd5e1" }}>
+                    <tr>
+                      <td className="px-3 py-3 fw-extrabold" style={{ fontWeight: "800", fontSize: "13.5px" }}>Summary Total</td>
+                      <td colSpan={2}></td>
+                      <td className="text-end fw-extrabold px-1" style={{ color: "#047857", fontWeight: "800", fontSize: "13.5px" }}>
+                        {fmt(totals.salePkr)}
+                      </td>
+                      <td colSpan={2}></td>
+                      <td className="text-end fw-extrabold px-1" style={{ color: "#3730a3", fontWeight: "800", fontSize: "13.5px" }}>
+                        {fmt(totals.purchasePkr)}
+                      </td>
+                      <td className="text-end fw-extrabold px-1" style={{ color: totals.profit >= 0 ? "#15803d" : "#be123c", fontWeight: "800", fontSize: "13.5px" }}>
+                        {fmt(totals.profit)}
+                      </td>
+                      <td></td>
+                    </tr>
+                  </tfoot>
+                )}
               </table>
             </div>
           </div>
+
         </div>
       </div>
     </div>
