@@ -648,21 +648,23 @@ export default function Purchase({ onNavigate }) {
             </div>
           </div>
 
-          {/* 📊 FORM DATA TABLE */}
-          <div className="card border-0 shadow-sm rounded-3 overflow-hidden bg-white">
-            <div className="w-100">
-              <table className="table align-middle mb-0" style={{ fontSize: "13px", width: "100%", tableLayout: "fixed" }}>
+{/* 📊 FORM DATA TABLE (DESKTOP & MOBILE RESPONSIVE) */}
+          
+          {/* DESKTOP TABLE VIEW (Visible on md and larger screens) */}
+          <div className="d-none d-md-block card border-0 shadow-sm rounded-3 overflow-hidden bg-white">
+            <div className="w-100 overflow-auto">
+              <table className="table align-middle mb-0" style={{ fontSize: "13px", minWidth: "900px", tableLayout: "fixed" }}>
                 <thead style={{ background: "#f8fafc", color: "#1e293b", borderBottom: "2px solid #e2e8f0" }}>
                   <tr>
                     <th className="py-2.5 px-3 fw-extrabold" style={{ width: "22%", fontWeight: "800" }}>Description</th>
-                    <th className="py-2.5 text-end fw-extrabold px-1" style={{ width: "5.5%", fontWeight: "800" }}>SAR</th>
-                    <th className="py-2.5 text-end fw-extrabold px-1" style={{ width: "5%", fontWeight: "800" }}>Rate</th>
-                    <th className="py-2.5 text-end fw-extrabold px-1" style={{ width: "8.5%", fontWeight: "800" }}>Sale PKR</th>
-                    <th className="py-2.5 text-center fw-extrabold px-1" style={{ width: "7.5%", fontWeight: "800" }}>Pur. SAR</th>
-                    <th className="py-2.5 text-center fw-extrabold px-1" style={{ width: "6.5%", fontWeight: "800" }}>Pur. Rate</th>
-                    <th className="py-2.5 text-end fw-extrabold px-1" style={{ width: "8.5%", fontWeight: "800" }}>Pur. PKR</th>
-                    <th className="py-2.5 text-end fw-extrabold px-1" style={{ width: "8.5%", fontWeight: "800" }}>Margin</th>
-                    <th className="py-2.5 fw-extrabold px-2" style={{ width: "28%", fontWeight: "800" }}>Supplier</th>
+                    <th className="py-2.5 text-end fw-extrabold px-1" style={{ width: "6%", fontWeight: "800" }}>SAR</th>
+                    <th className="py-2.5 text-end fw-extrabold px-1" style={{ width: "6%", fontWeight: "800" }}>Rate</th>
+                    <th className="py-2.5 text-end fw-extrabold px-1" style={{ width: "9%", fontWeight: "800" }}>Sale PKR</th>
+                    <th className="py-2.5 text-center fw-extrabold px-1" style={{ width: "8%", fontWeight: "800" }}>Pur. SAR</th>
+                    <th className="py-2.5 text-center fw-extrabold px-1" style={{ width: "8%", fontWeight: "800" }}>Pur. Rate</th>
+                    <th className="py-2.5 text-end fw-extrabold px-1" style={{ width: "9%", fontWeight: "800" }}>Pur. PKR</th>
+                    <th className="py-2.5 text-end fw-extrabold px-1" style={{ width: "9%", fontWeight: "800" }}>Margin</th>
+                    <th className="py-2.5 fw-extrabold px-2" style={{ width: "23%", fontWeight: "800" }}>Supplier</th>
                   </tr>
                 </thead>
 
@@ -881,6 +883,146 @@ export default function Purchase({ onNavigate }) {
                 )}
               </table>
             </div>
+          </div>
+
+          {/* MOBILE CARDS VIEW (Visible on screens smaller than md) */}
+          <div className="d-block d-md-none">
+            {visibleRows.length === 0 ? (
+              <div className="card border-0 shadow-sm p-4 text-center text-muted bg-white">
+                <span className="fs-3">📦</span>
+                <p className="mt-2 mb-0 fw-bold" style={{ fontSize: "13px" }}>No purchase entry loaded.</p>
+              </div>
+            ) : (
+              <div className="d-flex flex-column gap-3">
+                {visibleRows.map((r, displayIdx) => {
+                  const badge = itemCategoryBadge(r.item_label || r.item);
+                  const isIncomplete =
+                    !parseNumber(r.purchase_sar) ||
+                    !parseNumber(r.purchase_rate) ||
+                    !r.supplier_code;
+
+                  return (
+                    <div 
+                      key={r.originalIndex}
+                      className="card border shadow-sm p-3 rounded-3"
+                      style={{ 
+                        borderColor: isIncomplete ? "#fca5a5" : "#e2e8f0", 
+                        backgroundColor: isIncomplete ? "#fef2f2" : "#ffffff" 
+                      }}
+                    >
+                      <div className="d-flex align-items-center justify-content-between mb-2 pb-2 border-bottom">
+                        <span 
+                          className="badge rounded-2 p-1.5 text-wrap text-start lh-sm fw-bold"
+                          style={{ background: badge.bg, color: badge.color, fontSize: "12px" }}
+                        >
+                          {badge.icon} {r.item_label || r.item}
+                        </span>
+                        <button 
+                          className="btn btn-sm btn-outline-secondary border-0 p-1"
+                          onClick={() => copySaleToPurchase(r.originalIndex)}
+                        >
+                          📋 Copy
+                        </button>
+                      </div>
+
+                      <div className="row g-2 text-center mb-2 p-2 rounded-2" style={{ background: "rgba(241,245,249,0.7)" }}>
+                        <div className="col-4">
+                          <small className="text-muted d-block" style={{ fontSize: "10px" }}>SALE SAR</small>
+                          <strong style={{ fontSize: "12px" }}>{fmt(r.sale_sar)}</strong>
+                        </div>
+                        <div className="col-4">
+                          <small className="text-muted d-block" style={{ fontSize: "10px" }}>RATE</small>
+                          <strong style={{ fontSize: "12px" }}>{fmt(r.sale_rate)}</strong>
+                        </div>
+                        <div className="col-4">
+                          <small className="text-muted d-block" style={{ fontSize: "10px" }}>SALE PKR</small>
+                          <strong className="text-success" style={{ fontSize: "12px" }}>{fmt(r.sale_pkr)}</strong>
+                        </div>
+                      </div>
+
+                      <div className="row g-2 mb-2">
+                        <div className="col-6">
+                          <label className="form-label fw-bold mb-1" style={{ fontSize: "11px" }}>Pur. SAR</label>
+                          <input
+                            type="text"
+                            className="form-control text-center shadow-none p-1 fw-extrabold"
+                            style={{ 
+                              borderRadius: "6px", 
+                              fontSize: "12px", 
+                              height: "36px", 
+                              borderColor: isIncomplete && !parseNumber(r.purchase_sar) ? "#fca5a5" : "#cbd5e1" 
+                            }}
+                            value={r.purchase_sar}
+                            placeholder="0"
+                            onChange={(e) => updateRow(r.originalIndex, "purchase_sar", e.target.value)}
+                          />
+                        </div>
+                        <div className="col-6">
+                          <label className="form-label fw-bold mb-1" style={{ fontSize: "11px" }}>Pur. Rate</label>
+                          <input
+                            type="text"
+                            className="form-control text-center shadow-none p-1 fw-extrabold"
+                            style={{ 
+                              borderRadius: "6px", 
+                              fontSize: "12px", 
+                              height: "36px", 
+                              borderColor: isIncomplete && !parseNumber(r.purchase_rate) ? "#fca5a5" : "#cbd5e1" 
+                            }}
+                            value={r.purchase_rate}
+                            placeholder="0"
+                            onChange={(e) => updateRow(r.originalIndex, "purchase_rate", e.target.value)}
+                          />
+                        </div>
+                      </div>
+
+                      <div className="mb-2">
+                        <label className="form-label fw-bold mb-1" style={{ fontSize: "11px" }}>Supplier</label>
+                        <Select
+                          options={supplierOptions}
+                          value={supplierOptions.find((opt) => opt.value === r.supplier_code) || null}
+                          onChange={(selected) => updateRow(r.originalIndex, "supplier_code", selected ? selected.value : "")}
+                          placeholder="Select Supplier..."
+                          isClearable
+                          isSearchable
+                          menuPortalTarget={document.body}
+                          styles={{
+                            ...customSelectStyles,
+                            control: (base, state) => ({
+                              ...customSelectStyles.control(base, state),
+                              borderColor: isIncomplete && !r.supplier_code ? "#fca5a5" : base.borderColor,
+                            }),
+                            menuPortal: (base) => ({ ...base, zIndex: 9999 }),
+                          }}
+                        />
+                      </div>
+
+                      <div className="d-flex justify-content-between align-items-center pt-2 border-top" style={{ fontSize: "12px" }}>
+                        <span>Pur. PKR: <strong style={{ color: "#3730a3" }}>{fmt(r.purchase_pkr)}</strong></span>
+                        <span>Margin: <strong style={{ color: r.profit >= 0 ? "#15803d" : "#be123c" }}>{fmt(r.profit)}</strong></span>
+                      </div>
+                    </div>
+                  );
+                })}
+
+                {rows.length > 0 && (
+                  <div className="card border-0 shadow-sm p-3 rounded-3" style={{ background: "#f8fafc", border: "1px solid #cbd5e1" }}>
+                    <div className="fw-bold mb-2 text-slate-700" style={{ fontSize: "13px" }}>Summary Total</div>
+                    <div className="d-flex justify-content-between mb-1" style={{ fontSize: "12px" }}>
+                      <span>Total Sale PKR:</span>
+                      <strong className="text-success">{fmt(totals.salePkr)}</strong>
+                    </div>
+                    <div className="d-flex justify-content-between mb-1" style={{ fontSize: "12px" }}>
+                      <span>Total Pur. PKR:</span>
+                      <strong style={{ color: "#3730a3" }}>{fmt(totals.purchasePkr)}</strong>
+                    </div>
+                    <div className="d-flex justify-content-between pt-1 border-top" style={{ fontSize: "12px" }}>
+                      <span>Total Margin:</span>
+                      <strong style={{ color: totals.profit >= 0 ? "#15803d" : "#be123c" }}>{fmt(totals.profit)}</strong>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
         </div>
