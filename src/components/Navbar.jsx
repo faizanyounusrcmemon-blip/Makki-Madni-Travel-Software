@@ -163,6 +163,7 @@ export default function Navbar({ onNavigate }) {
           </span>
           {open === "reports" && (
             <div className="menu-box">
+              {can("pending_sale_reports") && <a onClick={() => go("pendingSaleReports")}>⏳ Pending Sales Reports</a>}
               {can("all_reports") && <a onClick={() => go("allreports")}>📈 All Reports</a>}
               {can("all_reports_today") && <a onClick={() => go("allreportstoday")}>📈 All Reports Today</a>}
               {can("profit_report") && <a onClick={() => go("profitReport")}>💰 Profit Report</a>}
