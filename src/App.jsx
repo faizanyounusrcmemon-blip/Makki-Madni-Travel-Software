@@ -21,6 +21,7 @@ import Ziyarat from "./screens/Ziyarat";
 import Visa from "./screens/Visa";
 import Card from "./screens/Card";
 import Groups from "./screens/Groups";
+import PendingSaleReports from "./screens/PendingSaleReports";
 
 // PURCHASE
 import Purchase from "./screens/Purchase";
@@ -160,6 +161,7 @@ export default function App() {
       {page === "visa" && <Visa onNavigate={navigate} />}
       {page === "card" && <Card onNavigate={navigate} />}
       {page === "groups" && <Groups onNavigate={navigate} />}
+      {page === "pendingSaleReports" && <PendingSaleReports onNavigate={navigate} />}
       {page === "systemStorage" && <SystemStorage onNavigate={navigate} />}
 
       {/* ================= PURCHASE ================= */}
