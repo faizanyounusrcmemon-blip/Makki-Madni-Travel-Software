@@ -332,7 +332,9 @@ export default function Dashboard({ onNavigate }) {
       style={{
         position: "relative",
         minHeight: "100vh",
-        overflow: "hidden",
+        width: "100%",
+        boxSizing: "border-box",
+        overflowX: "hidden",
         color: "white",
         backgroundImage: `url(${images[bgIndex]})`,
         backgroundSize: "cover",
@@ -345,67 +347,66 @@ export default function Dashboard({ onNavigate }) {
       <div style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", backgroundColor: "rgba(0,0,0,0.25)", zIndex: 0 }}></div>
 
       {/* CONTENT */}
-      <div style={{ position: "relative", zIndex: 2, padding: 20 }}>
+      <div style={{ position: "relative", zIndex: 2, padding: "15px", width: "100%", boxSizing: "border-box" }}>
         
-{/* TOP BAR: CLOCK ON LEFT, BACKUPS ON RIGHT */}
-<div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginTop: 10, position: "relative", zIndex: 10 }}>
-  
-  {/* ELEGANT LIVE DATE & TIME WIDGET WITH CALENDAR BUTTON */}
-  <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: "8px" }}>
-    <div style={{
-      background: "rgba(0, 0, 0, 0.55)",
-      backdropFilter: "blur(12px)",
-      WebkitBackdropFilter: "blur(12px)",
-      padding: "12px 22px",
-      borderRadius: "16px",
-      border: "1px solid rgba(255, 255, 255, 0.18)",
-      boxShadow: "0 8px 32px 0 rgba(0, 0, 0, 0.37)"
-    }}>
-      <div style={{
-        fontSize: "26px",
-        fontWeight: "700",
-        letterSpacing: "1px",
-        fontFamily: "monospace, monospace",
-        color: "#ffffff",
-        textShadow: "0 2px 4px rgba(0,0,0,0.5)"
-      }}>
-        {currentTime.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: true })}
-      </div>
-      <div style={{
-        fontSize: "12px",
-        fontWeight: "500",
-        color: "#e2e8f0",
-        textTransform: "uppercase",
-        letterSpacing: "1px",
-        marginTop: "2px"
-      }}>
-        📅 {currentTime.toLocaleDateString("en-US", { weekday: "short", day: "2-digit", month: "short", year: "numeric" })}
-      </div>
-    </div>
+        {/* TOP BAR: CLOCK ON LEFT, BACKUPS ON RIGHT */}
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginTop: 5, position: "relative", zIndex: 10, width: "100%" }}>
+          
+          {/* ELEGANT LIVE DATE & TIME WIDGET WITH CALENDAR BUTTON */}
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: "8px" }}>
+            <div style={{
+              background: "rgba(0, 0, 0, 0.55)",
+              backdropFilter: "blur(12px)",
+              WebkitBackdropFilter: "blur(12px)",
+              padding: "10px 18px",
+              borderRadius: "16px",
+              border: "1px solid rgba(255, 255, 255, 0.18)",
+              boxShadow: "0 8px 32px 0 rgba(0, 0, 0, 0.37)"
+            }}>
+              <div style={{
+                fontSize: "22px",
+                fontWeight: "700",
+                letterSpacing: "1px",
+                fontFamily: "monospace, monospace",
+                color: "#ffffff",
+                textShadow: "0 2px 4px rgba(0,0,0,0.5)"
+              }}>
+                {currentTime.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: true })}
+              </div>
+              <div style={{
+                fontSize: "11px",
+                fontWeight: "500",
+                color: "#e2e8f0",
+                textTransform: "uppercase",
+                letterSpacing: "1px",
+                marginTop: "2px"
+              }}>
+                📅 {currentTime.toLocaleDateString("en-US", { weekday: "short", day: "2-digit", month: "short", year: "numeric" })}
+              </div>
+            </div>
 
-    {/* CALENDAR BUTTON */}
-    <button 
-      onClick={openCalendarModal}
-      style={{
-        padding: "8px 16px",
-        fontSize: "13px",
-        fontWeight: "600",
-        borderRadius: "10px",
-        border: "1px solid rgba(255,255,255,0.3)",
-        background: "rgba(0, 0, 0, 0.55)",
-        backdropFilter: "blur(8px)",
-        color: "white",
-        cursor: "pointer",
-        boxShadow: "0 4px 12px rgba(0,0,0,0.2)",
-        transition: "all 0.2s ease"
-      }}
-      onMouseOver={(e) => e.target.style.background = "rgba(255, 255, 255, 0.3)"}
-      onMouseOut={(e) => e.target.style.background = "rgba(0, 0, 0, 0.55)"}
-    >
-      📅 View Calendar
-    </button>
-  </div>
-
+            {/* CALENDAR BUTTON */}
+            <button 
+              onClick={openCalendarModal}
+              style={{
+                padding: "8px 16px",
+                fontSize: "13px",
+                fontWeight: "600",
+                borderRadius: "10px",
+                border: "1px solid rgba(255,255,255,0.3)",
+                background: "rgba(0, 0, 0, 0.55)",
+                backdropFilter: "blur(8px)",
+                color: "white",
+                cursor: "pointer",
+                boxShadow: "0 4px 12px rgba(0,0,0,0.2)",
+                transition: "all 0.2s ease"
+              }}
+              onMouseOver={(e) => e.target.style.background = "rgba(255, 255, 255, 0.3)"}
+              onMouseOut={(e) => e.target.style.background = "rgba(0, 0, 0, 0.55)"}
+            >
+              📅 View Calendar
+            </button>
+          </div>
 
           {/* BACKUP BUTTONS */}
           <div className="backup-side-box" style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
@@ -432,8 +433,8 @@ export default function Dashboard({ onNavigate }) {
 
         {/* HEADER */}
         <div style={{ textAlign: "center", paddingTop: 10 }}>
-          <h2 style={{ fontSize: 32, margin: 0, textShadow: "0 2px 8px rgba(0,0,0,0.6)" }}>Makki Madni Travel & Tours</h2>
-          <i style={{ opacity: 0.9 }}>Live Travel Management Dashboard</i>
+          <h2 style={{ fontSize: "24px", margin: 0, textShadow: "0 2px 8px rgba(0,0,0,0.6)" }}>Makki Madni Travel & Tours</h2>
+          <i style={{ opacity: 0.9, fontSize: "13px" }}>Live Travel Management Dashboard</i>
         </div>
 
         {/* CLOUDS */}
