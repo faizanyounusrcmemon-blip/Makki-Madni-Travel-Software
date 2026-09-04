@@ -87,27 +87,31 @@ export default function AllReports({ onNavigate }) {
     setCustTypeFilter("");
   };
 
-  /* ================= PASSWORD PROMPT ================= */
-  const askPassword = async (type, ref_no, customer_name, total_pkr) => {
+  /* ================= LOADER ================= */
+  const showLoader = (text = "Processing...") => {
+    Swal.fire({
+      width: "280px",
+      title: text,
+      allowOutsideClick: false,
+      didOpen: () => Swal.showLoading(),
+    });
+  };
+
+  /* ================= PASSWORD PROMPTS ================= */
+  const askPassword = async (actionTitle, confirmBtnColor) => {
     const { value: password } = await Swal.fire({
       width: "380px",
       padding: "1.25em",
       customClass: { popup: "rounded-4 border-0 shadow-lg" },
       html: `
         <div style="text-align:left; font-size:13px; line-height:1.6; color: #1e293b;">
-          <div style="margin-bottom:12px; font-size:16px; font-weight:700; color:#e11d48; display:flex; align-items:center; gap:8px;">
-            <span>🗑️</span> Confirm Deletion
-          </div>
-          <div style="background:#f8fafc; padding:12px; border-radius:12px; border:1px solid #e2e8f0; margin-bottom:12px;">
-            <div><b>Type:</b> ${type}</div>
-            <div><b>Ref:</b> <span style="color:#2563eb; font-weight:600;">${ref_no}</span></div>
-            <div><b>Customer:</b> ${customer_name || "-"}</div>
-            <div><b>Amount:</b> <span style="color:#059669; font-weight:700;">PKR ${total_pkr}</span></div>
+          <div style="margin-bottom:12px; font-size:16px; font-weight:700; color:${confirmBtnColor}; display:flex; align-items:center; gap:8px;">
+            🔒 ${actionTitle}
           </div>
           <div style="position:relative;">
             <input id="swal-pass" type="password" class="swal2-input" 
               style="height:38px; font-size:13px; width:100%; box-sizing:border-box; padding-right:40px; margin:0; border-radius:8px;" 
-              placeholder="Enter Admin Password"/>
+              placeholder="Enter Password"/>
             <span id="toggle-pass" style="
               position:absolute; right:12px; top:50%; transform:translateY(-50%);
               cursor:pointer; font-size:14px; user-select:none; color:#64748b;
@@ -116,8 +120,8 @@ export default function AllReports({ onNavigate }) {
         </div>
       `,
       showCancelButton: true,
-      confirmButtonText: "Delete Record",
-      confirmButtonColor: "#e11d48",
+      confirmButtonText: "Confirm",
+      confirmButtonColor: confirmBtnColor,
       focusConfirm: false,
       preConfirm: () => {
         const val = document.getElementById("swal-pass").value;
@@ -141,19 +145,55 @@ export default function AllReports({ onNavigate }) {
     return password;
   };
 
-  /* ================= LOADER ================= */
-  const showLoader = (text = "Processing...") => {
-    Swal.fire({
-      width: "280px",
-      title: text,
-      allowOutsideClick: false,
-      didOpen: () => Swal.showLoading(),
-    });
+  /* ================= FINALIZE / UNFINALIZE ACTION ================= */
+  const handleToggleFinal = async (r) => {
+    const isCurrentlyFinal = r.is_final;
+    const action = isCurrentlyFinal ? "unfinalize" : "finalize";
+    const title = isCurrentlyFinal ? "Confirm Unfinalize Booking" : "Confirm Finalize Booking";
+    const btnColor = isCurrentlyFinal ? "#d97706" : "#059669";
+
+    const password = await askPassword(title, btnColor);
+    if (!password) return;
+
+    showLoader(isCurrentlyFinal ? "Unfinalizing..." : "Finalizing...");
+
+    try {
+      const res = await fetch(
+        `${import.meta.env.VITE_BACKEND_URL}/api/reports/${action}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            type: r.type,
+            ref_no: r.ref_no,
+            password: password,
+          }),
+        }
+      );
+      const data = await res.json();
+      Swal.close();
+
+      if (!data.success) {
+        return Swal.fire("Error", data.message || data.error || "Operation failed", "error");
+      }
+
+      Swal.fire({
+        icon: "success",
+        title: "Success",
+        text: data.message,
+        timer: 1500,
+        showConfirmButton: false,
+      });
+      loadData();
+    } catch {
+      Swal.close();
+      Swal.fire("Error", "Server error processing request", "error");
+    }
   };
 
   /* ================= DELETE ================= */
   const handleDelete = async (type, ref_no, customer_name, total_pkr) => {
-    const password = await askPassword(type, ref_no, customer_name, total_pkr);
+    const password = await askPassword("Confirm Deletion", "#e11d48");
     if (!password) return;
 
     const map = {
@@ -317,7 +357,7 @@ export default function AllReports({ onNavigate }) {
   return (
     <div style={{ backgroundColor: "#f8fafc", minHeight: "100vh", fontFamily: "'Inter', sans-serif" }} className="p-3 p-lg-4">
       
-      {/* 🚀 APPLE/SAAS STYLE HEADER BANNER */}
+      {/* HEADER BANNER */}
       <div 
         className="card border-0 shadow-sm mb-4" 
         style={{ 
@@ -415,7 +455,7 @@ export default function AllReports({ onNavigate }) {
         </div>
       </div>
 
-      {/* 💳 SUMMARY STATS CARDS */}
+      {/* SUMMARY STATS CARDS */}
       <div className="row g-3 mb-4">
         <div className="col-md-6 col-lg-4">
           <div className="card border-0 shadow-sm p-3 rounded-4" style={{ background: "#ffffff" }}>
@@ -442,7 +482,7 @@ export default function AllReports({ onNavigate }) {
         </div>
       </div>
 
-      {/* 🎛️ SEARCH & CONTROL CARD */}
+      {/* SEARCH & CONTROL CARD */}
       <div className="card border-0 shadow-sm mb-4 rounded-4 p-3" style={{ background: "#ffffff" }}>
         <div className="row g-2 mb-3">
           <div className="col-lg-3 col-md-6">
@@ -517,7 +557,7 @@ export default function AllReports({ onNavigate }) {
         </div>
       </div>
 
-      {/* 📊 ELEGANT TABLE CONTAINER */}
+      {/* TABLE CONTAINER */}
       <div className="card border-0 shadow-sm rounded-4 overflow-hidden" style={{ background: "#ffffff" }}>
         <div className="table-responsive">
           <table className="table align-middle mb-0" style={{ fontSize: "13px" }}>
@@ -530,7 +570,7 @@ export default function AllReports({ onNavigate }) {
                 <th className="py-3 text-center">Code / Status</th>
                 <th className="py-3 text-center">Booking Date</th>
                 <th className="py-3 text-end px-3">Total Amount</th>
-                <th className="py-3 text-center" style={{ width: "220px" }}>Actions</th>
+                <th className="py-3 text-center" style={{ width: "290px" }}>Actions</th>
               </tr>
             </thead>
 
@@ -556,7 +596,6 @@ export default function AllReports({ onNavigate }) {
                     </td>
                     <td className="fw-bold text-dark">{r.ref_no}</td>
                     
-                    {/* CUSTOMER NAME COLORS: Walk-in = BLUE (#2563eb), Registered = GREEN (#16a34a) */}
                     <td className="fw-bold">
                       <span style={{ color: isRegistered ? "#16a34a" : "#2563eb" }}>
                         {r.customer_name || "-"}
@@ -577,18 +616,18 @@ export default function AllReports({ onNavigate }) {
                     <td className="text-center text-muted">{formatDate(r.booking_date)}</td>
                     <td className="text-end fw-bold text-success px-3">PKR {fmtPKR(r.total_pkr)}</td>
                     
-                    {/* STRICT COLUMN-BASED ALIGNMENT (GRID LAYOUT) */}
+                    {/* STRICT COLUMN-BASED ALIGNMENT */}
                     <td className="text-center">
                       <div 
                         style={{ 
                           display: "grid", 
-                          gridTemplateColumns: "75px 60px 65px", 
+                          gridTemplateColumns: "75px 60px 65px 70px", 
                           gap: "4px", 
                           justifyContent: "center", 
                           alignItems: "center" 
                         }}
                       >
-                        {/* COLUMN 1: Summary Button or Empty Spacer */}
+                        {/* COLUMN 1: Summary Button */}
                         {r.type === "Packages" ? (
                           <button
                             className="btn btn-sm btn-outline-warning rounded-pill px-1 py-1 fw-semibold w-100"
@@ -618,6 +657,19 @@ export default function AllReports({ onNavigate }) {
                         >
                           🗑️ Delete
                         </button>
+
+                        {/* COLUMN 4: Final / Unfinal Toggle Button (ONLY FOR PACKAGES/BOOKINGS TABLE) */}
+                        {r.type === "Packages" ? (
+                          <button
+                            className={`btn btn-sm ${r.is_final ? "btn-warning" : "btn-success"} rounded-pill px-1 py-1 fw-semibold w-100`}
+                            style={{ fontSize: "11px", whiteSpace: "nowrap" }}
+                            onClick={() => handleToggleFinal(r)}
+                          >
+                            {r.is_final ? "🔓 Unfinal" : "🔒 Finalize"}
+                          </button>
+                        ) : (
+                          <div></div>
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -636,7 +688,7 @@ export default function AllReports({ onNavigate }) {
         </div>
       </div>
 
-      {/* 📑 FOOTER PAGINATION */}
+      {/* FOOTER PAGINATION */}
       <div className="d-flex justify-content-between align-items-center mt-3 flex-wrap gap-2 text-muted" style={{ fontSize: "13px" }}>
         <div className="d-flex align-items-center gap-2">
           <span>Displaying</span>

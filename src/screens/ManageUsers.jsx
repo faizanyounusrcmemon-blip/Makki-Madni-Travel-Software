@@ -25,7 +25,7 @@ export default function ManageUsers({ onNavigate }) {
     "hotel_voucher", "hotel_voucher3in1", "transport_voucher", "customiz_transport_voucher", "customiz_hotel_voucher",
 
     // REPORTS
-    "pending_sale_reports", "all_reports", "all_reports_today", "profit_report", "monthly_profit_dashboard", "sale_adjustment_report", "supplier_adjustment_only", "supplier_purchase_detail_report", "customer_sale_detail_report", "item_loss_zero_report", "sale_change_check_report", "gifting_report_view", "agent_comm_report_view",
+    "all_reports", "all_reports_today", "profit_report", "monthly_profit_dashboard", "sale_adjustment_report", "supplier_adjustment_only", "supplier_purchase_detail_report", "customer_sale_detail_report", "item_loss_zero_report", "sale_change_check_report", "gifting_report_view", "agent_comm_report_view",
 
     // MASTER
     "create_user", "bank_profiles", "manage_users", "supplier", "customers_list", "deleted_reports", "restore", "system_storage", "password_settings",
