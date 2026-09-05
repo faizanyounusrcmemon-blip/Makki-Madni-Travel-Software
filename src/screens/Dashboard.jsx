@@ -349,39 +349,55 @@ export default function Dashboard({ onNavigate }) {
       {/* CONTENT */}
       <div style={{ position: "relative", zIndex: 2, padding: "15px", width: "100%", boxSizing: "border-box" }}>
         
-        {/* TOP BAR: CLOCK ON LEFT, BACKUPS ON RIGHT */}
+        {/* TOP BAR: DUAL CLOCK ON LEFT, BACKUPS ON RIGHT */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginTop: 5, position: "relative", zIndex: 10, width: "100%" }}>
           
-          {/* ELEGANT LIVE DATE & TIME WIDGET WITH CALENDAR BUTTON */}
+          {/* ELEGANT DUAL TIME WIDGET (PAKISTAN & SAUDI ARABIA) WITH CALENDAR BUTTON */}
           <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: "8px" }}>
             <div style={{
-              background: "rgba(0, 0, 0, 0.55)",
-              backdropFilter: "blur(12px)",
-              WebkitBackdropFilter: "blur(12px)",
-              padding: "10px 18px",
-              borderRadius: "16px",
-              border: "1px solid rgba(255, 255, 255, 0.18)",
-              boxShadow: "0 8px 32px 0 rgba(0, 0, 0, 0.37)"
+              background: "rgba(15, 23, 42, 0.65)",
+              backdropFilter: "blur(14px)",
+              WebkitBackdropFilter: "blur(14px)",
+              padding: "12px 18px",
+              borderRadius: "18px",
+              border: "1px solid rgba(255, 255, 255, 0.2)",
+              boxShadow: "0 8px 32px 0 rgba(0, 0, 0, 0.4)",
+              display: "flex",
+              flexDirection: "column",
+              gap: "10px"
             }}>
-              <div style={{
-                fontSize: "22px",
-                fontWeight: "700",
-                letterSpacing: "1px",
-                fontFamily: "monospace, monospace",
-                color: "#ffffff",
-                textShadow: "0 2px 4px rgba(0,0,0,0.5)"
-              }}>
-                {currentTime.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: true })}
+              {/* PAKISTAN TIME */}
+              <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                <span style={{ fontSize: "20px" }}>🇵🇰</span>
+                <div style={{ display: "flex", flexDirection: "column" }}>
+                  <div style={{ fontSize: "10px", fontWeight: "700", color: "#38bdf8", letterSpacing: "1px", textTransform: "uppercase" }}>
+                    Pakistan (PKT)
+                  </div>
+                  <div style={{ fontSize: "19px", fontWeight: "800", fontFamily: "monospace", color: "#ffffff", letterSpacing: "0.5px" }}>
+                    {currentTime.toLocaleTimeString("en-US", { timeZone: "Asia/Karachi", hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: true })}
+                  </div>
+                  <div style={{ fontSize: "10px", color: "#cbd5e1", fontWeight: "500" }}>
+                    {currentTime.toLocaleDateString("en-US", { timeZone: "Asia/Karachi", weekday: "short", day: "2-digit", month: "short" })}
+                  </div>
+                </div>
               </div>
-              <div style={{
-                fontSize: "11px",
-                fontWeight: "500",
-                color: "#e2e8f0",
-                textTransform: "uppercase",
-                letterSpacing: "1px",
-                marginTop: "2px"
-              }}>
-                📅 {currentTime.toLocaleDateString("en-US", { weekday: "short", day: "2-digit", month: "short", year: "numeric" })}
+
+              <div style={{ height: "1px", width: "100%", background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.25), transparent)" }}></div>
+
+              {/* SAUDI ARABIA TIME */}
+              <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                <span style={{ fontSize: "20px" }}>🇸🇦</span>
+                <div style={{ display: "flex", flexDirection: "column" }}>
+                  <div style={{ fontSize: "10px", fontWeight: "700", color: "#4ade80", letterSpacing: "1px", textTransform: "uppercase" }}>
+                    Saudi Arabia (KSA)
+                  </div>
+                  <div style={{ fontSize: "19px", fontWeight: "800", fontFamily: "monospace", color: "#ffffff", letterSpacing: "0.5px" }}>
+                    {currentTime.toLocaleTimeString("en-US", { timeZone: "Asia/Riyadh", hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: true })}
+                  </div>
+                  <div style={{ fontSize: "10px", color: "#cbd5e1", fontWeight: "500" }}>
+                    {currentTime.toLocaleDateString("en-US", { timeZone: "Asia/Riyadh", weekday: "short", day: "2-digit", month: "short" })}
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -389,20 +405,25 @@ export default function Dashboard({ onNavigate }) {
             <button 
               onClick={openCalendarModal}
               style={{
+                width: "100%",
                 padding: "8px 16px",
-                fontSize: "13px",
+                fontSize: "12px",
                 fontWeight: "600",
                 borderRadius: "10px",
-                border: "1px solid rgba(255,255,255,0.3)",
-                background: "rgba(0, 0, 0, 0.55)",
+                border: "1px solid rgba(255,255,255,0.25)",
+                background: "rgba(15, 23, 42, 0.65)",
                 backdropFilter: "blur(8px)",
                 color: "white",
                 cursor: "pointer",
                 boxShadow: "0 4px 12px rgba(0,0,0,0.2)",
-                transition: "all 0.2s ease"
+                transition: "all 0.2s ease",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: "6px"
               }}
-              onMouseOver={(e) => e.target.style.background = "rgba(255, 255, 255, 0.3)"}
-              onMouseOut={(e) => e.target.style.background = "rgba(0, 0, 0, 0.55)"}
+              onMouseOver={(e) => e.currentTarget.style.background = "rgba(255, 255, 255, 0.2)"}
+              onMouseOut={(e) => e.currentTarget.style.background = "rgba(15, 23, 42, 0.65)"}
             >
               📅 View Calendar
             </button>
