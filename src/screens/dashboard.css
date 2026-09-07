@@ -328,3 +328,29 @@ html, body {
   }
 }
 
+/* Dashboard Main Wrapper Fit */
+.dashboard-container {
+  width: 100% !important;
+  min-width: 100% !important;
+  max-width: none !important;
+  box-sizing: border-box !important;
+  overflow-x: hidden !important;
+}
+
+/* Mobile Screen view adjustment */
+@media (max-width: 768px) {
+  /* Dashboard layout ko horizontal space lene dein */
+  .dashboard-top-bar {
+    width: 100% !important;
+    padding: 0 10px !important;
+    box-sizing: border-box !important;
+  }
+
+  /* Time card aur backup box ko width full width container ke mutabiq expand karen */
+  .time-card-box, 
+  .backup-side-box {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+}
+
