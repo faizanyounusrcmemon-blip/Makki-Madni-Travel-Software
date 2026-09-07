@@ -21,6 +21,17 @@ html, body, #root {
   width: 100% !important;
 }
 
+
+/* PAGE - Glass + Gradient Overlay */
+.dashboard-container {
+  min-height: 100vh;
+  background: radial-gradient(circle at top, rgba(0,150,255,0.25), transparent),
+              linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+  padding: 30px 40px;
+  color: #fff;
+  overflow: hidden;
+}
+
 /* HEADER - Glow Effect */
 .dashboard-header h2 {
   font-size: 30px;
@@ -316,54 +327,3 @@ html, body, #root {
 /* VIP Progress Bar */
 .vip-progress { background: rgba(0,0,0,0.1); border-radius: 5px; width: 100%; height: 20px; margin-top: 10px; overflow: hidden; }
 .vip-progress-bar { background: #198754; height: 100%; text-align: center; color: white; font-weight: bold; line-height: 20px; }
-
-/* Prevent Horizontal Overflow */
-html, body {
-  overflow-x: hidden;
-  max-width: 100vw;
-}
-
-/* Responsive Container Adjustments */
-@media (max-width: 768px) {
-  .dashboard-top-bar {
-    flex-direction: column !important;
-    align-items: center !important;
-    gap: 15px !important;
-  }
-  
-  .time-card-box {
-    width: 100% !important;
-    min-width: unset !important;
-  }
-
-  .backup-side-box {
-    width: 100% !important;
-  }
-}
-
-/* Dashboard Main Wrapper Fit */
-.dashboard-container {
-  width: 100% !important;
-  min-width: 100% !important;
-  max-width: none !important;
-  box-sizing: border-box !important;
-  overflow-x: hidden !important;
-}
-
-/* Mobile Screen view adjustment */
-@media (max-width: 768px) {
-  /* Dashboard layout ko horizontal space lene dein */
-  .dashboard-top-bar {
-    width: 100% !important;
-    padding: 0 10px !important;
-    box-sizing: border-box !important;
-  }
-
-  /* Time card aur backup box ko width full width container ke mutabiq expand karen */
-  .time-card-box, 
-  .backup-side-box {
-    width: 100% !important;
-    max-width: 100% !important;
-  }
-}
-
