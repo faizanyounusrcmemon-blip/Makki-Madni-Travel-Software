@@ -303,3 +303,27 @@
 /* VIP Progress Bar */
 .vip-progress { background: rgba(0,0,0,0.1); border-radius: 5px; width: 100%; height: 20px; margin-top: 10px; overflow: hidden; }
 .vip-progress-bar { background: #198754; height: 100%; text-align: center; color: white; font-weight: bold; line-height: 20px; }
+
+/* Prevent Horizontal Overflow */
+html, body {
+  overflow-x: hidden;
+  max-width: 100vw;
+}
+
+/* Responsive Container Adjustments */
+@media (max-width: 768px) {
+  .dashboard-top-bar {
+    flex-direction: column !important;
+    align-items: center !important;
+    gap: 15px !important;
+  }
+  
+  .time-card-box {
+    width: 100% !important;
+    min-width: unset !important;
+  }
+
+  .backup-side-box {
+    width: 100% !important;
+  }
+}
