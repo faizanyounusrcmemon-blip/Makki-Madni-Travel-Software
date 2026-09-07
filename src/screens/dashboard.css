@@ -1,3 +1,27 @@
+/* ALL PAGES VIEWPORT LOCK */
+html, body, #root {
+  width: 100% !important;
+  max-width: 100vw !important;
+  overflow-x: hidden !important;
+  margin: 0;
+  padding: 0;
+}
+
+/* NAVBAR CONTAINER FIT */
+nav, header, .navbar, [class*="nav"] {
+  max-width: 100vw !important;
+  box-sizing: border-box !important;
+  overflow-x: auto !important;
+}
+
+/* DASHBOARD FULL STRETCH */
+.dashboard-container {
+  width: 100vw !important;
+  min-width: 100vw !important;
+  box-sizing: border-box !important;
+  overflow-x: hidden !important;
+}
+
 /* PAGE - Glass + Gradient Overlay */
 .dashboard-container {
   min-height: 100vh;
