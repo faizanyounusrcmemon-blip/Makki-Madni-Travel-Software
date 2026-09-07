@@ -89,7 +89,7 @@ export default function Dashboard({ onNavigate }) {
 
       const formatter = new Intl.DateTimeFormat("en-TN-u-ca-islamic-umalqura", {
         day: "numeric",
-        month: "long",
+        month: "short",
         year: "numeric"
       });
 
@@ -104,7 +104,7 @@ export default function Dashboard({ onNavigate }) {
 
       return { day, monthName, year };
     } catch (err) {
-      return { day: "22", monthName: "Rabi' al-Awwal", year: "1448" };
+      return { day: "22", monthName: "Rabi' I", year: "1448" };
     }
   };
 
@@ -121,18 +121,18 @@ export default function Dashboard({ onNavigate }) {
     const color = isPK ? "#0284c7" : "#16a34a";
 
     Swal.fire({
-      width: "300px",
-      padding: "0.8rem",
-      title: `<span style="font-size:14px; font-weight:800; color:${color};">${title}</span>`,
+      width: "290px",
+      padding: "0.6rem",
+      title: `<span style="font-size:13px; font-weight:800; color:${color};">${title}</span>`,
       html: `
         <div style="font-family:'Segoe UI',sans-serif; text-align:center; padding-top:2px;">
-          <p style="margin:0 0 10px 0; font-size:12px; color:#475569; font-weight:600;">
-            Offset: <b style="font-size:14px; color:#0f172a;">${currentVal > 0 ? `+${currentVal}` : currentVal} Day(s)</b>
+          <p style="margin:0 0 8px 0; font-size:11px; color:#475569; font-weight:600;">
+            Offset: <b style="font-size:13px; color:#0f172a;">${currentVal > 0 ? `+${currentVal}` : currentVal} Day(s)</b>
           </p>
-          <div style="display:flex; justify-content:center; gap:4px; margin-bottom:5px;">
-            <button id="offset-minus" style="flex:1; background:#ef4444; color:#fff; border:none; padding:6px; border-radius:6px; font-weight:800; font-size:12px; cursor:pointer;">-1 Day</button>
-            <button id="offset-zero" style="flex:1; background:#64748b; color:#fff; border:none; padding:6px; border-radius:6px; font-weight:800; font-size:12px; cursor:pointer;">Reset</button>
-            <button id="offset-plus" style="flex:1; background:#22c55e; color:#fff; border:none; padding:6px; border-radius:6px; font-weight:800; font-size:12px; cursor:pointer;">+1 Day</button>
+          <div style="display:flex; justify-content:center; gap:4px;">
+            <button id="offset-minus" style="flex:1; background:#ef4444; color:#fff; border:none; padding:4px; border-radius:4px; font-weight:800; font-size:11px; cursor:pointer;">-1 Day</button>
+            <button id="offset-zero" style="flex:1; background:#64748b; color:#fff; border:none; padding:4px; border-radius:4px; font-weight:800; font-size:11px; cursor:pointer;">Reset</button>
+            <button id="offset-plus" style="flex:1; background:#22c55e; color:#fff; border:none; padding:4px; border-radius:4px; font-weight:800; font-size:11px; cursor:pointer;">+1 Day</button>
           </div>
         </div>
       `,
@@ -168,7 +168,7 @@ export default function Dashboard({ onNavigate }) {
 
       let daysHtml = "";
       for (let i = 0; i < firstDay; i++) {
-        daysHtml += `<div style="padding:4px;"></div>`;
+        daysHtml += `<div style="padding:2px;"></div>`;
       }
 
       for (let day = 1; day <= lastDate; day++) {
@@ -185,15 +185,15 @@ export default function Dashboard({ onNavigate }) {
             background: ${bg}; 
             color: ${color}; 
             border: ${border}; 
-            border-radius: 6px; 
-            padding: 4px 2px; 
+            border-radius: 4px; 
+            padding: 3px 1px; 
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
           ">
-            <span style="font-weight: 800; font-size: 11px; line-height: 1;">${day}</span>
-            <span style="font-size: 8px; font-weight: 700; color: ${isToday ? "#dcfce7" : "#0284c7"}; margin-top: 1px;">
+            <span style="font-weight: 800; font-size: 10px; line-height: 1;">${day}</span>
+            <span style="font-size: 7.5px; font-weight: 700; color: ${isToday ? "#dcfce7" : "#0284c7"}; margin-top: 1px;">
               🌙 ${hijriPK.day}
             </span>
           </div>
@@ -205,22 +205,22 @@ export default function Dashboard({ onNavigate }) {
 
       return `
         <div style="font-family: 'Segoe UI', system-ui, sans-serif; padding: 2px;">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-            <button id="cal-prev" style="background:#f1f5f9; border:none; padding:4px 8px; border-radius:4px; cursor:pointer; font-weight:bold; color:#334155;">◀</button>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+            <button id="cal-prev" style="background:#f1f5f9; border:none; padding:2px 6px; border-radius:4px; cursor:pointer; font-weight:bold; color:#334155; font-size:10px;">◀</button>
             <div style="text-align:center;">
-              <h3 style="margin:0; font-weight:800; color:#0f172a; font-size:14px;">${monthNames[month]} ${year}</h3>
-              <div style="font-size:9px; font-weight:700; color:#16a34a; margin-top:1px;">
+              <h3 style="margin:0; font-weight:800; color:#0f172a; font-size:13px;">${monthNames[month]} ${year}</h3>
+              <div style="font-size:8.5px; font-weight:700; color:#16a34a; margin-top:1px;">
                 🌙 ${startHijri.monthName} ${startHijri.year} - ${endHijri.monthName} ${endHijri.year}
               </div>
             </div>
-            <button id="cal-next" style="background:#f1f5f9; border:none; padding:4px 8px; border-radius:4px; cursor:pointer; font-weight:bold; color:#334155;">▶</button>
+            <button id="cal-next" style="background:#f1f5f9; border:none; padding:2px 6px; border-radius:4px; cursor:pointer; font-weight:bold; color:#334155; font-size:10px;">▶</button>
           </div>
 
-          <div style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; font-weight: 800; color: #64748b; font-size: 10px; margin-bottom: 4px; text-align: center;">
+          <div style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; font-weight: 800; color: #64748b; font-size: 9px; margin-bottom: 2px; text-align: center;">
             <span>Su</span><span>Mo</span><span>Tu</span><span>We</span><span>Th</span><span>Fr</span><span>Sa</span>
           </div>
 
-          <div style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px;">
+          <div style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px;">
             ${daysHtml}
           </div>
         </div>
@@ -229,7 +229,7 @@ export default function Dashboard({ onNavigate }) {
 
     const showModal = () => {
       Swal.fire({
-        width: "360px",
+        width: "320px",
         html: renderCalendarHTML(currYear, currMonth),
         showConfirmButton: false,
         showCloseButton: true,
@@ -260,17 +260,17 @@ export default function Dashboard({ onNavigate }) {
   // SYSTEM PASSWORD VERIFICATION
   const askPassword = async (titleText, subText) => {
     return await Swal.fire({
-      width: "300px",
-      padding: "0.8em",
+      width: "280px",
+      padding: "0.6em",
       html: `
-        <div style="text-align:center;font-size:12px;line-height:1.3">
-          <b style="color:#198754;font-size:14px">${titleText}</b><br>
-          <span style="font-size:11px;color:#555">${subText}</span>
-          <div style="position:relative; margin-top:8px">
-            <input type="password" id="swal-pass" class="swal2-input" placeholder="Enter password" style="height:28px; font-size:12px; padding:2px 6px; margin:0;">
-            <span id="toggle-pass" style="position:absolute; right:8px; top:50%; transform:translateY(-50%); cursor:pointer; font-size:12px;">👁</span>
+        <div style="text-align:center;font-size:11px;line-height:1.2">
+          <b style="color:#198754;font-size:13px">${titleText}</b><br>
+          <span style="font-size:10px;color:#555">${subText}</span>
+          <div style="position:relative; margin-top:6px">
+            <input type="password" id="swal-pass" class="swal2-input" placeholder="Enter password" style="height:26px; font-size:11px; padding:2px 6px; margin:0;">
+            <span id="toggle-pass" style="position:absolute; right:8px; top:50%; transform:translateY(-50%); cursor:pointer; font-size:11px;">👁</span>
           </div>
-          <div id="swal-error" style="color:#dc3545; font-size:10px; min-height:14px; margin-top:2px"></div>
+          <div id="swal-error" style="color:#dc3545; font-size:9px; min-height:12px; margin-top:2px"></div>
         </div>
       `,
       showCancelButton: true,
@@ -327,11 +327,11 @@ export default function Dashboard({ onNavigate }) {
     Swal.fire({
       title: "💾 Creating Cloud Backup...",
       html: `
-        <div style="margin-top:10px">
-          <div style="width:100%; height:16px; background:#e5e7eb; border-radius:50px; overflow:hidden;">
+        <div style="margin-top:8px">
+          <div style="width:100%; height:12px; background:#e5e7eb; border-radius:50px; overflow:hidden;">
             <div id="backupBar" style="width:0%; height:100%; background:linear-gradient(90deg, #22c55e, #16a34a); transition:width .35s ease;"></div>
           </div>
-          <div id="backupPercent" style="margin-top:6px; font-size:14px; font-weight:800; color:#0f172a;">0%</div>
+          <div id="backupPercent" style="margin-top:4px; font-size:12px; font-weight:800; color:#0f172a;">0%</div>
         </div>
       `,
       allowOutsideClick: false,
@@ -388,11 +388,11 @@ export default function Dashboard({ onNavigate }) {
     Swal.fire({
       title: "📦 Generating PC ZIP Backup...",
       html: `
-        <div style="margin-top:10px">
-          <div style="width:100%; height:16px; background:#e5e7eb; border-radius:50px; overflow:hidden;">
+        <div style="margin-top:8px">
+          <div style="width:100%; height:12px; background:#e5e7eb; border-radius:50px; overflow:hidden;">
             <div id="pcBackupBar" style="width:0%; height:100%; background:linear-gradient(90deg, #0284c7, #0369a1); transition:width .2s ease;"></div>
           </div>
-          <div id="pcBackupPercent" style="margin-top:6px; font-size:14px; font-weight:800; color:#0f172a;">0%</div>
+          <div id="pcBackupPercent" style="margin-top:4px; font-size:12px; font-weight:800; color:#0f172a;">0%</div>
         </div>
       `,
       allowOutsideClick: false,
@@ -483,43 +483,43 @@ export default function Dashboard({ onNavigate }) {
       <div style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", backgroundColor: "rgba(0,0,0,0.25)", zIndex: 0 }}></div>
 
       {/* CONTENT CONTAINER */}
-      <div style={{ position: "relative", zIndex: 2, padding: "8px 12px", width: "100%", boxSizing: "border-box" }}>
+      <div style={{ position: "relative", zIndex: 2, padding: "6px 12px", width: "100%", boxSizing: "border-box" }}>
         
         {/* TOP BAR */}
         <div className="dashboard-top-bar" style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginTop: 2, position: "relative", zIndex: 10, width: "100%", boxSizing: "border-box" }}>
           
           {/* ULTRA GLASSMORPHIC DUAL TIME CARD WITH HIJRI DATES */}
-          <div className="time-card-box" style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: "6px", width: "100%", maxWidth: "270px" }}>
+          <div className="time-card-box" style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: "4px", width: "100%", maxWidth: "340px" }}>
             <div style={{
               background: "linear-gradient(135deg, rgba(15, 23, 42, 0.88), rgba(30, 41, 59, 0.82))",
               backdropFilter: "blur(12px)",
               WebkitBackdropFilter: "blur(12px)",
-              padding: "8px 10px",
-              borderRadius: "12px",
+              padding: "5px 8px",
+              borderRadius: "8px",
               border: "1px solid rgba(255, 255, 255, 0.18)",
-              boxShadow: "0 8px 24px rgba(0, 0, 0, 0.4)",
+              boxShadow: "0 4px 16px rgba(0, 0, 0, 0.4)",
               display: "flex",
               flexDirection: "column",
-              gap: "6px",
+              gap: "4px",
               width: "100%",
               boxSizing: "border-box"
             }}>
               
               {/* PAKISTAN TIME */}
-              <div style={{ display: "flex", alignItems: "center", gap: "8px", width: "100%" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "6px", width: "100%" }}>
                 <div style={{ position: "relative", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                  <span style={{ fontSize: "16px" }}>🇵🇰</span>
+                  <span style={{ fontSize: "14px" }}>🇵🇰</span>
                   <span style={{
-                    position: "absolute", top: "-1px", right: "-1px", width: "5px", height: "5px",
+                    position: "absolute", top: "-1px", right: "-1px", width: "4px", height: "4px",
                     borderRadius: "50%", background: "#38bdf8", boxShadow: "0 0 4px #38bdf8"
                   }}></span>
                 </div>
 
                 <div style={{ display: "flex", flexDirection: "column", width: "100%" }}>
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "2px" }}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                     <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-                      <span style={{ fontSize: "10px", fontWeight: "800", color: "#38bdf8", letterSpacing: "0.3px" }}>Pakistan</span>
-                      <span style={{ fontSize: "7px", background: "rgba(56, 189, 248, 0.2)", color: "#38bdf8", padding: "0px 3px", borderRadius: "2px", fontWeight: "700" }}>PKT</span>
+                      <span style={{ fontSize: "10px", fontWeight: "800", color: "#38bdf8" }}>Pakistan</span>
+                      <span style={{ fontSize: "7px", background: "rgba(56, 189, 248, 0.2)", color: "#38bdf8", padding: "0px 2px", borderRadius: "2px", fontWeight: "700" }}>PKT</span>
                     </div>
 
                     <button 
@@ -528,45 +528,50 @@ export default function Dashboard({ onNavigate }) {
                         border: "1px solid rgba(56, 189, 248, 0.4)", 
                         background: "rgba(2, 132, 199, 0.25)", 
                         color: "#e0f2fe", 
-                        padding: "1px 4px", 
-                        borderRadius: "4px", 
+                        padding: "0px 3px", 
+                        borderRadius: "3px", 
                         fontSize: "8px", 
                         fontWeight: "700", 
-                        cursor: "pointer"
+                        cursor: "pointer",
+                        lineHeight: "1.2"
                       }}
                     >
                       ⚙️ Day ({pkOffset > 0 ? `+${pkOffset}` : pkOffset})
                     </button>
                   </div>
 
-                  <div style={{ fontSize: "13px", fontWeight: "800", fontFamily: "'Courier New', Courier, monospace", color: "#ffffff", marginTop: "1px", lineHeight: "1.1" }}>
-                    {currentTime.toLocaleTimeString("en-US", { timeZone: "Asia/Karachi", hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: true })}
-                  </div>
-                  <div style={{ fontSize: "8px", color: "#cbd5e1", fontWeight: "600", display: "flex", flexWrap: "wrap", gap: "3px", marginTop: "1px" }}>
-                    <span>{currentTime.toLocaleDateString("en-US", { timeZone: "Asia/Karachi", weekday: "short", day: "2-digit", month: "short" })}</span>
-                    <span style={{ color: "#38bdf8", fontWeight: "700" }}>• 🌙 {formatHijriFull(currentTime, pkOffset)}</span>
+                  <div style={{ display: "flex", alignItems: "center", gap: "6px", marginTop: "1px" }}>
+                    <span style={{ fontSize: "12px", fontWeight: "800", fontFamily: "'Courier New', Courier, monospace", color: "#ffffff", lineHeight: "1" }}>
+                      {currentTime.toLocaleTimeString("en-US", { timeZone: "Asia/Karachi", hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: true })}
+                    </span>
+                    <span style={{ fontSize: "8.5px", color: "#cbd5e1", fontWeight: "600", whiteSpace: "nowrap" }}>
+                      {currentTime.toLocaleDateString("en-US", { timeZone: "Asia/Karachi", weekday: "short", day: "2-digit", month: "short" })}
+                    </span>
+                    <span style={{ fontSize: "8.5px", color: "#38bdf8", fontWeight: "700", whiteSpace: "nowrap" }}>
+                      • 🌙 {formatHijriFull(currentTime, pkOffset)}
+                    </span>
                   </div>
                 </div>
               </div>
 
               {/* SEPARATOR GRADIENT LINE */}
-              <div style={{ height: "1px", width: "100%", background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.25), transparent)" }}></div>
+              <div style={{ height: "1px", width: "100%", background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent)" }}></div>
 
               {/* SAUDI ARABIA TIME */}
-              <div style={{ display: "flex", alignItems: "center", gap: "8px", width: "100%" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "6px", width: "100%" }}>
                 <div style={{ position: "relative", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                  <span style={{ fontSize: "16px" }}>🇸🇦</span>
+                  <span style={{ fontSize: "14px" }}>🇸🇦</span>
                   <span style={{
-                    position: "absolute", top: "-1px", right: "-1px", width: "5px", height: "5px",
+                    position: "absolute", top: "-1px", right: "-1px", width: "4px", height: "4px",
                     borderRadius: "50%", background: "#4ade80", boxShadow: "0 0 4px #4ade80"
                   }}></span>
                 </div>
 
                 <div style={{ display: "flex", flexDirection: "column", width: "100%" }}>
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "2px" }}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                     <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-                      <span style={{ fontSize: "10px", fontWeight: "800", color: "#4ade80", letterSpacing: "0.3px" }}>Saudi Arabia</span>
-                      <span style={{ fontSize: "7px", background: "rgba(74, 222, 128, 0.2)", color: "#4ade80", padding: "0px 3px", borderRadius: "2px", fontWeight: "700" }}>KSA</span>
+                      <span style={{ fontSize: "10px", fontWeight: "800", color: "#4ade80" }}>Saudi Arabia</span>
+                      <span style={{ fontSize: "7px", background: "rgba(74, 222, 128, 0.2)", color: "#4ade80", padding: "0px 2px", borderRadius: "2px", fontWeight: "700" }}>KSA</span>
                     </div>
 
                     <button 
@@ -575,23 +580,28 @@ export default function Dashboard({ onNavigate }) {
                         border: "1px solid rgba(74, 222, 128, 0.4)", 
                         background: "rgba(22, 163, 74, 0.25)", 
                         color: "#dcfce7", 
-                        padding: "1px 4px", 
-                        borderRadius: "4px", 
+                        padding: "0px 3px", 
+                        borderRadius: "3px", 
                         fontSize: "8px", 
                         fontWeight: "700", 
-                        cursor: "pointer"
+                        cursor: "pointer",
+                        lineHeight: "1.2"
                       }}
                     >
                       ⚙️ Day ({ksaOffset > 0 ? `+${ksaOffset}` : ksaOffset})
                     </button>
                   </div>
 
-                  <div style={{ fontSize: "13px", fontWeight: "800", fontFamily: "'Courier New', Courier, monospace", color: "#ffffff", marginTop: "1px", lineHeight: "1.1" }}>
-                    {currentTime.toLocaleTimeString("en-US", { timeZone: "Asia/Riyadh", hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: true })}
-                  </div>
-                  <div style={{ fontSize: "8px", color: "#cbd5e1", fontWeight: "600", display: "flex", flexWrap: "wrap", gap: "3px", marginTop: "1px" }}>
-                    <span>{currentTime.toLocaleDateString("en-US", { timeZone: "Asia/Riyadh", weekday: "short", day: "2-digit", month: "short" })}</span>
-                    <span style={{ color: "#4ade80", fontWeight: "700" }}>• 🌙 {formatHijriFull(currentTime, ksaOffset)}</span>
+                  <div style={{ display: "flex", alignItems: "center", gap: "6px", marginTop: "1px" }}>
+                    <span style={{ fontSize: "12px", fontWeight: "800", fontFamily: "'Courier New', Courier, monospace", color: "#ffffff", lineHeight: "1" }}>
+                      {currentTime.toLocaleTimeString("en-US", { timeZone: "Asia/Riyadh", hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: true })}
+                    </span>
+                    <span style={{ fontSize: "8.5px", color: "#cbd5e1", fontWeight: "600", whiteSpace: "nowrap" }}>
+                      {currentTime.toLocaleDateString("en-US", { timeZone: "Asia/Riyadh", weekday: "short", day: "2-digit", month: "short" })}
+                    </span>
+                    <span style={{ fontSize: "8.5px", color: "#4ade80", fontWeight: "700", whiteSpace: "nowrap" }}>
+                      • 🌙 {formatHijriFull(currentTime, ksaOffset)}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -602,16 +612,16 @@ export default function Dashboard({ onNavigate }) {
               onClick={openCalendarModal}
               style={{
                 width: "100%",
-                padding: "6px 10px",
-                fontSize: "10px",
+                padding: "4px 8px",
+                fontSize: "9.5px",
                 fontWeight: "700",
-                borderRadius: "8px",
+                borderRadius: "6px",
                 border: "1px solid rgba(255,255,255,0.2)",
                 background: "linear-gradient(135deg, rgba(255,255,255,0.18), rgba(255,255,255,0.05))",
                 backdropFilter: "blur(8px)",
                 color: "#ffffff",
                 cursor: "pointer",
-                boxShadow: "0 4px 12px rgba(0,0,0,0.2)",
+                boxShadow: "0 2px 8px rgba(0,0,0,0.2)",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
@@ -623,18 +633,18 @@ export default function Dashboard({ onNavigate }) {
           </div>
 
           {/* BACKUP BUTTONS */}
-          <div className="backup-side-box" style={{ display: "flex", flexDirection: "column", gap: "6px", width: "100%", maxWidth: "270px" }}>
-            <button className="vip-backup-btn" onClick={runBackup} disabled={loading} style={{ padding: "8px 12px", fontSize: "11px", borderRadius: "8px" }}>
+          <div className="backup-side-box" style={{ display: "flex", flexDirection: "column", gap: "4px", width: "100%", maxWidth: "220px" }}>
+            <button className="vip-backup-btn" onClick={runBackup} disabled={loading} style={{ padding: "5px 10px", fontSize: "10px", borderRadius: "6px" }}>
               {loading ? (<><span className="btn-loader"></span> Backing up...</>) : "Cloud Backup Now"}
             </button>
 
-            <button className="vip-backup-btn" onClick={downloadPCBackup} style={{ background: "linear-gradient(135deg, #0284c7, #0369a1)", padding: "8px 12px", fontSize: "11px", borderRadius: "8px" }}>
+            <button className="vip-backup-btn" onClick={downloadPCBackup} style={{ background: "linear-gradient(135deg, #0284c7, #0369a1)", padding: "5px 10px", fontSize: "10px", borderRadius: "6px" }}>
               📥 Download ZIP to PC
             </button>
 
-            <div className="last-backup-box" style={{ padding: "6px 10px", fontSize: "9px" }}>
+            <div className="last-backup-box" style={{ padding: "4px 8px", fontSize: "8.5px" }}>
               <span>Last Backup</span>
-              <b style={{ fontSize: "9px" }}>{lastBackup ? `${lastBackup.name} · ${formatDate(lastBackup.created_at)}` : "Not yet"}</b>
+              <b style={{ fontSize: "8.5px" }}>{lastBackup ? `${lastBackup.name} · ${formatDate(lastBackup.created_at)}` : "Not yet"}</b>
             </div>
 
             {loading && (
@@ -646,9 +656,9 @@ export default function Dashboard({ onNavigate }) {
         </div>
 
         {/* HEADER */}
-        <div style={{ textAlign: "center", paddingTop: 10 }}>
-          <h2 style={{ fontSize: "18px", margin: 0, textShadow: "0 2px 6px rgba(0,0,0,0.6)" }}>Makki Madni Travel & Tours</h2>
-          <i style={{ opacity: 0.9, fontSize: "11px" }}>Live Travel Management Dashboard</i>
+        <div style={{ textAlign: "center", paddingTop: 4 }}>
+          <h2 style={{ fontSize: "16px", margin: 0, textShadow: "0 2px 6px rgba(0,0,0,0.6)" }}>Makki Madni Travel & Tours</h2>
+          <i style={{ opacity: 0.9, fontSize: "10px" }}>Live Travel Management Dashboard</i>
         </div>
 
         {/* CLOUDS */}
