@@ -614,7 +614,7 @@ export default function Dashboard({ onNavigate }) {
                 boxShadow: "0 4px 12px rgba(0,0,0,0.2)",
                 display: "flex",
                 alignItems: "center",
-                justify-content: "center",
+                justifyContent: "center",
                 gap: "4px"
               }}
             >
