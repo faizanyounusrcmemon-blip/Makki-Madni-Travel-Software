@@ -49,37 +49,38 @@ export default function Dashboard({ onNavigate }) {
   const formatDate = (d) =>
     d ? new Date(d).toLocaleString("en-GB", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: true }) : "-";
 
-  /* ================= DYNAMIC HIJRI CONVERSION ================= */
+/* ================= DYNAMIC HIJRI CONVERSION ================= */
+  // Auto-calibrated offsets for PK (27th) and KSA (28th)
   const [pkOffset, setPkOffset] = useState(() => {
-    const saved = localStorage.getItem("pk_hijri_offset");
-    return saved !== null ? parseInt(saved, 10) : -1;
+    const saved = localStorage.getItem("pk_hijri_offset_v2");
+    return saved !== null ? parseInt(saved, 10) : 1; 
   });
 
   const [ksaOffset, setKsaOffset] = useState(() => {
-    const saved = localStorage.getItem("ksa_hijri_offset");
-    return saved !== null ? parseInt(saved, 10) : 0;
+    const saved = localStorage.getItem("ksa_hijri_offset_v2");
+    return saved !== null ? parseInt(saved, 10) : 2;
   });
 
   const updatePkOffset = (delta) => {
     const newOffset = pkOffset + delta;
     setPkOffset(newOffset);
-    localStorage.setItem("pk_hijri_offset", newOffset.toString());
+    localStorage.setItem("pk_hijri_offset_v2", newOffset.toString());
   };
 
   const setPkOffsetDirect = (val) => {
     setPkOffset(val);
-    localStorage.setItem("pk_hijri_offset", val.toString());
+    localStorage.setItem("pk_hijri_offset_v2", val.toString());
   };
 
   const updateKsaOffset = (delta) => {
     const newOffset = ksaOffset + delta;
     setKsaOffset(newOffset);
-    localStorage.setItem("ksa_hijri_offset", newOffset.toString());
+    localStorage.setItem("ksa_hijri_offset_v2", newOffset.toString());
   };
 
   const setKsaOffsetDirect = (val) => {
     setKsaOffset(val);
-    localStorage.setItem("ksa_hijri_offset", val.toString());
+    localStorage.setItem("ksa_hijri_offset_v2", val.toString());
   };
 
   /* EXACT HIJRI CALCULATION WITH ISLAMIC MONTH NAMES */
@@ -132,7 +133,7 @@ export default function Dashboard({ onNavigate }) {
         year: hijriYear.toString()
       };
     } catch (err) {
-      return { day: "22", monthName: "Rabi' al-Awwal", year: "1448" };
+      return { day: "27", monthName: "Rabi' al-Awwal", year: "1448" };
     }
   };
 
@@ -172,7 +173,7 @@ export default function Dashboard({ onNavigate }) {
           Swal.close();
         };
         document.getElementById("offset-zero").onclick = () => {
-          if (isPK) setPkOffsetDirect(0); else setKsaOffsetDirect(0);
+          if (isPK) setPkOffsetDirect(1); else setKsaOffsetDirect(2);
           Swal.close();
         };
         document.getElementById("offset-plus").onclick = () => {
