@@ -82,27 +82,55 @@ export default function Dashboard({ onNavigate }) {
     localStorage.setItem("ksa_hijri_offset", val.toString());
   };
 
+  /* EXACT HIJRI CALCULATION WITH ISLAMIC MONTH NAMES */
   const getDynamicHijriDate = (dateObj, dayOffset = 0) => {
+    const islamicMonths = [
+      "Muharram", "Safar", "Rabi' al-Awwal", "Rabi' al-Thani",
+      "Jumada al-Awwal", "Jumada al-Thani", "Rajab", "Sha'ban",
+      "Ramadan", "Shawwal", "Dhu al-Qi'dah", "Dhu al-Hijjah"
+    ];
+
     try {
-      const calcDate = new Date(dateObj);
-      calcDate.setDate(calcDate.getDate() + dayOffset);
+      const date = new Date(dateObj);
+      date.setDate(date.getDate() + dayOffset);
 
-      const formatter = new Intl.DateTimeFormat("en-TN-u-ca-islamic-umalqura", {
-        day: "numeric",
-        month: "long",
-        year: "numeric"
-      });
+      // Julian Day Calculation
+      let day = date.getDate();
+      let month = date.getMonth(); // 0-indexed
+      let year = date.getFullYear();
 
-      const parts = formatter.formatToParts(calcDate);
-      let day = "", monthName = "", year = "";
+      if (month < 2) {
+        year -= 1;
+        month += 12;
+      }
 
-      parts.forEach((p) => {
-        if (p.type === "day") day = p.value;
-        if (p.type === "month") monthName = p.value;
-        if (p.type === "year") year = p.value;
-      });
+      const a = Math.floor(year / 100);
+      const b = 2 - a + Math.floor(a / 4);
 
-      return { day, monthName, year };
+      const jd = Math.floor(365.25 * (year + 4716)) +
+                 Math.floor(30.6001 * (month + 2)) +
+                 day + b - 1524.5;
+
+      // Hijri Calculation from Julian Day
+      const l = jd - 1948440 + 10632;
+      const n = Math.floor((l - 1) / 10631);
+      const l1 = l - 10631 * n + 354;
+      const j = (Math.floor((10985 - l1) / 5316)) * (Math.floor((50 * l1) / 17719)) +
+                (Math.floor(l1 / 5670)) * (Math.floor((43 * l1) / 15238));
+      const l2 = l1 - (Math.floor((30 - j) / 15)) * (Math.floor((17719 * j) / 50)) -
+                 (Math.floor(j / 16)) * (Math.floor((15238 * j) / 43)) + 29;
+
+      const hijriMonth = Math.floor((24 * l2) / 709);
+      const hijriDay = Math.floor(l2 - Math.floor((709 * hijriMonth) / 24));
+      const hijriYear = Math.floor(30 * n + j - 30);
+
+      const monthName = islamicMonths[hijriMonth - 1] || "Rabi' al-Awwal";
+
+      return {
+        day: hijriDay.toString(),
+        monthName: monthName,
+        year: hijriYear.toString()
+      };
     } catch (err) {
       return { day: "22", monthName: "Rabi' al-Awwal", year: "1448" };
     }
