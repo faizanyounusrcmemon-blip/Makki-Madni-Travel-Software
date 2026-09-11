@@ -393,31 +393,34 @@ export default function PackagesView({ id, onNavigate, fromPage }) {
               ) : <p className="text-muted small">No visa</p>}
             </div>
 
-            {/* Transport & Ziyarat */}
-            <div className="row">
-              <div className="col-md-6 mb-3">
-                <h6 className="fw-bold text-danger">🚐 Transport</h6>
-                {Array.isArray(data.transport) && data.transport.length > 0 ? (
-                  data.transport.map((t, i) => (
-                    <div key={i} className="border p-2 rounded mb-1 bg-white small d-flex justify-content-between">
-                      <span>{t.text}</span>
-                      {!hideAmounts && <b>{Number(t.amount || 0).toLocaleString()} SAR</b>}
-                    </div>
-                  ))
-                ) : <p className="text-muted small">No transport</p>}
-              </div>
-              <div className="col-md-6 mb-3">
-                <h6 className="fw-bold" style={{ color: "#6f42c1" }}>🕌 Ziyarat</h6>
-                {Array.isArray(data.ziyarat) && data.ziyarat.length > 0 ? (
-                  data.ziyarat.map((z, i) => (
-                    <div key={i} className="border p-2 rounded mb-1 bg-white small d-flex justify-content-between">
-                      <span>{z.text || z.route || z.description}</span>
-                      {!hideAmounts && <b>{Number(z.amount || 0).toLocaleString()} SAR</b>}
-                    </div>
-                  ))
-                ) : <p className="text-muted small">No ziyarat</p>}
-              </div>
-            </div>
+{/* Transport & Ziyarat */}
+<div className="row">
+  <div className="col-md-6 mb-3">
+    <h6 className="fw-bold text-danger">🚐 Transport</h6>
+    {Array.isArray(data.transport) && data.transport.length > 0 ? (
+      data.transport.map((t, i) => (
+        <div key={i} className="border p-2 rounded mb-1 bg-white small d-flex justify-content-between align-items-center">
+          <div>
+            {t.date && <span className="fw-bold text-primary d-block">{fmtDate(t.date)}</span>}
+            <span>{t.text}</span>
+          </div>
+          {!hideAmounts && <b className="ms-2">{Number(t.amount || 0).toLocaleString()} SAR</b>}
+        </div>
+      ))
+    ) : <p className="text-muted small">No transport</p>}
+  </div>
+  <div className="col-md-6 mb-3">
+    <h6 className="fw-bold" style={{ color: "#6f42c1" }}>🕌 Ziyarat</h6>
+    {Array.isArray(data.ziyarat) && data.ziyarat.length > 0 ? (
+      data.ziyarat.map((z, i) => (
+        <div key={i} className="border p-2 rounded mb-1 bg-white small d-flex justify-content-between">
+          <span>{z.text || z.route || z.description}</span>
+          {!hideAmounts && <b>{Number(z.amount || 0).toLocaleString()} SAR</b>}
+        </div>
+      ))
+    ) : <p className="text-muted small">No ziyarat</p>}
+  </div>
+</div>
 
             <GiftSection />
 
@@ -545,14 +548,15 @@ export default function PackagesView({ id, onNavigate, fromPage }) {
 
             <hr />
 
-            <h5 className="fw-bold text-danger mb-2">🚐 Transport</h5>
-            {Array.isArray(data.transport) && data.transport.length > 0 ? (
-              data.transport.map((t, i) => (
-                <div key={i} className="border p-2 rounded mb-1 shadow-sm">
-                  {t.text} {!hideAmounts && <>— {Number(t.amount || 0).toLocaleString()}</>}
-                </div>
-              ))
-            ) : <p>No transport</p>}
+<h5 className="fw-bold text-danger mb-2">🚐 Transport</h5>
+{Array.isArray(data.transport) && data.transport.length > 0 ? (
+  data.transport.map((t, i) => (
+    <div key={i} className="border p-2 rounded mb-1 shadow-sm">
+      {t.date && <b className="text-primary">{fmtDate(t.date)} — </b>}
+      {t.text} {!hideAmounts && <>— {Number(t.amount || 0).toLocaleString()} SAR</>}
+    </div>
+  ))
+) : <p>No transport</p>}
             {!hideAmounts && (
               <p>
                 <b>Transport SAR:</b> {Number(data.transport_sar_total || 0).toLocaleString()} <br />

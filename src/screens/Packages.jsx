@@ -109,7 +109,7 @@ export default function Packages({ onNavigate }) {
 
   // Transport Rows
   const [transportRows, setTransportRows] = useState([]);
-  const addTransportRow = () => setTransportRows([...transportRows, { text: "", amount: 0 }]);
+  const addTransportRow = () => setTransportRows([...transportRows, { date: "", text: "", amount: 0 }]);
   const removeTransportRow = (i) => setTransportRows(transportRows.filter((_, x) => x !== i));
   const transportTotal = transportRows.reduce((sum, row) => sum + (Number(row.amount) || 0), 0);
 
@@ -745,20 +745,75 @@ export default function Packages({ onNavigate }) {
           </>
         )}
 
-        {/* TRANSPORT & ZIYARAT */}
-        <h6 className="section-title">🚐 Transport</h6>
-        <button className="btn btn-outline-primary btn-sm mb-2" onClick={addTransportRow}>➕ Add Transport Row</button>
-        <table className="table table-sm">
-          <tbody>
-            {transportRows.map((t, i) => (
-              <tr key={i}>
-                <td><input type="text" className="form-control form-control-sm" value={t.text} onChange={(e) => { const updated = [...transportRows]; updated[i].text = e.target.value; setTransportRows(updated); }} /></td>
-                <td width="150"><input type="number" className="form-control form-control-sm" value={t.amount} onChange={(e) => { const updated = [...transportRows]; updated[i].amount = +e.target.value; setTransportRows(updated); }} /></td>
-                <td><button className="btn btn-link text-danger" onClick={() => removeTransportRow(i)}>✖</button></td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+
+{/* TRANSPORT & ZIYARAT */}
+<h6 className="section-title">🚐 Transport</h6>
+<button className="btn btn-outline-primary btn-sm mb-2" onClick={addTransportRow}>
+  ➕ Add Transport Row
+</button>
+<table className="table table-sm">
+  <thead>
+    <tr>
+      <th width="170">Travel Date</th>
+      <th>Description</th>
+      <th width="150">Amount (SAR)</th>
+      <th width="40"></th>
+    </tr>
+  </thead>
+  <tbody>
+    {transportRows.map((t, i) => (
+      <tr key={i}>
+        <td>
+          <input
+            type="date"
+            className="form-control form-control-sm"
+            value={t.date || ""}
+            onChange={(e) => {
+              const updated = [...transportRows];
+              updated[i].date = e.target.value;
+              setTransportRows(updated);
+            }}
+          />
+          {t.date && (
+            <small className="text-muted d-block mt-1 fw-bold">
+              {showDate(t.date)}
+            </small>
+          )}
+        </td>
+        <td>
+          <input
+            type="text"
+            className="form-control form-control-sm"
+            placeholder="Transport details..."
+            value={t.text}
+            onChange={(e) => {
+              const updated = [...transportRows];
+              updated[i].text = e.target.value;
+              setTransportRows(updated);
+            }}
+          />
+        </td>
+        <td>
+          <input
+            type="number"
+            className="form-control form-control-sm"
+            value={t.amount}
+            onChange={(e) => {
+              const updated = [...transportRows];
+              updated[i].amount = +e.target.value;
+              setTransportRows(updated);
+            }}
+          />
+        </td>
+        <td>
+          <button className="btn btn-link text-danger p-0" onClick={() => removeTransportRow(i)}>
+            ✖
+          </button>
+        </td>
+      </tr>
+    ))}
+  </tbody>
+</table>
 
         <h6 className="section-title">🕌 Ziyarat</h6>
         <button className="btn btn-outline-primary btn-sm mb-2" onClick={addZiyaratRow}>➕ Add Ziyarat Row</button>

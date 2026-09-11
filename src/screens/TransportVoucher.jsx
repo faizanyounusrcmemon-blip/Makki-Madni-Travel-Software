@@ -73,8 +73,19 @@ export default function TransportVoucher({ onNavigate }) {
           });
         }
 
+        const transportRows = d.row.transport || [];
         setData(d.row);
-        setRows(d.row.transport || []);
+        setRows(transportRows);
+
+        // ⚡ Automatically map travel_date / date to pickupDates
+        const initialPickupDates = {};
+        transportRows.forEach((row, idx) => {
+          if (row.travel_date || row.date) {
+            initialPickupDates[idx] = row.travel_date || row.date;
+          }
+        });
+        setPickupDates(initialPickupDates);
+
       } else if (upperRef.startsWith("TRN-")) {
         r = await fetch(
           `${import.meta.env.VITE_BACKEND_URL}/api/transport/get/${upperRef}`
@@ -92,8 +103,19 @@ export default function TransportVoucher({ onNavigate }) {
           });
         }
 
+        const transportRows = d.row.rows || [];
         setData(d.row);
-        setRows(d.row.rows || []);
+        setRows(transportRows);
+
+        // ⚡ Automatically map travel_date / date to pickupDates
+        const initialPickupDates = {};
+        transportRows.forEach((row, idx) => {
+          if (row.travel_date || row.date) {
+            initialPickupDates[idx] = row.travel_date || row.date;
+          }
+        });
+        setPickupDates(initialPickupDates);
+
       } else {
         Swal.close();
 
@@ -458,7 +480,7 @@ export default function TransportVoucher({ onNavigate }) {
                     }
                   />
                   {pickupDates[i] && (
-                    <div className="small mt-1">
+                    <div className="small mt-1 text-primary fw-bold">
                       {showDate(pickupDates[i])}
                     </div>
                   )}

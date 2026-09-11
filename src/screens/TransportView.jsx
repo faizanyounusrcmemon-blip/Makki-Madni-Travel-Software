@@ -4,20 +4,30 @@ import Header from "../components/Header";
 
 /* ================= HELPERS ================= */
 const fmt = (v) => Number(v || 0).toLocaleString("en-US");
-const fmtDate = (d) => (d ? new Date(d).toLocaleDateString("en-GB") : "-");
 
+// Custom Date Formatter (dd/Mmm/yyyy)
+const fmtDate = (val) => {
+  if (!val) return "-";
+  const d = new Date(val);
+  if (isNaN(d.getTime())) return val;
 
+  const day = String(d.getDate()).padStart(2, "0");
+  const mon = d.toLocaleString("en-US", { month: "short" });
+  const year = d.getFullYear();
+
+  return `${day}/${mon}/${year}`;
+};
 
 export default function TransportView({ id, onNavigate, fromPage }) {
   const [data, setData] = useState(null);
   const ref = useRef(null);
 
-const { exportPDF, printPDF } = usePdf(ref, {
-  filePrefix: "Transport",
-  customerName: data?.customer_name,
-  bookingDate: data?.booking_date,
-  orientation: "p",
-});
+  const { exportPDF, printPDF } = usePdf(ref, {
+    filePrefix: "Transport",
+    customerName: data?.customer_name,
+    bookingDate: data?.booking_date,
+    orientation: "p",
+  });
 
   /* ================= LOAD ================= */
   useEffect(() => {
@@ -51,27 +61,23 @@ const { exportPDF, printPDF } = usePdf(ref, {
       .catch(() => Swal.fire("Error", "Load failed", "error"));
   }, [id]);
 
-  /* ================= EXPORT PDF ================= */
-
-
   if (!data) return <div className="p-3">Loading...</div>;
 
   return (
     <div className="container mt-3 mb-5">
-
       {/* ===== TOP ACTIONS ===== */}
       <div className="d-flex gap-2 mb-3 flex-wrap">
-<button
-  className="btn btn-sm text-white fw-bold shadow"
-  style={{
-    background: "linear-gradient(135deg,#000,#434343)",
-    borderRadius: 8,
-    padding: "6px 16px",
-  }}
-  onClick={() => onNavigate(fromPage || "allreports")}
->
-  ⬅ Back
-</button>
+        <button
+          className="btn btn-sm text-white fw-bold shadow"
+          style={{
+            background: "linear-gradient(135deg,#000,#434343)",
+            borderRadius: 8,
+            padding: "6px 16px",
+          }}
+          onClick={() => onNavigate(fromPage || "allreports")}
+        >
+          ⬅ Back
+        </button>
 
         <button
           className="btn btn-success btn-sm fw-bold shadow"
@@ -103,40 +109,65 @@ const { exportPDF, printPDF } = usePdf(ref, {
         <Header title="🚐 TRANSPORT DETAILS" />
 
         <div className="row mb-3">
-          <div className="col-6"><b>Ref No:</b> {data.ref_no}</div>
+          <div className="col-6">
+            <b>Ref No:</b> {data.ref_no}
+          </div>
           <div className="col-6 text-end">
             <b>Booking Date:</b> {fmtDate(data.booking_date)}
           </div>
         </div>
 
-        <p><b>Customer Name:</b> {data.customer_name}</p>
+        <p>
+          <b>Customer Name:</b> {data.customer_name}
+        </p>
 
         <hr />
 
-        <h5 className="fw-bold text-primary mb-2">
-          Transport Entries
-        </h5>
+        <h5 className="fw-bold text-primary mb-2">Transport Entries</h5>
 
         {data.rows.length === 0 && (
           <p className="text-muted">No transport rows</p>
         )}
 
-        {data.rows.map((r, i) => (
-          <div
-            key={i}
-            className="border rounded p-2 mb-2 shadow-sm d-flex justify-content-between"
-          >
-            <div>{r.description}</div>
-            <div className="fw-bold">{fmt(r.sar)}</div>
-          </div>
-        ))}
+        {/* ⚡ Transport Entries Table */}
+        <table className="table table-bordered align-middle mt-2">
+          <thead className="table-light">
+            <tr>
+              <th style={{ width: "140px" }}>Travel Date</th>
+              <th>Description</th>
+              <th className="text-end" style={{ width: "120px" }}>
+                SAR
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {data.rows.map((r, i) => (
+<tr key={i} className="align-middle">
+  <td className="py-2">
+    <span 
+      className="badge px-3 py-2 fw-semibold" 
+      style={{ backgroundColor: "#EEF2FF", color: "#4F46E5", border: "1px solid #C7D2FE", borderRadius: "8px" }}
+    >
+      📅 {fmtDate(r.travel_date)}
+    </span>
+  </td>
+                <td>{r.description}</td>
+                <td className="fw-bold text-end">{fmt(r.sar)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
 
         <hr />
 
         <h5 className="fw-bold text-success mb-2">💰 Totals</h5>
 
-        <p><b>Total SAR:</b> {fmt(data.total_sar)}</p>
-        <p><b>PKR Rate:</b> {data.pkr_rate}</p>
+        <p>
+          <b>Total SAR:</b> {fmt(data.total_sar)}
+        </p>
+        <p>
+          <b>PKR Rate:</b> {data.pkr_rate}
+        </p>
 
         <h4 className="fw-bold text-success">
           Total PKR: {fmt(data.total_pkr)}

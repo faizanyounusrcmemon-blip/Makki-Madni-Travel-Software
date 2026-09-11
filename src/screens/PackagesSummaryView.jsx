@@ -325,11 +325,12 @@ export default function PackagesViewSummary({ id, onNavigate, fromPage }) {
 
         <hr />
 
-        {/* ===== TRANSPORT ===== */}
+{/* ===== TRANSPORT ===== */}
         <h5 className="fw-bold text-danger mb-2">🚐 Transport</h5>
         {Array.isArray(data.transport) && data.transport.length > 0 ? (
           data.transport.map((t, i) => (
             <div key={i} className="border p-2 rounded mb-1 shadow-sm">
+              {t.date && <b className="text-primary">{fmtDate(t.date)} — </b>}
               {t.text} — {Number(t.amount || 0).toLocaleString()}
             </div>
           ))
