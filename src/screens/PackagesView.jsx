@@ -45,7 +45,7 @@ export default function PackagesView({ id, onNavigate, fromPage }) {
 
   if (!data) return <div className="p-4 text-center text-secondary fw-semibold">Loading package quotation...</div>;
 
-  /* ================= PACKAGE DURATION ================= */
+/* ================= PACKAGE DURATION ================= */
   const flightDates = Array.isArray(data.flights)
     ? data.flights
         .map((f) => f.date)
@@ -60,10 +60,21 @@ export default function PackagesView({ id, onNavigate, fromPage }) {
     const startDate = new Date(flightDates[0]);
     const endDate = new Date(flightDates[flightDates.length - 1]);
 
-    const diff = (endDate - startDate) / (1000 * 60 * 60 * 24);
+    const diff = Math.floor((endDate - startDate) / (1000 * 60 * 60 * 24));
 
     packageDays = diff + 1;
     packageNights = diff;
+  } else if (Array.isArray(data.hotels) && data.hotels.length > 0) {
+    // Agar valid flight dates na hon, toh hotels ke nights ka sum calculation ke liye use hoga
+    const totalHotelNights = data.hotels.reduce(
+      (sum, h) => sum + (Number(h.nights) || 0),
+      0
+    );
+
+    if (totalHotelNights > 0) {
+      packageNights = totalHotelNights;
+      packageDays = totalHotelNights + 1;
+    }
   }
 
   /* ================= AMOUNTS & CALCULATIONS ================= */
