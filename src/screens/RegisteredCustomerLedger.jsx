@@ -866,7 +866,7 @@ export default function RegisteredCustomerLedger({ onNavigate }) {
         .report-table th { background: linear-gradient(135deg, #073d7a, #0d6efd); color: #fff; padding: 10px 8px; white-space: nowrap; font-size: 13px; }
         .report-table td { padding: 8px 8px; border-bottom: 1px solid #edf1f5; vertical-align: middle; }
         .report-table tbody tr:hover { background: #f8fbff; }
-        .amount-cell { font-size: 13px !important; font-weight: 800 !important; letter-spacing: 0.3px; }
+        .amount-cell { font-size: 0.95rem !important; font-weight: 800 !important; letter-spacing: 0.3px; }
         .pending-card { background: rgba(255,255,255,.94); border: 1px solid #dbe7f5; border-radius: 16px; overflow: hidden; box-shadow: 0 8px 24px rgba(30,65,100,.10); }
         .pending-header { background: linear-gradient(135deg, #dc3545, #b4232f); color: #fff; padding: 10px 12px; font-weight: 800; font-size: 12px; }
         @media print { .filter-card, .no-print, .pending-card { display: none !important; } }
@@ -1251,18 +1251,20 @@ export default function RegisteredCustomerLedger({ onNavigate }) {
                                 "-"
                               )}
                             </td>
-                            {/* Debit Field */}
-                            <td className="text-end text-danger font-monospace amount-cell">
-                              {r.debit > 0 ? fmtAmt(r.debit) : "-"}
-                            </td>
-                            {/* Credit Field */}
-                            <td className="text-end text-success font-monospace amount-cell">
-                              {r.credit > 0 ? fmtAmt(r.credit) : "-"}
-                            </td>
-                            {/* Balance Field */}
-                            <td className="text-end font-monospace amount-cell" style={{ backgroundColor: "#fdfdfd" }}>
-                              {fmtAmt(r.balance)}
-                            </td>
+{/* Debit Field */}
+<td className="text-danger fw-bold font-monospace amount-cell text-end">
+  {r.debit > 0 ? fmtAmt(r.debit) : "-"}
+</td>
+
+{/* Credit Field */}
+<td className="text-success fw-bold font-monospace amount-cell text-end">
+  {r.credit > 0 ? fmtAmt(r.credit) : "-"}
+</td>
+
+{/* Balance Field */}
+<td className="fw-bold font-monospace amount-cell text-end" style={{ backgroundColor: "#fdfdfd" }}>
+  {fmtAmt(r.balance)}
+</td>
                             <td className="text-center">
                               {isSale ? (
                                 <button
