@@ -185,74 +185,81 @@ export default function useLedgerExport() {
     }, 100);
   };
 
-  /* ================= EXPORT EXCEL ================= */
-  const exportExcel = ({
-    code = "",
-    name = "",
-    fromDate = "",
-    toDate = "",
-    ledgerData = [],
-    companyName = "MAKKI MADNI TRAVEL & TOURS",
-    title = "LEDGER STATEMENT",
-    filePrefix = "Ledger_Statement",
-  } = {}) => {
-    if (!ledgerData || ledgerData.length === 0) {
-      return Swal.fire({ icon: "warning", text: "No ledger data to export!" });
+/* ================= EXPORT EXCEL ================= */
+const exportExcel = ({
+  code = "",
+  name = "",
+  fromDate = "",
+  toDate = "",
+  ledgerData = [],
+  companyName = "MAKKI MADNI TRAVEL & TOURS",
+  title = "LEDGER STATEMENT",
+  filePrefix = "Ledger_Statement",
+} = {}) => {
+  if (!ledgerData || ledgerData.length === 0) {
+    return Swal.fire({ icon: "warning", text: "No ledger data to export!" });
+  }
+
+  try {
+    const periodStr =
+      fromDate || toDate
+        ? `${formatDate(fromDate)} to ${formatDate(toDate)}`
+        : "All Records";
+
+    const excelRows = [];
+
+    if (companyName) {
+      excelRows.push([companyName.toUpperCase()]);
     }
+    excelRows.push([title.toUpperCase()]);
+    excelRows.push([]);
+    excelRows.push([`NAME: ${name}`, "", "", `Printed On: ${formatDate(new Date())}`]);
+    excelRows.push([`CODE: ${code || "-"}`, "", "", `Period: ${periodStr}`]);
+    excelRows.push([]);
+    excelRows.push(["Date", "Type", "Ref No", "Description", "Payment Method", "Debit (-)", "Credit (+)", "Balance"]);
 
-    try {
-      const periodStr =
-        fromDate || toDate
-          ? `${formatDate(fromDate)} to ${formatDate(toDate)}`
-          : "All Records";
-
-      const excelRows = [];
-
-      if (companyName) {
-        excelRows.push([companyName.toUpperCase()]);
+    ledgerData.forEach((r) => {
+      // Formatted Payment Method (Bank Name mapping)
+      let formattedMethod = "-";
+      if (r.payment_method) {
+        const pm = String(r.payment_method).toUpperCase();
+        formattedMethod = pm === "BANK" && r.bank_name ? `Bank (${r.bank_name})` : r.payment_method;
       }
-      excelRows.push([title.toUpperCase()]);
-      excelRows.push([]);
-      excelRows.push([`NAME: ${name}`, "", "", `Printed On: ${formatDate(new Date())}`]);
-      excelRows.push([`CODE: ${code || "-"}`, "", "", `Period: ${periodStr}`]);
-      excelRows.push([]);
-      excelRows.push(["Date", "Type", "Ref No", "Description", "Payment Method", "Debit (-)", "Credit (+)", "Balance"]);
 
-      ledgerData.forEach((r) => {
-        excelRows.push([
-          formatDate(r.date || r.payment_date || r.created_at),
-          r.type || "-",
-          r.ref_no || r.id || "-",
-          r.detail || r.description || "-",
-          r.payment_method || "-",
-          Number(r.debit || 0),
-          Number(r.credit || 0),
-          Number(r.balance || 0),
-        ]);
-      });
+      excelRows.push([
+        formatDate(r.date || r.payment_date || r.created_at),
+        r.type || "-",
+        r.ref_no || r.id || "-",
+        r.detail || r.description || "-",
+        formattedMethod, 
+        Number(r.debit || 0),
+        Number(r.credit || 0),
+        Number(r.balance || 0),
+      ]);
+    });
 
-      const worksheet = XLSX.utils.aoa_to_sheet(excelRows);
-      const workbook = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(workbook, worksheet, "Ledger");
+    const worksheet = XLSX.utils.aoa_to_sheet(excelRows);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Ledger");
 
-      worksheet["!cols"] = [
-        { wch: 14 },
-        { wch: 14 },
-        { wch: 16 },
-        { wch: 45 },
-        { wch: 16 },
-        { wch: 15 },
-        { wch: 15 },
-        { wch: 18 },
-      ];
+    worksheet["!cols"] = [
+      { wch: 14 },
+      { wch: 14 },
+      { wch: 16 },
+      { wch: 45 },
+      { wch: 24 }, 
+      { wch: 15 },
+      { wch: 15 },
+      { wch: 18 },
+    ];
 
-      const safeCode = (code || "STATEMENT").replace(/[^a-zA-Z0-9_-]/g, "_");
-      XLSX.writeFile(workbook, `${filePrefix}_${safeCode}.xlsx`);
-    } catch (err) {
-      console.error("Excel Export Error:", err);
-      Swal.fire({ icon: "error", text: "Excel Export Failed" });
-    }
-  };
+    const safeCode = (code || "STATEMENT").replace(/[^a-zA-Z0-9_-]/g, "_");
+    XLSX.writeFile(workbook, `${filePrefix}_${safeCode}.xlsx`);
+  } catch (err) {
+    console.error("Excel Export Error:", err);
+    Swal.fire({ icon: "error", text: "Excel Export Failed" });
+  }
+};
 
   return { exportPDF, exportExcel };
 }
