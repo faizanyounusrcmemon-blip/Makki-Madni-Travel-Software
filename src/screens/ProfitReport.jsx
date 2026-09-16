@@ -27,178 +27,178 @@ export default function ProfitReport({ onNavigate }) {
   };
 
   return (
-    <div className="profit-wrap">
-      <div className="container py-4">
-
-        {/* HEADER */}
-        <div className="d-flex justify-content-between align-items-center mb-4">
+    <div className="container-fluid py-3">
+      {/* HEADER BAR */}
+      <div className="card shadow-sm border-0 mb-3">
+        <div className="card-body py-2 px-3 d-flex justify-content-between align-items-center">
           <div>
-            <h3 className="fw-bold text-white mb-0">💰 Profit Dashboard</h3>
-            <small className="text-white-50">Colorful business performance</small>
+            <h5 className="mb-0 fw-bold text-primary">💰 Profit Dashboard</h5>
+            <small className="text-muted">Business performance summary</small>
           </div>
           <button
-            className="btn btn-light btn-sm"
+            className="btn btn-outline-secondary btn-sm"
             onClick={() => onNavigate("dashboard")}
           >
-            ⬅ Back
+            ← Back
           </button>
         </div>
+      </div>
 
-        {/* FILTER CARD */}
-        <div className="card glass-card mb-4">
-          <div className="card-body">
-            <div className="row g-2 align-items-end">
-              <div className="col-md-3">
-                <label className="form-label text-white">Year</label>
-                <input
-                  className="form-control"
-                  value={year}
-                  onChange={(e) => setYear(e.target.value)}
-                />
-              </div>
+      {/* FILTER CARD */}
+      <div className="card shadow-sm border-0 mb-4">
+        <div className="card-body p-3">
+          <div className="row g-2 align-items-end">
+            <div className="col-md-3">
+              <label className="form-label small fw-bold mb-1">Year</label>
+              <input
+                className="form-control form-control-sm"
+                value={year}
+                onChange={(e) => setYear(e.target.value)}
+              />
+            </div>
 
-              <div className="col-md-3">
-                <label className="form-label text-white">Month</label>
-                <select
-                  className="form-control"
-                  value={month}
-                  onChange={(e) => setMonth(e.target.value)}
-                >
-                  <option value="">All Months</option>
-                  {[1,2,3,4,5,6,7,8,9,10,11,12].map(m => (
-                    <option key={m} value={m}>
-                      {new Date(0, m - 1).toLocaleString("en", { month: "long" })}
-                    </option>
-                  ))}
-                </select>
-              </div>
+            <div className="col-md-3">
+              <label className="form-label small fw-bold mb-1">Month</label>
+              <select
+                className="form-select form-select-sm"
+                value={month}
+                onChange={(e) => setMonth(e.target.value)}
+              >
+                <option value="">All Months</option>
+                {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((m) => (
+                  <option key={m} value={m}>
+                    {new Date(0, m - 1).toLocaleString("en", { month: "long" })}
+                  </option>
+                ))}
+              </select>
+            </div>
 
-              <div className="col-md-2">
-                <button
-                  className="btn btn-warning w-100 fw-bold"
-                  onClick={load}
-                >
-                  🚀 Load
-                </button>
-              </div>
+            <div className="col-md-2">
+              <button
+                className="btn btn-primary btn-sm w-100 fw-bold"
+                onClick={load}
+              >
+                🚀 Load Report
+              </button>
             </div>
           </div>
         </div>
+      </div>
 
-        {/* DASHBOARD */}
-        {data && (
-          <>
-            {/* SUMMARY CARDS */}
-            <div className="row g-3 mb-4">
-              <div className="col-md-3">
-                <div className="stat-card blue">
-                  <span>Total Sales</span>
-                  <h4>PKR {fmt(data.total_sales)}</h4>
-                </div>
-              </div>
-
-              <div className="col-md-3">
-                <div className="stat-card purple">
-                  <span>Total Purchase</span>
-                  <h4>PKR {fmt(data.total_purchase)}</h4>
-                </div>
-              </div>
-
-              <div className="col-md-3">
-                <div className="stat-card green">
-                  <span>Base Profit</span>
-                  <h4>PKR {fmt(data.base_profit)}</h4>
-                </div>
-              </div>
-
-              <div className="col-md-3">
-                <div className="stat-card yellow">
-                  <span>Supplier Adjustment</span>
-                  <h4>PKR {fmt(data.supplier_adjustment)}</h4>
+      {/* DASHBOARD */}
+      {data && (
+        <>
+          {/* STAT CARDS */}
+          <div className="row g-3 mb-4">
+            <div className="col-md-3">
+              <div className="card shadow-sm border-0 border-start border-info border-4 h-100">
+                <div className="card-body p-3">
+                  <span className="text-muted small fw-bold">Total Sales</span>
+                  <h4 className="text-info fw-bold mb-0 mt-1">
+                    PKR {fmt(data.total_sales)}
+                  </h4>
                 </div>
               </div>
             </div>
 
-            {/* NET PROFIT */}
-            <div className="card net-profit-card mb-4">
-              <div className="card-body text-center">
-                <small>🌟 NET PROFIT</small>
-                <h2>PKR {fmt(data.net_profit)}</h2>
+            <div className="col-md-3">
+              <div className="card shadow-sm border-0 border-start border-primary border-4 h-100">
+                <div className="card-body p-3">
+                  <span className="text-muted small fw-bold">Total Purchase</span>
+                  <h4 className="text-primary fw-bold mb-0 mt-1">
+                    PKR {fmt(data.total_purchase)}
+                  </h4>
+                </div>
               </div>
             </div>
 
-            {/* DETAIL TABLE */}
-            <div className="card glass-card">
-              <div className="card-body">
-                <h5 className="text-white fw-bold mb-3">📊 Detailed Breakdown</h5>
+            <div className="col-md-3">
+              <div className="card shadow-sm border-0 border-start border-success border-4 h-100">
+                <div className="card-body p-3">
+                  <span className="text-muted small fw-bold">Base Profit</span>
+                  <h4 className="text-success fw-bold mb-0 mt-1">
+                    PKR {fmt(data.base_profit)}
+                  </h4>
+                </div>
+              </div>
+            </div>
 
-                <table className="table table-borderless text-white">
-                  <tbody>
+            <div className="col-md-3">
+              <div className="card shadow-sm border-0 border-start border-warning border-4 h-100">
+                <div className="card-body p-3">
+                  <span className="text-muted small fw-bold">Supplier Adj.</span>
+                  <h4 className="text-warning fw-bold mb-0 mt-1">
+                    PKR {fmt(data.supplier_adjustment)}
+                  </h4>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* NET PROFIT CARD */}
+          <div className="card bg-success text-white shadow-sm border-0 mb-4">
+            <div className="card-body text-center py-3">
+              <span className="text-white-50 text-uppercase fw-bold small">
+                🌟 Net Profit
+              </span>
+              <h2 className="fw-extrabold text-white mb-0 mt-1">
+                PKR {fmt(data.net_profit)}
+              </h2>
+            </div>
+          </div>
+
+          {/* DETAIL TABLE */}
+          <div className="card shadow-sm border-0">
+            <div className="card-header bg-white py-2">
+              <h6 className="mb-0 fw-bold text-dark">📊 Detailed Breakdown</h6>
+            </div>
+            <div className="card-body p-0">
+              <div className="table-responsive">
+                <table className="table table-hover align-middle mb-0">
+                  <tbody style={{ fontSize: "14px" }}>
                     <tr>
-                      <td>Total Sales</td>
-                      <td className="text-end text-info">{fmt(data.total_sales)}</td>
+                      <td className="ps-3 fw-bold">Total Sales</td>
+                      <td className="text-end pe-3 text-info fw-bold fs-6">
+                        {fmt(data.total_sales)}
+                      </td>
                     </tr>
                     <tr>
-                      <td>Total Purchase</td>
-                      <td className="text-end text-primary">{fmt(data.total_purchase)}</td>
+                      <td className="ps-3 fw-bold">Total Purchase</td>
+                      <td className="text-end pe-3 text-primary fw-bold fs-6">
+                        {fmt(data.total_purchase)}
+                      </td>
                     </tr>
                     <tr>
-                      <td>Base Profit</td>
-                      <td className="text-end text-success fw-bold">{fmt(data.base_profit)}</td>
+                      <td className="ps-3 fw-bold">Base Profit</td>
+                      <td className="text-end pe-3 text-success fw-bold fs-6">
+                        {fmt(data.base_profit)}
+                      </td>
                     </tr>
                     <tr>
-                      <td>Supplier Adjustment</td>
-                      <td className="text-end text-warning fw-bold">{fmt(data.supplier_adjustment)}</td>
+                      <td className="ps-3 fw-bold">Supplier Adjustment</td>
+                      <td className="text-end pe-3 text-warning fw-bold fs-6">
+                        {fmt(data.supplier_adjustment)}
+                      </td>
                     </tr>
                     <tr>
-                      <td>Customer Adjustment</td>
-                      <td className="text-end text-danger fw-bold">{fmt(data.customer_adjustment)}</td>
+                      <td className="ps-3 fw-bold">Customer Adjustment</td>
+                      <td className="text-end pe-3 text-danger fw-bold fs-6">
+                        {fmt(data.customer_adjustment)}
+                      </td>
                     </tr>
                     <tr>
-                      <td>Total Expense</td>
-                      <td className="text-end text-danger fw-bold">{fmt(data.total_expense)}</td>
+                      <td className="ps-3 fw-bold">Total Expense</td>
+                      <td className="text-end pe-3 text-danger fw-bold fs-6">
+                        {fmt(data.total_expense)}
+                      </td>
                     </tr>
                   </tbody>
                 </table>
               </div>
             </div>
-          </>
-        )}
-
-      </div>
-
-      {/* STYLES */}
-      <style>{`
-        .profit-wrap {
-          min-height: 100vh;
-          background: linear-gradient(135deg, #1d2671, #c33764);
-        }
-        .glass-card {
-          background: rgba(255,255,255,0.12);
-          backdrop-filter: blur(14px);
-          border-radius: 18px;
-          border: 1px solid rgba(255,255,255,0.2);
-        }
-        .stat-card {
-          padding: 18px;
-          border-radius: 18px;
-          color: white;
-          box-shadow: 0 15px 35px rgba(0,0,0,0.25);
-        }
-        .stat-card span { font-size: 13px; opacity: 0.9; }
-        .stat-card h4 { margin-top: 6px; font-weight: 800; }
-        .blue { background: linear-gradient(135deg, #2193b0, #6dd5ed); }
-        .purple { background: linear-gradient(135deg, #7f00ff, #e100ff); }
-        .green { background: linear-gradient(135deg, #11998e, #38ef7d); }
-        .yellow { background: linear-gradient(135deg, #f9d423, #ff4e00); }
-        .net-profit-card {
-          background: linear-gradient(135deg, #f7971e, #ffd200);
-          border-radius: 20px;
-          box-shadow: 0 20px 45px rgba(0,0,0,0.3);
-        }
-        .net-profit-card small { color: #000; opacity: 0.7; }
-        .net-profit-card h2 { font-weight: 900; color: #000; margin-top: 6px; }
-      `}</style>
+          </div>
+        </>
+      )}
     </div>
   );
 }

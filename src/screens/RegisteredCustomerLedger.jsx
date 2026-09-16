@@ -2,7 +2,21 @@ import React, { useState, useEffect } from "react";
 import useLedgerExport from "../hooks/useLedgerExport";
 import Swal from "sweetalert2";
 
-/* ================= DATE HELPER FUNCTIONS ================= */
+/* ================= HELPER FUNCTIONS ================= */
+
+const normalizeZero = (n) => (Math.abs(Number(n || 0)) < 0.005 ? 0 : Number(n));
+
+const fmtAmt = (v) => {
+  let n = normalizeZero(v);
+  return n === 0 && (v === null || v === undefined || v === "")
+    ? "-"
+    : n.toLocaleString("en-US");
+};
+
+const parseAmt = (v) => {
+  const n = Number(String(v).replace(/,/g, ""));
+  return normalizeZero(Math.round(n || 0));
+};
 
 const toInputDate = (d) => {
   if (!d) return "";
@@ -19,7 +33,10 @@ const formatDate = (d) => {
   const dt = new Date(d);
   if (isNaN(dt.getTime())) return "-";
   const day = String(dt.getDate()).padStart(2, "0");
-  const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  const monthNames = [
+    "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+    "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
+  ];
   const month = monthNames[dt.getMonth()];
   const year = dt.getFullYear();
   return `${day}/${month}/${year}`;
@@ -33,16 +50,10 @@ const getTripDurationText = (dates) => {
   return `${diff + 1} Days / ${diff} Nights`;
 };
 
-
 const getRowDate = (r) => {
   if (!r) return "-";
   return formatDate(r.date || r.payment_date || r.created_at);
 };
-
-const fmtAmt = (v) =>
-  v === null || v === undefined || v === "" ? "0" : Number(v).toLocaleString("en-US");
-
-const parseAmt = (v) => Number(String(v).replace(/,/g, "") || 0);
 
 const numberToWords = (num) => {
   if (!num) return "";
@@ -64,7 +75,10 @@ const numberToWords = (num) => {
 const getTodayInputDate = () => toInputDate(new Date());
 
 export default function RegisteredCustomerLedger({ onNavigate }) {
-  const { exportPDF: handleExportPDF, exportExcel: handleExportExcel } = useLedgerExport();
+  const exportUtils = useLedgerExport();
+  const handleExportPDF = exportUtils?.handleExportPDF || exportUtils?.exportPDF;
+  const handleExportExcel = exportUtils?.handleExportExcel || exportUtils?.exportExcel;
+
   const [customerCode, setCustomerCode] = useState("");
   const [customerName, setCustomerName] = useState("");
   const [rows, setRows] = useState([]);
@@ -74,6 +88,7 @@ export default function RegisteredCustomerLedger({ onNavigate }) {
   // Date Filters
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
+  const [ledgerView, setLedgerView] = useState([]);
 
   // Transaction Form
   const [amountRaw, setAmountRaw] = useState(0);
@@ -109,55 +124,54 @@ export default function RegisteredCustomerLedger({ onNavigate }) {
       .catch((err) => console.error("Error loading bank profiles:", err));
   }, []);
 
-/* =========================
-   FIXED: LOAD PENDING CUSTOMERS ONLY BY CODE
-========================== */
-const loadPending = async () => {
-  try {
-    const r = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/registered-ledger/pending/list`);
-    const d = await r.json();
-    if (d.success) {
-      const rawList = d.rows || [];
-      const uniqueCustomersMap = new Map();
+  /* =========================
+     LOAD PENDING CUSTOMERS
+  ========================== */
+  const loadPending = async () => {
+    try {
+      const r = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/registered-ledger/pending/list`);
+      const d = await r.json();
+      if (d.success) {
+        const rawList = d.rows || [];
+        const uniqueCustomersMap = new Map();
 
-      rawList.forEach((item) => {
-        const code = String(item.customer_code || "").trim().toUpperCase();
-        const isIndividualInvoiceRef = /^(HOT-|PKG-|TIC-|VISA-|ZIY-|TRN-|CARD-|GRP-)/i.test(code);
+        rawList.forEach((item) => {
+          const code = String(item.customer_code || "").trim().toUpperCase();
+          const isIndividualInvoiceRef = /^(HOT-|PKG-|TIC-|VISA-|ZIY-|TRN-|CARD-|GRP-)/i.test(code);
 
-        if (!code || isIndividualInvoiceRef) return;
+          if (!code || isIndividualInvoiceRef) return;
 
-        const bal = Number(item.remaining_balance || item.balance || 0);
+          const bal = normalizeZero(item.remaining_balance || item.balance || 0);
 
-        if (!uniqueCustomersMap.has(code)) {
-          uniqueCustomersMap.set(code, {
-            customer_code: code,
-            customer_name: item.customer_name || "Registered Customer",
-            remaining_balance: bal,
-            payment_status: item.payment_status || (bal < 0 ? "EXTRA PAID" : "PENDING")
-          });
-        }
-      });
+          if (!uniqueCustomersMap.has(code)) {
+            uniqueCustomersMap.set(code, {
+              customer_code: code,
+              customer_name: item.customer_name || "Registered Customer",
+              remaining_balance: bal,
+              payment_status: item.payment_status || (bal < 0 ? "EXTRA PAID" : "PENDING")
+            });
+          }
+        });
 
-      setPending(Array.from(uniqueCustomersMap.values()));
+        setPending(Array.from(uniqueCustomersMap.values()));
+      }
+    } catch (e) {
+      console.error("Error loading pending registered users:", e);
     }
-  } catch (e) {
-    console.error("Error loading pending registered users:", e);
-  }
-};
+  };
 
   useEffect(() => {
     loadPending();
   }, []);
 
-// Filtered Pending List Search Logic
-const filteredPending = pending.filter((p) => {
-  const query = pendingSearch.trim().toLowerCase();
-  if (!query) return true;
-  return (
-    (p.customer_code && p.customer_code.toLowerCase().includes(query)) ||
-    (p.customer_name && p.customer_name.toLowerCase().includes(query))
-  );
-});
+  const filteredPending = pending.filter((p) => {
+    const query = pendingSearch.trim().toLowerCase();
+    if (!query) return true;
+    return (
+      (p.customer_code && p.customer_code.toLowerCase().includes(query)) ||
+      (p.customer_name && p.customer_name.toLowerCase().includes(query))
+    );
+  });
 
   /* =========================
      LOAD SPECIFIC LEDGER
@@ -170,8 +184,8 @@ const filteredPending = pending.filter((p) => {
     setCustomerCode(targetCode);
 
     Swal.fire({
-      width: "250px",
-      title: "Loading...",
+      width: "260px",
+      title: "Loading Ledger...",
       allowOutsideClick: false,
       didOpen: () => Swal.showLoading()
     });
@@ -190,12 +204,41 @@ const filteredPending = pending.filter((p) => {
       if (!d.success) {
         Swal.fire({ width: "320px", icon: "error", text: d.error || "Data load failed" });
         setRows([]);
+        setLedgerView([]);
         setCustomerName("");
         return;
       }
 
-      setRows(d.rows || []);
+      const mapped = (d.rows || []).map((row) => ({
+        ...row,
+        debit: Math.round(normalizeZero(row.debit)),
+        credit: Math.round(normalizeZero(row.credit)),
+        balance: Math.round(normalizeZero(row.balance)),
+      }));
+
+      setRows(mapped);
+      setLedgerView(mapped);
       setCustomerName(d.customerName || "Registered Customer");
+
+      Swal.fire({
+        width: "360px",
+        icon: "success",
+        title: "Ledger Loaded Successfully",
+        html: `
+          <div style="text-align:left;font-size:14px">
+            <div style="background:#f8f9fa; padding:10px; border-radius:8px; margin-top:5px;">
+              <b>Customer Code:</b><br/>
+              <span style="color:#0d6efd">${targetCode}</span>
+              <hr style="margin:8px 0"/>
+              <b>Customer Name:</b><br/>
+              <span style="color:#198754">${d.customerName || "Registered Customer"}</span>
+            </div>
+          </div>
+        `,
+        showConfirmButton: true,
+        confirmButtonText: "OK",
+        confirmButtonColor: "#0d6efd",
+      });
     } catch (err) {
       console.error(err);
       Swal.close();
@@ -203,155 +246,164 @@ const filteredPending = pending.filter((p) => {
     }
   };
 
-/* =========================
-   FETCH SALE DETAIL MODAL (FIXED)
-========================== */
-const handleSuccessResponse = (data, ledgerVal, originalId, currentType) => {
-  if (data.success && data.row) {
-    const row = data.row;
-
-    const safeParse = (v) => {
-      if (!v) return [];
-      if (Array.isArray(v)) return v;
-      try { return JSON.parse(v); } catch { return []; }
-    };
-
-    if (currentType === "TICKETING" || String(row.ref_no || "").includes("TIC")) {
-      row.flight_from = safeParse(row.flight_from);
-      row.flight_to = safeParse(row.flight_to);
-      row.flight_date = safeParse(row.flight_date);
-      row.airline = safeParse(row.airline);
-    } else if (currentType === "HOTEL") {
-      row.hotels = safeParse(row.hotels);
-    } else if (currentType === "PACKAGE") {
-      row.flights = safeParse(row.flights);
-      row.hotels = safeParse(row.hotels);
-      row.visa = safeParse(row.visa);
-      row.transport = safeParse(row.transport);
-      row.ziyarat = safeParse(row.ziyarat);
-    } else if (["VISA", "ZIYARAT", "TRANSPORT", "CARD", "GROUPS"].includes(currentType)) {
-      row.rows = safeParse(row.rows);
-    }
-
-    row.total_pkr = Number(row.total_pkr || row.grand_total || row.total_amount || row.total_amount_pkr || ledgerVal || 0);
-    row.grand_total = row.total_pkr;
-    row.total_amount = row.total_pkr;
-
-    setDetailData(row);
-  } else {
-    setDetailData({
-      ref_no: originalId || "N/A",
-      customer_name: customerName,
-      booking_date: getTodayInputDate(),
-      description: "",
-      total_pkr: ledgerVal,
-      grand_total: ledgerVal,
-      total_amount: ledgerVal
-    });
-  }
-};
-
-const fetchSaleDetail = async (id, description) => {
-  const idStr = String(id || "").toUpperCase();
-  let detectedType = "INVOICE";
-  let endpoint = "";
-
-  let cleanRef = idStr;
-  if (idStr.startsWith("SALE-")) {
-    cleanRef = idStr.replace("SALE-", "");
-  }
-
-  const matchedLedgerRow = rows.find(r => String(r.id) === idStr);
-  const ledgerVal = matchedLedgerRow ? Number(matchedLedgerRow.credit || matchedLedgerRow.debit || 0) : 0;
-
-  // Prefixes Normalized for both VIS-/VISA-, CRD-/CARD-, BKG-/PKG-
-  if (cleanRef.startsWith("TIC-")) {
-    detectedType = "TICKETING";
-    endpoint = `${import.meta.env.VITE_BACKEND_URL}/api/ticketing/get/${cleanRef}`;
-  } else if (cleanRef.startsWith("HOT-")) {
-    detectedType = "HOTEL";
-    endpoint = `${import.meta.env.VITE_BACKEND_URL}/api/hotels/get/${cleanRef}`;
-  } else if (cleanRef.startsWith("VISA-") || cleanRef.startsWith("VIS-")) {
-    detectedType = "VISA";
-    endpoint = `${import.meta.env.VITE_BACKEND_URL}/api/visa/get/${cleanRef}`;
-  } else if (cleanRef.startsWith("PKG-") || cleanRef.startsWith("BKG-")) {
-    detectedType = "PACKAGE";
-    endpoint = `${import.meta.env.VITE_BACKEND_URL}/api/bookings/get/${cleanRef}`;
-  } else if (cleanRef.startsWith("ZIY-")) {
-    detectedType = "ZIYARAT";
-    endpoint = `${import.meta.env.VITE_BACKEND_URL}/api/ziyarat/get/${cleanRef}`;
-  } else if (cleanRef.startsWith("TRN-")) {
-    detectedType = "TRANSPORT";
-    endpoint = `${import.meta.env.VITE_BACKEND_URL}/api/transport/get/${cleanRef}`;
-  } else if (cleanRef.startsWith("CARD-") || cleanRef.startsWith("CRD-")) {
-    detectedType = "CARD";
-    endpoint = `${import.meta.env.VITE_BACKEND_URL}/api/card/get/${cleanRef}`;
-  } else if (cleanRef.startsWith("GRP-")) {
-    detectedType = "GROUPS";
-    endpoint = `${import.meta.env.VITE_BACKEND_URL}/api/groups/get/${cleanRef}`;
-  }
-
-  setDetailType(detectedType);
-  setDetailModalOpen(true);
-  setDetailLoading(true);
-  setDetailData(null);
-
-  const useBackupFallback = () => {
-    setDetailData({
-      ref_no: cleanRef,
-      customer_name: customerName,
-      booking_date: matchedLedgerRow?.date || getTodayInputDate(),
-      description: description,
-      total_pkr: ledgerVal,
-      grand_total: ledgerVal,
-      total_amount: ledgerVal,
-      total_sar: 0,
-      pkr_rate: 0
-    });
-  };
-
-  if (!endpoint) {
-    useBackupFallback();
-    setDetailLoading(false);
-    return;
-  }
-
-  try {
-    const res = await fetch(endpoint);
-
-    if (!res.ok) {
-      let retryUrl = "";
-      if (detectedType === "CARD") {
-        retryUrl = `${import.meta.env.VITE_BACKEND_URL}/api/cards/get/${cleanRef}`;
-      } else if (detectedType === "TICKETING") {
-        retryUrl = `${import.meta.env.VITE_BACKEND_URL}/api/ticket/get/${cleanRef}`;
-      }
-
-      if (retryUrl) {
-        const altRes = await fetch(retryUrl);
-        if (altRes.ok) {
-          const altData = await altRes.json();
-          return handleSuccessResponse(altData, ledgerVal, cleanRef, detectedType);
-        }
-      }
-    }
-
-    if (!res.ok) {
-      throw new Error("API status: " + res.status);
-    }
-
-    const data = await res.json();
-    handleSuccessResponse(data, ledgerVal, cleanRef, detectedType);
-  } catch (err) {
-    console.error("Error fetching detail:", err);
-    useBackupFallback();
-  } finally {
-    setDetailLoading(false);
-  }
-};
+  /* =========================
+     AUTO DATE FILTER
+  ========================== */
+  useEffect(() => {
+    let r = [...rows];
+    if (startDate) r = r.filter((row) => new Date(row.date || row.created_at) >= new Date(startDate));
+    if (endDate) r = r.filter((row) => new Date(row.date || row.created_at) <= new Date(endDate));
+    setLedgerView(r);
+  }, [startDate, endDate, rows]);
 
   /* =========================
-     SAVE PAYMENT/ADJUSTMENT
+     FETCH SALE DETAIL MODAL
+  ========================== */
+  const handleSuccessResponse = (data, ledgerVal, originalId, currentType) => {
+    if (data.success && data.row) {
+      const row = data.row;
+
+      const safeParse = (v) => {
+        if (!v) return [];
+        if (Array.isArray(v)) return v;
+        try { return JSON.parse(v); } catch { return []; }
+      };
+
+      if (currentType === "TICKETING" || String(row.ref_no || "").includes("TIC")) {
+        row.flight_from = safeParse(row.flight_from);
+        row.flight_to = safeParse(row.flight_to);
+        row.flight_date = safeParse(row.flight_date);
+        row.airline = safeParse(row.airline);
+      } else if (currentType === "HOTEL") {
+        row.hotels = safeParse(row.hotels);
+      } else if (currentType === "PACKAGE") {
+        row.flights = safeParse(row.flights);
+        row.hotels = safeParse(row.hotels);
+        row.visa = safeParse(row.visa);
+        row.transport = safeParse(row.transport);
+        row.ziyarat = safeParse(row.ziyarat);
+      } else if (["VISA", "ZIYARAT", "TRANSPORT", "CARD", "GROUPS"].includes(currentType)) {
+        row.rows = safeParse(row.rows);
+      }
+
+      row.total_pkr = Number(row.total_pkr || row.grand_total || row.total_amount || row.total_amount_pkr || ledgerVal || 0);
+      row.grand_total = row.total_pkr;
+      row.total_amount = row.total_pkr;
+
+      setDetailData(row);
+    } else {
+      setDetailData({
+        ref_no: originalId || "N/A",
+        customer_name: customerName,
+        booking_date: getTodayInputDate(),
+        description: "",
+        total_pkr: ledgerVal,
+        grand_total: ledgerVal,
+        total_amount: ledgerVal
+      });
+    }
+  };
+
+  const fetchSaleDetail = async (id, description) => {
+    const idStr = String(id || "").toUpperCase();
+    let detectedType = "INVOICE";
+    let endpoint = "";
+
+    let cleanRef = idStr;
+    if (idStr.startsWith("SALE-")) {
+      cleanRef = idStr.replace("SALE-", "");
+    }
+
+    const matchedLedgerRow = rows.find(r => String(r.id) === idStr);
+    const ledgerVal = matchedLedgerRow ? Number(matchedLedgerRow.credit || matchedLedgerRow.debit || 0) : 0;
+
+    if (cleanRef.startsWith("TIC-")) {
+      detectedType = "TICKETING";
+      endpoint = `${import.meta.env.VITE_BACKEND_URL}/api/ticketing/get/${cleanRef}`;
+    } else if (cleanRef.startsWith("HOT-")) {
+      detectedType = "HOTEL";
+      endpoint = `${import.meta.env.VITE_BACKEND_URL}/api/hotels/get/${cleanRef}`;
+    } else if (cleanRef.startsWith("VISA-") || cleanRef.startsWith("VIS-")) {
+      detectedType = "VISA";
+      endpoint = `${import.meta.env.VITE_BACKEND_URL}/api/visa/get/${cleanRef}`;
+    } else if (cleanRef.startsWith("PKG-") || cleanRef.startsWith("BKG-")) {
+      detectedType = "PACKAGE";
+      endpoint = `${import.meta.env.VITE_BACKEND_URL}/api/bookings/get/${cleanRef}`;
+    } else if (cleanRef.startsWith("ZIY-")) {
+      detectedType = "ZIYARAT";
+      endpoint = `${import.meta.env.VITE_BACKEND_URL}/api/ziyarat/get/${cleanRef}`;
+    } else if (cleanRef.startsWith("TRN-")) {
+      detectedType = "TRANSPORT";
+      endpoint = `${import.meta.env.VITE_BACKEND_URL}/api/transport/get/${cleanRef}`;
+    } else if (cleanRef.startsWith("CARD-") || cleanRef.startsWith("CRD-")) {
+      detectedType = "CARD";
+      endpoint = `${import.meta.env.VITE_BACKEND_URL}/api/card/get/${cleanRef}`;
+    } else if (cleanRef.startsWith("GRP-")) {
+      detectedType = "GROUPS";
+      endpoint = `${import.meta.env.VITE_BACKEND_URL}/api/groups/get/${cleanRef}`;
+    }
+
+    setDetailType(detectedType);
+    setDetailModalOpen(true);
+    setDetailLoading(true);
+    setDetailData(null);
+
+    const useBackupFallback = () => {
+      setDetailData({
+        ref_no: cleanRef,
+        customer_name: customerName,
+        booking_date: matchedLedgerRow?.date || getTodayInputDate(),
+        description: description,
+        total_pkr: ledgerVal,
+        grand_total: ledgerVal,
+        total_amount: ledgerVal,
+        total_sar: 0,
+        pkr_rate: 0
+      });
+    };
+
+    if (!endpoint) {
+      useBackupFallback();
+      setDetailLoading(false);
+      return;
+    }
+
+    try {
+      const res = await fetch(endpoint);
+
+      if (!res.ok) {
+        let retryUrl = "";
+        if (detectedType === "CARD") {
+          retryUrl = `${import.meta.env.VITE_BACKEND_URL}/api/cards/get/${cleanRef}`;
+        } else if (detectedType === "TICKETING") {
+          retryUrl = `${import.meta.env.VITE_BACKEND_URL}/api/ticket/get/${cleanRef}`;
+        }
+
+        if (retryUrl) {
+          const altRes = await fetch(retryUrl);
+          if (altRes.ok) {
+            const altData = await altRes.json();
+            return handleSuccessResponse(altData, ledgerVal, cleanRef, detectedType);
+          }
+        }
+      }
+
+      if (!res.ok) {
+        throw new Error("API status: " + res.status);
+      }
+
+      const data = await res.json();
+      handleSuccessResponse(data, ledgerVal, cleanRef, detectedType);
+    } catch (err) {
+      console.error("Error fetching detail:", err);
+      useBackupFallback();
+    } finally {
+      setDetailLoading(false);
+    }
+  };
+
+  /* =========================
+     SAVE PAYMENT / RECEIPT
   ========================== */
   const saveEntry = async () => {
     if (!customerCode) {
@@ -366,8 +418,8 @@ const fetchSaleDetail = async (id, description) => {
 
     setSaving(true);
     Swal.fire({
-      width: "250px",
-      title: "Saving Receipt...",
+      width: "260px",
+      title: "Saving Entry...",
       allowOutsideClick: false,
       didOpen: () => Swal.showLoading()
     });
@@ -430,7 +482,7 @@ const fetchSaleDetail = async (id, description) => {
       width: "320px",
       html: `
         <div style="text-align:left;">
-          <label style="font-size:13px; font-weight:bold;">🔐Enter Delete Password:</label>
+          <label style="font-size:13px; font-weight:bold;">🔐 Enter Delete Password:</label>
           <div style="position:relative; margin-top:8px;">
             <input id="swal-pass" type="password" class="swal2-input" 
               style="width:100%; height:38px; margin:0; padding-right:40px; font-size:14px;" placeholder="Password" />
@@ -492,380 +544,464 @@ const fetchSaleDetail = async (id, description) => {
     }
   };
 
-/* =========================
-   EDIT ROW (2-STEP VERIFICATION FLOW)
-========================== */
-const editRow = async (row) => {
-  if (
-    String(row.id).startsWith("SALE-") ||
-    String(row.id).startsWith("TIC-") ||
-    String(row.id).startsWith("HOT-")
-  ) {
-    return Swal.fire({
-      width: "300px",
-      icon: "warning",
-      text: "Invoice entry cannot be edited here. Edit from original module.",
-    });
-  }
-
-  // ----------------------------------------------------
-  // STEP 1: PASSWORD VERIFICATION POPUP
-  // ----------------------------------------------------
-  const { value: passInput } = await Swal.fire({
-    width: "320px",
-    title: "🔐 Enter Edit Password",
-    html: `
-      <div style="text-align:left;">
-        <label style="font-size:13px; font-weight:bold;">Enter Password to Unlock Edit:</label>
-        <div style="position:relative; margin-top:8px;">
-          <input id="swal-edit-auth-pass" type="password" class="swal2-input" 
-            style="width:100%; height:38px; margin:0; padding-right:40px; font-size:14px;" placeholder="Password" />
-          <span id="eye-toggle-auth" style="position:absolute; right:12px; top:50%; transform:translateY(-50%); cursor:pointer; font-size:16px; user-select:none;">👁</span>
-        </div>
-      </div>
-    `,
-    showCancelButton: true,
-    confirmButtonText: "Verify Password",
-    preConfirm: () => {
-      const val = document.getElementById("swal-edit-auth-pass").value;
-      if (!val) {
-        Swal.showValidationMessage("Password cannot be empty");
-        return false;
-      }
-      return val;
-    },
-    didOpen: () => {
-      const input = document.getElementById("swal-edit-auth-pass");
-      const eye = document.getElementById("eye-toggle-auth");
-      let visible = false;
-      eye.addEventListener("click", () => {
-        visible = !visible;
-        input.type = visible ? "text" : "password";
-        eye.textContent = visible ? "🙈" : "👁";
+  /* =========================
+     EDIT ROW
+  ========================== */
+  const editRow = async (row) => {
+    if (
+      String(row.id).startsWith("SALE-") ||
+      String(row.id).startsWith("TIC-") ||
+      String(row.id).startsWith("HOT-")
+    ) {
+      return Swal.fire({
+        width: "300px",
+        icon: "warning",
+        text: "Invoice entry cannot be edited here. Edit from original module.",
       });
-    },
-  });
+    }
 
-  if (!passInput) return; // Agar user cancel kare ya password na daale
+    const { value: passInput } = await Swal.fire({
+      width: "320px",
+      title: "🔐 Enter Edit Password",
+      html: `
+        <div style="text-align:left;">
+          <label style="font-size:13px; font-weight:bold;">Enter Password to Unlock Edit:</label>
+          <div style="position:relative; margin-top:8px;">
+            <input id="swal-edit-auth-pass" type="password" class="swal2-input" 
+              style="width:100%; height:38px; margin:0; padding-right:40px; font-size:14px;" placeholder="Password" />
+            <span id="eye-toggle-auth" style="position:absolute; right:12px; top:50%; transform:translateY(-50%); cursor:pointer; font-size:16px; user-select:none;">👁</span>
+          </div>
+        </div>
+      `,
+      showCancelButton: true,
+      confirmButtonText: "Verify Password",
+      preConfirm: () => {
+        const val = document.getElementById("swal-edit-auth-pass").value;
+        if (!val) {
+          Swal.showValidationMessage("Password cannot be empty");
+          return false;
+        }
+        return val;
+      },
+      didOpen: () => {
+        const input = document.getElementById("swal-edit-auth-pass");
+        const eye = document.getElementById("eye-toggle-auth");
+        let visible = false;
+        eye.addEventListener("click", () => {
+          visible = !visible;
+          input.type = visible ? "text" : "password";
+          eye.textContent = visible ? "🙈" : "👁";
+        });
+      },
+    });
 
-  // Password verify hote hi brief loading indicator
-  Swal.fire({
-    width: "250px",
-    title: "Verifying...",
-    allowOutsideClick: false,
-    didOpen: () => Swal.showLoading(),
-  });
+    if (!passInput) return;
 
-  // Backend password check
-  try {
-    const verifyRes = await fetch(
-      `${import.meta.env.VITE_BACKEND_URL}/api/registered-ledger/verify-password`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ password: passInput }),
+    Swal.fire({
+      width: "250px",
+      title: "Verifying...",
+      allowOutsideClick: false,
+      didOpen: () => Swal.showLoading(),
+    });
+
+    try {
+      const verifyRes = await fetch(
+        `${import.meta.env.VITE_BACKEND_URL}/api/registered-ledger/verify-password`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ password: passInput }),
+        }
+      );
+      const verifyData = await verifyRes.json();
+
+      if (!verifyData.success) {
+        return Swal.fire({
+          width: "300px",
+          icon: "error",
+          text: verifyData.error || "Incorrect Authorization Password!",
+        });
       }
-    );
-    const verifyData = await verifyRes.json();
-
-    if (!verifyData.success) {
+    } catch (err) {
       return Swal.fire({
         width: "300px",
         icon: "error",
-        text: verifyData.error || "Incorrect Authorization Password!",
+        text: "Network error during password verification",
       });
     }
-  } catch (err) {
-    return Swal.fire({
-      width: "300px",
-      icon: "error",
-      text: "Network error during password verification",
-    });
-  }
 
-  // ----------------------------------------------------
-  // STEP 2: EDIT FORM POPUP (Password Verified True!)
-  // ----------------------------------------------------
-  const formattedDate =
-    toInputDate(row.date || row.payment_date) || getTodayInputDate();
-  const currentType = row.type || "payment";
+    const formattedDate = toInputDate(row.date || row.payment_date) || getTodayInputDate();
+    const currentType = row.type || "payment";
 
-  const { value: formValues } = await Swal.fire({
-    width: "360px",
-    title: "✏️ Edit Payment Entry",
-    html: `
-      <div style="text-align:left; font-size:12px;" class="d-flex flex-column gap-2">
-        <div>
-          <label class="fw-bold mb-1">Amount (PKR)</label>
-          <input id="swal-edit-amount" type="number" class="form-control form-control-sm" value="${
-            row.debit || row.credit || 0
-          }" />
-        </div>
-        <div>
-          <label class="fw-bold mb-1">Transaction Type</label>
-          <select id="swal-edit-type" class="form-select form-select-sm">
-            <option value="payment" ${
-              currentType === "payment" ? "selected" : ""
-            }>payment</option>
-            <option value="adjustment" ${
-              currentType === "adjustment" ? "selected" : ""
-            }>adjustment</option>
-            <option value="opening_balance" ${
-              currentType === "opening_balance" ? "selected" : ""
-            }>🔑 opening_balance (Credit)</option>
-          </select>
-        </div>
-        <div>
-          <label class="fw-bold mb-1">Receipt Date</label>
-          <input id="swal-edit-date" type="date" class="form-control form-control-sm" value="${formattedDate}" />
-          <div id="swal-edit-date-text" class="text-primary fw-bold mt-1" style="font-size: 11px;">
-            ${formatDate(formattedDate)}
+    const { value: formValues } = await Swal.fire({
+      width: "360px",
+      title: "✏️ Edit Payment Entry",
+      html: `
+        <div style="text-align:left; font-size:12px;" class="d-flex flex-column gap-2">
+          <div>
+            <label class="fw-bold mb-1">Amount (PKR)</label>
+            <input id="swal-edit-amount" type="number" class="form-control form-control-sm" value="${
+              row.debit || row.credit || 0
+            }" />
+          </div>
+          <div>
+            <label class="fw-bold mb-1">Transaction Type</label>
+            <select id="swal-edit-type" class="form-select form-select-sm">
+              <option value="payment" ${currentType === "payment" ? "selected" : ""}>Payment</option>
+              <option value="adjustment" ${currentType === "adjustment" ? "selected" : ""}>Adjustment</option>
+              <option value="opening_balance" ${currentType === "opening_balance" ? "selected" : ""}>🔑 Opening Balance (Credit)</option>
+            </select>
+          </div>
+          <div>
+            <label class="fw-bold mb-1">Receipt Date</label>
+            <input id="swal-edit-date" type="date" class="form-control form-control-sm" value="${formattedDate}" />
+            <div id="swal-edit-date-text" class="text-primary fw-bold mt-1" style="font-size: 11px;">
+              ${formatDate(formattedDate)}
+            </div>
+          </div>
+          <div>
+            <label class="fw-bold mb-1">Payment Method / Bank</label>
+            <select id="swal-edit-method" class="form-select form-select-sm">
+              <option value="Cash" ${
+                !row.bank_profile_id && (row.description?.includes("Cash") || !row.description?.includes("Bank"))
+                  ? "selected"
+                  : ""
+              }>💵 Cash</option>
+              ${
+                bankProfiles.length > 0
+                  ? bankProfiles
+                      .map(
+                        (p) => `
+                        <option 
+                          value="Bank_${p.id}" 
+                          ${row.bank_profile_id == p.id ? "selected" : ""}
+                        >
+                          🏦 ${p.bank_name} (${p.account_number})
+                        </option>
+                      `
+                      )
+                      .join("")
+                  : `<option disabled>No Bank Profiles Found</option>`
+              }
+            </select>
           </div>
         </div>
-        <div>
-          <label class="fw-bold mb-1">Payment Method / Bank</label>
-          <select id="swal-edit-method" class="form-select form-select-sm">
-            <option value="Cash" ${
-              !row.bank_profile_id &&
-              (row.description?.includes("Cash") ||
-                !row.description?.includes("Bank"))
-                ? "selected"
-                : ""
-            }>💵 Cash</option>
-            ${
-              bankProfiles.length > 0
-                ? bankProfiles
-                    .map(
-                      (p) => `
-                      <option 
-                        value="Bank_${p.id}" 
-                        ${row.bank_profile_id == p.id ? "selected" : ""}
-                      >
-                        🏦 ${p.bank_name} (${p.account_number})
-                      </option>
-                    `
-                    )
-                    .join("")
-                : `<option disabled>No Bank Profiles Found</option>`
-            }
-          </select>
-        </div>
-      </div>
-    `,
-    showCancelButton: true,
-    confirmButtonText: "Update Entry",
-    focusConfirm: false,
-    didOpen: () => {
-      const dateInput = document.getElementById("swal-edit-date");
-      const dateTextLabel = document.getElementById("swal-edit-date-text");
+      `,
+      showCancelButton: true,
+      confirmButtonText: "Update Entry",
+      focusConfirm: false,
+      didOpen: () => {
+        const dateInput = document.getElementById("swal-edit-date");
+        const dateTextLabel = document.getElementById("swal-edit-date-text");
 
-      dateInput.addEventListener("change", (e) => {
-        dateTextLabel.textContent = formatDate(e.target.value);
-      });
-    },
-    preConfirm: () => {
-      const amount = document.getElementById("swal-edit-amount").value;
-      const selectedType = document.getElementById("swal-edit-type").value;
-      const payment_date = document.getElementById("swal-edit-date").value;
-      const selectedVal = document.getElementById("swal-edit-method").value;
+        dateInput.addEventListener("change", (e) => {
+          dateTextLabel.textContent = formatDate(e.target.value);
+        });
+      },
+      preConfirm: () => {
+        const amount = document.getElementById("swal-edit-amount").value;
+        const selectedType = document.getElementById("swal-edit-type").value;
+        const payment_date = document.getElementById("swal-edit-date").value;
+        const selectedVal = document.getElementById("swal-edit-method").value;
 
-      if (!amount || Number(amount) <= 0) {
-        Swal.showValidationMessage("Valid amount required");
-        return false;
+        if (!amount || Number(amount) <= 0) {
+          Swal.showValidationMessage("Valid amount required");
+          return false;
+        }
+        if (!payment_date) {
+          Swal.showValidationMessage("Valid date required");
+          return false;
+        }
+
+        let payment_method = "Cash";
+        let bank_profile_id = null;
+
+        if (selectedVal.startsWith("Bank_")) {
+          payment_method = "Bank";
+          bank_profile_id = selectedVal.split("_")[1];
+        }
+
+        return {
+          amount: Number(amount),
+          payment_date,
+          payment_method,
+          bank_profile_id,
+          type: selectedType,
+        };
+      },
+    });
+
+    if (!formValues) return;
+
+    Swal.fire({
+      width: "250px",
+      title: "Updating...",
+      allowOutsideClick: false,
+      didOpen: () => Swal.showLoading(),
+    });
+
+    try {
+      const r = await fetch(
+        `${import.meta.env.VITE_BACKEND_URL}/api/registered-ledger/edit/${row.id}`,
+        {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(formValues),
+        }
+      );
+
+      const d = await r.json();
+      Swal.close();
+
+      if (d.success) {
+        await loadLedger(customerCode);
+        await loadPending();
+        Swal.fire({
+          width: "280px",
+          icon: "success",
+          text: "Transaction Updated Successfully",
+        });
+      } else {
+        Swal.fire({
+          width: "300px",
+          icon: "error",
+          text: d.error || "Update Failed!",
+        });
       }
-      if (!payment_date) {
-        Swal.showValidationMessage("Valid date required");
-        return false;
-      }
-
-      let payment_method = "Cash";
-      let bank_profile_id = null;
-
-      if (selectedVal.startsWith("Bank_")) {
-        payment_method = "Bank";
-        bank_profile_id = selectedVal.split("_")[1];
-      }
-
-      return {
-        amount: Number(amount),
-        payment_date,
-        payment_method,
-        bank_profile_id,
-        type: selectedType,
-      };
-    },
-  });
-
-  if (!formValues) return;
-
-  // Submit to Backend
-  Swal.fire({
-    width: "250px",
-    title: "Updating...",
-    allowOutsideClick: false,
-    didOpen: () => Swal.showLoading(),
-  });
-
-  try {
-    const r = await fetch(
-      `${import.meta.env.VITE_BACKEND_URL}/api/registered-ledger/edit/${row.id}`,
-      {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formValues),
-      }
-    );
-
-    const d = await r.json();
-    Swal.close();
-
-    if (d.success) {
-      await loadLedger(customerCode);
-      await loadPending();
-      Swal.fire({
-        width: "280px",
-        icon: "success",
-        text: "Transaction Updated Successfully",
-      });
-    } else {
+    } catch (err) {
+      Swal.close();
       Swal.fire({
         width: "300px",
         icon: "error",
-        text: d.error || "Update Failed!",
+        text: "Network communication error",
       });
     }
-  } catch (err) {
-    Swal.close();
-    Swal.fire({
-      width: "300px",
-      icon: "error",
-      text: "Network communication error",
-    });
-  }
-};
+  };
 
-/* =========================
-     EXPORTS (USING CUSTOM HOOK)
+  /* =========================
+     EXPORTS
   ========================== */
   const exportPDF = () => {
+    if (!customerCode || rows.length === 0) {
+      return Swal.fire({ width: "300px", icon: "warning", text: "Please load a customer ledger first!" });
+    }
+
+    if (typeof handleExportPDF !== "function") {
+      return Swal.fire({ width: "300px", icon: "error", text: "PDF Export Hook Function Error!" });
+    }
+
     handleExportPDF({
       code: customerCode,
       name: customerName,
       fromDate: startDate,
       toDate: endDate,
-      ledgerData: rows,
+      ledgerData: ledgerView,
       title: "REGISTERED CUSTOMER LEDGER STATEMENT",
-      filePrefix: `Customer_Ledger_${customerName}`,
+      filePrefix: `Customer_Ledger_${customerName.replace(/\s+/g, "_")}`,
     });
   };
 
   const exportExcel = () => {
+    if (!customerCode || rows.length === 0) {
+      return Swal.fire({ width: "300px", icon: "warning", text: "Please load a customer ledger first!" });
+    }
+
+    if (typeof handleExportExcel !== "function") {
+      return Swal.fire({ width: "300px", icon: "error", text: "Excel Export Hook Function Error!" });
+    }
+
     handleExportExcel({
       code: customerCode,
       name: customerName,
       fromDate: startDate,
       toDate: endDate,
-      ledgerData: rows,
+      ledgerData: ledgerView,
       title: "REGISTERED CUSTOMER FINANCIAL LEDGER",
-      filePrefix: `Customer_Ledger_${customerName}`,
+      filePrefix: `Customer_Ledger_${customerName.replace(/\s+/g, "_")}`,
     });
   };
 
+  // Metrics computation for summary cards
+  const totalDebit = ledgerView.reduce((acc, r) => acc + (Number(r.debit) || 0), 0);
+  const totalCredit = ledgerView.reduce((acc, r) => acc + (Number(r.credit) || 0), 0);
+  const currentBal = rows.length ? rows[rows.length - 1].balance : 0;
+
   return (
-    <div className="container-fluid p-4">
-      {/* HEADER CARD */}
-      <div className="card shadow-sm mb-4">
-        <div className="card-body d-flex justify-content-between align-items-center bg-primary text-white rounded">
-          <h4 className="fw-bold mb-0 text-white">
-            🏦 REGISTERED CUSTOMER FINANCIAL LEDGER {customerCode && `— [${customerCode}]`}
-          </h4>
-          <button className="btn btn-light btn-sm fw-bold" onClick={() => onNavigate("dashboard")}>
-            ⬅ Back to Dashboard
-          </button>
-        </div>
-      </div>
+    <div className="customer-ledger-page">
+      <style>{`
+        .customer-ledger-page {
+          min-height: calc(100vh - 65px);
+          padding: 16px;
+          background: radial-gradient(circle at 10% 10%, rgba(255,215,120,.22), transparent 28%), radial-gradient(circle at 90% 0%, rgba(13,110,253,.12), transparent 30%), linear-gradient(135deg, #f8fbff 0%, #eef6ff 45%, #fffaf0 100%);
+          font-family: Arial, sans-serif;
+        }
+        .ledger-shell { max-width: 100%; margin: auto; }
+        .ledger-hero {
+          border-radius: 18px; padding: 16px 20px; color: #fff;
+          background: linear-gradient(135deg, #063b78, #0d6efd 55%, #d4a72c);
+          box-shadow: 0 14px 34px rgba(10,55,105,.22); position: relative; overflow: hidden;
+          display: flex; justify-content: space-between; align-items: center;
+        }
+        .ledger-hero h2 { margin: 0; font-weight: 800; letter-spacing: .3px; font-size: 1.5rem; }
+        .ledger-hero p { margin: 4px 0 0; opacity: .9; font-size: 0.85rem; }
+        .filter-card {
+          margin-top: 14px; background: rgba(255,255,255,.94);
+          border: 1px solid #dbe7f5; border-radius: 16px; padding: 12px 14px;
+          box-shadow: 0 8px 24px rgba(30,65,100,.10);
+        }
+        .filter-label { font-size: 10px; font-weight: 800; color: #52647a; text-transform: uppercase; letter-spacing: .5px; margin-bottom: 4px; }
+        .preset-btn { border-radius: 8px !important; font-weight: 700; }
+        .summary-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin: 14px 0; }
+        .summary-card { background: #fff; border-radius: 14px; padding: 10px 12px; border: 1px solid #e2eaf3; box-shadow: 0 6px 18px rgba(0,0,0,.06); }
+        .summary-card .label { font-size: 11px; color: #64748b; font-weight: 800; text-transform: uppercase; }
+        /* Amount Font Size Ko 22px se Chota Karke 16px Kar Diya Hai */
+        .summary-card .value { font-size: 16px; font-weight: 900; color: #102a43; margin-top: 4px; letter-spacing: 0.3px; }
+        .summary-card.total { border-left: 4px solid #0d6efd; }
+        .summary-card.debit { border-left: 4px solid #dc3545; }
+        .summary-card.credit { border-left: 4px solid #20c997; }
+        .summary-card.balance { border-left: 4px solid #d4a72c; }
+        .table-card { background: #fff; border-radius: 16px; overflow: hidden; border: 1px solid #dfe8f2; box-shadow: 0 10px 28px rgba(30,65,100,.10); }
+        .table-head { padding: 10px 14px; display: flex; justify-content: space-between; align-items: center; gap: 10px; border-bottom: 1px solid #e8eef5; }
+        .report-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+        .report-table th { background: linear-gradient(135deg, #073d7a, #0d6efd); color: #fff; padding: 10px 8px; white-space: nowrap; font-size: 13px; }
+        .report-table td { padding: 8px 8px; border-bottom: 1px solid #edf1f5; vertical-align: middle; }
+        .report-table tbody tr:hover { background: #f8fbff; }
+        .amount-cell { font-size: 13px !important; font-weight: 800 !important; letter-spacing: 0.3px; }
+        .pending-card { background: rgba(255,255,255,.94); border: 1px solid #dbe7f5; border-radius: 16px; overflow: hidden; box-shadow: 0 8px 24px rgba(30,65,100,.10); }
+        .pending-header { background: linear-gradient(135deg, #dc3545, #b4232f); color: #fff; padding: 10px 12px; font-weight: 800; font-size: 12px; }
+        @media print { .filter-card, .no-print, .pending-card { display: none !important; } }
+      `}</style>
 
-      <div className="row">
-        {/* LEFT PANEL */}
-        <div className="col-lg-3 col-md-4 mb-4">
-          <div className="card shadow-sm h-100">
-            <div className="card-header bg-danger text-white fw-bold d-flex justify-content-between align-items-center">
-              <span>⏳ Outstanding Ledgers</span>
-              <button className="btn btn-outline-light btn-sm py-0 px-2" onClick={loadPending}>🔄</button>
-            </div>
-
-{/* YE SEARCH BOX ADD KAREIN */}
-<div className="p-2 border-bottom bg-light">
-  <input
-    type="text"
-    className="form-control form-control-sm"
-    placeholder="🔍 Search Customer Code or Name..."
-    value={pendingSearch}
-    onChange={(e) => setPendingSearch(e.target.value)}
-  />
-</div>
-
-<div className="card-body p-2" style={{ maxHeight: "70vh", overflowY: "auto" }}>
-  {filteredPending.length === 0 ? (
-    <div className="p-3 text-center text-muted">
-      <h6>{pending.length === 0 ? "✅ No Pending Ledger" : "🔍 No Customer Found"}</h6>
-      <p className="small mb-0">
-        {pending.length === 0 ? "All registered customers are clear!" : "Try searching with a different code or name."}
-      </p>
-    </div>
-  ) : (
-    <div className="list-group list-group-flush">
-      {/* PENDING KI JAGAH FILTEREDPENDING USE KAREIN */}
-      {filteredPending.map((p, i) => (
-        <div
-          key={i}
-          onClick={() => {
-            setCustomerCode(p.customer_code);
-            loadLedger(p.customer_code);
-          }}
-          className="list-group-item list-group-item-action p-2 mb-2 rounded border-start border-4 cursor-pointer"
-          style={{
-            cursor: "pointer",
-            borderStartColor: p.payment_status === "PENDING" ? "#dc3545" : "#ffc107",
-            backgroundColor: p.customer_code === customerCode ? "#e2eafd" : "#f8f9fa"
-          }}
-        >
-                      <div className="d-flex justify-content-between align-items-start mb-1">
-                        {/* Always displays unique Customer Code */}
-                        {/* Always displays strictly Customer Code */}
-<span className="badge bg-dark font-monospace" style={{ fontSize: "0.75rem" }}>
-  {p.customer_code}
-</span>
-                        <span className={`badge py-0 px-1 ${
-                          p.payment_status === "PENDING" ? "bg-danger" :
-                          p.payment_status === "EXTRA PAID" ? "bg-success" : "bg-warning text-dark"
-                        }`} style={{ fontSize: "0.7rem" }}>
-                          {p.payment_status}
-                        </span>
-                      </div>
-                      <div className="fw-bold text-truncate text-primary" style={{ fontSize: "0.85rem" }}>
-                        {p.customer_name || "Registered Customer"}
-                      </div>
-                      <div className="text-end text-danger fw-bold small mt-1" style={{ fontSize: "0.8rem" }}>
-                        PKR {fmtAmt(p.remaining_balance)}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
+      <div className="ledger-shell">
+        {/* Banner */}
+        <div className="ledger-hero">
+          <div>
+            <h2>🏦 Registered Customer Financial Ledger</h2>
+            <p>
+              Customer sales, receipts, adjustments, credit/debit records aur overall financial balance statement tracking.
+            </p>
+          </div>
+          <div>
+            <button
+              className="btn btn-light btn-sm fw-bold rounded-pill px-3 py-1"
+              style={{ fontSize: "12px" }}
+              onClick={() => onNavigate("dashboard")}
+            >
+              ⬅ Back to Home
+            </button>
           </div>
         </div>
 
-        {/* MAIN PANEL */}
-        <div className="col-lg-9 col-md-8">
-          <div className="card shadow-sm mb-3 border-start border-primary border-3">
-            <div className="card-body">
+        <div className="row mt-3 g-2">
+          {/* SIDEBAR: PENDING CUSTOMER LIST */}
+          <div className="col-lg-2 col-md-3 mb-3">
+            <div className="pending-card h-100">
+              <div className="pending-header d-flex align-items-center justify-content-between">
+                <span>⏳ Outstanding</span>
+                <button
+                  className="btn btn-outline-light btn-sm py-0 px-1"
+                  style={{ fontSize: "10px" }}
+                  onClick={loadPending}
+                >
+                  🔄
+                </button>
+              </div>
+
+              <div className="p-1 border-bottom bg-light">
+                <input
+                  type="text"
+                  className="form-control form-control-sm"
+                  style={{ fontSize: "11px" }}
+                  placeholder="🔍 Search Code or Name..."
+                  value={pendingSearch}
+                  onChange={(e) => setPendingSearch(e.target.value)}
+                />
+              </div>
+
+              <div className="p-1" style={{ maxHeight: "70vh", overflowY: "auto" }}>
+                {filteredPending.length === 0 ? (
+                  <div className="p-3 text-center text-muted">
+                    <h6 className="fw-bold" style={{ fontSize: "12px" }}>
+                      {pending.length === 0 ? "✅ Clear!" : "🔍 Not Found"}
+                    </h6>
+                    <p className="small mb-0" style={{ fontSize: "10px" }}>
+                      {pending.length === 0 ? "All customer balances clear." : "Try searching another term."}
+                    </p>
+                  </div>
+                ) : (
+                  <div className="list-group list-group-flush">
+                    {filteredPending.map((p, i) => (
+                      <div
+                        key={i}
+                        onClick={() => {
+                          setCustomerCode(p.customer_code);
+                          loadLedger(p.customer_code);
+                        }}
+                        className="list-group-item list-group-item-action p-2 mb-1 rounded border-start border-3"
+                        style={{
+                          cursor: "pointer",
+                          borderStartColor: p.payment_status === "PENDING" ? "#dc3545" : "#ffc107",
+                          backgroundColor: p.customer_code === customerCode ? "#e6f0ff" : "#fff",
+                        }}
+                      >
+                        <div className="d-flex justify-content-between align-items-center mb-1">
+                          <span className="badge bg-dark font-monospace" style={{ fontSize: "9px" }}>
+                            {p.customer_code}
+                          </span>
+                          <span
+                            className={`badge ${
+                              p.payment_status === "PENDING"
+                                ? "bg-danger"
+                                : p.payment_status === "EXTRA PAID"
+                                ? "bg-success"
+                                : "bg-warning text-dark"
+                            }`}
+                            style={{ fontSize: "9px" }}
+                          >
+                            {p.payment_status}
+                          </span>
+                        </div>
+                        <div className="fw-bold text-truncate text-primary" style={{ fontSize: "0.8rem" }}>
+                          {p.customer_name || "Registered Customer"}
+                        </div>
+                        <div className="text-danger fw-bold mt-1" style={{ fontSize: "0.85rem" }}>
+                          PKR {fmtAmt(p.remaining_balance)}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* MAIN PANEL */}
+          <div className="col-lg-10 col-md-9">
+            {/* Filter / Load Panel */}
+            <div className="filter-card no-print mb-3">
               <div className="row g-2 align-items-end">
-                <div className="col-md-3">
-                  <label className="form-label small fw-bold text-muted mb-1">Customer Code</label>
+                <div className="col-md-2">
+                  <div className="filter-label">From Date</div>
                   <input
-                    className="form-control font-monospace fw-bold"
+                    type="date"
+                    className="form-control form-control-sm"
+                    value={startDate}
+                    onChange={(e) => setStartDate(e.target.value)}
+                  />
+                </div>
+                <div className="col-md-2">
+                  <div className="filter-label">To Date</div>
+                  <input
+                    type="date"
+                    className="form-control form-control-sm"
+                    value={endDate}
+                    onChange={(e) => setEndDate(e.target.value)}
+                  />
+                </div>
+                <div className="col-md-3">
+                  <div className="filter-label">Customer Code</div>
+                  <input
+                    className="form-control form-control-sm font-monospace fw-bold"
                     placeholder="E.g., CUST-102"
                     value={customerCode}
                     onChange={(e) => setCustomerCode(e.target.value.toUpperCase())}
@@ -874,84 +1010,117 @@ const editRow = async (row) => {
                     }}
                   />
                 </div>
-                <div className="col-md-3">
-                  <label className="form-label small fw-bold text-muted mb-1">From Date</label>
-                  <input type="date" className="form-control" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
+                <div className="col-md-2 d-grid">
+                  <button className="btn btn-primary preset-btn btn-sm" onClick={() => loadLedger()}>
+                    🔍 Load
+                  </button>
                 </div>
-                <div className="col-md-3">
-                  <label className="form-label small fw-bold text-muted mb-1">To Date</label>
-                  <input type="date" className="form-control" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
+                <div className="col-md-1 d-grid">
+                  <button
+                    className="btn btn-outline-danger preset-btn btn-sm"
+                    onClick={exportPDF}
+                    disabled={rows.length === 0}
+                  >
+                    📄 PDF
+                  </button>
                 </div>
-                <div className="col-md-3">
-                  <div className="d-flex flex-column gap-1">
-                    <button className="btn btn-primary w-100 fw-bold btn-sm" onClick={() => loadLedger()}>
-                      🔍 Load Ledger
-                    </button>
-                    <div className="d-flex gap-1">
-                      <button className="btn btn-success w-100 fw-bold btn-sm" onClick={exportExcel} disabled={rows.length === 0}>
-                        🟢 Excel
-                      </button>
-                      <button className="btn btn-danger w-100 fw-bold btn-sm" onClick={exportPDF} disabled={rows.length === 0}>
-                        🔴 PDF
-                      </button>
-                    </div>
-                  </div>
+                <div className="col-md-2 d-grid">
+                  <button
+                    className="btn btn-outline-success preset-btn btn-sm"
+                    onClick={exportExcel}
+                    disabled={rows.length === 0}
+                  >
+                    📊 Excel
+                  </button>
                 </div>
               </div>
             </div>
-          </div>
 
-          <div className={`card shadow-sm mb-3 ${!customerCode ? "opacity-50" : ""}`} style={{ pointerEvents: !customerCode ? "none" : "auto" }}>
-            <div className="card-header bg-dark text-white fw-bold">📥 Post New Payment / Receipt</div>
-            <div className="card-body">
-              <div className="row g-2 mb-3">
+            {/* Summary Metric Cards - Font size Reduced */}
+            <div className="summary-grid">
+              <div className="summary-card total">
+                <div className="label">Total Transactions</div>
+                <div className="value">{ledgerView.length}</div>
+              </div>
+              <div className="summary-card debit">
+                <div className="label">Total Debit (-)</div>
+                <div className="value">{fmtAmt(totalDebit)}</div>
+              </div>
+              <div className="summary-card credit">
+                <div className="label">Total Credit (+)</div>
+                <div className="value">{fmtAmt(totalCredit)}</div>
+              </div>
+              <div className="summary-card balance">
+                <div className="label">Current Balance</div>
+                <div className="value">{fmtAmt(currentBal)}</div>
+              </div>
+            </div>
+
+            {/* Post Payment Form Card */}
+            <div
+              className={`filter-card no-print mb-3 ${!customerCode ? "opacity-50" : ""}`}
+              style={{ pointerEvents: !customerCode ? "none" : "auto" }}
+            >
+              <div className="filter-label mb-2">📥 Post New Payment / Receipt Entry</div>
+              <div className="row g-2 align-items-end">
                 <div className="col-md-2">
-                  <label className="form-label small text-muted mb-1">Receipt Date</label>
-                  <input type="date" className="form-control" value={date} onChange={(e) => setDate(e.target.value)} />
-                  <span className="text-primary fw-bold d-block mt-1" style={{ fontSize: "0.75rem" }}>
+                  <div className="filter-label">Receipt Date</div>
+                  <input
+                    type="date"
+                    className="form-control form-control-sm"
+                    value={date}
+                    onChange={(e) => setDate(e.target.value)}
+                  />
+                  <span className="text-primary fw-bold d-block mt-1" style={{ fontSize: "10px" }}>
                     {formatDate(date)}
                   </span>
                 </div>
                 <div className="col-md-3">
-                  <label className="form-label small text-muted mb-1">Amount (PKR)</label>
+                  <div className="filter-label">Amount (PKR)</div>
                   <input
-                    className="form-control fw-bold text-success font-monospace"
-                    placeholder="Enter Amount"
+                    className="form-control form-control-sm fw-bold text-success font-monospace fs-6"
+                    placeholder="Amount"
                     value={amountDisp}
                     onChange={(e) => {
                       const raw = parseAmt(e.target.value);
-                      if (!isNaN(raw)) {
-                        setAmountRaw(raw);
-                        setAmountDisp(fmtAmt(raw));
-                      }
+                      setAmountRaw(raw);
+                      setAmountDisp(fmtAmt(raw));
                     }}
                   />
                   {amountRaw > 0 && (
-                    <div className="mt-1 small text-success fw-semibold text-truncate" style={{ fontSize: "0.75rem" }}>
+                    <div className="mt-1 text-success fw-semibold text-truncate" style={{ fontSize: "10px" }}>
                       {numberToWords(amountRaw)}
                     </div>
                   )}
                 </div>
                 <div className="col-md-2">
-                  <label className="form-label small text-muted mb-1">Transaction Type</label>
-                  <select className="form-select" value={type} onChange={(e) => setType(e.target.value)}>
-                    <option value="payment">payment</option>
-                    <option value="adjustment">adjustment</option>
-                    <option value="opening_balance">🔑 opening_balance (Credit)</option>
+                  <div className="filter-label">Transaction Type</div>
+                  <select
+                    className="form-select form-select-sm"
+                    value={type}
+                    onChange={(e) => setType(e.target.value)}
+                  >
+                    <option value="payment">Payment</option>
+                    <option value="adjustment">Adjustment</option>
+                    <option value="opening_balance">🔑 Opening Balance (Credit)</option>
                   </select>
                 </div>
                 <div className="col-md-2">
-                  <label className="form-label small text-muted mb-1">Payment Method</label>
-                  <select className="form-select" value={method} onChange={(e) => setMethod(e.target.value)}>
+                  <div className="filter-label">Payment Method</div>
+                  <select
+                    className="form-select form-select-sm"
+                    value={method}
+                    onChange={(e) => setMethod(e.target.value)}
+                  >
                     <option value="Cash">Cash</option>
                     <option value="Bank">Bank</option>
                   </select>
                 </div>
-                {method === "Bank" && (
+                {method === "Bank" ? (
                   <div className="col-md-3">
-                    <label className="form-label small text-muted mb-1">Select Bank Account</label>
+                    <div className="filter-label">Select Bank Profile</div>
                     <select
-                      className="form-select fw-bold"
+                      className="form-select form-select-sm fw-bold"
                       value={selectedBankProfile}
                       onChange={(e) => setSelectedBankProfile(e.target.value)}
                     >
@@ -963,504 +1132,571 @@ const editRow = async (row) => {
                       ))}
                     </select>
                   </div>
-                )}
-              </div>
-              <button className="btn btn-success px-4 fw-bold" disabled={saving || !customerCode} onClick={saveEntry}>
-                {saving ? "Saving Entry..." : "💾 Save Entry"}
-              </button>
-            </div>
-          </div>
-
-          <div className="card shadow-sm overflow-hidden">
-            <div className="card-header bg-secondary text-white fw-bold d-flex justify-content-between align-items-center">
-              <span>📊 Statement Details</span>
-              {customerName && <span className="badge bg-light text-dark fw-bold">Customer: {customerName.toUpperCase()}</span>}
-            </div>
-            <div className="table-responsive">
-              <table className="table table-striped table-hover table-bordered mb-0 align-middle">
-<thead className="table-dark">
-  <tr>
-    <th style={{ width: "12%" }}>Date</th>
-    <th style={{ width: "38%" }}>Details / Description</th>
-    <th style={{ width: "12%" }}>Payment Method</th>
-    <th style={{ width: "12%" }} className="text-end">Debit (-)</th>
-    <th style={{ width: "12%" }} className="text-end">Credit (+)</th>
-    <th style={{ width: "12%" }} className="text-end">Balance</th>
-    <th style={{ width: "4%" }} className="text-center">Action</th>
-  </tr>
-</thead>
-                <tbody>
-                  {rows.length === 0 ? (
-                    <tr>
-<td colSpan="7" className="text-center p-4 text-muted fs-6">
-  No transactions to display. Enter a Customer Code above and click "Load Ledger".
-</td>
-                    </tr>
-                  ) : (
-                    rows.map((r, i) => {
-                      const idStr = String(r.id || "");
-                      const isSale = idStr.startsWith("SALE-") || idStr.startsWith("BKG-") || idStr.startsWith("TIC-") || idStr.startsWith("HOT-") || idStr.startsWith("VIS-") || idStr.startsWith("PKG-") || idStr.startsWith("ZIY-") || idStr.startsWith("TRN-") || idStr.startsWith("CRD-") || idStr.startsWith("GRP-");
-                      return (
-                        <tr key={r.id || i}>
-                          <td>{getRowDate(r)}</td>
-                          <td>{r.description}</td>
-<td className="text-center small">
-        {r.payment_method && r.payment_method !== "-" ? (
-          <span className={`badge ${r.payment_method.toLowerCase() === "cash" ? "bg-success" : "bg-primary"}`}>
-            {r.bank_name ? `Bank: ${r.bank_name}` : r.payment_method}
-          </span>
-        ) : (
-          "-"
-        )}
-      </td>
-
-                          <td className="text-end text-danger fw-bold font-monospace">{r.debit > 0 ? fmtAmt(r.debit) : "-"}</td>
-                          <td className="text-end text-success fw-bold font-monospace">{r.credit > 0 ? fmtAmt(r.credit) : "-"}</td>
-                          <td className="text-end fw-bold font-monospace" style={{ backgroundColor: "#fdfdfd" }}>
-                            {fmtAmt(r.balance)}
-                          </td>
-                          <td className="text-center">
-                            {isSale ? (
-                              <button
-                                className="btn btn-sm btn-info py-0 px-2 text-white fw-bold"
-                                style={{ fontSize: "11px" }}
-                                onClick={() => fetchSaleDetail(r.id, r.description)}
-                              >
-                                👁 View
-                              </button>
-                            ) : (
-                              <div className="d-flex gap-1 justify-content-center">
-                                <button
-                                  className="btn btn-outline-primary btn-sm py-0 px-1"
-                                  style={{ fontSize: "11px" }}
-                                  onClick={() => editRow(r)}
-                                >
-                                  Edit
-                                </button>
-                                <button
-                                  className="btn btn-outline-danger btn-sm py-0 px-1"
-                                  style={{ fontSize: "11px" }}
-                                  onClick={() => deleteRow(r.id)}
-                                >
-                                  Del
-                                </button>
-                              </div>
-                            )}
-                          </td>
-                        </tr>
-                      );
-                    })
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* DETAIL MODAL */}
-      {detailModalOpen && (
-        <div
-          className="modal show d-block animate__animated animate__fadeIn"
-          tabIndex="-1"
-          style={{ backgroundColor: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)", zIndex: 1055 }}
-        >
-          <div className="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
-            <div className="modal-content rounded-4 border-0 shadow-lg">
-              <div className="modal-header text-white bg-dark border-0 rounded-top-4">
-                <h5 className="modal-title fw-bold">
-                  📄 {detailType === "CARD" ? "INVOICE" : detailType} DETAILS
-                </h5>
-                <button
-                  type="button"
-                  className="btn-close btn-close-white"
-                  onClick={() => setDetailModalOpen(false)}
-                ></button>
-              </div>
-
-              <div className="modal-body bg-light p-4">
-                {detailLoading ? (
-                  <div className="text-center py-5">
-                    <div className="spinner-border text-primary" role="status"></div>
-                    <p className="mt-2 text-muted fw-bold">Fetching details, please wait...</p>
-                  </div>
-                ) : detailData ? (
-                  <div>
-                    <div className="row g-3 mb-4">
-                      <div className="col-md-6">
-                        <div className="bg-white border rounded-4 p-3 shadow-sm h-100">
-                          <span className="text-muted small d-block">Reference No</span>
-                          <strong className="fs-5 text-primary">{detailData.ref_no || detailData.id}</strong>
-                        </div>
-                      </div>
-
-                      <div className="col-md-6">
-                        <div className="bg-white border rounded-4 p-3 shadow-sm h-100">
-                          <span className="text-muted small d-block">Customer Name</span>
-                          <strong className="fs-5 text-dark">{detailData.customer_name || customerName}</strong>
-                        </div>
-                      </div>
-
-                      <div className="col-md-6">
-                        <div className="bg-white border rounded-4 p-3 shadow-sm text-center">
-                          <span className="text-muted small d-block">📅 Booking Date</span>
-                          <strong className="text-dark">
-                            {getRowDate({ date: detailData.booking_date || detailData.created_at })}
-                          </strong>
-                        </div>
-                      </div>
-
-                      <div className="col-md-6">
-                        <div
-                          style={{
-                            background: "linear-gradient(135deg,#ff6f61,#ffa07a)",
-                            color: "#fff",
-                            padding: "12px",
-                            borderRadius: "12px",
-                            textAlign: "center",
-                            fontWeight: "700",
-                            boxShadow: "0 3px 8px rgba(0,0,0,0.1)"
-                          }}
-                        >
-                          📅 {detailType === "TICKETING" ? getTripDurationText(detailData.flight_date) : "Standard Duration"}
-                        </div>
-                      </div>
-                    </div>
-
-                    <hr />
-
-                    {detailType === "TICKETING" && (
-                      <div className="mb-4">
-                        <h5 className="fw-bold text-primary mb-3">✈️ Flight Routes</h5>
-                        {(!detailData.flight_from || detailData.flight_from.length === 0) ? (
-                          <p className="text-muted">No routes added</p>
-                        ) : (
-                          detailData.flight_from.map((f, idx) => (
-                            <div key={idx} className="border rounded-3 p-3 mb-2 bg-white shadow-sm">
-                              <div className="fw-bold fs-6 text-dark d-flex justify-content-between">
-                                <span>{f} → {detailData.flight_to?.[idx] || "N/A"}</span>
-                                {detailData.airline?.[idx] && (
-                                  <span className="fw-bold text-success">
-                                    ✈️ {detailData.airline[idx]}
-                                  </span>
-                                )}
-                              </div>
-                              <div className="mt-2">
-                                <span className="badge bg-primary" style={{ fontSize: "12px", padding: "6px 10px" }}>
-                                  📅 {getRowDate({ date: detailData.flight_date?.[idx] })}
-                                </span>
-                              </div>
-                            </div>
-                          ))
-                        )}
-
-                        <hr />
-
-                        <h5 className="fw-bold text-primary mb-3">👥 Passengers Breakdown</h5>
-                        <div className="bg-white border rounded-4 p-3 shadow-sm">
-                          <div className="row text-center">
-                            <div className="col-4 border-end">
-                              <span className="text-muted small d-block">Adult</span>
-                              <strong>{detailData.adult_qty || 0} × {fmtAmt(detailData.adult_rate || detailData.rate || 0)}</strong>
-                            </div>
-                            <div className="col-4 border-end">
-                              <span className="text-muted small d-block">Child</span>
-                              <strong>{detailData.child_qty || 0} × {fmtAmt(detailData.child_rate || 0)}</strong>
-                            </div>
-                            <div className="col-4">
-                              <span className="text-muted small d-block">Infant</span>
-                              <strong>{detailData.infant_qty || 0} × {fmtAmt(detailData.infant_rate || 0)}</strong>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-
-                    {detailType === "HOTEL" && (
-                      <div className="mb-4">
-                        <h5 className="fw-bold text-primary mb-3">🏨 Hotel Details</h5>
-                        {(!Array.isArray(detailData.hotels) || detailData.hotels.length === 0) ? (
-                          <p className="text-muted">No hotel details available</p>
-                        ) : (
-                          detailData.hotels.map((h, idx) => (
-                            <div key={idx} className="border rounded-3 p-3 mb-2 bg-white shadow-sm">
-                              <div className="fw-bold mb-1 text-dark">
-                                {idx + 1}. 🛏️ {h.hotel}
-                              </div>
-                              <div className="row small">
-                                <div className="col-6"><b>📍 Location:</b> {h.location}</div>
-                                <div className="col-6"><b>Type:</b> {h.type}</div>
-                                <div className="col-6">
-                                  <b>Check-in:</b> <span className="text-primary fw-bold">{getRowDate({ date: h.checkIn })}</span>
-                                </div>
-                                <div className="col-6">
-                                  <b>Check-out:</b> <span className="text-danger fw-bold">{getRowDate({ date: h.checkOut })}</span>
-                                </div>
-                                <div className="col-6"><b>Nights:</b> {h.nights}</div>
-                                <div className="col-6"><b>Rooms:</b> {h.rooms}</div>
-                                <div className="col-6"><b>Rate (SAR):</b> {fmtAmt(h.rate)}</div>
-                                <div className="col-6"><b>Total (SAR):</b> {fmtAmt(h.total)}</div>
-                              </div>
-                            </div>
-                          ))
-                        )}
-                      </div>
-                    )}
-
-{detailType === "PACKAGE" && (() => {
-  /* ================= PACKAGE DURATION ================= */
-  const flightDates = Array.isArray(detailData.flights)
-    ? detailData.flights.map((f) => f.date).filter(Boolean).sort()
-    : [];
-
-  let packageDays = 0;
-  let packageNights = 0;
-
-  if (flightDates.length >= 2) {
-    const startDate = new Date(flightDates[0]);
-    const endDate = new Date(flightDates[flightDates.length - 1]);
-    const diff = (endDate - startDate) / (1000 * 60 * 60 * 24);
-    packageDays = diff + 1;
-    packageNights = diff;
-  }
-
-  /* ================= PER PERSON CALCULATION ================= */
-  const adultCount = Number(detailData.adult_count || 0);
-  const childCount = Number(detailData.child_count || 0);
-  const infantCount = Number(detailData.infant_count || 0);
-
-  const rate = {
-    flight: Number(detailData.flight_sar_rate || 0),
-    hotels: Number(detailData.hotel_sar_rate || 0),
-    visa: Number(detailData.visa_sar_rate || 0),
-    transport: Number(detailData.transport_sar_rate || 0),
-    ziyarat: Number(detailData.ziyarat_sar_rate || 0),
-  };
-
-  const adultFlightPKR = adultCount * Number(detailData.adult_rate || 0) * rate.flight;
-  const childFlightPKR = childCount * Number(detailData.child_rate || 0) * rate.flight;
-  const infantFlightPKR = infantCount * Number(detailData.infant_rate || 0) * rate.flight;
-
-  const visaPersons = (detailData.visa || []).reduce((sum, v) => sum + Number(v.persons || 0), 0);
-  const visaPKR = Number(detailData.visa_sar_total || 0) * rate.visa;
-  const visaPerPerson = visaPersons > 0 ? visaPKR / visaPersons : 0;
-
-  const hotelsPKR = Number(detailData.hotel_sar_total || 0) * rate.hotels;
-  const transportPKR = Number(detailData.transport_sar_total || 0) * rate.transport;
-  const ziyaratPKR = Number(detailData.ziyarat_sar_total || 0) * rate.ziyarat;
-
-  const sharedPKR = hotelsPKR + transportPKR + ziyaratPKR;
-  const sharedPerAdult = adultCount > 0 ? sharedPKR / adultCount : 0;
-
-  const adultPerPerson = Math.round(
-    adultCount > 0 ? adultFlightPKR / adultCount + visaPerPerson + sharedPerAdult : 0
-  );
-
-  const childPerPerson = Math.round(
-    childCount > 0 ? childFlightPKR / childCount + visaPerPerson : 0
-  );
-
-  const infantPerPerson = Math.round(
-    infantCount > 0 ? infantFlightPKR / infantCount + visaPerPerson : 0
-  );
-
-  return (
-    <div className="mb-4 text-start">
-      {/* 📅 DURATION CARD */}
-      <div
-        className="border rounded-3 p-3 mb-4 shadow-sm"
-        style={{
-          background: "linear-gradient(135deg,#f8f9fa,#e9f7ef)",
-          borderLeft: "5px solid #198754",
-        }}
-      >
-        <div className="text-uppercase fw-bold text-muted small">Package Duration</div>
-        <div className="fs-4 fw-bold text-success mt-1">
-          📅 {packageDays} Days / 🌙 {packageNights} Nights
-        </div>
-      </div>
-
-      {/* ✈️ FLIGHTS */}
-      <h5 className="fw-bold text-primary mb-2">✈️ Flight</h5>
-      <div className="border p-3 rounded-3 bg-white mb-2 shadow-sm">
-        {Array.isArray(detailData.flights) && detailData.flights.length > 0 ? (
-          detailData.flights.map((f, i) => (
-            <div key={i} className="mb-1 text-dark">
-              {getRowDate({ date: f.date })} — <span className="fw-bold">{f.from}</span> → <span className="fw-bold">{f.to}</span> {f.airline && <b>({f.airline})</b>}
-            </div>
-          ))
-        ) : (
-          <p className="text-muted mb-0">No flights</p>
-        )}
-      </div>
-      <div className="small text-muted bg-white p-2 rounded border mb-3">
-        Adults: {detailData.adult_count || 0} × {fmtAmt(detailData.adult_rate || 0)} | Child: {detailData.child_count || 0} × {fmtAmt(detailData.child_rate || 0)} | Infant: {detailData.infant_count || 0} × {fmtAmt(detailData.infant_rate || 0)} <br />
-        <b>Flight SAR:</b> {fmtAmt(detailData.flight_sar_total || 0)} | <b>Flight PKR:</b> {fmtAmt(detailData.flight_pkr_total || 0)}
-      </div>
-
-      {/* 🏨 HOTELS */}
-      <h5 className="fw-bold text-success mb-2">🏨 Hotels</h5>
-      {Array.isArray(detailData.hotels) && detailData.hotels.length > 0 ? (
-        detailData.hotels.map((h, i) => (
-          <div key={i} className="border p-3 rounded-3 bg-white mb-2 shadow-sm">
-            <b>🛏️ {h.hotel}</b> — 📍 {h.location}<br />
-            Check In: <span className="text-primary fw-bold">{getRowDate({ date: h.checkIn })}</span> → Check Out: <span className="text-danger fw-bold">{getRowDate({ date: h.checkOut })}</span><br />
-            <span className="small text-muted">Nights: {h.nights}, Rooms: {h.rooms}, Type: {h.type} | Rate: {fmtAmt(h.rate)} SAR — Total: {fmtAmt(h.total)} SAR</span>
-          </div>
-        ))
-      ) : (
-        <p className="text-muted">No hotels</p>
-      )}
-      <div className="small text-muted bg-white p-2 rounded border mb-3">
-        <b>Hotel SAR:</b> {fmtAmt(detailData.hotel_sar_total || 0)} | <b>Hotel PKR:</b> {fmtAmt(detailData.hotel_pkr_total || 0)}
-      </div>
-
-      {/* 🛂 VISA */}
-      <h5 className="fw-bold text-warning mb-2">🛂 Visa</h5>
-      {Array.isArray(detailData.visa) && detailData.visa.length > 0 ? (
-        detailData.visa.map((v, i) => (
-          <div key={i} className="border p-2 rounded bg-white mb-1 shadow-sm d-flex justify-content-between">
-            <span>{v.type || v.title || "Visa"} — {v.persons || v.qty || 1} Persons</span>
-            <span>× {fmtAmt(v.rate || 0)} = {fmtAmt(v.total || 0)} SAR</span>
-          </div>
-        ))
-      ) : (
-        <p className="text-muted">No visa</p>
-      )}
-      <div className="small text-muted bg-white p-2 rounded border mb-3">
-        <b>Visa SAR:</b> {fmtAmt(detailData.visa_sar_total || 0)} | <b>Visa PKR:</b> {fmtAmt(detailData.visa_pkr_total || 0)}
-      </div>
-
-      {/* 🚐 TRANSPORT */}
-      <h5 className="fw-bold text-danger mb-2">🚐 Transport</h5>
-      {Array.isArray(detailData.transport) && detailData.transport.length > 0 ? (
-        detailData.transport.map((t, i) => (
-          <div key={i} className="border p-2 rounded bg-white mb-1 shadow-sm d-flex justify-content-between">
-            <span>{t.text || t.sector || t.route || t.vehicle || "Transport Service"}</span>
-            <span>{fmtAmt(t.amount || t.total || 0)} SAR</span>
-          </div>
-        ))
-      ) : (
-        <p className="text-muted">No transport</p>
-      )}
-      <div className="small text-muted bg-white p-2 rounded border mb-3">
-        <b>Transport SAR:</b> {fmtAmt(detailData.transport_sar_total || 0)} | <b>Transport PKR:</b> {fmtAmt(detailData.transport_pkr_total || 0)}
-      </div>
-
-      {/* 🕌 ZIYARAT */}
-      <h5 className="fw-bold mb-2" style={{ color: "#6f42c1" }}>🕌 Ziyarat</h5>
-      {Array.isArray(detailData.ziyarat) && detailData.ziyarat.length > 0 ? (
-        detailData.ziyarat.map((z, i) => (
-          <div key={i} className="border p-2 rounded bg-white mb-1 shadow-sm d-flex justify-content-between">
-            <span>{z.text || z.route || z.description || z.city || "Ziyarat Tour"}</span>
-            <span>{fmtAmt(z.amount || z.total || 0)} SAR</span>
-          </div>
-        ))
-      ) : (
-        <p className="text-muted">No ziyarat</p>
-      )}
-      <div className="small text-muted bg-white p-2 rounded border mb-3">
-        <b>Ziyarat SAR:</b> {fmtAmt(detailData.ziyarat_sar_total || 0)} | <b>Ziyarat PKR:</b> {fmtAmt(detailData.ziyarat_pkr_total || 0)}
-      </div>
-
-      {/* 👥 PER PERSON COST BREAKDOWN */}
-      <div className="border rounded-3 p-3 bg-white shadow-sm mt-3">
-        <h6 className="fw-bold mb-3 text-dark">👥 Per Person Cost</h6>
-
-        <div className="d-flex justify-content-between border-bottom py-2">
-          <span><b>Adults ({adultCount})</b></span>
-          <span className="fw-bold text-success">{fmtAmt(adultPerPerson)} PKR</span>
-        </div>
-
-        <div className="d-flex justify-content-between border-bottom py-2">
-          <span><b>Children ({childCount})</b></span>
-          <span className="fw-bold text-success">{fmtAmt(childPerPerson)} PKR</span>
-        </div>
-
-        <div className="d-flex justify-content-between py-2">
-          <span><b>Infants ({infantCount})</b></span>
-          <span className="fw-bold text-success">{fmtAmt(infantPerPerson)} PKR</span>
-        </div>
-      </div>
-    </div>
-  );
-})()}
-
-                    {["VISA", "ZIYARAT", "TRANSPORT", "CARD", "GROUPS"].includes(detailType) && (
-                      <div className="mb-4">
-                        <h5 className="fw-bold text-primary mb-3">Entries Details</h5>
-                        {(!detailData.rows || detailData.rows.length === 0) ? (
-                          <div className="p-3 text-center border rounded bg-white text-muted">
-                            {detailData.description || "No detail rows found for this invoice entry."}
-                          </div>
-                        ) : (
-                          <div className="bg-white rounded-3 shadow-sm p-2 border">
-                            {detailData.rows.map((r, idx) => (
-                              <div key={idx} className="d-flex justify-content-between border-bottom py-2 px-3 align-items-center">
-                                <div>
-                                  <strong className="text-dark">{r.type || r.description || r.text || r.route || "Item"}</strong>
-                                  {r.persons && <span className="badge bg-secondary ms-2">{r.persons} Persons</span>}
-                                </div>
-                                <span className="fw-bold text-success font-monospace">
-                                  {fmtAmt(r.total || r.sar || r.pkr || 0)}
-                                </span>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    )}
-
-                    <hr />
-
-                    <div className="row g-3 bg-white p-3 rounded-4 shadow-sm border mb-4">
-                      <div className="col-4 text-center border-end">
-                        <span className="text-muted small">Total SAR</span>
-                        <h5 className="fw-bold text-dark font-monospace">
-                          {fmtAmt(getModalTotalSar())}
-                        </h5>
-                      </div>
-                      <div className="col-4 text-center border-end">
-                        <span className="text-muted small">PKR Rate</span>
-                        <h5 className="fw-bold text-dark font-monospace">
-                          {fmtAmt(getModalPkrRate())}
-                        </h5>
-                      </div>
-                      <div className="col-4 text-center">
-                        <span className="text-muted small">Grand Total (PKR)</span>
-                        <h5 className="fw-bold text-success font-monospace">
-                          PKR {fmtAmt(getModalTotalPkr())}
-                        </h5>
-                      </div>
-                    </div>
-
-                    <div className="d-flex justify-content-between align-items-center bg-dark text-white p-3 rounded-3 shadow-sm">
-                      <span className="fw-bold">TOTAL AMOUNT (PKR):</span>
-                      <h4 className="mb-0 fw-bold font-monospace">
-                        PKR {fmtAmt(getModalTotalPkr())}
-                      </h4>
-                    </div>
-                  </div>
                 ) : (
-                  <div className="text-center py-5">
-                    <p className="text-danger fw-bold">Failed to load detailed transaction records.</p>
+                  <div className="col-md-3">
+                    <button
+                      className="btn btn-success btn-sm w-100 fw-bold preset-btn"
+                      disabled={saving || !customerCode}
+                      onClick={saveEntry}
+                    >
+                      {saving ? "Saving..." : "💾 Save Entry"}
+                    </button>
                   </div>
                 )}
               </div>
+              {method === "Bank" && (
+                <div className="row mt-2">
+                  <div className="col-md-12 text-end">
+                    <button
+                      className="btn btn-success btn-sm px-4 fw-bold preset-btn"
+                      disabled={saving || !customerCode}
+                      onClick={saveEntry}
+                    >
+                      {saving ? "Saving..." : "💾 Save Entry"}
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
 
-              <div className="modal-footer bg-light border-0 rounded-bottom-4">
-                <button
-                  type="button"
-                  className="btn btn-secondary px-4 fw-bold"
-                  onClick={() => setDetailModalOpen(false)}
-                >
-                  Close
-                </button>
+            {/* Table Card */}
+            <div className="table-card">
+              <div className="table-head">
+                <span className="fw-bold text-dark">📊 Statement Details</span>
+                {customerName && (
+                  <span className="badge bg-primary text-white fw-bold">
+                    Customer: {customerName.toUpperCase()}
+                  </span>
+                )}
+              </div>
+              <div className="table-responsive">
+                <table className="report-table align-middle">
+                  <thead>
+                    <tr>
+                      <th style={{ width: "12%" }}>Date</th>
+                      <th style={{ width: "36%" }}>Details / Description</th>
+                      <th style={{ width: "12%" }} className="text-center">Method</th>
+                      <th style={{ width: "12%" }} className="text-end">Debit (-)</th>
+                      <th style={{ width: "12%" }} className="text-end">Credit (+)</th>
+                      <th style={{ width: "12%" }} className="text-end">Balance</th>
+                      <th style={{ width: "4%" }} className="text-center">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {ledgerView.length === 0 ? (
+                      <tr>
+                        <td colSpan="7" className="text-center p-4 text-muted fs-6">
+                          No transactions to display. Enter a Customer Code above and click "Load".
+                        </td>
+                      </tr>
+                    ) : (
+                      ledgerView.map((r, i) => {
+                        const idStr = String(r.id || "");
+                        const isSale =
+                          idStr.startsWith("SALE-") ||
+                          idStr.startsWith("BKG-") ||
+                          idStr.startsWith("TIC-") ||
+                          idStr.startsWith("HOT-") ||
+                          idStr.startsWith("VIS-") ||
+                          idStr.startsWith("PKG-") ||
+                          idStr.startsWith("ZIY-") ||
+                          idStr.startsWith("TRN-") ||
+                          idStr.startsWith("CRD-") ||
+                          idStr.startsWith("GRP-");
+
+                        const descText = String(r.description || "");
+                        const isAdjustment = descText.toLowerCase().includes("adjustment");
+                        const isPayment = descText.toLowerCase().includes("payment") || descText.toLowerCase().includes("receipt");
+
+                        return (
+                          <tr key={r.id || i}>
+                            <td className="fw-semibold">{getRowDate(r)}</td>
+                            <td>
+                              {isSale ? (
+                                <div>
+                                  <span className="badge bg-primary me-2" style={{ fontSize: "10px" }}>
+                                    🧾 SALE INVOICE
+                                  </span>
+                                  <span className="fw-semibold text-dark">{r.description}</span>
+                                </div>
+                              ) : isAdjustment ? (
+                                <div>
+                                  <span className="badge bg-warning text-dark me-2" style={{ fontSize: "10px" }}>
+                                    ⚙️ ADJUSTMENT
+                                  </span>
+                                  <span className="fw-semibold text-dark">{r.description}</span>
+                                </div>
+                              ) : isPayment ? (
+                                <div>
+                                  <span className="badge bg-success me-2" style={{ fontSize: "10px" }}>
+                                    💵 PAYMENT / RECEIPT
+                                  </span>
+                                  <span className="fw-semibold text-dark">{r.description}</span>
+                                </div>
+                              ) : (
+                                <span className="fw-semibold text-dark">{r.description}</span>
+                              )}
+                            </td>
+                            <td className="text-center">
+                              {r.payment_method && r.payment_method !== "-" ? (
+                                <span
+                                  className={`badge ${
+                                    r.payment_method.toLowerCase() === "cash" ? "bg-success" : "bg-primary"
+                                  }`}
+                                  style={{ fontSize: "9px" }}
+                                >
+                                  {r.bank_name ? `Bank: ${r.bank_name}` : r.payment_method}
+                                </span>
+                              ) : (
+                                "-"
+                              )}
+                            </td>
+                            {/* Debit Field */}
+                            <td className="text-end text-danger font-monospace amount-cell">
+                              {r.debit > 0 ? fmtAmt(r.debit) : "-"}
+                            </td>
+                            {/* Credit Field */}
+                            <td className="text-end text-success font-monospace amount-cell">
+                              {r.credit > 0 ? fmtAmt(r.credit) : "-"}
+                            </td>
+                            {/* Balance Field */}
+                            <td className="text-end font-monospace amount-cell" style={{ backgroundColor: "#fdfdfd" }}>
+                              {fmtAmt(r.balance)}
+                            </td>
+                            <td className="text-center">
+                              {isSale ? (
+                                <button
+                                  className="btn btn-sm btn-info py-0 px-2 text-white fw-bold"
+                                  style={{ fontSize: "10px" }}
+                                  onClick={() => fetchSaleDetail(r.id, r.description)}
+                                >
+                                  👁 View
+                                </button>
+                              ) : (
+                                <div className="d-flex gap-1 justify-content-center">
+                                  <button
+                                    className="btn btn-outline-primary btn-sm py-0 px-1"
+                                    style={{ fontSize: "10px" }}
+                                    onClick={() => editRow(r)}
+                                  >
+                                    Edit
+                                  </button>
+                                  <button
+                                    className="btn btn-outline-danger btn-sm py-0 px-1"
+                                    style={{ fontSize: "10px" }}
+                                    onClick={() => deleteRow(r.id)}
+                                  >
+                                    Del
+                                  </button>
+                                </div>
+                              )}
+                            </td>
+                          </tr>
+                        );
+                      })
+                    )}
+                  </tbody>
+                </table>
               </div>
             </div>
           </div>
         </div>
-      )}
+
+        {/* DETAIL MODAL */}
+        {detailModalOpen && (
+          <div
+            className="modal show d-block animate__animated animate__fadeIn"
+            tabIndex="-1"
+            style={{ backgroundColor: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)", zIndex: 1055 }}
+          >
+            <div className="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+              <div className="modal-content rounded-4 border-0 shadow-lg">
+                <div className="modal-header text-white bg-dark border-0 rounded-top-4">
+                  <h5 className="modal-title fw-bold">
+                    📄 {detailType === "CARD" ? "INVOICE" : detailType} DETAILS
+                  </h5>
+                  <button
+                    type="button"
+                    className="btn-close btn-close-white"
+                    onClick={() => setDetailModalOpen(false)}
+                  ></button>
+                </div>
+
+                <div className="modal-body bg-light p-4">
+                  {detailLoading ? (
+                    <div className="text-center py-5">
+                      <div className="spinner-border text-primary" role="status"></div>
+                      <p className="mt-2 text-muted fw-bold">Fetching details, please wait...</p>
+                    </div>
+                  ) : detailData ? (
+                    <div>
+                      <div className="row g-3 mb-4">
+                        <div className="col-md-6">
+                          <div className="bg-white border rounded-4 p-3 shadow-sm h-100">
+                            <span className="text-muted small d-block">Reference No</span>
+                            <strong className="fs-5 text-primary">{detailData.ref_no || detailData.id}</strong>
+                          </div>
+                        </div>
+
+                        <div className="col-md-6">
+                          <div className="bg-white border rounded-4 p-3 shadow-sm h-100">
+                            <span className="text-muted small d-block">Customer Name</span>
+                            <strong className="fs-5 text-dark">{detailData.customer_name || customerName}</strong>
+                          </div>
+                        </div>
+
+                        <div className="col-md-6">
+                          <div className="bg-white border rounded-4 p-3 shadow-sm text-center">
+                            <span className="text-muted small d-block">📅 Booking Date</span>
+                            <strong className="text-dark">
+                              {getRowDate({ date: detailData.booking_date || detailData.created_at })}
+                            </strong>
+                          </div>
+                        </div>
+
+                        <div className="col-md-6">
+                          <div
+                            style={{
+                              background: "linear-gradient(135deg,#ff6f61,#ffa07a)",
+                              color: "#fff",
+                              padding: "12px",
+                              borderRadius: "12px",
+                              textAlign: "center",
+                              fontWeight: "700",
+                              boxShadow: "0 3px 8px rgba(0,0,0,0.1)"
+                            }}
+                          >
+                            📅 {detailType === "TICKETING" ? getTripDurationText(detailData.flight_date) : "Standard Duration"}
+                          </div>
+                        </div>
+                      </div>
+
+                      <hr />
+
+                      {detailType === "TICKETING" && (
+                        <div className="mb-4">
+                          <h5 className="fw-bold text-primary mb-3">✈️ Flight Routes</h5>
+                          {(!detailData.flight_from || detailData.flight_from.length === 0) ? (
+                            <p className="text-muted">No routes added</p>
+                          ) : (
+                            detailData.flight_from.map((f, idx) => (
+                              <div key={idx} className="border rounded-3 p-3 mb-2 bg-white shadow-sm">
+                                <div className="fw-bold fs-6 text-dark d-flex justify-content-between">
+                                  <span>{f} → {detailData.flight_to?.[idx] || "N/A"}</span>
+                                  {detailData.airline?.[idx] && (
+                                    <span className="fw-bold text-success">
+                                      ✈️ {detailData.airline[idx]}
+                                    </span>
+                                  )}
+                                </div>
+                                <div className="mt-2">
+                                  <span className="badge bg-primary" style={{ fontSize: "12px", padding: "6px 10px" }}>
+                                    📅 {getRowDate({ date: detailData.flight_date?.[idx] })}
+                                  </span>
+                                </div>
+                              </div>
+                            ))
+                          )}
+
+                          <hr />
+
+                          <h5 className="fw-bold text-primary mb-3">👥 Passengers Breakdown</h5>
+                          <div className="bg-white border rounded-4 p-3 shadow-sm">
+                            <div className="row text-center">
+                              <div className="col-4 border-end">
+                                <span className="text-muted small d-block">Adult</span>
+                                <strong>{detailData.adult_qty || 0} × {fmtAmt(detailData.adult_rate || detailData.rate || 0)}</strong>
+                              </div>
+                              <div className="col-4 border-end">
+                                <span className="text-muted small d-block">Child</span>
+                                <strong>{detailData.child_qty || 0} × {fmtAmt(detailData.child_rate || 0)}</strong>
+                              </div>
+                              <div className="col-4">
+                                <span className="text-muted small d-block">Infant</span>
+                                <strong>{detailData.infant_qty || 0} × {fmtAmt(detailData.infant_rate || 0)}</strong>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {detailType === "HOTEL" && (
+                        <div className="mb-4">
+                          <h5 className="fw-bold text-primary mb-3">🏨 Hotel Details</h5>
+                          {(!Array.isArray(detailData.hotels) || detailData.hotels.length === 0) ? (
+                            <p className="text-muted">No hotel details available</p>
+                          ) : (
+                            detailData.hotels.map((h, idx) => (
+                              <div key={idx} className="border rounded-3 p-3 mb-2 bg-white shadow-sm">
+                                <div className="fw-bold mb-1 text-dark">
+                                  {idx + 1}. 🛏️ {h.hotel}
+                                </div>
+                                <div className="row small">
+                                  <div className="col-6"><b>📍 Location:</b> {h.location}</div>
+                                  <div className="col-6"><b>Type:</b> {h.type}</div>
+                                  <div className="col-6">
+                                    <b>Check-in:</b> <span className="text-primary fw-bold">{getRowDate({ date: h.checkIn })}</span>
+                                  </div>
+                                  <div className="col-6">
+                                    <b>Check-out:</b> <span className="text-danger fw-bold">{getRowDate({ date: h.checkOut })}</span>
+                                  </div>
+                                  <div className="col-6"><b>Nights:</b> {h.nights}</div>
+                                  <div className="col-6"><b>Rooms:</b> {h.rooms}</div>
+                                  <div className="col-6"><b>Rate (SAR):</b> {fmtAmt(h.rate)}</div>
+                                  <div className="col-6"><b>Total (SAR):</b> {fmtAmt(h.total)}</div>
+                                </div>
+                              </div>
+                            ))
+                          )}
+                        </div>
+                      )}
+
+                      {detailType === "PACKAGE" && (() => {
+                        const flightDates = Array.isArray(detailData.flights)
+                          ? detailData.flights.map((f) => f.date).filter(Boolean).sort()
+                          : [];
+
+                        let packageDays = 0;
+                        let packageNights = 0;
+
+                        if (flightDates.length >= 2) {
+                          const startDate = new Date(flightDates[0]);
+                          const endDate = new Date(flightDates[flightDates.length - 1]);
+                          const diff = (endDate - startDate) / (1000 * 60 * 60 * 24);
+                          packageDays = diff + 1;
+                          packageNights = diff;
+                        }
+
+                        const adultCount = Number(detailData.adult_count || 0);
+                        const childCount = Number(detailData.child_count || 0);
+                        const infantCount = Number(detailData.infant_count || 0);
+
+                        const rate = {
+                          flight: Number(detailData.flight_sar_rate || 0),
+                          hotels: Number(detailData.hotel_sar_rate || 0),
+                          visa: Number(detailData.visa_sar_rate || 0),
+                          transport: Number(detailData.transport_sar_rate || 0),
+                          ziyarat: Number(detailData.ziyarat_sar_rate || 0),
+                        };
+
+                        const adultFlightPKR = adultCount * Number(detailData.adult_rate || 0) * rate.flight;
+                        const childFlightPKR = childCount * Number(detailData.child_rate || 0) * rate.flight;
+                        const infantFlightPKR = infantCount * Number(detailData.infant_rate || 0) * rate.flight;
+
+                        const visaPersons = (detailData.visa || []).reduce((sum, v) => sum + Number(v.persons || 0), 0);
+                        const visaPKR = Number(detailData.visa_sar_total || 0) * rate.visa;
+                        const visaPerPerson = visaPersons > 0 ? visaPKR / visaPersons : 0;
+
+                        const hotelsPKR = Number(detailData.hotel_sar_total || 0) * rate.hotels;
+                        const transportPKR = Number(detailData.transport_sar_total || 0) * rate.transport;
+                        const ziyaratPKR = Number(detailData.ziyarat_sar_total || 0) * rate.ziyarat;
+
+                        const sharedPKR = hotelsPKR + transportPKR + ziyaratPKR;
+                        const sharedPerAdult = adultCount > 0 ? sharedPKR / adultCount : 0;
+
+                        const adultPerPerson = Math.round(
+                          adultCount > 0 ? adultFlightPKR / adultCount + visaPerPerson + sharedPerAdult : 0
+                        );
+
+                        const childPerPerson = Math.round(
+                          childCount > 0 ? childFlightPKR / childCount + visaPerPerson : 0
+                        );
+
+                        const infantPerPerson = Math.round(
+                          infantCount > 0 ? infantFlightPKR / infantCount + visaPerPerson : 0
+                        );
+
+                        return (
+                          <div className="mb-4 text-start">
+                            <div
+                              className="border rounded-3 p-3 mb-4 shadow-sm"
+                              style={{
+                                background: "linear-gradient(135deg,#f8f9fa,#e9f7ef)",
+                                borderLeft: "5px solid #198754",
+                              }}
+                            >
+                              <div className="text-uppercase fw-bold text-muted small">Package Duration</div>
+                              <div className="fs-4 fw-bold text-success mt-1">
+                                📅 {packageDays} Days / 🌙 {packageNights} Nights
+                              </div>
+                            </div>
+
+                            <h5 className="fw-bold text-primary mb-2">✈️ Flight</h5>
+                            <div className="border p-3 rounded-3 bg-white mb-2 shadow-sm">
+                              {Array.isArray(detailData.flights) && detailData.flights.length > 0 ? (
+                                detailData.flights.map((f, i) => (
+                                  <div key={i} className="mb-1 text-dark">
+                                    {getRowDate({ date: f.date })} — <span className="fw-bold">{f.from}</span> → <span className="fw-bold">{f.to}</span> {f.airline && <b>({f.airline})</b>}
+                                  </div>
+                                ))
+                              ) : (
+                                <p className="text-muted mb-0">No flights</p>
+                              )}
+                            </div>
+                            <div className="small text-muted bg-white p-2 rounded border mb-3">
+                              Adults: {detailData.adult_count || 0} × {fmtAmt(detailData.adult_rate || 0)} | Child: {detailData.child_count || 0} × {fmtAmt(detailData.child_rate || 0)} | Infant: {detailData.infant_count || 0} × {fmtAmt(detailData.infant_rate || 0)} <br />
+                              <b>Flight SAR:</b> {fmtAmt(detailData.flight_sar_total || 0)} | <b>Flight PKR:</b> {fmtAmt(detailData.flight_pkr_total || 0)}
+                            </div>
+
+                            <h5 className="fw-bold text-success mb-2">🏨 Hotels</h5>
+                            {Array.isArray(detailData.hotels) && detailData.hotels.length > 0 ? (
+                              detailData.hotels.map((h, i) => (
+                                <div key={i} className="border p-3 rounded-3 bg-white mb-2 shadow-sm">
+                                  <b>🛏️ {h.hotel}</b> — 📍 {h.location}<br />
+                                  Check In: <span className="text-primary fw-bold">{getRowDate({ date: h.checkIn })}</span> → Check Out: <span className="text-danger fw-bold">{getRowDate({ date: h.checkOut })}</span><br />
+                                  <span className="small text-muted">Nights: {h.nights}, Rooms: {h.rooms}, Type: {h.type} | Rate: {fmtAmt(h.rate)} SAR — Total: {fmtAmt(h.total)} SAR</span>
+                                </div>
+                              ))
+                            ) : (
+                              <p className="text-muted">No hotels</p>
+                            )}
+                            <div className="small text-muted bg-white p-2 rounded border mb-3">
+                              <b>Hotel SAR:</b> {fmtAmt(detailData.hotel_sar_total || 0)} | <b>Hotel PKR:</b> {fmtAmt(detailData.hotel_pkr_total || 0)}
+                            </div>
+
+                            <h5 className="fw-bold text-warning mb-2">🛂 Visa</h5>
+                            {Array.isArray(detailData.visa) && detailData.visa.length > 0 ? (
+                              detailData.visa.map((v, i) => (
+                                <div key={i} className="border p-2 rounded bg-white mb-1 shadow-sm d-flex justify-content-between">
+                                  <span>{v.type || v.title || "Visa"} — {v.persons || v.qty || 1} Persons</span>
+                                  <span>× {fmtAmt(v.rate || 0)} = {fmtAmt(v.total || 0)} SAR</span>
+                                </div>
+                              ))
+                            ) : (
+                              <p className="text-muted">No visa</p>
+                            )}
+                            <div className="small text-muted bg-white p-2 rounded border mb-3">
+                              <b>Visa SAR:</b> {fmtAmt(detailData.visa_sar_total || 0)} | <b>Visa PKR:</b> {fmtAmt(detailData.visa_pkr_total || 0)}
+                            </div>
+
+                            <h5 className="fw-bold text-danger mb-2">🚐 Transport</h5>
+                            {Array.isArray(detailData.transport) && detailData.transport.length > 0 ? (
+                              detailData.transport.map((t, i) => (
+                                <div key={i} className="border p-2 rounded bg-white mb-1 shadow-sm d-flex justify-content-between">
+                                  <span>{t.text || t.sector || t.route || t.vehicle || "Transport Service"}</span>
+                                  <span>{fmtAmt(t.amount || t.total || 0)} SAR</span>
+                                </div>
+                              ))
+                            ) : (
+                              <p className="text-muted">No transport</p>
+                            )}
+                            <div className="small text-muted bg-white p-2 rounded border mb-3">
+                              <b>Transport SAR:</b> {fmtAmt(detailData.transport_sar_total || 0)} | <b>Transport PKR:</b> {fmtAmt(detailData.transport_pkr_total || 0)}
+                            </div>
+
+                            <h5 className="fw-bold mb-2" style={{ color: "#6f42c1" }}>🕌 Ziyarat</h5>
+                            {Array.isArray(detailData.ziyarat) && detailData.ziyarat.length > 0 ? (
+                              detailData.ziyarat.map((z, i) => (
+                                <div key={i} className="border p-2 rounded bg-white mb-1 shadow-sm d-flex justify-content-between">
+                                  <span>{z.text || z.route || z.description || z.city || "Ziyarat Tour"}</span>
+                                  <span>{fmtAmt(z.amount || z.total || 0)} SAR</span>
+                                </div>
+                              ))
+                            ) : (
+                              <p className="text-muted">No ziyarat</p>
+                            )}
+                            <div className="small text-muted bg-white p-2 rounded border mb-3">
+                              <b>Ziyarat SAR:</b> {fmtAmt(detailData.ziyarat_sar_total || 0)} | <b>Ziyarat PKR:</b> {fmtAmt(detailData.ziyarat_pkr_total || 0)}
+                            </div>
+
+                            <div className="border rounded-3 p-3 bg-white shadow-sm mt-3">
+                              <h6 className="fw-bold mb-3 text-dark">👥 Per Person Cost</h6>
+
+                              <div className="d-flex justify-content-between border-bottom py-2">
+                                <span><b>Adults ({adultCount})</b></span>
+                                <span className="fw-bold text-success fs-6">{fmtAmt(adultPerPerson)} PKR</span>
+                              </div>
+
+                              <div className="d-flex justify-content-between border-bottom py-2">
+                                <span><b>Children ({childCount})</b></span>
+                                <span className="fw-bold text-success fs-6">{fmtAmt(childPerPerson)} PKR</span>
+                              </div>
+
+                              <div className="d-flex justify-content-between py-2">
+                                <span><b>Infants ({infantCount})</b></span>
+                                <span className="fw-bold text-success fs-6">{fmtAmt(infantPerPerson)} PKR</span>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })()}
+
+                      {["VISA", "ZIYARAT", "TRANSPORT", "CARD", "GROUPS"].includes(detailType) && (
+                        <div className="mb-4">
+                          <h5 className="fw-bold text-primary mb-3">Entries Details</h5>
+                          {(!detailData.rows || detailData.rows.length === 0) ? (
+                            <div className="p-3 text-center border rounded bg-white text-muted">
+                              {detailData.description || "No detail rows found for this invoice entry."}
+                            </div>
+                          ) : (
+                            <div className="bg-white rounded-3 shadow-sm p-2 border">
+                              {detailData.rows.map((r, idx) => (
+                                <div key={idx} className="d-flex justify-content-between border-bottom py-2 px-3 align-items-center">
+                                  <div>
+                                    <strong className="text-dark">{r.type || r.description || r.text || r.route || "Item"}</strong>
+                                    {r.persons && <span className="badge bg-secondary ms-2">{r.persons} Persons</span>}
+                                  </div>
+                                  <span className="fw-bold text-success font-monospace fs-6">
+                                    {fmtAmt(r.total || r.sar || r.pkr || 0)}
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      <hr />
+
+                      <div className="row g-3 bg-white p-3 rounded-4 shadow-sm border mb-4">
+                        <div className="col-4 text-center border-end">
+                          <span className="text-muted small">Total SAR</span>
+                          <h5 className="fw-bold text-dark font-monospace fs-5">
+                            {fmtAmt(getModalTotalSar())}
+                          </h5>
+                        </div>
+                        <div className="col-4 text-center border-end">
+                          <span className="text-muted small">PKR Rate</span>
+                          <h5 className="fw-bold text-dark font-monospace fs-5">
+                            {fmtAmt(getModalPkrRate())}
+                          </h5>
+                        </div>
+                        <div className="col-4 text-center">
+                          <span className="text-muted small">Grand Total (PKR)</span>
+                          <h5 className="fw-bold text-success font-monospace fs-5">
+                            PKR {fmtAmt(getModalTotalPkr())}
+                          </h5>
+                        </div>
+                      </div>
+
+                      <div className="d-flex justify-content-between align-items-center bg-dark text-white p-3 rounded-3 shadow-sm">
+                        <span className="fw-bold">TOTAL AMOUNT (PKR):</span>
+                        <h4 className="mb-0 fw-bold font-monospace fs-4">
+                          PKR {fmtAmt(getModalTotalPkr())}
+                        </h4>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-center py-5">
+                      <p className="text-danger fw-bold">Failed to load detailed transaction records.</p>
+                    </div>
+                  )}
+                </div>
+
+                <div className="modal-footer bg-light border-0 rounded-bottom-4">
+                  <button
+                    type="button"
+                    className="btn btn-secondary px-4 fw-bold"
+                    onClick={() => setDetailModalOpen(false)}
+                  >
+                    Close
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

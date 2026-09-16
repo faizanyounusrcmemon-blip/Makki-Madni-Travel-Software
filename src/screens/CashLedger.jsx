@@ -1,22 +1,19 @@
 import React, { useEffect, useState, useRef } from "react";
 import Swal from "sweetalert2";
 
-/* ================= COLOR PALETTE ================= */
-const colorPalette = ["#FF6B6B", "#4ECDC4", "#FFD93D", "#6A4C93", "#FF8C42", "#00A6ED", "#FF5D8F"];
-
 /* ================= HELPERS ================= */
-const fmtAmount = (v) => (v !== null && v !== undefined && v !== "" ? Number(v).toLocaleString("en-US") : "-");
+const normalizeZero = (n) => (Math.abs(Number(n || 0)) < 0.005 ? 0 : Number(n));
 
-const numberToWords = (num) => {
-  if (!num) return "";
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "PKR",
-    currencyDisplay: "name",
-    maximumFractionDigits: 0,
-  })
-    .format(num)
-    .replace("Pakistani rupees", "Rupees");
+const fmtAmt = (v) => {
+  let n = normalizeZero(v);
+  return n === 0 && (v === null || v === undefined || v === "")
+    ? "-"
+    : n.toLocaleString("en-US");
+};
+
+const parseAmt = (v) => {
+  const n = Number(String(v).replace(/,/g, ""));
+  return normalizeZero(Math.round(n || 0));
 };
 
 /* ================= DATE FORMATTER ================= */
@@ -26,12 +23,60 @@ const formatDate = (dateStr) => {
   if (isNaN(date.getTime())) return dateStr;
 
   const day = String(date.getDate()).padStart(2, "0");
-  const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  const monthNames = [
+    "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+    "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
+  ];
   const month = monthNames[date.getMonth()];
   const year = date.getFullYear();
 
   return `${day}/${month}/${year}`;
 };
+
+/* ================= DESCRIPTION COLOR HELPER ================= */
+const getDescriptionColor = (desc) => {
+  if (!desc) return "text-secondary";
+  const str = desc.toLowerCase();
+
+  if (str.includes("supplier") || str.includes("purchase") || str.includes("vendor")) {
+    return "text-success fw-bold"; // Supplier (Orange / Yellow)
+  }
+  if (str.includes("customer") || str.includes("sale") || str.includes("client")) {
+    return "text-primary fw-bold"; // Customer (Blue)
+  }
+  if (str.includes("expense") || str.includes("pay") || str.includes("bill")) {
+    return "text-danger fw-bold"; // Expense (Red)
+  }
+
+  return "text-dark fw-semibold"; // Normal Text
+};
+
+const numberToWords = (num) => {
+  if (!num) return "";
+  const a = [
+    "", "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine",
+    "Ten", "Eleven", "Twelve", "Thirteen", "Fourteen", "Fifteen", "Sixteen",
+    "Seventeen", "Eighteen", "Nineteen"
+  ];
+  const b = ["", "", "Twenty", "Thirty", "Forty", "Fifty", "Sixty", "Seventy", "Eighty", "Ninety"];
+  const w = (n) => {
+    if (n < 20) return a[n];
+    if (n < 100) return b[Math.floor(n / 10)] + (n % 10 ? " " + a[n % 10] : "");
+    if (n < 1000)
+      return a[Math.floor(n / 100)] + " Hundred" + (n % 100 ? " " + w(n % 100) : "");
+    if (n < 1000000)
+      return w(Math.floor(n / 1000)) + " Thousand" + (n % 1000 ? " " + w(n % 1000) : "");
+    if (n < 10000000)
+      return w(Math.floor(n / 100000)) + " Lac" + (n % 100000 ? " " + w(n % 100000) : "");
+    if (n < 100000000)
+      return w(Math.floor(n / 1000000)) + " Million" + (n % 1000000 ? " " + w(n % 1000000) : "");
+
+    return "";
+  };
+  return w(num) + " Only";
+};
+
+const today = new Date().toISOString().slice(0, 10);
 
 /* ================= MAIN COMPONENT ================= */
 export default function CashLedger({ onNavigate }) {
@@ -40,45 +85,31 @@ export default function CashLedger({ onNavigate }) {
   const [search, setSearch] = useState("");
   const [msg, setMsg] = useState(null);
 
-  const today = new Date().toISOString().slice(0, 10);
   const [date, setDate] = useState(today);
-  const [amount, setAmount] = useState("");
+  const [amountRaw, setAmountRaw] = useState(0);
+  const [amountDisp, setAmountDisp] = useState("");
   const [type, setType] = useState("deposit");
   const [comment, setComment] = useState("");
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
-
-  const supplierColorMap = useRef({});
-
-  const extractName = (str) => {
-    if (!str) return "";
-    const match = str.match(/- (.+?) \(/);
-    if (match) return match[1].trim();
-    return str.trim();
-  };
-
-  const isCustomerPayment = (str) => str?.toLowerCase().includes("customer") || false;
-
-  const getSupplierColor = (str) => {
-    const name = extractName(str);
-    if (!name) return "#000";
-    if (isCustomerPayment(str)) return "#007BFF";
-    if (!supplierColorMap.current[name]) {
-      const index = Object.keys(supplierColorMap.current).length % colorPalette.length;
-      supplierColorMap.current[name] = colorPalette[index];
-    }
-    return supplierColorMap.current[name];
-  };
+  const [saving, setSaving] = useState(false);
 
   /* ================= LOAD DATA ================= */
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    load();
+  }, []);
+
   const load = async () => {
-    const r = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/cash-ledger`);
-    const d = await r.json();
-    if (d.success) {
-      const list = d.rows.slice().reverse();
-      setRows(list);
-      setFiltered(list);
+    try {
+      const r = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/cash-ledger`);
+      const d = await r.json();
+      if (d.success) {
+        const list = (d.rows || []).slice().reverse();
+        setRows(list);
+        setFiltered(list);
+      }
+    } catch (err) {
+      console.error("Error loading cash ledger:", err);
     }
   };
 
@@ -108,7 +139,7 @@ export default function CashLedger({ onNavigate }) {
     setCurrentPage(1);
   }, [fromDate, toDate, rows, search]);
 
-  /* ================= PASSWORD POPUP (DYNAMIC) ================= */
+  /* ================= PASSWORD POPUP ================= */
   const askPassword = async (titleText = "Enter Password") => {
     const { value } = await Swal.fire({
       width: "300px",
@@ -141,12 +172,10 @@ export default function CashLedger({ onNavigate }) {
       preConfirm: () => {
         const input = document.getElementById("swal-pass");
         const val = input.value.trim();
-
         if (!val) {
           Swal.showValidationMessage("Password required");
           return false;
         }
-
         return val;
       },
       didOpen: () => {
@@ -171,31 +200,30 @@ export default function CashLedger({ onNavigate }) {
         };
 
         document.addEventListener("keydown", handleEnter);
-
         Swal.getPopup().addEventListener("remove", () => {
           document.removeEventListener("keydown", handleEnter);
         });
-      }
+      },
     });
-
     return value;
   };
 
   /* ================= SAVE ================= */
   const save = async () => {
-    if (!date || !amount) {
+    if (!date || !amountRaw || amountRaw <= 0) {
       return Swal.fire({
         width: "300px",
         icon: "warning",
-        text: "Date & Amount required"
+        text: "Date & Valid Amount required",
       });
     }
 
+    setSaving(true);
     Swal.fire({
       width: "260px",
       title: "Saving...",
       allowOutsideClick: false,
-      didOpen: () => Swal.showLoading()
+      didOpen: () => Swal.showLoading(),
     });
 
     try {
@@ -207,8 +235,8 @@ export default function CashLedger({ onNavigate }) {
           body: JSON.stringify({
             txn_date: date,
             type,
-            amount: amount.replace(/,/g, ""),
-            comment
+            amount: amountRaw,
+            comment,
           }),
         }
       );
@@ -218,38 +246,42 @@ export default function CashLedger({ onNavigate }) {
 
       if (d.success) {
         setMsg({ type: "success", text: d.message });
-        setAmount("");
+        setAmountRaw(0);
+        setAmountDisp("");
         setComment("");
         load();
         Swal.fire({
           width: "280px",
           icon: "success",
-          text: d.message || "Transaction Saved Successfully"
+          text: d.message || "Transaction Saved Successfully",
         });
       } else {
         Swal.fire({
           width: "300px",
           icon: "error",
-          text: d.error || "Save failed"
+          text: d.error || "Save failed",
         });
       }
     } catch (err) {
       Swal.close();
       Swal.fire({ width: "300px", icon: "error", text: "Network Error" });
+    } finally {
+      setSaving(false);
     }
   };
 
-  /* ================= 2-STEP EDIT FLOW (STEP 1: PASSWORD -> STEP 2: EDIT FORM) ================= */
+  /* ================= EDIT ROW ================= */
   const editRow = async (row) => {
-    // STEP 1: Password Verification
-    const pass = await askPassword("🔒 Enter Edit Password");
+    if (!row || !row.id) return;
+
+    const pass = await askPassword("🔒 Authorization Password Required");
     if (!pass) return;
 
     Swal.fire({
       width: "250px",
       title: "Verifying...",
       allowOutsideClick: false,
-      didOpen: () => Swal.showLoading()
+      didOpen: () => Swal.showLoading(),
     });
 
     try {
@@ -269,7 +301,7 @@ export default function CashLedger({ onNavigate }) {
         return Swal.fire({
           width: "300px",
           icon: "error",
-          text: verifyData.error || "Wrong Password!"
+          text: verifyData.error || "Wrong Password!",
         });
       }
     } catch (err) {
@@ -277,12 +309,13 @@ export default function CashLedger({ onNavigate }) {
       return Swal.fire({
         width: "300px",
         icon: "error",
-        text: "Network verification error"
+        text: "Network verification error",
       });
     }
 
-    // STEP 2: Edit Form Modal
-    const formattedDateForInput = row.txn_date ? new Date(row.txn_date).toISOString().split("T")[0] : today;
+    const formattedDateForInput = row.txn_date
+      ? new Date(row.txn_date).toISOString().split("T")[0]
+      : today;
     const currentAmount = row.credit > 0 ? row.credit : row.debit;
     const currentType = row.credit > 0 ? "deposit" : "withdraw";
 
@@ -321,7 +354,6 @@ export default function CashLedger({ onNavigate }) {
       didOpen: () => {
         const dateInput = document.getElementById("swal-edit-date");
         const dateTextLabel = document.getElementById("swal-edit-date-text");
-
         dateInput.addEventListener("change", (e) => {
           dateTextLabel.textContent = formatDate(e.target.value);
         });
@@ -346,27 +378,29 @@ export default function CashLedger({ onNavigate }) {
           amount: Number(amountVal),
           type: typeVal,
           comment: commentVal,
-          password: pass // Step 1 verified password pass kar rahe hain
+          password: pass,
         };
-      }
+      },
     });
 
     if (!formValues) return;
 
-    // STEP 3: Submit Update
     Swal.fire({
       width: "260px",
       title: "Updating...",
       allowOutsideClick: false,
-      didOpen: () => Swal.showLoading()
+      didOpen: () => Swal.showLoading(),
     });
 
     try {
-      const r = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/cash-ledger/transaction/${row.id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formValues)
-      });
+      const r = await fetch(
+        `${import.meta.env.VITE_BACKEND_URL}/api/cash-ledger/transaction/${row.id}`,
+        {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(formValues),
+        }
+      );
 
       const d = await r.json();
       Swal.close();
@@ -390,7 +424,7 @@ export default function CashLedger({ onNavigate }) {
       icon: "warning",
       text: "Delete this transaction?",
       showCancelButton: true,
-      confirmButtonText: "Delete"
+      confirmButtonText: "Delete",
     });
 
     if (!confirmDelete.isConfirmed) return;
@@ -402,7 +436,7 @@ export default function CashLedger({ onNavigate }) {
       width: "260px",
       title: "Deleting...",
       allowOutsideClick: false,
-      didOpen: () => Swal.showLoading()
+      didOpen: () => Swal.showLoading(),
     });
 
     try {
@@ -424,13 +458,13 @@ export default function CashLedger({ onNavigate }) {
         Swal.fire({
           width: "280px",
           icon: "success",
-          text: d.message || "Transaction Deleted Successfully"
+          text: d.message || "Transaction Deleted Successfully",
         });
       } else {
         Swal.fire({
           width: "300px",
           icon: "error",
-          text: d.error || "Delete failed"
+          text: d.error || "Delete failed",
         });
       }
     } catch (err) {
@@ -468,188 +502,327 @@ export default function CashLedger({ onNavigate }) {
     return rangeWithDots;
   };
 
+  // Metrics computation
+  const totalDebit = filtered.reduce((acc, r) => acc + (Number(r.debit) || 0), 0);
+  const totalCredit = filtered.reduce((acc, r) => acc + (Number(r.credit) || 0), 0);
   const currentBalance = rows.length ? rows[0].balance : 0;
 
   return (
-    <div className="container py-4">
-      {/* HEADER */}
-      <div className="d-flex justify-content-between align-items-center mb-3 flex-wrap">
-        <div className="d-flex align-items-center mb-2 mb-md-0">
-          <span className="fs-3 me-2">🏦</span>
-          <h4 className="fw-bold mb-0 text-primary">Cash Ledger</h4>
-        </div>
-        <button className="btn btn-outline-secondary btn-sm" onClick={() => onNavigate("dashboard")}>
-          ⬅ Back
-        </button>
-      </div>
+    <div className="cash-ledger-page">
+      <style>{`
+        .cash-ledger-page {
+          min-height: calc(100vh - 65px);
+          padding: 16px;
+          background: radial-gradient(circle at 10% 10%, rgba(255,215,120,.22), transparent 28%), radial-gradient(circle at 90% 0%, rgba(13,110,253,.12), transparent 30%), linear-gradient(135deg, #f8fbff 0%, #eef6ff 45%, #fffaf0 100%);
+          font-family: Arial, sans-serif;
+        }
+        .ledger-shell { max-width: 100%; margin: auto; }
+        .ledger-hero {
+          border-radius: 18px; padding: 16px 20px; color: #fff;
+          background: linear-gradient(135deg, #063b78, #0d6efd 55%, #d4a72c);
+          box-shadow: 0 14px 34px rgba(10,55,105,.22); position: relative; overflow: hidden;
+          display: flex; justify-content: space-between; align-items: center;
+        }
+        .ledger-hero h2 { margin: 0; font-weight: 800; letter-spacing: .3px; font-size: 1.5rem; }
+        .ledger-hero p { margin: 4px 0 0; opacity: .9; font-size: 0.85rem; }
+        .filter-card {
+          margin-top: 14px; background: rgba(255,255,255,.94);
+          border: 1px solid #dbe7f5; border-radius: 16px; padding: 12px 14px;
+          box-shadow: 0 8px 24px rgba(30,65,100,.10);
+        }
+        .filter-label { font-size: 10px; font-weight: 800; color: #52647a; text-transform: uppercase; letter-spacing: .5px; margin-bottom: 4px; }
+        .preset-btn { border-radius: 8px !important; font-weight: 700; }
+        .summary-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin: 14px 0; }
+        .summary-card { background: #fff; border-radius: 14px; padding: 10px 12px; border: 1px solid #e2eaf3; box-shadow: 0 6px 18px rgba(0,0,0,.06); }
+        .summary-card .label { font-size: 10px; color: #64748b; font-weight: 800; text-transform: uppercase; }
+        .summary-card .value { font-size: 18px; font-weight: 900; color: #102a43; margin-top: 2px; }
+        .summary-card.total { border-left: 4px solid #0d6efd; }
+        .summary-card.debit { border-left: 4px solid #dc3545; }
+        .summary-card.credit { border-left: 4px solid #20c997; }
+        .summary-card.balance { border-left: 4px solid #d4a72c; }
+        .table-card { background: #fff; border-radius: 16px; overflow: hidden; border: 1px solid #dfe8f2; box-shadow: 0 10px 28px rgba(30,65,100,.10); }
+        .table-head { padding: 10px 14px; display: flex; justify-content: space-between; align-items: center; gap: 10px; border-bottom: 1px solid #e8eef5; }
+        .report-table { width: 100%; border-collapse: collapse; font-size: 11px; }
+        .report-table th { background: linear-gradient(135deg, #073d7a, #0d6efd); color: #fff; padding: 8px 5px; white-space: nowrap; }
+        .report-table td { padding: 6px 5px; border-bottom: 1px solid #edf1f5; vertical-align: middle; }
+        .report-table tbody tr:hover { background: #f8fbff; }
+      `}</style>
 
-      {/* BALANCE CARD */}
-      <div className="card shadow-sm mb-3 border-0">
-        <div className="card-body d-flex justify-content-between align-items-center">
+      <div className="ledger-shell">
+        {/* Banner */}
+        <div className="ledger-hero">
           <div>
-            <small className="text-muted">Current Balance</small>
-            <h3 className="fw-bold text-success mb-0"> PKR {fmtAmount(currentBalance)} </h3>
+            <h2>💵 Cash Ledger Statement</h2>
+            <p>Cash deposits, withdrawals, customer/supplier transactions, aur overall cash balance management.</p>
           </div>
-          <div className="fs-1">💳</div>
+          <div>
+            <button
+              className="btn btn-light btn-sm fw-bold rounded-pill px-3 py-1"
+              style={{ fontSize: "12px" }}
+              onClick={() => onNavigate && onNavigate("dashboard")}
+            >
+              ⬅ Back to Home
+            </button>
+          </div>
         </div>
-      </div>
 
-      {/* MESSAGE */}
-      {msg && <div className={`alert alert-${msg.type} py-2`}>{msg.text}</div>}
+        {/* Message Alert */}
+        {msg && <div className={`alert alert-${msg.type} py-2 mt-2 mb-0`}>{msg.text}</div>}
 
-      {/* FILTER + SEARCH */}
-      <div className="card shadow-sm mb-3 border-0">
-        <div className="card-body">
-          <div className="row g-2 align-items-center">
+        {/* Filter Card */}
+        <div className="filter-card mb-3">
+          <div className="row g-2 align-items-end">
             <div className="col-md-3">
-              <input type="date" className="form-control form-control-sm" value={fromDate} onChange={(e) => setFromDate(e.target.value)} />
+              <div className="filter-label">From Date</div>
+              <input
+                type="date"
+                className="form-control form-control-sm"
+                value={fromDate}
+                onChange={(e) => setFromDate(e.target.value)}
+              />
             </div>
             <div className="col-md-3">
-              <input type="date" className="form-control form-control-sm" value={toDate} onChange={(e) => setToDate(e.target.value)} />
+              <div className="filter-label">To Date</div>
+              <input
+                type="date"
+                className="form-control form-control-sm"
+                value={toDate}
+                onChange={(e) => setToDate(e.target.value)}
+              />
             </div>
             <div className="col-md-6">
-              <input type="text" className="form-control form-control-sm" placeholder="🔍 Search any field..." value={search} onChange={(e) => setSearch(e.target.value)} />
+              <div className="filter-label">Search Transaction</div>
+              <input
+                type="text"
+                className="form-control form-control-sm"
+                placeholder="🔍 Search description, date, amount..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
             </div>
           </div>
         </div>
-      </div>
 
-      {/* ENTRY */}
-      <div className="card shadow-sm mb-3 border-0">
-        <div className="card-body">
-          <h6 className="fw-bold mb-3">➕ New Transaction</h6>
+        {/* Summary Grid */}
+        <div className="summary-grid">
+          <div className="summary-card total">
+            <div className="label">Total Records</div>
+            <div className="value">{filtered.length}</div>
+          </div>
+          <div className="summary-card debit">
+            <div className="label">Total Debit (-)</div>
+            <div className="value">{fmtAmt(totalDebit)}</div>
+          </div>
+          <div className="summary-card credit">
+            <div className="label">Total Credit (+)</div>
+            <div className="value">{fmtAmt(totalCredit)}</div>
+          </div>
+          <div className="summary-card balance">
+            <div className="label">Current Cash Balance</div>
+            <div className="value">{fmtAmt(currentBalance)}</div>
+          </div>
+        </div>
+
+        {/* New Entry Form Card */}
+        <div className="filter-card mb-3">
+          <div className="filter-label mb-2">📥 Deposit / Withdraw Cash</div>
           <div className="row g-2 align-items-end">
             <div className="col-md-2">
-              <label className="form-label mb-0 small fw-bold">Date</label>
-              <input type="date" className="form-control form-control-sm" value={date} onChange={(e) => setDate(e.target.value)} />
-              <div className="text-primary fw-bold mt-1" style={{ fontSize: "11px" }}>
+              <div className="filter-label">Date</div>
+              <input
+                type="date"
+                className="form-control form-control-sm"
+                value={date}
+                onChange={(e) => setDate(e.target.value)}
+              />
+              <span className="text-primary fw-bold d-block mt-1" style={{ fontSize: "10px" }}>
                 {formatDate(date)}
-              </div>
+              </span>
             </div>
             <div className="col-md-2">
-              <label className="form-label mb-0 small fw-bold">Amount</label>
-              <input className="form-control form-control-sm" placeholder="Amount" value={amount} onChange={(e) =>
-                setAmount(e.target.value.replace(/,/g, "").replace(/\B(?=(\d{3})+(?!\d))/g, ","))
-              } />
-            </div>
-            <div className="col-md-2">
-              <label className="form-label mb-0 small fw-bold">Type</label>
-              <select className="form-select form-select-sm" value={type} onChange={(e) => setType(e.target.value)}>
+              <div className="filter-label">Type</div>
+              <select
+                className="form-select form-select-sm fw-bold"
+                value={type}
+                onChange={(e) => setType(e.target.value)}
+              >
                 <option value="deposit">➕ Deposit</option>
                 <option value="withdraw">➖ Withdraw</option>
               </select>
             </div>
-            <div className="col-md-4">
-              <label className="form-label mb-0 small fw-bold">Comment</label>
-              <input className="form-control form-control-sm" placeholder="Comment" value={comment} onChange={(e) => setComment(e.target.value)} />
-            </div>
-            <div className="col-md-2">
-              <button className="btn btn-success btn-sm w-100" onClick={save}> Save </button>
-            </div>
-          </div>
-          {amount && <div className="text-muted small mt-2"> 💬 {numberToWords(amount.replace(/,/g, ""))} </div>}
-        </div>
-      </div>
-
-      {/* TABLE */}
-      <div className="card shadow-sm border-0">
-        <div className="table-responsive">
-          <table className="table table-hover mb-0">
-            <thead className="table-light">
-              <tr>
-                <th style={{ fontSize: "0.85rem" }}>Date</th>
-                <th style={{ fontSize: "0.85rem" }}>Description</th>
-                <th className="text-danger" style={{ fontSize: "0.85rem" }}>Debit</th>
-                <th className="text-success" style={{ fontSize: "0.85rem" }}>Credit</th>
-                <th style={{ fontSize: "0.85rem" }}>Balance</th>
-                <th className="text-center" style={{ fontSize: "0.85rem" }}>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {paginatedRows.map((r, i) => (
-                <tr key={i}>
-                  <td style={{ fontSize: "0.85rem" }}><span className="text-muted fw-bold">{formatDate(r.txn_date)}</span></td>
-                  <td
-                    className="fw-bold"
-                    style={{
-                      fontSize: "0.85rem",
-                      color: r.type === "withdraw" ? "red" : getSupplierColor(r.description || r.supplier_name || "")
-                    }}
-                  >
-                    {r.description || "-"}
-                  </td>
-                  <td className="text-danger fw-bold" style={{ fontSize: "0.85rem" }}>{fmtAmount(r.debit)}</td>
-                  <td className="text-success fw-bold" style={{ fontSize: "0.85rem" }}>{fmtAmount(r.credit)}</td>
-                  <td className="fw-bold" style={{ fontSize: "0.85rem" }}>{fmtAmount(r.balance)}</td>
-                  <td className="text-center">
-                    {r.source === "manual" ? (
-                      <div className="d-flex gap-1 justify-content-center">
-                        <button className="btn btn-outline-primary btn-sm py-0 px-1" style={{ fontSize: "11px" }} onClick={() => editRow(r)}>
-                          Edit
-                        </button>
-                        <button className="btn btn-outline-danger btn-sm py-0 px-1" style={{ fontSize: "11px" }} onClick={() => del(r.id)}>
-                          Del
-                        </button>
-                      </div>
-                    ) : (
-                      <span className="text-muted small">-</span>
-                    )}
-                  </td>
-                </tr>
-              ))}
-              {paginatedRows.length === 0 && (
-                <tr>
-                  <td colSpan="6" className="text-center text-muted py-3">No entries</td>
-                </tr>
+            <div className="col-md-3">
+              <div className="filter-label">Amount (PKR)</div>
+              <input
+                className="form-control form-control-sm fw-bold text-success"
+                placeholder="Amount"
+                value={amountDisp}
+                onChange={(e) => {
+                  const raw = parseAmt(e.target.value);
+                  setAmountRaw(raw);
+                  setAmountDisp(fmtAmt(raw));
+                }}
+              />
+              {amountRaw > 0 && (
+                <div className="mt-1 text-success fw-semibold text-truncate" style={{ fontSize: "10px" }}>
+                  {numberToWords(amountRaw)}
+                </div>
               )}
-            </tbody>
-          </table>
+            </div>
+            <div className="col-md-5">
+              <div className="filter-label">Comment / Description</div>
+              <input
+                type="text"
+                className="form-control form-control-sm"
+                placeholder="Optional Comment / Description..."
+                value={comment}
+                onChange={(e) => setComment(e.target.value)}
+              />
+            </div>
+            <div className="col-md-12 text-end mt-2">
+              <button
+                className={`btn btn-sm preset-btn px-4 fw-bold ${type === "deposit" ? "btn-success" : "btn-danger"}`}
+                onClick={save}
+                disabled={saving}
+              >
+                {saving ? "Saving..." : type === "deposit" ? "➕ Process Deposit" : "➖ Process Withdraw"}
+              </button>
+            </div>
+          </div>
         </div>
 
-        {/* PAGINATION CONTROLS */}
-        <div className="d-flex justify-content-between align-items-center mt-2 p-2 flex-wrap gap-2">
-          <select
-            className="form-select form-select-sm"
-            style={{ width: "100px" }}
-            value={pageSize}
-            onChange={(e) => { setPageSize(Number(e.target.value)); setCurrentPage(1); }}
-          >
-            <option value={25}>25</option>
-            <option value={50}>50</option>
-            <option value={75}>75</option>
-            <option value={100}>100</option>
-            <option value={1000000}>Full View</option>
-          </select>
-
-          <div className="d-flex gap-1 align-items-center flex-wrap">
-            <button className="btn btn-sm btn-outline-primary" disabled={currentPage === 1} onClick={() => setCurrentPage(currentPage - 1)}>⬅ Prev</button>
-            {getPagination().map((p, idx) => (
-              <button
-                key={idx}
-                className={`btn btn-sm ${p === currentPage ? "btn-primary" : "btn-outline-primary"}`}
-                disabled={p === "…"}
-                onClick={() => typeof p === "number" && setCurrentPage(p)}
-              >
-                {p}
-              </button>
-            ))}
-            <button className="btn btn-sm btn-outline-primary" disabled={currentPage === totalPages || totalPages === 0} onClick={() => setCurrentPage(currentPage + 1)}>Next ➡</button>
+        {/* Data Table */}
+        <div className="table-card">
+          <div className="table-head">
+            <strong>Cash Transactions History</strong>
+            <span className="badge bg-primary">Total Records: {filtered.length}</span>
           </div>
 
-          <input
-            type="number"
-            min={1}
-            max={totalPages}
-            placeholder="Go"
-            className="form-control form-control-sm"
-            style={{ width: "70px" }}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") {
-                let val = Number(e.target.value);
-                if (val >= 1 && val <= totalPages) setCurrentPage(val);
-              }
-            }}
-          />
+          <div className="table-responsive">
+            <table className="report-table">
+              <thead>
+                <tr>
+                  <th style={{ width: "12%", textAlign: "center" }}>Date</th>
+                  <th style={{ width: "38%" }}>Description</th>
+                  <th style={{ width: "12%", textAlign: "right" }}>Debit (-)</th>
+                  <th style={{ width: "12%", textAlign: "right" }}>Credit (+)</th>
+                  <th style={{ width: "14%", textAlign: "right" }}>Balance</th>
+                  <th style={{ width: "12%", textAlign: "center" }}>Actions</th>
+                </tr>
+              </thead>
+<tbody style={{ fontSize: "12px" }}>
+  {paginatedRows.length === 0 ? (
+    <tr>
+      <td colSpan="6" className="text-center py-4 text-muted">
+        No cash transaction entries found.
+      </td>
+    </tr>
+  ) : (
+    paginatedRows.map((r, i) => (
+      <tr key={i}>
+        <td className="text-center fw-semibold">{formatDate(r.txn_date)}</td>
+        <td className={getDescriptionColor(r.description)}>
+          {r.description || "-"}
+        </td>
+        <td style={{ textAlign: "right" }} className="text-danger fw-bold">
+          {normalizeZero(r.debit) > 0 ? fmtAmt(r.debit) : "-"}
+        </td>
+        <td style={{ textAlign: "right" }} className="text-success fw-bold">
+          {normalizeZero(r.credit) > 0 ? fmtAmt(r.credit) : "-"}
+        </td>
+        <td style={{ textAlign: "right" }} className="fw-bold text-dark">
+          {fmtAmt(r.balance)}
+        </td>
+        <td style={{ textAlign: "center" }}>
+          {r.source === "manual" ? (
+            <div className="d-flex gap-1 justify-content-center">
+              <button
+                className="btn btn-outline-primary btn-sm py-0 px-1"
+                style={{ fontSize: "10px" }}
+                onClick={() => editRow(r)}
+              >
+                Edit
+              </button>
+              <button
+                className="btn btn-outline-danger btn-sm py-0 px-1"
+                style={{ fontSize: "10px" }}
+                onClick={() => del(r.id)}
+              >
+                Del
+              </button>
+            </div>
+          ) : (
+            <span className="text-muted small">-</span>
+          )}
+        </td>
+      </tr>
+    ))
+  )}
+</tbody>
+            </table>
+          </div>
+
+          {/* Pagination Controls */}
+          {paginatedRows.length > 0 && (
+            <div className="d-flex justify-content-between align-items-center p-2 flex-wrap gap-2 border-top bg-light">
+              <select
+                className="form-select form-select-sm"
+                style={{ width: "100px" }}
+                value={pageSize}
+                onChange={(e) => {
+                  setPageSize(Number(e.target.value));
+                  setCurrentPage(1);
+                }}
+              >
+                <option value={25}>25 View</option>
+                <option value={50}>50 View</option>
+                <option value={75}>75 View</option>
+                <option value={100}>100 View</option>
+                <option value={1000000}>Full View</option>
+              </select>
+
+              <div className="d-flex gap-1 align-items-center flex-wrap">
+                <button
+                  className="btn btn-sm btn-outline-primary"
+                  disabled={currentPage === 1}
+                  onClick={() => setCurrentPage(currentPage - 1)}
+                >
+                  ⬅ Prev
+                </button>
+                {getPagination().map((p, idx) => (
+                  <button
+                    key={idx}
+                    className={`btn btn-sm ${p === currentPage ? "btn-primary" : "btn-outline-primary"}`}
+                    disabled={p === "…"}
+                    onClick={() => typeof p === "number" && setCurrentPage(p)}
+                  >
+                    {p}
+                  </button>
+                ))}
+                <button
+                  className="btn btn-sm btn-outline-primary"
+                  disabled={currentPage === totalPages || totalPages === 0}
+                  onClick={() => setCurrentPage(currentPage + 1)}
+                >
+                  Next ➡
+                </button>
+              </div>
+
+              <input
+                type="number"
+                min={1}
+                max={totalPages}
+                placeholder="Go"
+                className="form-control form-control-sm"
+                style={{ width: "70px" }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    let val = Number(e.target.value);
+                    if (val >= 1 && val <= totalPages) setCurrentPage(val);
+                  }
+                }}
+              />
+            </div>
+          )}
         </div>
       </div>
     </div>

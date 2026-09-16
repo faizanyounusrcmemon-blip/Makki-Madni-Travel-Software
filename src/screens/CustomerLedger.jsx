@@ -58,7 +58,6 @@ const numberToWords = (num) => {
 const today = new Date().toISOString().split("T")[0];
 
 export default function CustomerLedger({ onNavigate }) {
-  // Hook initialization
   const exportUtils = useLedgerExport();
   const handleExportPDF = exportUtils?.handleExportPDF || exportUtils?.exportPDF;
   const handleExportExcel = exportUtils?.handleExportExcel || exportUtils?.exportExcel;
@@ -77,9 +76,6 @@ export default function CustomerLedger({ onNavigate }) {
   const [selectedBankProfile, setSelectedBankProfile] = useState("");
   const pdfRef = useRef(null);
 
-  /* =========================
-     LOAD BANK PROFILES
-  ========================== */
   useEffect(() => {
     fetch(`${import.meta.env.VITE_BACKEND_URL}/api/bank-ledger/profiles`)
       .then((res) => res.json())
@@ -91,9 +87,6 @@ export default function CustomerLedger({ onNavigate }) {
       .catch((err) => console.error("Error loading bank profiles:", err));
   }, []);
 
-  /* =========================
-     LOAD PENDING LIST
-  ========================== */
   const loadPending = async () => {
     try {
       const r = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/customer-ledger/pending/list`);
@@ -110,9 +103,6 @@ export default function CustomerLedger({ onNavigate }) {
     loadPending();
   }, []);
 
-  /* =========================
-     LOAD LEDGER
-  ========================== */
   const loadLedger = async (r = refNo) => {
     if (!r) {
       return Swal.fire({
@@ -196,9 +186,6 @@ export default function CustomerLedger({ onNavigate }) {
     }
   };
 
-  /* =========================
-     SAVE ENTRY
-  ========================== */
   const saveEntry = async () => {
     if (!refNo) {
       return Swal.fire({ width: "300px", icon: "warning", text: "Ref No required" });
@@ -346,7 +333,6 @@ export default function CustomerLedger({ onNavigate }) {
     }
   };
 
-  /* ================= EDIT PAYMENT ENTRY ================= */
   const editRow = async (row) => {
     if (row.id === "SALE" || row.id === "CUSTOMER") {
       return Swal.fire({
@@ -520,9 +506,6 @@ export default function CustomerLedger({ onNavigate }) {
     }
   };
 
-/* =========================
-     EXPORT FUNCTIONS (PDF & EXCEL)
-  ========================== */
   const exportPDF = () => {
     if (!refNo || rows.length === 0) {
       return Swal.fire({ width: "300px", icon: "warning", text: "Please load a ledger first!" });
@@ -575,120 +558,183 @@ export default function CustomerLedger({ onNavigate }) {
     });
   };
 
-  return (
-    <div className="container-fluid p-4">
-      {/* HEADER BANNER */}
-      <div className="card shadow-sm mb-4">
-        <div className="card-body d-flex justify-content-between align-items-center bg-dark text-white rounded">
-          <h4 className="fw-bold mb-0 text-white">
-            📘 CUSTOMER LEDGER {refNo && `— ${refNo}`}
-            {paymentStatus === "PENDING" && <span className="badge bg-danger ms-2">PENDING</span>}
-            {paymentStatus === "PARTIAL" && <span className="badge bg-warning text-dark ms-2">PARTIAL</span>}
-            {paymentStatus === "CLEARED" && refNo && <span className="badge bg-success ms-2">CLEARED</span>}
-          </h4>
-          <button className="btn btn-light btn-sm fw-bold" onClick={() => onNavigate("dashboard")}>⬅ Back to Home</button>
-        </div>
-      </div>
+  // Metrics computation for summary cards
+  const totalDebit = rows.reduce((acc, r) => acc + (Number(r.debit) || 0), 0);
+  const totalCredit = rows.reduce((acc, r) => acc + (Number(r.credit) || 0), 0);
+  const finalBalance = rows.length > 0 ? rows[rows.length - 1].balance : 0;
 
-      <div className="row">
-        {/* SIDEBAR: PENDING / PARTIAL LIST */}
-        <div className="col-lg-3 col-md-4 mb-4">
-          <div className="card shadow-sm h-100">
-            <div className="card-header bg-danger text-white fw-bold d-flex align-items-center">
-              <span>⏳ Pending / Partial Ledgers</span>
-            </div>
-            <div className="card-body p-2" style={{ maxHeight: "70vh", overflowY: "auto" }}>
-              {pending.length === 0 ? (
-                <div className="p-3 text-center text-success">
-                  <h5>✅ All Cleared!</h5>
-                  <p className="small mb-0 text-muted">No pending/partial manual ledgers found.</p>
-                </div>
-              ) : (
-                <div className="list-group list-group-flush">
-                  {pending.map((p, i) => (
-                    <div
-                      key={i}
-                      onClick={() => loadLedger(p.ref_no)}
-                      className="list-group-item list-group-item-action p-3 mb-2 rounded border-start border-4 cursor-pointer"
-                      style={{
-                        cursor: "pointer",
-                        borderStartColor: p.payment_status === "PENDING" ? "#dc3545" : "#ffc107",
-                        backgroundColor: p.ref_no === refNo ? "#e9ecef" : "#f8f9fa"
-                      }}
-                    >
-                      <div className="d-flex justify-content-between align-items-start mb-1">
-                        <span className="badge bg-dark font-monospace">{p.ref_no}</span>
-                        <span className={`badge ${p.payment_status === "PENDING" ? "bg-danger" : "bg-warning text-dark"}`}>
-                          {p.payment_status}
-                        </span>
-                      </div>
-                      <div className="fw-bold text-truncate text-primary" style={{ fontSize: "0.95rem" }}>
-                        {p.customer_name || "-"}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
+  return (
+    <div className="customer-ledger-page">
+      <style>{`
+        .customer-ledger-page {
+          min-height: calc(100vh - 65px);
+          padding: 24px;
+          background: radial-gradient(circle at 10% 10%, rgba(255,215,120,.22), transparent 28%), radial-gradient(circle at 90% 0%, rgba(13,110,253,.12), transparent 30%), linear-gradient(135deg, #f8fbff 0%, #eef6ff 45%, #fffaf0 100%);
+          font-family: Arial, sans-serif;
+        }
+        .ledger-shell { max-width: 1450px; margin: auto; }
+        .ledger-hero {
+          border-radius: 22px; padding: 20px 22px; color: #fff;
+          background: linear-gradient(135deg, #063b78, #0d6efd 55%, #d4a72c);
+          box-shadow: 0 14px 34px rgba(10,55,105,.22); position: relative; overflow: hidden;
+          display: flex; justify-content: space-between; align-items: center;
+        }
+        .ledger-hero h2 { margin: 0; font-weight: 800; letter-spacing: .3px; }
+        .ledger-hero p { margin: 6px 0 0; opacity: .9; }
+        .filter-card {
+          margin-top: 16px; background: rgba(255,255,255,.94);
+          border: 1px solid #dbe7f5; border-radius: 18px; padding: 16px;
+          box-shadow: 0 8px 24px rgba(30,65,100,.10);
+        }
+        .filter-label { font-size: 11px; font-weight: 800; color: #52647a; text-transform: uppercase; letter-spacing: .5px; margin-bottom: 6px; }
+        .preset-btn { border-radius: 10px !important; font-weight: 700; }
+        .summary-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin: 16px 0; }
+        .summary-card { background: #fff; border-radius: 16px; padding: 14px 16px; border: 1px solid #e2eaf3; box-shadow: 0 6px 18px rgba(0,0,0,.06); }
+        .summary-card .label { font-size: 11px; color: #64748b; font-weight: 800; text-transform: uppercase; }
+        .summary-card .value { font-size: 23px; font-weight: 900; color: #102a43; margin-top: 4px; }
+        .summary-card.total { border-left: 5px solid #0d6efd; }
+        .summary-card.debit { border-left: 5px solid #dc3545; }
+        .summary-card.credit { border-left: 5px solid #20c997; }
+        .summary-card.balance { border-left: 5px solid #d4a72c; }
+        .table-card { background: #fff; border-radius: 18px; overflow: hidden; border: 1px solid #dfe8f2; box-shadow: 0 10px 28px rgba(30,65,100,.10); }
+        .table-head { padding: 13px 16px; display: flex; justify-content: space-between; align-items: center; gap: 10px; border-bottom: 1px solid #e8eef5; }
+        .report-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        .report-table th { background: linear-gradient(135deg, #073d7a, #0d6efd); color: #fff; padding: 11px 9px; white-space: nowrap; }
+        .report-table td { padding: 10px 9px; border-bottom: 1px solid #edf1f5; vertical-align: middle; }
+        .report-table tbody tr:hover { background: #f8fbff; }
+        .pending-card { background: rgba(255,255,255,.94); border: 1px solid #dbe7f5; border-radius: 18px; overflow: hidden; box-shadow: 0 8px 24px rgba(30,65,100,.10); }
+        .pending-header { background: linear-gradient(135deg, #dc3545, #b4232f); color: #fff; padding: 12px 16px; font-weight: 800; }
+        @media print { .filter-card, .no-print, .pending-card { display: none !important; } }
+      `}</style>
+
+      <div className="ledger-shell">
+        {/* Banner */}
+        <div className="ledger-hero">
+          <div>
+            <h2>📘 Customer Ledger Statement</h2>
+            <p>
+              Customer transaction logs, balance adjustments, credit/debit records aur ledger tracking.
+            </p>
+          </div>
+          <div>
+            <button className="btn btn-light btn-sm fw-bold rounded-pill px-3 py-2" onClick={() => onNavigate("dashboard")}>
+              ⬅ Back to Home
+            </button>
           </div>
         </div>
 
-        {/* MAIN PANEL */}
-        <div className="col-lg-9 col-md-8">
-          <div className="card shadow-sm mb-3">
-            <div className="card-body py-3">
-              <div className="row g-2">
-                <div className="col-md-5">
-                  <input
-                    className="form-control form-control-lg"
-                    placeholder="Enter Reference Number (e.g., PKG-1002)"
-                    value={refNo}
-                    onChange={(e) => setRefNo(e.target.value.toUpperCase())}
-                  />
-                </div>
-                <div className="col-md-3">
-                  <button className="btn btn-primary btn-lg w-100 fw-bold" onClick={() => loadLedger()}>
-                    🔍 Load Ledger
-                  </button>
-                </div>
-                <div className="col-md-2">
-                  <button
-                    className="btn btn-danger btn-lg w-100 fw-bold"
-                    onClick={exportPDF}
-                    disabled={rows.length === 0}
-                  >
-                    📄 PDF
-                  </button>
-                </div>
-                <div className="col-md-2">
-                  <button
-                    className="btn btn-success btn-lg w-100 fw-bold"
-                    onClick={exportExcel}
-                    disabled={rows.length === 0}
-                  >
-                    📊 Excel
-                  </button>
-                </div>
+        <div className="row mt-3">
+          {/* SIDEBAR: PENDING / PARTIAL LIST */}
+          <div className="col-lg-3 col-md-4 mb-3">
+            <div className="pending-card h-100">
+              <div className="pending-header d-flex align-items-center justify-content-between">
+                <span>⏳ Pending / Partial Ledgers</span>
+                <span className="badge bg-light text-dark">{pending.length}</span>
+              </div>
+              <div className="p-2" style={{ maxHeight: "72vh", overflowY: "auto" }}>
+                {pending.length === 0 ? (
+                  <div className="p-4 text-center text-success">
+                    <h6 className="fw-bold">✅ All Cleared!</h6>
+                    <p className="small mb-0 text-muted">No pending or partial ledgers found.</p>
+                  </div>
+                ) : (
+                  <div className="list-group list-group-flush">
+                    {pending.map((p, i) => (
+                      <div
+                        key={i}
+                        onClick={() => loadLedger(p.ref_no)}
+                        className="list-group-item list-group-item-action p-3 mb-2 rounded border-start border-4"
+                        style={{
+                          cursor: "pointer",
+                          borderStartColor: p.payment_status === "PENDING" ? "#dc3545" : "#ffc107",
+                          backgroundColor: p.ref_no === refNo ? "#e6f0ff" : "#fff"
+                        }}
+                      >
+                        <div className="d-flex justify-content-between align-items-start mb-1">
+                          <span className="badge bg-dark font-monospace">{p.ref_no}</span>
+                          <span className={`badge ${p.payment_status === "PENDING" ? "bg-danger" : "bg-warning text-dark"}`}>
+                            {p.payment_status}
+                          </span>
+                        </div>
+                        <div className="fw-bold text-truncate text-primary" style={{ fontSize: "0.9rem" }}>
+                          {p.customer_name || "-"}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           </div>
 
-          <div className={`card shadow-sm mb-3 ${!refNo ? "opacity-50" : ""}`} style={{ pointerEvents: !refNo ? "none" : "auto" }}>
-            <div className="card-header bg-light fw-bold text-secondary">📥 Add Payment / Adjustment Receipt</div>
-            <div className="card-body">
-              <div className="row g-2 mb-3">
+          {/* MAIN PANEL */}
+          <div className="col-lg-9 col-md-8">
+            {/* Filter / Load Panel */}
+            <div className="filter-card no-print mb-3">
+              <div className="row g-2 align-items-end">
+                <div className="col-md-5">
+                  <div className="filter-label">Customer Ref Number</div>
+                  <input
+                    className="form-control"
+                    placeholder="Enter Ref No (e.g. PKG-1002)"
+                    value={refNo}
+                    onChange={(e) => setRefNo(e.target.value.toUpperCase())}
+                  />
+                </div>
+                <div className="col-md-3 d-grid">
+                  <button className="btn btn-primary preset-btn" onClick={() => loadLedger()}>
+                    🔍 Load Ledger
+                  </button>
+                </div>
+                <div className="col-md-2 d-grid">
+                  <button className="btn btn-outline-danger preset-btn" onClick={exportPDF} disabled={rows.length === 0}>
+                    📄 Export PDF
+                  </button>
+                </div>
+                <div className="col-md-2 d-grid">
+                  <button className="btn btn-outline-success preset-btn" onClick={exportExcel} disabled={rows.length === 0}>
+                    📊 Export Excel
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Summary Metric Cards */}
+            <div className="summary-grid">
+              <div className="summary-card total">
+                <div className="label">Total Entries</div>
+                <div className="value">{rows.length}</div>
+              </div>
+              <div className="summary-card debit">
+                <div className="label">Total Debit (-)</div>
+                <div className="value">{fmtAmt(totalDebit)}</div>
+              </div>
+              <div className="summary-card credit">
+                <div className="label">Total Credit (+)</div>
+                <div className="value">{fmtAmt(totalCredit)}</div>
+              </div>
+              <div className="summary-card balance">
+                <div className="label">Current Balance</div>
+                <div className="value">{fmtAmt(finalBalance)}</div>
+              </div>
+            </div>
+
+            {/* Transaction Form Card */}
+            <div className={`filter-card no-print mb-3 ${!refNo ? "opacity-50" : ""}`} style={{ pointerEvents: !refNo ? "none" : "auto" }}>
+              <div className="filter-label mb-2">📥 Add Payment / Adjustment Receipt</div>
+              <div className="row g-2 align-items-end">
                 <div className="col-md-2">
-                  <label className="form-label small text-muted mb-1">Date</label>
-                  <input type="date" className="form-control" value={date} onChange={(e) => setDate(e.target.value)} />
-                  <span className="text-primary fw-bold d-block mt-1" style={{ fontSize: "0.75rem" }}>
+                  <div className="filter-label">Date</div>
+                  <input type="date" className="form-control form-control-sm" value={date} onChange={(e) => setDate(e.target.value)} />
+                  <span className="text-primary fw-bold d-block mt-1" style={{ fontSize: "10px" }}>
                     {formatDate(date)}
                   </span>
                 </div>
                 <div className="col-md-3">
-                  <label className="form-label small text-muted mb-1">Amount</label>
+                  <div className="filter-label">Amount (PKR)</div>
                   <input
-                    className="form-control fw-bold text-success"
-                    placeholder="Enter Amount"
+                    className="form-control form-control-sm fw-bold text-success"
+                    placeholder="Amount"
                     value={amountDisp}
                     onChange={(e) => {
                       const raw = parseAmt(e.target.value);
@@ -699,34 +745,34 @@ export default function CustomerLedger({ onNavigate }) {
                     }}
                   />
                   {amountRaw > 0 && (
-                    <div className="mt-1 small text-success fw-semibold text-truncate">
+                    <div className="mt-1 text-success fw-semibold text-truncate" style={{ fontSize: "10px" }}>
                       {numberToWords(amountRaw)}
                     </div>
                   )}
                 </div>
                 <div className="col-md-2">
-                  <label className="form-label small text-muted mb-1">Type</label>
-                  <select className="form-select" value={type} onChange={(e) => setType(e.target.value)}>
+                  <div className="filter-label">Type</div>
+                  <select className="form-select form-select-sm" value={type} onChange={(e) => setType(e.target.value)}>
                     <option value="payment">Payment</option>
                     <option value="adjustment">Adjustment</option>
                   </select>
                 </div>
                 <div className="col-md-2">
-                  <label className="form-label small text-muted mb-1">Method</label>
-                  <select className="form-select" value={method} onChange={(e) => setMethod(e.target.value)}>
+                  <div className="filter-label">Method</div>
+                  <select className="form-select form-select-sm" value={method} onChange={(e) => setMethod(e.target.value)}>
                     <option value="Cash">Cash</option>
                     <option value="Bank">Bank</option>
                   </select>
                 </div>
-                {method === "Bank" && (
+                {method === "Bank" ? (
                   <div className="col-md-3">
-                    <label className="form-label small text-muted mb-1">Select Bank Account</label>
+                    <div className="filter-label">Bank Profile</div>
                     <select
-                      className="form-select fw-bold"
+                      className="form-select form-select-sm"
                       value={selectedBankProfile}
                       onChange={(e) => setSelectedBankProfile(e.target.value)}
                     >
-                      <option value="">-- Choose Bank --</option>
+                      <option value="">Choose Bank</option>
                       {bankProfiles.map((p) => (
                         <option key={p.id} value={p.id}>
                           {p.bank_name} ({p.account_number})
@@ -734,91 +780,115 @@ export default function CustomerLedger({ onNavigate }) {
                       ))}
                     </select>
                   </div>
+                ) : (
+                  <div className="col-md-3 d-grid">
+                    <button className="btn btn-success preset-btn btn-sm" disabled={saving || !refNo} onClick={saveEntry}>
+                      {saving ? "Saving..." : "💾 Save Transaction"}
+                    </button>
+                  </div>
+                )}
+                {method === "Bank" && (
+                  <div className="col-md-12 text-end mt-2">
+                    <button className="btn btn-success preset-btn btn-sm px-4" disabled={saving || !refNo} onClick={saveEntry}>
+                      {saving ? "Saving..." : "💾 Save Transaction"}
+                    </button>
+                  </div>
                 )}
               </div>
-              <button className="btn btn-success px-4 py-2 fw-bold" disabled={saving || !refNo} onClick={saveEntry}>
-                {saving ? "Saving..." : "💾 Save Transaction"}
-              </button>
             </div>
-          </div>
 
-          <div ref={pdfRef} className="card shadow-sm overflow-hidden">
-            <div className="table-responsive">
-              <table className="table table-striped table-hover table-bordered mb-0 align-middle">
-<thead className="table-dark">
-  <tr>
-    <th style={{ width: "12%" }}>Date</th>
-    <th style={{ width: "35%" }}>Description</th>
-    <th style={{ width: "15%" }}>Method</th> {/* 👈 Naya Column Header */}
-    <th style={{ width: "11%" }} className="text-end">Debit (-)</th>
-    <th style={{ width: "11%" }} className="text-end">Credit (+)</th>
-    <th style={{ width: "11%" }} className="text-end">Balance</th>
-    <th style={{ width: "5%" }} className="text-center">Action</th>
-  </tr>
-                </thead>
-                <tbody>
-                  {rows.length === 0 ? (
+            {/* Data Table */}
+            <div ref={pdfRef} className="table-card">
+              <div className="table-head">
+                <div>
+                  <strong>Ledger Records for {refNo || "Selected Customer"}</strong>
+                  {paymentStatus && (
+                    <span className={`badge ms-2 ${
+                      paymentStatus === "PENDING"
+                        ? "bg-danger"
+                        : paymentStatus === "PARTIAL"
+                        ? "bg-warning text-dark"
+                        : "bg-success"
+                    }`}>
+                      {paymentStatus}
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              <div className="table-responsive">
+                <table className="report-table">
+                  <thead>
                     <tr>
-                      <td colSpan="6" className="text-center p-4 text-muted fs-5">
-                        No ledger entries loaded. Enter a valid Ref No above and click "Load".
-                      </td>
+                      <th style={{ width: "12%" }}>Date</th>
+                      <th style={{ width: "35%" }}>Description</th>
+                      <th style={{ width: "15%" }}>Method</th>
+                      <th style={{ width: "11%", textAlign: "right" }}>Debit (-)</th>
+                      <th style={{ width: "11%", textAlign: "right" }}>Credit (+)</th>
+                      <th style={{ width: "11%", textAlign: "right" }}>Balance</th>
+                      <th style={{ width: "5%", textAlign: "center" }}>Action</th>
                     </tr>
-                  ) : (
-                    rows.map((r, i) => (
-                      <tr key={r.id || i}>
-                        <td>{getRowDate(r)}</td>
-{/* Description Cell */}
-<td className={r.id === "CUSTOMER" ? "fw-bold text-primary" : ""}>
-  {r.description}
-</td>
-
-{/* 👈 NAYA PAYMENT METHOD CELL */}
-<td>
-  {r.payment_method?.toLowerCase() === "bank" ? (
-    <span className="badge bg-primary">
-      🏦 {r.bank_name || "Bank"}
-    </span>
-  ) : r.payment_method?.toLowerCase() === "cash" ? (
-    <span className="badge bg-success">💵 Cash</span>
-  ) : (
-    <span className="text-muted">-</span>
-  )}
-</td>
-
-{/* Debit Cell */}
-
-                        <td className="text-end text-danger fw-bold">{r.debit > 0 ? fmtAmt(r.debit) : "-"}</td>
-                        <td className="text-end text-success fw-bold">{r.credit > 0 ? fmtAmt(r.credit) : "-"}</td>
-                        <td className="text-end fw-bold" style={{ backgroundColor: "#f8f9fa" }}>
-                          {fmtAmt(r.balance)}
-                        </td>
-                        <td className="text-center">
-                          {r.id !== "SALE" && r.id !== "CUSTOMER" ? (
-                            <div className="d-flex gap-1 justify-content-center">
-                              <button
-                                className="btn btn-outline-primary btn-sm py-0 px-1"
-                                style={{ fontSize: "11px" }}
-                                onClick={() => editRow(r)}
-                              >
-                                Edit
-                              </button>
-                              <button
-                                className="btn btn-outline-danger btn-sm py-0 px-1"
-                                style={{ fontSize: "11px" }}
-                                onClick={() => del(r.id)}
-                              >
-                                Del
-                              </button>
-                            </div>
-                          ) : (
-                            <span className="text-muted small">-</span>
-                          )}
+                  </thead>
+                  <tbody>
+                    {rows.length === 0 ? (
+                      <tr>
+                        <td colSpan="7" className="text-center py-5 text-muted">
+                          No ledger entries loaded. Enter a Ref No and click "Load Ledger".
                         </td>
                       </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
+                    ) : (
+                      rows.map((r, i) => (
+                        <tr key={r.id || i}>
+                          <td className="fw-bold">{getRowDate(r)}</td>
+                          <td className={r.id === "CUSTOMER" ? "fw-bold text-primary" : ""}>
+                            {r.description}
+                          </td>
+                          <td>
+                            {r.payment_method?.toLowerCase() === "bank" ? (
+                              <span className="badge bg-primary">🏦 {r.bank_name || "Bank"}</span>
+                            ) : r.payment_method?.toLowerCase() === "cash" ? (
+                              <span className="badge bg-success">💵 Cash</span>
+                            ) : (
+                              <span className="text-muted">-</span>
+                            )}
+                          </td>
+                          <td style={{ textAlign: "right" }} className="text-danger fw-bold">
+                            {r.debit > 0 ? fmtAmt(r.debit) : "-"}
+                          </td>
+                          <td style={{ textAlign: "right" }} className="text-success fw-bold">
+                            {r.credit > 0 ? fmtAmt(r.credit) : "-"}
+                          </td>
+                          <td style={{ textAlign: "right" }} className="fw-bold">
+                            {fmtAmt(r.balance)}
+                          </td>
+                          <td style={{ textAlign: "center" }}>
+                            {r.id !== "SALE" && r.id !== "CUSTOMER" ? (
+                              <div className="d-flex gap-1 justify-content-center">
+                                <button
+                                  className="btn btn-outline-primary btn-sm py-0 px-1"
+                                  style={{ fontSize: "11px" }}
+                                  onClick={() => editRow(r)}
+                                >
+                                  Edit
+                                </button>
+                                <button
+                                  className="btn btn-outline-danger btn-sm py-0 px-1"
+                                  style={{ fontSize: "11px" }}
+                                  onClick={() => del(r.id)}
+                                >
+                                  Del
+                                </button>
+                              </div>
+                            ) : (
+                              <span className="text-muted small">-</span>
+                            )}
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
         </div>
