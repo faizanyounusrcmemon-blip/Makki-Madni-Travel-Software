@@ -60,6 +60,9 @@ import MonthlyProfitDashboard from "./screens/MonthlyProfitDashboard";
 import ActivityReport from "./screens/ActivityReport";
 import GiftingReportView from "./screens/GiftingReportView";
 import AgentCommReportView from "./screens/AgentCommReportView";
+import UpcomingPaymentDueReport from "./screens/UpcomingPaymentDueReport";
+import UpcomingTravelReport from "./screens/UpcomingTravelReport";
+
 
 // VOUCHERS
 import HotelVoucher from "./screens/HotelVoucher";
@@ -199,6 +202,8 @@ export default function App() {
       {page === "activityReport" && <ActivityReport onNavigate={navigate} />}
       {page === "giftingReportView" && <GiftingReportView onNavigate={navigate} />}
       {page === "agentCommReportView" && <AgentCommReportView onNavigate={navigate} />}
+      {page === "upcomingPaymentDueReport" && <UpcomingPaymentDueReport onNavigate={navigate} />}
+      {page === "upcomingTravelReport" && <UpcomingTravelReport onNavigate={navigate} />}
       {page === "deletedReports" && (
         <DeletedReports onNavigate={navigate} />
       )}
