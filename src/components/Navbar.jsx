@@ -4,6 +4,7 @@ import Swal from "sweetalert2";
 
 export default function Navbar({ onNavigate }) {
   const [open, setOpen] = useState(null);
+  const [activeSubMenu, setActiveSubMenu] = useState(null);
 
   const user = JSON.parse(sessionStorage.getItem("user")) || {};
   const isAdmin = user?.role === "admin";
@@ -12,7 +13,18 @@ export default function Navbar({ onNavigate }) {
 
   const go = (page) => {
     setOpen(null);
+    setActiveSubMenu(null);
     onNavigate(page);
+  };
+
+  const toggleMain = (menuName) => {
+    if (open === menuName) {
+      setOpen(null);
+      setActiveSubMenu(null);
+    } else {
+      setOpen(menuName);
+      setActiveSubMenu(null);
+    }
   };
 
   const logout = async () => {
@@ -83,7 +95,7 @@ export default function Navbar({ onNavigate }) {
             SALES DROPDOWN
         =============================== */}
         <div className="nav-item">
-          <span className="nav-title" onClick={() => setOpen(open === "sales" ? null : "sales")}>
+          <span className="nav-title" onClick={() => toggleMain("sales")}>
             Sales ▾
           </span>
           {open === "sales" && (
@@ -104,7 +116,7 @@ export default function Navbar({ onNavigate }) {
             PURCHASE DROPDOWN
         =============================== */}
         <div className="nav-item">
-          <span className="nav-title" onClick={() => setOpen(open === "purchase" ? null : "purchase")}>
+          <span className="nav-title" onClick={() => toggleMain("purchase")}>
             Purchase ▾
           </span>
           {open === "purchase" && (
@@ -120,7 +132,7 @@ export default function Navbar({ onNavigate }) {
             LEDGER DROPDOWN
         =============================== */}
         <div className="nav-item">
-          <span className="nav-title" onClick={() => setOpen(open === "ledger" ? null : "ledger")}>
+          <span className="nav-title" onClick={() => toggleMain("ledger")}>
             Ledger ▾
           </span>
           {open === "ledger" && (
@@ -140,7 +152,7 @@ export default function Navbar({ onNavigate }) {
             VOUCHERS DROPDOWN
         =============================== */}
         <div className="nav-item">
-          <span className="nav-title" onClick={() => setOpen(open === "voucher" ? null : "voucher")}>
+          <span className="nav-title" onClick={() => toggleMain("voucher")}>
             Vouchers ▾
           </span>
           {open === "voucher" && (
@@ -155,35 +167,119 @@ export default function Navbar({ onNavigate }) {
         </div>
 
         {/* ==============================
-            REPORTS DROPDOWN
+            REPORTS DROPDOWN (CATEGORIZED SUB-MENUS)
         =============================== */}
         <div className="nav-item">
-          <span className="nav-title" onClick={() => setOpen(open === "reports" ? null : "reports")}>
+          <span className="nav-title" onClick={() => toggleMain("reports")}>
             Reports ▾
           </span>
           {open === "reports" && (
             <div className="menu-box">
-              {can("all_reports") && <a onClick={() => go("allreports")}>📈 All Reports</a>}
-              {can("all_reports_today") && <a onClick={() => go("allreportstoday")}>📈 All Reports Today</a>}
-              {can("profit_report") && <a onClick={() => go("profitReport")}>💰 Profit Report</a>}
-              {can("monthly_profit_dashboard") && <a onClick={() => go("monthlyProfitDashboard")}>💰 Monthly Profit</a>}
-              {can("sale_adjustment_report") && <a onClick={() => go("saleAdjustmentReport")}>📉 Sale Adjustment Report</a>}
-              {can("supplier_adjustment_only") && <a onClick={() => go("supplierAdjustmentOnly")}>📉 Supplier Adjustment Only</a>}
-              {can("supplier_purchase_detail_report") && <a onClick={() => go("supplierPurchaseDetailReport")}>📦 Supplier Purchase Detail Report</a>}
-              {can("customer_sale_detail_report") && <a onClick={() => go("customerSaleDetailReport")}>📦 Customer Sale Detail Report</a>}
-              {can("gifting_report_view") && <a onClick={() => go("giftingReportView")}>🎁 Gifting Report View</a>}
-              {can("agent_comm_report_view") && <a onClick={() => go("agentCommReportView")}>🤝 Agent Comm Report View</a>}
-              {can("item_loss_zero_report") && <a onClick={() => go("itemLossZeroReport")}>📊 Item Loss & Zero Profit Report</a>}
-              {can("sale_change_check_report") && <a onClick={() => go("saleChangeCheckReport")}>📊 Sale vs Purchase Sale Check Report</a>}
+              
+              {/* Category 1: Financial & Profit */}
+              <div 
+                className="submenu-parent"
+                onMouseEnter={() => setActiveSubMenu("financial")}
+                onMouseLeave={() => setActiveSubMenu(null)}
+              >
+                <div 
+                  className="submenu-title" 
+                  onClick={() => setActiveSubMenu(activeSubMenu === "financial" ? null : "financial")}
+                >
+                  <span>📊 Financial & Profit</span>
+                  <span className="arrow">▶</span>
+                </div>
+                {activeSubMenu === "financial" && (
+                  <div className="submenu-box">
+                    {can("all_reports") && <a onClick={() => go("allreports")}>📈 All Reports</a>}
+                    {can("all_reports_today") && <a onClick={() => go("allreportstoday")}>📈 All Reports Today</a>}
+                    {can("profit_report") && <a onClick={() => go("profitReport")}>💰 Profit Report</a>}
+                    {can("monthly_profit_dashboard") && <a onClick={() => go("monthlyProfitDashboard")}>💰 Monthly Profit</a>}
+                  </div>
+                )}
+              </div>
+
+              {/* Category 2: Sale & Supplier Details */}
+              <div 
+                className="submenu-parent"
+                onMouseEnter={() => setActiveSubMenu("details")}
+                onMouseLeave={() => setActiveSubMenu(null)}
+              >
+                <div 
+                  className="submenu-title" 
+                  onClick={() => setActiveSubMenu(activeSubMenu === "details" ? null : "details")}
+                >
+                  <span>📑 Sales & Adjustments</span>
+                  <span className="arrow">▶</span>
+                </div>
+                {activeSubMenu === "details" && (
+                  <div className="submenu-box">
+                    {can("sale_adjustment_report") && <a onClick={() => go("saleAdjustmentReport")}>📉 Sale Adjustment Report</a>}
+                    {can("supplier_adjustment_only") && <a onClick={() => go("supplierAdjustmentOnly")}>📉 Supplier Adjustment Only</a>}
+                    {can("supplier_purchase_detail_report") && <a onClick={() => go("supplierPurchaseDetailReport")}>📦 Supplier Purchase Detail</a>}
+                    {can("customer_sale_detail_report") && <a onClick={() => go("customerSaleDetailReport")}>📦 Customer Sale Detail</a>}
+                    {can("gifting_report_view") && <a onClick={() => go("giftingReportView")}>🎁 Gifting Report View</a>}
+                    {can("agent_comm_report_view") && <a onClick={() => go("agentCommReportView")}>🤝 Agent Comm Report View</a>}
+                  </div>
+                )}
+              </div>
+
+              {/* Category 3: Travel & Payments */}
+              <div 
+                className="submenu-parent"
+                onMouseEnter={() => setActiveSubMenu("travel")}
+                onMouseLeave={() => setActiveSubMenu(null)}
+              >
+                <div 
+                  className="submenu-title" 
+                  onClick={() => setActiveSubMenu(activeSubMenu === "travel" ? null : "travel")}
+                >
+                  <span>⏰ Travel & Payments</span>
+                  <span className="arrow">▶</span>
+                </div>
+                {activeSubMenu === "travel" && (
+                  <div className="submenu-box">
+                    {can("upcoming_payment_due_report") && <a onClick={() => go("upcomingPaymentDueReport")}>⏰ Travel & Payment Due</a>}
+                    {can("upcoming_travel_report") && <a onClick={() => go("upcomingTravelReport")}>⏰ Upcoming Travel Report</a>}
+                  </div>
+                )}
+              </div>
+
+              {/* Category 4: System & Audit */}
+              <div 
+                className="submenu-parent"
+                onMouseEnter={() => setActiveSubMenu("system")}
+                onMouseLeave={() => setActiveSubMenu(null)}
+              >
+                <div 
+                  className="submenu-title" 
+                  onClick={() => setActiveSubMenu(activeSubMenu === "system" ? null : "system")}
+                >
+                  <span>💾 Audit & System</span>
+                  <span className="arrow">▶</span>
+                </div>
+                {activeSubMenu === "system" && (
+                  <div className="submenu-box">
+                    {can("deleted_reports") && <a onClick={() => go("deletedReports")}>🗑 Deleted Reports</a>}
+                    {can("system_storage") && <a onClick={() => go("systemStorage")}>💾 System Storage</a>}
+                    {user?.role === "admin" && can("user_activity") && (
+                       <a onClick={() => go("activityReport")}>🔐 User Activity & Audit</a>
+                    )}
+                    {can("item_loss_zero_report") && <a onClick={() => go("itemLossZeroReport")}>📊 Item Loss & Zero Profit</a>}
+                    {can("sale_change_check_report") && <a onClick={() => go("saleChangeCheckReport")}>📊 Sale vs Purchase Check</a>}
+                  </div>
+                )}
+              </div>
+
             </div>
           )}
         </div>
 
         {/* ==============================
-            MASTER DROPDOWN (Yahan wapis add kar diya hai)
+            MASTER DROPDOWN
         =============================== */}
         <div className="nav-item">
-          <span className="nav-title" onClick={() => setOpen(open === "master" ? null : "master")}>
+          <span className="nav-title" onClick={() => toggleMain("master")}>
             Master ▾
           </span>
           {open === "master" && (
@@ -193,12 +289,7 @@ export default function Navbar({ onNavigate }) {
               {can("supplier") && <a onClick={() => go("supplier")}>🏷 Supplier Profile</a>}
               {can("customers_list") && <a onClick={() => go("customersList")}>🏷 Customer Profile</a>}
               {can("bank_profiles") && <a onClick={() => go("bankProfiles")}>🏦 Bank Profiles</a>}
-              {can("deleted_reports") && <a onClick={() => go("deletedReports")}>🗑 Deleted Reports</a>}
-              {can("system_storage") && <a onClick={() => go("systemStorage")}>💾 System Storage</a>}
               {can("password_settings") && <a onClick={() => go("passwordSettings")}>🛠 Password Settings</a>}
-              {user?.role === "admin" && can("user_activity") && (
-                <a onClick={() => go("activityReport")}>🔐 User Activity & Audit</a>
-              )}
               {can("restore") && <a onClick={() => go("restore")}>♻ Restore</a>}
             </div>
           )}
@@ -208,7 +299,7 @@ export default function Navbar({ onNavigate }) {
             ARCHIVE DROPDOWN
         =============================== */}
         <div className="nav-item">
-          <span className="nav-title" onClick={() => setOpen(open === "archive" ? null : "archive")}>
+          <span className="nav-title" onClick={() => toggleMain("archive")}>
             Archive ▾
           </span>
           {open === "archive" && (
