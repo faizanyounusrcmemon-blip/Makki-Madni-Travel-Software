@@ -186,7 +186,7 @@ export default function Navbar({ onNavigate }) {
                   className="submenu-title" 
                   onClick={() => setActiveSubMenu(activeSubMenu === "financial" ? null : "financial")}
                 >
-                  <span>📊 Financial & Profit</span>
+                  <span>📊 Sales & Profit</span>
                   <span className="arrow">▶</span>
                 </div>
                 {activeSubMenu === "financial" && (
@@ -209,7 +209,7 @@ export default function Navbar({ onNavigate }) {
                   className="submenu-title" 
                   onClick={() => setActiveSubMenu(activeSubMenu === "details" ? null : "details")}
                 >
-                  <span>📑 Sales & Adjustments</span>
+                  <span>📑 SalesDetail & Adjustments</span>
                   <span className="arrow">▶</span>
                 </div>
                 {activeSubMenu === "details" && (
