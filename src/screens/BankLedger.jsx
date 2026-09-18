@@ -33,24 +33,38 @@ const formatDate = (dateStr) => {
   return `${day}/${month}/${year}`;
 };
 
-{/* Description Text Color Helper */}
-const getDescriptionColor = (desc) => {
-  if (!desc) return "text-secondary";
+/* ================= UNIQUE COLOR HELPER ================= */
+const getDescriptionColor = (desc, debit, credit) => {
+  if (!desc) return "text-dark fw-semibold";
   const str = desc.toLowerCase();
-  
-  if (str.includes("supplier") || str.includes("purchase") || str.includes("vendor")) {
-    return "text-success fw-bold"; // Supplier Color (Orange/Yellow)
-  }
-  if (str.includes("customer") || str.includes("sale") || str.includes("client")) {
-    return "text-primary fw-bold"; // Customer Color (Blue)
-  }
-  if (str.includes("expense") || str.includes("pay") || str.includes("bill")) {
-    return "text-danger fw-bold"; // Expense Color (Red)
-  }
-  
-  return "text-dark fw-semibold"; // Default Text Color
-};
 
+  // 1. Supplier / Vendor / Purchase Transactions (Orange / Dark Yellow / Amber)
+  if (str.includes("supplier") || str.includes("purchase") || str.includes("vendor")) {
+    return "fw-bold text-warning-emphasis"; // Vibrant Amber / Dark Yellow
+  }
+
+  // 2. Customer / Sale / Client Transactions (Bright Blue)
+  if (str.includes("customer") || str.includes("sale") || str.includes("client")) {
+    return "text-primary fw-bold"; // Bright Blue
+  }
+
+  // 3. General Expense / Bills / Pay (Red)
+  if (str.includes("expense") || str.includes("pay") || str.includes("bill") || str.includes("exp")) {
+    return "text-danger fw-bold"; // Crimson Red
+  }
+
+  // 4. Cash Deposit / Credit Entries (Emerald / Dark Green)
+  if (str.includes("deposit") || normalizeZero(credit) > 0) {
+    return "text-success fw-bold"; // Dark Green
+  }
+
+  // 5. Cash Withdraw / Debit Entries (Purple / Violet)
+  if (str.includes("withdraw") || str.includes("withdrawn") || normalizeZero(debit) > 0) {
+    return "fw-bold text-purple"; // Purple (custom style class added below)
+  }
+
+  return "text-dark fw-semibold"; // Default Dark Color
+};
 
 const numberToWords = (num) => {
   if (!num) return "";
@@ -565,6 +579,8 @@ export default function BankLedger({ onNavigate }) {
           background: radial-gradient(circle at 10% 10%, rgba(255,215,120,.22), transparent 28%), radial-gradient(circle at 90% 0%, rgba(13,110,253,.12), transparent 30%), linear-gradient(135deg, #f8fbff 0%, #eef6ff 45%, #fffaf0 100%);
           font-family: Arial, sans-serif;
         }
+        .text-purple { color: #6f42c1 !important; }
+        .text-warning-emphasis { color: #d97706 !important; }
         .ledger-shell { max-width: 100%; margin: auto; }
         .ledger-hero {
           border-radius: 18px; padding: 16px 20px; color: #fff;
@@ -821,57 +837,73 @@ export default function BankLedger({ onNavigate }) {
                       <th style={{ width: "12%", textAlign: "center" }}>Actions</th>
                     </tr>
                   </thead>
-<tbody style={{ fontSize: "12px" }}>
-  {paginatedRows.length === 0 ? (
-    <tr>
-      <td colSpan="6" className="text-center py-4 text-muted">
-        {selectedProfile
-          ? "No transaction entries found for this bank account."
-          : "👈 Please select a Bank Profile from the sidebar to view transactions."}
-      </td>
-    </tr>
-  ) : (
-    paginatedRows.map((r, i) => (
-      <tr key={i}>
-        <td className="text-center fw-semibold">{formatDate(r.txn_date)}</td>
-        <td className={getDescriptionColor(r.description)}>
-          {r.description || "-"}
-        </td>
-        <td style={{ textAlign: "right" }} className="text-danger fw-bold">
-          {normalizeZero(r.debit) > 0 ? fmtAmt(r.debit) : "-"}
-        </td>
-        <td style={{ textAlign: "right" }} className="text-success fw-bold">
-          {normalizeZero(r.credit) > 0 ? fmtAmt(r.credit) : "-"}
-        </td>
-        <td style={{ textAlign: "right" }} className="fw-bold text-dark">
-          {fmtAmt(r.balance)}
-        </td>
-        <td style={{ textAlign: "center" }}>
-          {r.source === "manual" ? (
-            <div className="d-flex gap-1 justify-content-center">
-              <button
-                className="btn btn-outline-primary btn-sm py-0 px-1"
-                style={{ fontSize: "10px" }}
-                onClick={() => editRow(r)}
-              >
-                Edit
-              </button>
-              <button
-                className="btn btn-outline-danger btn-sm py-0 px-1"
-                style={{ fontSize: "10px" }}
-                onClick={() => del(r.id)}
-              >
-                Del
-              </button>
-            </div>
-          ) : (
-            <span className="text-muted small">-</span>
-          )}
-        </td>
-      </tr>
-    ))
-  )}
-</tbody>
+                  <tbody style={{ fontSize: "12px" }}>
+                    {paginatedRows.length === 0 ? (
+                      <tr>
+                        <td colSpan="6" className="text-center py-4 text-muted">
+                          {selectedProfile
+                            ? "No transaction entries found for this bank account."
+                            : "👈 Please select a Bank Profile from the sidebar to view transactions."}
+                        </td>
+                      </tr>
+                    ) : (
+                      paginatedRows.map((r, i) => {
+                        // Dynamic Description Pre-formatting Logic
+                        const isCredit = normalizeZero(r.credit) > 0;
+                        const isDebit = normalizeZero(r.debit) > 0;
+                        const prefix = isCredit ? "Cash Deposit" : isDebit ? "Cash Withdraw" : "";
+
+                        let displayDesc = r.description || prefix || "-";
+
+                        if (r.source === "manual" && r.description) {
+                          const lowerDesc = r.description.toLowerCase();
+                          if (!lowerDesc.startsWith("cash deposit") && !lowerDesc.startsWith("cash withdraw")) {
+                            displayDesc = prefix ? `${prefix} - ${r.description}` : r.description;
+                          }
+                        }
+
+                        return (
+                          <tr key={i}>
+                            <td className="text-center fw-semibold">{formatDate(r.txn_date)}</td>
+                            <td className={getDescriptionColor(displayDesc, r.debit, r.credit)}>
+                              {displayDesc}
+                            </td>
+                            <td style={{ textAlign: "right" }} className="text-danger fw-bold">
+                              {normalizeZero(r.debit) > 0 ? fmtAmt(r.debit) : "-"}
+                            </td>
+                            <td style={{ textAlign: "right" }} className="text-success fw-bold">
+                              {normalizeZero(r.credit) > 0 ? fmtAmt(r.credit) : "-"}
+                            </td>
+                            <td style={{ textAlign: "right" }} className="fw-bold text-dark">
+                              {fmtAmt(r.balance)}
+                            </td>
+                            <td style={{ textAlign: "center" }}>
+                              {r.source === "manual" ? (
+                                <div className="d-flex gap-1 justify-content-center">
+                                  <button
+                                    className="btn btn-outline-primary btn-sm py-0 px-1"
+                                    style={{ fontSize: "10px" }}
+                                    onClick={() => editRow(r)}
+                                  >
+                                    Edit
+                                  </button>
+                                  <button
+                                    className="btn btn-outline-danger btn-sm py-0 px-1"
+                                    style={{ fontSize: "10px" }}
+                                    onClick={() => del(r.id)}
+                                  >
+                                    Del
+                                  </button>
+                                </div>
+                              ) : (
+                                <span className="text-muted small">-</span>
+                              )}
+                            </td>
+                          </tr>
+                        );
+                      })
+                    )}
+                  </tbody>
                 </table>
               </div>
 
