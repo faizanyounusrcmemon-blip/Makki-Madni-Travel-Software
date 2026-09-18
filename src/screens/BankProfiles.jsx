@@ -1,365 +1,745 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import Swal from "sweetalert2";
+import {
+  Pencil,
+  Trash2,
+  ArrowLeft,
+  Search,
+  Building2,
+  CheckCircle2,
+  CreditCard,
+  Building,
+  RefreshCw,
+  PlusCircle,
+  Save,
+  X,
+  ShieldCheck,
+  FileText,
+} from "lucide-react";
 
 export default function BankProfiles({ onNavigate }) {
   const [banks, setBanks] = useState([]);
+  const [filteredBanks, setFilteredBanks] = useState([]);
+  const [form, setForm] = useState({
+    bank_name: "",
+    account_title: "",
+    account_number: "",
+    status: "Active",
+  });
+  const [editId, setEditId] = useState(null);
+  const [authPassword, setAuthPassword] = useState("");
   const [search, setSearch] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  // Form State
-  const [bankName, setBankName] = useState("");
-  const [accountTitle, setAccountTitle] = useState("");
-  const [accountNumber, setAccountNumber] = useState("");
-  const [status, setStatus] = useState("Active");
-
-  useEffect(() => {
-    loadBanks();
-  }, []);
-
+  /* =========================================================
+     LOAD BANKS
+  ========================================================= */
   const loadBanks = async () => {
     try {
       const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/banks`);
       const data = await res.json();
       if (data.success) {
-        setBanks(data.rows);
+        setBanks(data.rows || []);
+        setFilteredBanks(data.rows || []);
       }
     } catch (err) {
-      console.error(err);
+      console.error("Load banks error:", err);
     }
   };
 
-  /* ================= SAVE NEW BANK ================= */
-  const handleSave = async () => {
-    if (!bankName || !accountTitle || !accountNumber) {
-      return Swal.fire({ width: "300px", icon: "warning", text: "Fill all required fields!" });
-    }
+  useEffect(() => {
+    loadBanks();
+  }, []);
 
-    Swal.fire({ width: "260px", title: "Saving...", allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+  /* =========================================================
+     STATISTICS
+  ========================================================= */
+  const totalBanks = banks.length;
 
-    try {
-      const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/banks`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          bank_name: bankName,
-          account_title: accountTitle,
-          account_number: accountNumber,
-          status,
-        }),
-      });
+  const activeBanksCount = useMemo(
+    () => banks.filter((b) => b.status === "Active").length,
+    [banks]
+  );
 
-      const data = await res.json();
-      Swal.close();
-
-      if (data.success) {
-        setBankName("");
-        setAccountTitle("");
-        setAccountNumber("");
-        setStatus("Active");
-        loadBanks();
-        Swal.fire({ width: "280px", icon: "success", text: data.message });
-      } else {
-        Swal.fire({ width: "300px", icon: "error", text: data.error || "Failed to add bank" });
-      }
-    } catch (err) {
-      Swal.close();
-      Swal.fire({ width: "300px", icon: "error", text: "Network Error" });
-    }
-  };
-
-  /* ================= EDIT BANK (PASSWORD PROTECTED) ================= */
-  const handleEdit = async (bank) => {
-    const { value: formValues } = await Swal.fire({
-      width: "360px",
-      title: "✏️ Edit Bank Profile",
+  /* =========================================================
+     PASSWORD POPUP
+  ========================================================= */
+  const askPassword = async (title = "Enter Password") => {
+    const { value } = await Swal.fire({
+      width: "390px",
+      padding: "0",
+      background: "#fff",
+      customClass: {
+        popup: "mmt-user-popup",
+        confirmButton: "mmt-confirm-btn",
+        cancelButton: "mmt-cancel-btn",
+      },
       html: `
-        <div style="text-align:left; font-size:12px;" class="d-flex flex-column gap-2">
-          <div>
-            <label class="fw-bold mb-1">Bank Name</label>
-            <input id="swal-bank-name" class="form-control form-control-sm" value="${bank.bank_name}" />
-          </div>
-          <div>
-            <label class="fw-bold mb-1">Account Title</label>
-            <input id="swal-acc-title" class="form-control form-control-sm" value="${bank.account_title}" />
-          </div>
-          <div>
-            <label class="fw-bold mb-1">Account / IBAN Number</label>
-            <input id="swal-acc-num" class="form-control form-control-sm" value="${bank.account_number}" />
-          </div>
-          <div>
-            <label class="fw-bold mb-1">Status</label>
-            <select id="swal-status" class="form-select form-select-sm">
-              <option value="Active" ${bank.status === "Active" ? "selected" : ""}>Active</option>
-              <option value="Inactive" ${bank.status === "Inactive" ? "selected" : ""}>Inactive</option>
-            </select>
-          </div>
-          <div>
-            <label class="fw-bold mb-1">Authorization Password</label>
-            <div style="position:relative;">
-              <input id="swal-pass" type="password" class="form-control form-control-sm" placeholder="Password" style="padding-right:35px;" />
-              <span id="toggle-pass" style="position:absolute; right:10px; top:50%; transform:translateY(-50%); cursor:pointer;">👁</span>
+        <div style="padding:24px;text-align:left;font-family:Inter,Arial,sans-serif;">
+          <div style="display:flex;align-items:center;gap:12px;margin-bottom:18px;">
+            <div style="width:48px;height:48px;border-radius:15px;background:linear-gradient(135deg,#1e3a8a,#4f46e5);display:flex;align-items:center;justify-content:center;color:#fff;box-shadow:0 8px 22px rgba(37,99,235,.22);">
+              🔐
             </div>
+            <div>
+              <div style="font-size:17px;font-weight:800;color:#0f172a;">${title}</div>
+              <div style="font-size:11px;color:#475569;margin-top:3px;font-weight:600;">Security verification required</div>
+            </div>
+          </div>
+          <div style="background:#f1f5f9;border:1px solid #cbd5e1;border-radius:12px;padding:11px 12px;margin-bottom:14px;color:#334155;font-size:12px;font-weight:600;line-height:1.5;">
+            🛡️ Please enter your authorized security password to continue.
+          </div>
+          <div style="position:relative;">
+            <input
+              id="swal-pass"
+              type="password"
+              class="swal2-input"
+              style="width:100%;height:43px;box-sizing:border-box;margin:0;padding:0 46px 0 13px;border-radius:10px;border:1px solid #94a3b8;font-size:13px;color:#0f172a;font-weight:600;box-shadow:none;"
+              placeholder="Enter security password"
+            />
+            <span id="toggle-pass" style="position:absolute;right:13px;top:50%;transform:translateY(-50%);cursor:pointer;z-index:10;color:#475569;">👁</span>
           </div>
         </div>
       `,
       showCancelButton: true,
-      confirmButtonText: "Update Profile",
+      confirmButtonText: "🔓 Continue",
+      cancelButtonText: "Cancel",
+      confirmButtonColor: "#2563eb",
+      cancelButtonColor: "#64748b",
       focusConfirm: false,
+      preConfirm: () => {
+        const input = document.getElementById("swal-pass");
+        const val = input?.value.trim();
+        if (!val) {
+          Swal.showValidationMessage("Password is required");
+          return false;
+        }
+        return val;
+      },
       didOpen: () => {
         const input = document.getElementById("swal-pass");
         const toggle = document.getElementById("toggle-pass");
-        let visible = false;
-        toggle.addEventListener("click", () => {
-          visible = !visible;
-          input.type = visible ? "text" : "password";
-          toggle.textContent = visible ? "🙈" : "👁";
-        });
-      },
-      preConfirm: () => {
-        const bName = document.getElementById("swal-bank-name").value.trim();
-        const aTitle = document.getElementById("swal-acc-title").value.trim();
-        const aNum = document.getElementById("swal-acc-num").value.trim();
-        const stat = document.getElementById("swal-status").value;
-        const pass = document.getElementById("swal-pass").value.trim();
-
-        if (!bName || !aTitle || !aNum) {
-          Swal.showValidationMessage("Please fill required fields");
-          return false;
+        if (input && toggle) {
+          let show = false;
+          toggle.addEventListener("click", () => {
+            show = !show;
+            input.type = show ? "text" : "password";
+            toggle.textContent = show ? "🙈" : "👁";
+          });
+          input.focus();
         }
-        if (!pass) {
-          Swal.showValidationMessage("Password required");
-          return false;
-        }
-
-        return { bank_name: bName, account_title: aTitle, account_number: aNum, status: stat, password: pass };
       },
     });
+    return value;
+  };
 
-    if (!formValues) return;
+  /* =========================================================
+     VERIFY PASSWORD HELPER (FIXED ENDPOINT ROUTE)
+  ========================================================= */
+  const verifyPasswordApi = async (password) => {
+    try {
+      const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/banks/verify-password`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password }),
+      });
+      const data = await res.json();
+      return data.success;
+    } catch {
+      return false;
+    }
+  };
 
-    Swal.fire({ width: "260px", title: "Updating...", allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+  /* =========================================================
+     SAVE / UPDATE BANK
+  ========================================================= */
+  const save = async () => {
+    if (!form.bank_name.trim() || !form.account_title.trim() || !form.account_number.trim()) {
+      return Swal.fire({
+        width: "360px",
+        icon: "warning",
+        title: "Required Information",
+        text: "Please fill all required bank fields.",
+        confirmButtonColor: "#2563eb",
+        customClass: { popup: "rounded-4 shadow-lg border-0" },
+      });
+    }
+
+    setLoading(true);
+    const url = editId ? `/${editId}` : "";
+    const method = editId ? "PUT" : "POST";
 
     try {
-      const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/banks/${bank.id}`, {
-        method: "PUT",
+      const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/banks${url}`, {
+        method,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formValues),
+        body: JSON.stringify(editId ? { ...form, password: authPassword } : form),
+      });
+
+      const data = await res.json();
+
+      if (!data.success) {
+        setLoading(false);
+        return Swal.fire({
+          width: "370px",
+          icon: "error",
+          title: "Unable to Save",
+          text: data.error || "Failed to save bank profile.",
+          confirmButtonColor: "#dc2626",
+          customClass: { popup: "rounded-4 shadow-lg border-0" },
+        });
+      }
+
+      await Swal.fire({
+        width: "380px",
+        icon: "success",
+        title: editId ? "Bank Profile Updated" : "Bank Profile Saved",
+        text: data.message || "Operation completed successfully.",
+        confirmButtonText: "Done",
+        confirmButtonColor: "#059669",
+        customClass: { popup: "rounded-4 shadow-lg border-0" },
+      });
+
+      clearForm();
+      await loadBanks();
+    } catch (err) {
+      Swal.fire({
+        width: "370px",
+        icon: "error",
+        title: "Connection Error",
+        text: "Could not connect to the server.",
+        confirmButtonColor: "#dc2626",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  /* =========================================================
+     CLEAR FORM
+  ========================================================= */
+  const clearForm = () => {
+    setForm({
+      bank_name: "",
+      account_title: "",
+      account_number: "",
+      status: "Active",
+    });
+    setEditId(null);
+    setAuthPassword("");
+  };
+
+  /* =========================================================
+     DELETE BANK
+  ========================================================= */
+  const handleDelete = async (b) => {
+    const confirmDelete = await Swal.fire({
+      width: "390px",
+      padding: "0",
+      icon: "warning",
+      title: "Delete Bank Profile?",
+      html: `
+        <div style="font-size:13px;color:#334155;line-height:1.6;font-weight:600;">
+          You are about to delete <strong style="color:#0f172a;">${b.bank_name}</strong> (${b.account_number})<br/>
+          This action requires security verification.
+        </div>
+      `,
+      showCancelButton: true,
+      confirmButtonText: "🗑️ Delete Profile",
+      cancelButtonText: "Cancel",
+      confirmButtonColor: "#dc2626",
+      cancelButtonColor: "#64748b",
+      customClass: { popup: "rounded-4 shadow-lg border-0" },
+    });
+
+    if (!confirmDelete.isConfirmed) return;
+
+    const pass = await askPassword("Delete Authorization");
+    if (!pass) return;
+
+    Swal.fire({
+      width: "300px",
+      padding: "25px",
+      title: "Deleting Profile...",
+      allowOutsideClick: false,
+      showConfirmButton: false,
+      didOpen: () => Swal.showLoading(),
+    });
+
+    try {
+      const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/banks/${b.id}`, {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password: pass }),
       });
 
       const data = await res.json();
       Swal.close();
 
-      if (data.success) {
-        loadBanks();
-        Swal.fire({ width: "280px", icon: "success", text: "Updated Successfully" });
-      } else {
-        Swal.fire({ width: "300px", icon: "error", text: data.error || "Update Failed" });
+      if (!data.success) {
+        return Swal.fire({
+          width: "360px",
+          icon: "error",
+          title: "Delete Failed",
+          text: data.error || "Invalid security password.",
+          confirmButtonColor: "#dc2626",
+        });
       }
-    } catch (err) {
+
+      await Swal.fire({
+        width: "360px",
+        icon: "success",
+        title: "Bank Profile Deleted",
+        confirmButtonText: "Done",
+        confirmButtonColor: "#059669",
+      });
+
+      if (editId === b.id) clearForm();
+      loadBanks();
+    } catch {
       Swal.close();
-      Swal.fire({ width: "300px", icon: "error", text: "Network Error" });
+      Swal.fire({
+        width: "360px",
+        icon: "error",
+        title: "Delete Failed",
+        text: "Could not connect to the server.",
+        confirmButtonColor: "#dc2626",
+      });
     }
   };
 
-/* ================= DELETE BANK (PASSWORD PROTECTED) ================= */
-const handleDelete = async (id) => {
-  const { value: password } = await Swal.fire({
-    width: "340px",
-    title: "Delete Bank Profile?",
-    text: "Enter authorization password to confirm:",
-    html: `
-      <div style="width: 85%; margin: 15px auto 0;">
-        <div style="position: relative;">
-          <input 
-            id="swal-del-pass" 
-            type="password" 
-            class="swal2-input" 
-            placeholder="Enter Password" 
-            style="margin: 0; width: 100%; padding-right: 40px; box-sizing: border-box;"
-          />
-          <span 
-            id="toggle-del-pass" 
-            style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); cursor: pointer; user-select: none; font-size: 16px; z-index: 10;"
-          >👁️</span>
-        </div>
-      </div>
-    `,
-    showCancelButton: true,
-    confirmButtonText: "Delete",
-    confirmButtonColor: "#dc3545",
-    focusConfirm: false,
-    didOpen: () => {
-      const input = document.getElementById("swal-del-pass");
-      const toggleBtn = document.getElementById("toggle-del-pass");
-      let isVisible = false;
+  /* =========================================================
+     EDIT BANK (VERIFIES PASSWORD FIRST)
+  ========================================================= */
+  const handleEdit = async (b) => {
+    const pass = await askPassword("Edit Authorization");
+    if (!pass) return;
 
-      toggleBtn.addEventListener("click", () => {
-        isVisible = !isVisible;
-        input.type = isVisible ? "text" : "password";
-        toggleBtn.innerHTML = isVisible ? "🙈" : "👁️";
-      });
-    },
-    preConfirm: () => {
-      const pass = document.getElementById("swal-del-pass").value.trim();
-      if (!pass) {
-        Swal.showValidationMessage("Password is required!");
-        return false;
-      }
-      return pass;
-    },
-  });
-
-  if (!password) return;
-
-  Swal.fire({ width: "260px", title: "Deleting...", allowOutsideClick: false, didOpen: () => Swal.showLoading() });
-
-  try {
-    const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/banks/${id}`, {
-      method: "DELETE",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ password }),
+    Swal.fire({
+      width: "300px",
+      padding: "20px",
+      title: "Verifying Password...",
+      allowOutsideClick: false,
+      showConfirmButton: false,
+      didOpen: () => Swal.showLoading(),
     });
 
-    const data = await res.json();
+    const isValid = await verifyPasswordApi(pass);
     Swal.close();
 
-    if (data.success) {
-      loadBanks();
-      Swal.fire({ width: "280px", icon: "success", text: "Bank Profile Deleted" });
-    } else {
-      Swal.fire({ width: "300px", icon: "error", text: data.error || "Delete Failed" });
+    if (!isValid) {
+      return Swal.fire({
+        width: "360px",
+        icon: "error",
+        title: "Access Denied",
+        text: "Incorrect security password.",
+        confirmButtonColor: "#dc2626",
+      });
     }
-  } catch (err) {
-    Swal.close();
-    Swal.fire({ width: "300px", icon: "error", text: "Network Error" });
-  }
-};
 
-  const filteredBanks = banks.filter(
-    (b) =>
-      b.bank_name.toLowerCase().includes(search.toLowerCase()) ||
-      b.account_title.toLowerCase().includes(search.toLowerCase()) ||
-      b.account_number.toLowerCase().includes(search.toLowerCase())
-  );
+    setAuthPassword(pass);
+    setForm({
+      bank_name: b.bank_name || "",
+      account_title: b.account_title || "",
+      account_number: b.account_number || "",
+      status: b.status || "Active",
+    });
+    setEditId(b.id);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  /* =========================================================
+     SEARCH FILTER
+  ========================================================= */
+  const handleSearch = (value) => {
+    setSearch(value);
+    const lower = value.toLowerCase();
+    const filtered = banks.filter(
+      (b) =>
+        (b.id && String(b.id).toLowerCase().includes(lower)) ||
+        (b.bank_name && b.bank_name.toLowerCase().includes(lower)) ||
+        (b.account_title && b.account_title.toLowerCase().includes(lower)) ||
+        (b.account_number && b.account_number.toLowerCase().includes(lower))
+    );
+    setFilteredBanks(filtered);
+  };
 
   return (
-    <div className="container py-4">
-      {/* HEADER */}
-      <div className="d-flex justify-content-between align-items-center mb-3 flex-wrap">
-        <div className="d-flex align-items-center">
-          <span className="fs-3 me-2">🏛️</span>
-          <h4 className="fw-bold mb-0 text-primary">Bank Profiles</h4>
-        </div>
-        {onNavigate && (
-          <button className="btn btn-outline-secondary btn-sm" onClick={() => onNavigate("dashboard")}>
-            ⬅ Back
-          </button>
-        )}
-      </div>
-
-      {/* CREATE FORM */}
-      <div className="card shadow-sm mb-4 border-0">
-        <div className="card-body">
-          <h6 className="fw-bold mb-3">➕ Create New Bank Profile</h6>
-          <div className="row g-2 align-items-end">
-            <div className="col-md-3">
-              <label className="form-label mb-0 small fw-bold">Bank Name</label>
-              <input
-                className="form-control form-control-sm"
-                placeholder="e.g. Meezan Bank, HBL"
-                value={bankName}
-                onChange={(e) => setBankName(e.target.value)}
-              />
+    <div className="mmt-users-page">
+      <div className="mmt-container">
+        {/* HEADER */}
+        <div className="mmt-header">
+          <div className="mmt-header-content">
+            <div className="mmt-brand">
+              <div className="mmt-brand-icon">
+                <Building2 size={28} />
+              </div>
+              <div>
+                <div className="mmt-overline">FINANCIAL ACCOUNTS</div>
+                <h2>Bank Profiles Directory</h2>
+                <p>Manage company bank accounts, IBANs, and authorization details</p>
+              </div>
             </div>
-            <div className="col-md-3">
-              <label className="form-label mb-0 small fw-bold">Account Title</label>
-              <input
-                className="form-control form-control-sm"
-                placeholder="e.g. Travel Agency Pvt Ltd"
-                value={accountTitle}
-                onChange={(e) => setAccountTitle(e.target.value)}
-              />
-            </div>
-            <div className="col-md-3">
-              <label className="form-label mb-0 small fw-bold">Account / IBAN Number</label>
-              <input
-                className="form-control form-control-sm"
-                placeholder="e.g. PK36MEZN0001000200"
-                value={accountNumber}
-                onChange={(e) => setAccountNumber(e.target.value)}
-              />
-            </div>
-            <div className="col-md-2">
-              <label className="form-label mb-0 small fw-bold">Status</label>
-              <select className="form-select form-select-sm" value={status} onChange={(e) => setStatus(e.target.value)}>
-                <option value="Active">Active</option>
-                <option value="Inactive">Inactive</option>
-              </select>
-            </div>
-            <div className="col-md-1">
-              <button className="btn btn-success btn-sm w-100" onClick={handleSave}>
-                Save
+            {onNavigate && (
+              <button
+                type="button"
+                className="mmt-back-btn"
+                onClick={() => onNavigate("dashboard")}
+              >
+                <ArrowLeft size={16} />
+                Back to Dashboard
               </button>
+            )}
+          </div>
+        </div>
+
+        {/* STATS */}
+        <div className="mmt-stats">
+          <div className="mmt-stat-card blue">
+            <div className="mmt-stat-icon">
+              <Building size={24} />
+            </div>
+            <div>
+              <span>Total Bank Accounts</span>
+              <strong>{totalBanks}</strong>
+              <small>Registered bank profiles</small>
+            </div>
+          </div>
+          <div className="mmt-stat-card green">
+            <div className="mmt-stat-icon">
+              <CheckCircle2 size={24} />
+            </div>
+            <div>
+              <span>Active Accounts</span>
+              <strong>{activeBanksCount}</strong>
+              <small>Operational for ledger entries</small>
             </div>
           </div>
         </div>
+
+        {/* FORM CARD */}
+        <div className="mmt-form-card">
+          <div className="mmt-section-head">
+            <div className="mmt-section-title">
+              <div className="mmt-section-icon">
+                {editId ? <Pencil size={20} /> : <PlusCircle size={20} />}
+              </div>
+              <div>
+                <h4>{editId ? "Edit Bank Profile" : "Add New Bank Profile"}</h4>
+                <p>
+                  {editId
+                    ? "Update existing account and IBAN details"
+                    : "Configure a new bank account for payment ledger tracking"}
+                </p>
+              </div>
+            </div>
+            {editId && (
+              <div className="editing-badge">
+                <Pencil size={13} />
+                Editing Bank Profile #{editId}
+              </div>
+            )}
+          </div>
+
+          <div className="mmt-form-body">
+            <div className="row g-3">
+              {/* BANK NAME */}
+              <div className="col-12 col-md-6 col-xl-4">
+                <label>BANK NAME</label>
+                <div className="mmt-input-wrap">
+                  <Building size={16} className="text-secondary" />
+                  <input
+                    type="text"
+                    placeholder="e.g. Meezan Bank, HBL"
+                    value={form.bank_name}
+                    onChange={(e) =>
+                      setForm({ ...form, bank_name: e.target.value })
+                    }
+                  />
+                </div>
+              </div>
+
+              {/* ACCOUNT TITLE */}
+              <div className="col-12 col-md-6 col-xl-3">
+                <label>ACCOUNT TITLE</label>
+                <div className="mmt-input-wrap">
+                  <FileText size={16} className="text-secondary" />
+                  <input
+                    type="text"
+                    placeholder="e.g. Travel Agency Pvt Ltd"
+                    value={form.account_title}
+                    onChange={(e) =>
+                      setForm({ ...form, account_title: e.target.value })
+                    }
+                  />
+                </div>
+              </div>
+
+              {/* ACCOUNT / IBAN NUMBER */}
+              <div className="col-12 col-md-6 col-xl-3">
+                <label>ACCOUNT / IBAN</label>
+                <div className="mmt-input-wrap">
+                  <CreditCard size={16} className="text-secondary" />
+                  <input
+                    type="text"
+                    placeholder="e.g. PK36MEZN000..."
+                    value={form.account_number}
+                    onChange={(e) =>
+                      setForm({ ...form, account_number: e.target.value })
+                    }
+                  />
+                </div>
+              </div>
+
+              {/* STATUS */}
+              <div className="col-12 col-md-6 col-xl-2">
+                <label>STATUS</label>
+                <div className="mmt-input-wrap">
+                  <select
+                    style={{
+                      width: "100%",
+                      border: 0,
+                      outline: 0,
+                      background: "transparent",
+                      fontWeight: 700,
+                      fontSize: "13px",
+                      color: "#0f172a",
+                    }}
+                    value={form.status}
+                    onChange={(e) =>
+                      setForm({ ...form, status: e.target.value })
+                    }
+                  >
+                    <option value="Active">Active</option>
+                    <option value="Inactive">Inactive</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* SAVE / ACTIONS */}
+              <div className="col-12 col-md-6 col-xl-4">
+                <button
+                  type="button"
+                  disabled={loading}
+                  onClick={save}
+                  className={editId ? "mmt-save-btn edit" : "mmt-save-btn"}
+                >
+                  {loading ? (
+                    <>
+                      <RefreshCw size={17} className="spin" />
+                      Saving...
+                    </>
+                  ) : editId ? (
+                    <>
+                      <Save size={17} />
+                      Update Bank Profile
+                    </>
+                  ) : (
+                    <>
+                      <PlusCircle size={17} />
+                      Save Bank Profile
+                    </>
+                  )}
+                </button>
+              </div>
+
+              {/* CANCEL EDIT */}
+              {editId && (
+                <div className="col-12 col-md-6 col-xl-4">
+                  <button
+                    type="button"
+                    className="mmt-cancel-edit"
+                    onClick={clearForm}
+                  >
+                    <X size={17} />
+                    Cancel & Clear Form
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* LIST CARD */}
+        <div className="mmt-list-card">
+          <div className="mmt-list-header">
+            <div className="mmt-section-title">
+              <div className="mmt-section-icon list">
+                <Building2 size={20} />
+              </div>
+              <div>
+                <h4>Active Bank Profiles</h4>
+                <p>Overview of bank accounts and active statuses</p>
+              </div>
+            </div>
+
+            <div className="mmt-search-wrap">
+              <Search size={16} className="search-icon" />
+              <input
+                type="text"
+                placeholder="Search ID, Bank, Account, IBAN..."
+                value={search}
+                onChange={(e) => handleSearch(e.target.value)}
+              />
+            </div>
+          </div>
+
+          {/* DESKTOP TABLE */}
+          <div className="table-responsive mmt-table-wrap">
+            <table className="mmt-table">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Bank Name</th>
+                  <th>Account Title</th>
+                  <th>Account / IBAN Number</th>
+                  <th>Status</th>
+                  <th style={{ textAlign: "right" }}>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredBanks.length === 0 ? (
+                  <tr>
+                    <td colSpan="6" className="empty-users">
+                      <Building2 size={38} />
+                      <strong>No Bank Profiles Found</strong>
+                      <span>There are currently no bank accounts configured.</span>
+                    </td>
+                  </tr>
+                ) : (
+                  filteredBanks.map((b) => (
+                    <tr key={b.id} className={editId === b.id ? "editing-row" : ""}>
+                      <td>
+                        <span className="code-badge blue">#{b.id}</span>
+                      </td>
+                      <td>
+                        <strong className="text-dark">{b.bank_name}</strong>
+                      </td>
+                      <td>
+                        <span className="date-text">{b.account_title || "—"}</span>
+                      </td>
+                      <td>
+                        <strong className="text-primary">{b.account_number}</strong>
+                      </td>
+                      <td>
+                        <span
+                          style={{
+                            padding: "4px 10px",
+                            borderRadius: "12px",
+                            fontSize: "11px",
+                            fontWeight: "800",
+                            background: b.status === "Active" ? "#d1fae5" : "#fee2e2",
+                            color: b.status === "Active" ? "#047857" : "#dc2626",
+                            border: `1px solid ${b.status === "Active" ? "#a7f3d0" : "#fca5a5"}`,
+                          }}
+                        >
+                          {b.status}
+                        </span>
+                      </td>
+                      <td style={{ textAlign: "right" }}>
+                        <div className="action-buttons" style={{ justifyContent: "flex-end" }}>
+                          <button
+                            type="button"
+                            className="edit-btn"
+                            title="Edit"
+                            onClick={() => handleEdit(b)}
+                          >
+                            <Pencil size={15} />
+                          </button>
+                          <button
+                            type="button"
+                            className="delete-btn"
+                            title="Delete"
+                            onClick={() => handleDelete(b)}
+                          >
+                            <Trash2 size={15} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          {/* FOOTER */}
+          <div className="mmt-list-footer">
+            <span>
+              <Building2 size={14} />
+              {totalBanks} registered bank profiles
+            </span>
+          </div>
+        </div>
+
+        {/* SECURITY NOTE */}
+        <div className="mmt-security-note">
+          <ShieldCheck size={16} />
+          <span>
+            Bank profile updates and deletions are protected by administrator security verification.
+          </span>
+        </div>
       </div>
 
-      {/* SEARCH AND TABLE */}
-      <div className="card shadow-sm border-0">
-        <div className="card-body pb-0">
-          <input
-            type="text"
-            className="form-control form-control-sm mb-3"
-            placeholder="🔍 Search Bank Profile..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
-        </div>
-        <div className="table-responsive">
-          <table className="table table-hover mb-0 align-middle">
-            <thead className="table-light">
-              <tr>
-                <th style={{ fontSize: "0.85rem" }}>#</th>
-                <th style={{ fontSize: "0.85rem" }}>Bank Name</th>
-                <th style={{ fontSize: "0.85rem" }}>Account Title</th>
-                <th style={{ fontSize: "0.85rem" }}>Account / IBAN Number</th>
-                <th style={{ fontSize: "0.85rem" }}>Status</th>
-                <th className="text-center" style={{ fontSize: "0.85rem" }}>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredBanks.map((b, index) => (
-                <tr key={b.id}>
-                  <td style={{ fontSize: "0.85rem" }}>{index + 1}</td>
-                  <td className="fw-bold text-primary" style={{ fontSize: "0.85rem" }}>{b.bank_name}</td>
-                  <td style={{ fontSize: "0.85rem" }}>{b.account_title}</td>
-                  <td className="fw-bold" style={{ fontSize: "0.85rem" }}>{b.account_number}</td>
-                  <td style={{ fontSize: "0.85rem" }}>
-                    <span className={`badge ${b.status === "Active" ? "bg-success" : "bg-danger"}`}>
-                      {b.status}
-                    </span>
-                  </td>
-                  <td className="text-center">
-                    <div className="d-flex gap-1 justify-content-center">
-                      <button className="btn btn-outline-primary btn-sm py-0 px-2" style={{ fontSize: "11px" }} onClick={() => handleEdit(b)}>
-                        Edit
-                      </button>
-                      <button className="btn btn-outline-danger btn-sm py-0 px-2" style={{ fontSize: "11px" }} onClick={() => handleDelete(b.id)}>
-                        Del
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-              {filteredBanks.length === 0 && (
-                <tr>
-                  <td colSpan="6" className="text-center text-muted py-3">No bank profiles found</td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
+      <style>{`
+        * { box-sizing: border-box; }
+        .mmt-users-page {
+          min-height: 100vh;
+          padding: 24px 16px 40px;
+          background: radial-gradient(circle at 10% 10%, rgba(37,99,235,.12), transparent 28%), radial-gradient(circle at 90% 20%, rgba(124,58,237,.12), transparent 25%), linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 48%, #f1f5f9 100%);
+          font-family: Inter, system-ui, sans-serif;
+          color: #0f172a;
+        }
+        .mmt-container { max-width: 1500px; margin: 0 auto; }
+        .mmt-header { position: relative; overflow: hidden; border-radius: 24px; background: linear-gradient(135deg, #090d16 0%, #1e293b 45%, #1e1b4b 100%); box-shadow: 0 20px 45px rgba(15,23,42,.25); margin-bottom: 20px; }
+        .mmt-header-content { padding: 24px 28px; display: flex; align-items: center; justify-content: space-between; gap: 20px; }
+        .mmt-brand { display: flex; align-items: center; gap: 16px; }
+        .mmt-brand-icon { width: 60px; height: 60px; border-radius: 18px; display: flex; align-items: center; justify-content: center; color: #fff; background: linear-gradient(135deg, rgba(255,255,255,.25), rgba(255,255,255,.10)); border: 1px solid rgba(255,255,255,.30); box-shadow: 0 10px 25px rgba(0,0,0,.3); }
+        .mmt-overline { color: #93c5fd; font-size: 10px; letter-spacing: 2px; font-weight: 800; margin-bottom: 4px; }
+        .mmt-brand h2 { margin: 0; color: #ffffff; font-size: 26px; font-weight: 800; }
+        .mmt-brand p { margin: 4px 0 0; color: #cbd5e1; font-size: 12px; font-weight: 500; }
+        .mmt-back-btn { border: 1px solid rgba(255,255,255,.30); background: rgba(255,255,255,.15); color: #ffffff; border-radius: 12px; padding: 10px 16px; display: flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 700; cursor: pointer; transition: .2s ease; }
+        .mmt-back-btn:hover { background: rgba(255,255,255,.25); transform: translateY(-1px); }
+        .mmt-stats { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 16px; margin-bottom: 20px; }
+        .mmt-stat-card { min-height: 105px; background: #ffffff; border: 1px solid #cbd5e1; border-radius: 18px; padding: 16px 20px; display: flex; align-items: center; gap: 16px; box-shadow: 0 6px 20px rgba(15,23,42,.06); }
+        .mmt-stat-icon { width: 50px; height: 50px; border-radius: 14px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+        .mmt-stat-card.blue .mmt-stat-icon { background: #dbeafe; color: #1d4ed8; }
+        .mmt-stat-card.green .mmt-stat-icon { background: #d1fae5; color: #047857; }
+        .mmt-stat-card span { display: block; color: #475569; font-size: 11px; font-weight: 800; text-transform: uppercase; }
+        .mmt-stat-card strong { display: block; margin-top: 2px; color: #0f172a; font-size: 26px; font-weight: 900; }
+        .mmt-stat-card small { display: block; margin-top: 4px; color: #64748b; font-size: 11px; font-weight: 600; }
+        .mmt-form-card, .mmt-list-card { background: #ffffff; border: 1px solid #cbd5e1; border-radius: 20px; box-shadow: 0 10px 30px rgba(15,23,42,.08); overflow: hidden; margin-bottom: 20px; }
+        .mmt-section-head, .mmt-list-header { padding: 18px 22px; border-bottom: 1px solid #cbd5e1; background: #f8fafc; display: flex; align-items: center; justify-content: space-between; gap: 15px; }
+        .mmt-section-title { display: flex; align-items: center; gap: 12px; }
+        .mmt-section-icon { width: 42px; height: 42px; border-radius: 12px; display: flex; align-items: center; justify-content: center; background: #dbeafe; color: #1d4ed8; }
+        .mmt-section-icon.list { background: #ede9fe; color: #6d28d9; }
+        .mmt-section-title h4 { margin: 0; font-size: 16px; font-weight: 800; color: #0f172a; }
+        .mmt-section-title p { margin: 3px 0 0; font-size: 12px; color: #475569; font-weight: 600; }
+        .editing-badge { display: flex; align-items: center; gap: 6px; padding: 8px 12px; border-radius: 20px; background: #fff7ed; border: 1px solid #fdba74; color: #c2410c; font-size: 11px; font-weight: 800; }
+        .mmt-form-body { padding: 22px; }
+        .mmt-form-body label { display: block; margin-bottom: 8px; font-size: 11px; font-weight: 800; color: #334155; letter-spacing: .7px; }
+        .mmt-input-wrap { height: 45px; border: 1px solid #94a3b8; background: #ffffff; border-radius: 11px; display: flex; align-items: center; padding: 0 12px; gap: 10px; }
+        .mmt-input-wrap input { width: 100%; border: 0; outline: 0; background: transparent; color: #0f172a; font-size: 13px; font-weight: 700; }
+        .mmt-save-btn, .mmt-cancel-edit { width: 100%; height: 45px; border: 0; border-radius: 11px; display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 12px; font-weight: 800; cursor: pointer; transition: .2s ease; margin-top: 23px; }
+        .mmt-save-btn { color: #ffffff; background: linear-gradient(135deg, #1d4ed8, #4338ca); box-shadow: 0 8px 18px rgba(29,78,216,.25); }
+        .mmt-save-btn.edit { background: linear-gradient(135deg, #b45309, #c2410c); }
+        .mmt-cancel-edit { background: #e2e8f0; border: 1px solid #cbd5e1; color: #1e293b; }
+        .mmt-search-wrap { display: flex; align-items: center; background: #ffffff; border: 1px solid #94a3b8; border-radius: 12px; padding: 0 12px; gap: 8px; width: 320px; height: 40px; }
+        .mmt-search-wrap input { border: 0; outline: 0; font-size: 12px; font-weight: 600; width: 100%; }
+        .mmt-table { width: 100%; border-collapse: separate; border-spacing: 0; }
+        .mmt-table thead th { padding: 14px 16px; background: #f1f5f9; border-bottom: 2px solid #cbd5e1; color: #1e293b; font-size: 11px; font-weight: 800; text-transform: uppercase; }
+        .mmt-table tbody td { padding: 14px 16px; border-bottom: 1px solid #e2e8f0; color: #0f172a; font-size: 12px; font-weight: 600; }
+        .code-badge.blue { background: #e0f2fe; color: #0369a1; padding: 4px 8px; border-radius: 6px; font-weight: 800; font-size: 11px; border: 1px solid #7dd3fc; }
+        .action-buttons { display: flex; align-items: center; gap: 8px; }
+        .edit-btn, .delete-btn { width: 34px; height: 34px; border-radius: 10px; border: 1px solid; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+        .edit-btn { background: #fff7ed; color: #c2410c; border-color: #fdba74; }
+        .delete-btn { background: #fef2f2; color: #dc2626; border-color: #fca5a5; }
+        .mmt-list-footer { padding: 14px 18px; display: flex; align-items: center; justify-content: flex-end; gap: 20px; border-top: 1px solid #cbd5e1; background: #f8fafc; color: #334155; font-size: 11px; font-weight: 700; }
+        .mmt-security-note { margin-top: 8px; padding: 12px 16px; border-radius: 14px; background: #ffffff; border: 1px solid #cbd5e1; color: #334155; font-size: 11px; font-weight: 700; display: flex; justify-content: center; align-items: center; gap: 8px; }
+        .spin { animation: mmtSpin 1s linear infinite; }
+        @keyframes mmtSpin { to { transform: rotate(360deg); } }
+        .empty-users { text-align: center; padding: 40px !important; color: #64748b; }
+        .empty-users strong { display: block; margin-top: 10px; font-size: 14px; color: #1e293b; }
+      `}</style>
     </div>
   );
 }

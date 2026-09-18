@@ -29,7 +29,7 @@ export default function PasswordSettings({ onNavigate }) {
         icon: "error",
         title: "Connection Error",
         text: "Unable to load system settings.",
-        confirmButtonColor: "#2563eb",
+        confirmButtonColor: "#1e40af",
       });
     } finally {
       setLoading(false);
@@ -60,12 +60,6 @@ export default function PasswordSettings({ onNavigate }) {
 
   /* =====================================================
      CHANGE PASSWORD
-     
-     STEP 1:
-     Old Password
-
-     STEP 2:
-     New Password + Confirm Password
   ===================================================== */
   const openPasswordModal = async (key_name, display_name) => {
 
@@ -73,64 +67,65 @@ export default function PasswordSettings({ onNavigate }) {
        STEP 1 — OLD PASSWORD
     ================================================= */
     const { value: oldPassword } = await Swal.fire({
-      width: "390px",
+      width: "400px",
       padding: "0",
-      background: "#fff",
+      background: "#ffffff",
       showCancelButton: true,
       confirmButtonText: "Verify Password →",
       cancelButtonText: "Cancel",
-      confirmButtonColor: "#2563eb",
-      cancelButtonColor: "#64748b",
+      confirmButtonColor: "#1e40af",
+      cancelButtonColor: "#475569",
       focusConfirm: false,
 
       html: `
         <div style="
-          font-family:Inter,system-ui,sans-serif;
-          overflow:hidden;
-          border-radius:18px;
+          font-family: Inter, system-ui, -apple-system, sans-serif;
+          overflow: hidden;
+          border-radius: 18px;
         ">
 
           <div style="
-            padding:20px;
-            background:linear-gradient(135deg,#081225,#173b78,#2563eb);
-            color:white;
-            text-align:left;
+            padding: 22px;
+            background: linear-gradient(135deg, #0f172a, #1e3a8a, #1d4ed8);
+            color: #ffffff;
+            text-align: left;
           ">
 
             <div style="
-              display:flex;
-              align-items:center;
-              gap:12px;
+              display: flex;
+              align-items: center;
+              gap: 12px;
             ">
 
               <div style="
-                width:44px;
-                height:44px;
-                border-radius:13px;
-                display:flex;
-                align-items:center;
-                justify-content:center;
-                background:rgba(255,255,255,.12);
-                border:1px solid rgba(255,255,255,.16);
-                font-size:21px;
+                width: 44px;
+                height: 44px;
+                border-radius: 12px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                background: rgba(255, 255, 255, 0.15);
+                border: 1px solid rgba(255, 255, 255, 0.25);
+                font-size: 20px;
               ">
                 🔐
               </div>
 
               <div>
                 <div style="
-                  font-size:9px;
-                  font-weight:800;
-                  letter-spacing:1.6px;
-                  color:#bfdbfe;
+                  font-size: 10px;
+                  font-weight: 800;
+                  letter-spacing: 1.5px;
+                  color: #93c5fd;
                 ">
                   SECURITY VERIFICATION
                 </div>
 
                 <div style="
-                  font-size:19px;
-                  font-weight:800;
-                  margin-top:3px;
+                  font-size: 20px;
+                  font-weight: 800;
+                  margin-top: 2px;
+                  color: #ffffff;
                 ">
                   Change Password
                 </div>
@@ -139,12 +134,14 @@ export default function PasswordSettings({ onNavigate }) {
             </div>
 
             <div style="
-              margin-top:13px;
-              padding:8px 10px;
-              border-radius:9px;
-              background:rgba(255,255,255,.09);
-              font-size:11px;
-              color:#dbeafe;
+              margin-top: 14px;
+              padding: 9px 12px;
+              border-radius: 8px;
+              background: rgba(255, 255, 255, 0.12);
+              font-size: 12px;
+              font-weight: 600;
+              color: #ffffff;
+              border: 1px solid rgba(255, 255, 255, 0.2);
             ">
               🔑 ${display_name}
             </div>
@@ -153,28 +150,29 @@ export default function PasswordSettings({ onNavigate }) {
 
 
           <div style="
-            padding:18px 20px 8px;
-            text-align:left;
+            padding: 20px 22px 10px;
+            text-align: left;
           ">
 
             <div style="
-              font-size:12px;
-              font-weight:800;
-              color:#0f172a;
-              margin-bottom:4px;
+              font-size: 13px;
+              font-weight: 800;
+              color: #0f172a;
+              margin-bottom: 4px;
             ">
               Current Password
             </div>
 
             <div style="
-              font-size:10px;
-              color:#64748b;
-              margin-bottom:11px;
+              font-size: 11px;
+              color: #334155;
+              font-weight: 500;
+              margin-bottom: 12px;
             ">
               Enter your current password to continue.
             </div>
 
-            <div style="position:relative;">
+            <div style="position: relative;">
 
               <input
                 id="swal-old-pass"
@@ -182,16 +180,17 @@ export default function PasswordSettings({ onNavigate }) {
                 autocomplete="current-password"
                 placeholder="Enter old password"
                 style="
-                  width:100%;
-                  height:44px;
-                  box-sizing:border-box;
-                  padding:0 45px 0 12px;
-                  border:1px solid #dbe3ef;
-                  border-radius:10px;
-                  background:#f8fafc;
-                  color:#0f172a;
-                  font-size:12px;
-                  outline:none;
+                  width: 100%;
+                  height: 44px;
+                  box-sizing: border-box;
+                  padding: 0 45px 0 12px;
+                  border: 1.5px solid #cbd5e1;
+                  border-radius: 10px;
+                  background: #f8fafc;
+                  color: #0f172a;
+                  font-weight: 600;
+                  font-size: 13px;
+                  outline: none;
                 "
               />
 
@@ -200,17 +199,17 @@ export default function PasswordSettings({ onNavigate }) {
                 type="button"
                 onclick="window.toggleSwalPasswordVisibility('swal-old-pass')"
                 style="
-                  position:absolute;
-                  right:8px;
-                  top:50%;
-                  transform:translateY(-50%);
-                  width:32px;
-                  height:32px;
-                  border:0;
-                  border-radius:8px;
-                  background:#eef4ff;
-                  color:#2563eb;
-                  cursor:pointer;
+                  position: absolute;
+                  right: 8px;
+                  top: 50%;
+                  transform: translateY(-50%);
+                  width: 32px;
+                  height: 32px;
+                  border: 0;
+                  border-radius: 8px;
+                  background: #e2e8f0;
+                  color: #1e293b;
+                  cursor: pointer;
                 "
               >
                 👁️
@@ -222,23 +221,23 @@ export default function PasswordSettings({ onNavigate }) {
 
 
           <div style="
-            display:flex;
-            justify-content:center;
-            gap:5px;
-            padding:8px 0 2px;
+            display: flex;
+            justify-content: center;
+            gap: 6px;
+            padding: 10px 0 4px;
           ">
             <span style="
-              width:24px;
-              height:4px;
-              border-radius:99px;
-              background:#2563eb;
+              width: 26px;
+              height: 5px;
+              border-radius: 99px;
+              background: #1d4ed8;
             "></span>
 
             <span style="
-              width:24px;
-              height:4px;
-              border-radius:99px;
-              background:#e2e8f0;
+              width: 26px;
+              height: 5px;
+              border-radius: 99px;
+              background: #cbd5e1;
             "></span>
           </div>
 
@@ -303,24 +302,16 @@ export default function PasswordSettings({ onNavigate }) {
           width: "360px",
           icon: "error",
           title: "Wrong Password",
-          text:
-            verifyData.message ||
-            "The current password is incorrect.",
+          text: verifyData.message || "The current password is incorrect.",
           confirmButtonColor: "#dc2626",
           confirmButtonText: "Try Again",
         });
 
-        return openPasswordModal(
-          key_name,
-          display_name
-        );
+        return openPasswordModal(key_name, display_name);
       }
 
     } catch (err) {
-      console.error(
-        "PASSWORD VERIFY ERROR:",
-        err
-      );
+      console.error("PASSWORD VERIFY ERROR:", err);
 
       Swal.close();
 
@@ -329,7 +320,7 @@ export default function PasswordSettings({ onNavigate }) {
         icon: "error",
         title: "Verification Failed",
         text: "Unable to verify current password.",
-        confirmButtonColor: "#2563eb",
+        confirmButtonColor: "#1e40af",
       });
 
       return;
@@ -340,46 +331,46 @@ export default function PasswordSettings({ onNavigate }) {
        STEP 2 — NEW PASSWORD
     ================================================= */
     const { value: passwords } = await Swal.fire({
-      width: "390px",
+      width: "400px",
       padding: "0",
-      background: "#fff",
+      background: "#ffffff",
       showCancelButton: true,
       confirmButtonText: "🔐 Change Password",
       cancelButtonText: "Back",
-      confirmButtonColor: "#059669",
-      cancelButtonColor: "#64748b",
+      confirmButtonColor: "#047857",
+      cancelButtonColor: "#475569",
       focusConfirm: false,
 
       html: `
         <div style="
-          font-family:Inter,system-ui,sans-serif;
-          overflow:hidden;
-          border-radius:18px;
+          font-family: Inter, system-ui, -apple-system, sans-serif;
+          overflow: hidden;
+          border-radius: 18px;
         ">
 
           <div style="
-            padding:20px;
-            background:linear-gradient(135deg,#081225,#173b78,#2563eb);
-            color:#fff;
-            text-align:left;
+            padding: 22px;
+            background: linear-gradient(135deg, #0f172a, #065f46, #047857);
+            color: #ffffff;
+            text-align: left;
           ">
 
             <div style="
-              display:flex;
-              align-items:center;
-              gap:12px;
+              display: flex;
+              align-items: center;
+              gap: 12px;
             ">
 
               <div style="
-                width:44px;
-                height:44px;
-                border-radius:13px;
-                display:flex;
-                align-items:center;
-                justify-content:center;
-                background:rgba(255,255,255,.12);
-                border:1px solid rgba(255,255,255,.16);
-                font-size:21px;
+                width: 44px;
+                height: 44px;
+                border-radius: 12px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                background: rgba(255, 255, 255, 0.15);
+                border: 1px solid rgba(255, 255, 255, 0.25);
+                font-size: 20px;
               ">
                 🛡️
               </div>
@@ -387,18 +378,19 @@ export default function PasswordSettings({ onNavigate }) {
               <div>
 
                 <div style="
-                  font-size:9px;
-                  font-weight:800;
-                  letter-spacing:1.6px;
-                  color:#bfdbfe;
+                  font-size: 10px;
+                  font-weight: 800;
+                  letter-spacing: 1.5px;
+                  color: #a7f3d0;
                 ">
                   STEP 2 OF 2
                 </div>
 
                 <div style="
-                  font-size:19px;
-                  font-weight:800;
-                  margin-top:3px;
+                  font-size: 20px;
+                  font-weight: 800;
+                  margin-top: 2px;
+                  color: #ffffff;
                 ">
                   New Password
                 </div>
@@ -408,12 +400,14 @@ export default function PasswordSettings({ onNavigate }) {
             </div>
 
             <div style="
-              margin-top:13px;
-              padding:8px 10px;
-              border-radius:9px;
-              background:rgba(16,185,129,.15);
-              font-size:10px;
-              color:#d1fae5;
+              margin-top: 14px;
+              padding: 9px 12px;
+              border-radius: 8px;
+              background: rgba(255, 255, 255, 0.15);
+              font-size: 11px;
+              font-weight: 700;
+              color: #ecfdf5;
+              border: 1px solid rgba(255, 255, 255, 0.25);
             ">
               ✓ Current password verified
             </div>
@@ -422,22 +416,22 @@ export default function PasswordSettings({ onNavigate }) {
 
 
           <div style="
-            padding:18px 20px 8px;
-            text-align:left;
+            padding: 20px 22px 10px;
+            text-align: left;
           ">
 
             <!-- NEW PASSWORD -->
 
             <div style="
-              font-size:11px;
-              font-weight:800;
-              color:#334155;
-              margin-bottom:6px;
+              font-size: 12px;
+              font-weight: 800;
+              color: #0f172a;
+              margin-bottom: 6px;
             ">
               New Password
             </div>
 
-            <div style="position:relative;">
+            <div style="position: relative;">
 
               <input
                 id="swal-new-pass"
@@ -445,16 +439,17 @@ export default function PasswordSettings({ onNavigate }) {
                 autocomplete="new-password"
                 placeholder="Enter new password"
                 style="
-                  width:100%;
-                  height:44px;
-                  box-sizing:border-box;
-                  padding:0 45px 0 12px;
-                  border:1px solid #dbe3ef;
-                  border-radius:10px;
-                  background:#f8fafc;
-                  color:#0f172a;
-                  font-size:12px;
-                  outline:none;
+                  width: 100%;
+                  height: 44px;
+                  box-sizing: border-box;
+                  padding: 0 45px 0 12px;
+                  border: 1.5px solid #cbd5e1;
+                  border-radius: 10px;
+                  background: #f8fafc;
+                  color: #0f172a;
+                  font-weight: 600;
+                  font-size: 13px;
+                  outline: none;
                 "
               />
 
@@ -463,17 +458,17 @@ export default function PasswordSettings({ onNavigate }) {
                 type="button"
                 onclick="window.toggleSwalPasswordVisibility('swal-new-pass')"
                 style="
-                  position:absolute;
-                  right:8px;
-                  top:50%;
-                  transform:translateY(-50%);
-                  width:32px;
-                  height:32px;
-                  border:0;
-                  border-radius:8px;
-                  background:#eef4ff;
-                  color:#2563eb;
-                  cursor:pointer;
+                  position: absolute;
+                  right: 8px;
+                  top: 50%;
+                  transform: translateY(-50%);
+                  width: 32px;
+                  height: 32px;
+                  border: 0;
+                  border-radius: 8px;
+                  background: #e2e8f0;
+                  color: #1e293b;
+                  cursor: pointer;
                 "
               >
                 👁️
@@ -485,15 +480,15 @@ export default function PasswordSettings({ onNavigate }) {
             <!-- CONFIRM PASSWORD -->
 
             <div style="
-              font-size:11px;
-              font-weight:800;
-              color:#334155;
-              margin:13px 0 6px;
+              font-size: 12px;
+              font-weight: 800;
+              color: #0f172a;
+              margin: 14px 0 6px;
             ">
               Confirm New Password
             </div>
 
-            <div style="position:relative;">
+            <div style="position: relative;">
 
               <input
                 id="swal-confirm-pass"
@@ -501,16 +496,17 @@ export default function PasswordSettings({ onNavigate }) {
                 autocomplete="new-password"
                 placeholder="Re-enter new password"
                 style="
-                  width:100%;
-                  height:44px;
-                  box-sizing:border-box;
-                  padding:0 45px 0 12px;
-                  border:1px solid #dbe3ef;
-                  border-radius:10px;
-                  background:#f8fafc;
-                  color:#0f172a;
-                  font-size:12px;
-                  outline:none;
+                  width: 100%;
+                  height: 44px;
+                  box-sizing: border-box;
+                  padding: 0 45px 0 12px;
+                  border: 1.5px solid #cbd5e1;
+                  border-radius: 10px;
+                  background: #f8fafc;
+                  color: #0f172a;
+                  font-weight: 600;
+                  font-size: 13px;
+                  outline: none;
                 "
               />
 
@@ -519,17 +515,17 @@ export default function PasswordSettings({ onNavigate }) {
                 type="button"
                 onclick="window.toggleSwalPasswordVisibility('swal-confirm-pass')"
                 style="
-                  position:absolute;
-                  right:8px;
-                  top:50%;
-                  transform:translateY(-50%);
-                  width:32px;
-                  height:32px;
-                  border:0;
-                  border-radius:8px;
-                  background:#eef4ff;
-                  color:#2563eb;
-                  cursor:pointer;
+                  position: absolute;
+                  right: 8px;
+                  top: 50%;
+                  transform: translateY(-50%);
+                  width: 32px;
+                  height: 32px;
+                  border: 0;
+                  border-radius: 8px;
+                  background: #e2e8f0;
+                  color: #1e293b;
+                  cursor: pointer;
                 "
               >
                 👁️
@@ -539,13 +535,14 @@ export default function PasswordSettings({ onNavigate }) {
 
 
             <div style="
-              margin-top:10px;
-              padding:8px 10px;
-              border-radius:8px;
-              background:#f8fafc;
-              border:1px solid #e8eef7;
-              color:#64748b;
-              font-size:9px;
+              margin-top: 12px;
+              padding: 9px 12px;
+              border-radius: 8px;
+              background: #f1f5f9;
+              border: 1px solid #cbd5e1;
+              color: #334155;
+              font-weight: 600;
+              font-size: 11px;
             ">
               💡 Password length is completely flexible.
             </div>
@@ -554,23 +551,23 @@ export default function PasswordSettings({ onNavigate }) {
 
 
           <div style="
-            display:flex;
-            justify-content:center;
-            gap:5px;
-            padding:8px 0 2px;
+            display: flex;
+            justify-content: center;
+            gap: 6px;
+            padding: 10px 0 4px;
           ">
             <span style="
-              width:24px;
-              height:4px;
-              border-radius:99px;
-              background:#22c55e;
+              width: 26px;
+              height: 5px;
+              border-radius: 99px;
+              background: #16a34a;
             "></span>
 
             <span style="
-              width:24px;
-              height:4px;
-              border-radius:99px;
-              background:#2563eb;
+              width: 26px;
+              height: 5px;
+              border-radius: 99px;
+              background: #16a34a;
             "></span>
           </div>
 
@@ -588,26 +585,18 @@ export default function PasswordSettings({ onNavigate }) {
         const confirmPassword =
           document.getElementById("swal-confirm-pass")?.value || "";
 
-        /* NO MINIMUM LENGTH */
-
         if (!newPassword) {
-          Swal.showValidationMessage(
-            "Please enter a new password."
-          );
+          Swal.showValidationMessage("Please enter a new password.");
           return false;
         }
 
         if (!confirmPassword) {
-          Swal.showValidationMessage(
-            "Please confirm your new password."
-          );
+          Swal.showValidationMessage("Please confirm your new password.");
           return false;
         }
 
         if (newPassword !== confirmPassword) {
-          Swal.showValidationMessage(
-            "New passwords do not match."
-          );
+          Swal.showValidationMessage("New passwords do not match.");
           return false;
         }
 
@@ -666,7 +655,7 @@ export default function PasswordSettings({ onNavigate }) {
           icon: "success",
           title: "Password Changed!",
           text: "Your password has been changed successfully.",
-          confirmButtonColor: "#059669",
+          confirmButtonColor: "#047857",
           confirmButtonText: "Done",
         });
 
@@ -677,18 +666,13 @@ export default function PasswordSettings({ onNavigate }) {
           width: "350px",
           icon: "error",
           title: "Password Not Changed",
-          text:
-            data.message ||
-            "Failed to update password.",
+          text: data.message || "Failed to update password.",
           confirmButtonColor: "#dc2626",
         });
       }
 
     } catch (err) {
-      console.error(
-        "PASSWORD UPDATE ERROR:",
-        err
-      );
+      console.error("PASSWORD UPDATE ERROR:", err);
 
       Swal.close();
 
@@ -712,63 +696,62 @@ export default function PasswordSettings({ onNavigate }) {
     current_description
   ) => {
 
-    const { value: descriptionValue } =
-      await Swal.fire({
-        width: "380px",
-        padding: "18px",
-        title: "📝 Edit Description",
+    const { value: descriptionValue } = await Swal.fire({
+      width: "400px",
+      padding: "20px",
+      title: "📝 Edit Description",
 
-        html: `
+      html: `
+        <div style="
+          text-align: left;
+          font-family: Inter, system-ui, -apple-system, sans-serif;
+        ">
+
           <div style="
-            text-align:left;
-            font-family:Inter,system-ui,sans-serif;
+            font-size: 12px;
+            color: #334155;
+            font-weight: 600;
+            margin-bottom: 10px;
           ">
-
-            <div style="
-              font-size:11px;
-              color:#64748b;
-              margin-bottom:10px;
-            ">
-              Update description for
-              <strong style="color:#0f172a;">
-                ${display_name}
-              </strong>
-            </div>
-
-            <textarea
-              id="swal-desc"
-              style="
-                width:100%;
-                height:80px;
-                box-sizing:border-box;
-                resize:none;
-                border:1px solid #dbe3ef;
-                border-radius:10px;
-                padding:10px;
-                font-size:12px;
-                outline:none;
-              "
-              placeholder="Enter description..."
-            >${current_description || ""}</textarea>
-
+            Update description for
+            <strong style="color: #0f172a; font-weight: 800;">
+              ${display_name}
+            </strong>
           </div>
-        `,
 
-        focusConfirm: false,
-        showCancelButton: true,
-        confirmButtonText: "Save",
-        cancelButtonText: "Cancel",
-        confirmButtonColor: "#059669",
-        cancelButtonColor: "#64748b",
+          <textarea
+            id="swal-desc"
+            style="
+              width: 100%;
+              height: 90px;
+              box-sizing: border-box;
+              resize: none;
+              border: 1.5px solid #cbd5e1;
+              border-radius: 10px;
+              padding: 10px 12px;
+              font-size: 13px;
+              font-weight: 500;
+              color: #0f172a;
+              background: #f8fafc;
+              outline: none;
+            "
+            placeholder="Enter description..."
+          >${current_description || ""}</textarea>
 
-        preConfirm: () => {
-          return (
-            document.getElementById(
-              "swal-desc"
-            )?.value || ""
-          );
-        },
-      });
+        </div>
+      `,
+
+      focusConfirm: false,
+      showCancelButton: true,
+      confirmButtonText: "Save Changes",
+      cancelButtonText: "Cancel",
+      confirmButtonColor: "#047857",
+      cancelButtonColor: "#475569",
+
+      preConfirm: () => {
+        return document.getElementById("swal-desc")?.value || "";
+      },
+    });
 
     if (descriptionValue === undefined) return;
 
@@ -806,7 +789,7 @@ export default function PasswordSettings({ onNavigate }) {
           icon: "success",
           title: "Saved!",
           text: "Description updated successfully.",
-          confirmButtonColor: "#059669",
+          confirmButtonColor: "#047857",
         });
 
         loadPasswords();
@@ -816,19 +799,14 @@ export default function PasswordSettings({ onNavigate }) {
         Swal.fire({
           icon: "error",
           title: "Error",
-          text:
-            data.message ||
-            "Failed to update description.",
+          text: data.message || "Failed to update description.",
         });
 
       }
 
     } catch (err) {
 
-      console.error(
-        "DESCRIPTION UPDATE ERROR:",
-        err
-      );
+      console.error("DESCRIPTION UPDATE ERROR:", err);
 
       Swal.close();
 
@@ -842,97 +820,69 @@ export default function PasswordSettings({ onNavigate }) {
 
 
   /* =====================================================
-     SEARCH
+     SEARCH FILTER
   ===================================================== */
-  const filteredPasswords = passwordsList.filter(
-    (item) => {
-      const search =
-        searchTerm.toLowerCase();
+  const filteredPasswords = passwordsList.filter((item) => {
+    const search = searchTerm.toLowerCase();
 
-      return (
-        item.display_name
-          ?.toLowerCase()
-          .includes(search) ||
-
-        item.key_name
-          ?.toLowerCase()
-          .includes(search) ||
-
-        item.description
-          ?.toLowerCase()
-          .includes(search)
-      );
-    }
-  );
+    return (
+      item.display_name?.toLowerCase().includes(search) ||
+      item.key_name?.toLowerCase().includes(search) ||
+      item.description?.toLowerCase().includes(search)
+    );
+  });
 
 
   /* =====================================================
-     PAGE
+     PAGE RENDER
   ===================================================== */
   return (
     <div
       style={{
         minHeight: "100vh",
-        padding: "16px",
+        padding: "20px",
         boxSizing: "border-box",
-        fontFamily:
-          "'Inter',system-ui,sans-serif",
-
-        background:
-          "radial-gradient(circle at 15% 10%,rgba(37,99,235,.10),transparent 25%),linear-gradient(135deg,#f7f9fc,#eef4ff)",
+        fontFamily: "'Inter', system-ui, -apple-system, sans-serif",
+        background: "radial-gradient(circle at 15% 10%, rgba(29, 78, 216, 0.08), transparent 30%), linear-gradient(135deg, #f1f5f9, #e2e8f0)",
       }}
     >
 
       <style>{`
-
         .ps-card {
-          transition:
-            box-shadow .18s ease,
-            transform .18s ease;
+          transition: box-shadow .2s ease, transform .2s ease;
         }
 
         .ps-row {
-          transition:
-            background .15s ease;
+          transition: background .15s ease;
         }
 
         .ps-row:hover {
-          background:#f8fbff !important;
+          background: #f1f5f9 !important;
         }
 
         .ps-action {
-          transition:
-            transform .15s ease,
-            box-shadow .15s ease;
+          transition: transform .15s ease, box-shadow .15s ease, background .15s ease;
         }
 
         .ps-action:hover {
-          transform:translateY(-1px);
+          transform: translateY(-1px);
         }
 
         .ps-search:focus {
-          border-color:#3b82f6 !important;
-          box-shadow:
-            0 0 0 3px rgba(59,130,246,.09) !important;
+          border-color: #1d4ed8 !important;
+          box-shadow: 0 0 0 3px rgba(29, 78, 216, 0.15) !important;
         }
 
-        @media(max-width:900px) {
-
+        @media(max-width: 900px) {
           .ps-header {
-            flex-direction:column !important;
-            align-items:flex-start !important;
+            flex-direction: column !important;
+            align-items: flex-start !important;
           }
 
           .ps-search-wrap {
-            width:100% !important;
+            width: 100% !important;
           }
-
-          .ps-search-box {
-            width:100% !important;
-          }
-
         }
-
       `}</style>
 
 
@@ -942,56 +892,41 @@ export default function PasswordSettings({ onNavigate }) {
       <div
         className="ps-card"
         style={{
-          maxWidth:"1400px",
-          margin:"0 auto 12px",
-          borderRadius:"18px",
-          overflow:"hidden",
-          position:"relative",
-
-          background:
-            "linear-gradient(135deg,#081225,#173b78,#2563eb)",
-
-          boxShadow:
-            "0 10px 28px rgba(15,23,42,.14)",
+          maxWidth: "1400px",
+          margin: "0 auto 14px",
+          borderRadius: "16px",
+          overflow: "hidden",
+          position: "relative",
+          background: "linear-gradient(135deg, #0f172a, #1e3a8a, #1d4ed8)",
+          boxShadow: "0 10px 25px rgba(15, 23, 42, 0.2)",
         }}
       >
 
         <div
           className="ps-header"
           style={{
-            minHeight:"100px",
-            padding:"17px 20px",
-            display:"flex",
-            alignItems:"center",
-            justifyContent:"space-between",
-            gap:"15px",
+            minHeight: "95px",
+            padding: "18px 24px",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: "16px",
           }}
         >
 
-          <div
-            style={{
-              display:"flex",
-              alignItems:"center",
-              gap:"12px",
-            }}
-          >
+          <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
 
             <div
               style={{
-                width:"48px",
-                height:"48px",
-                borderRadius:"14px",
-                display:"flex",
-                alignItems:"center",
-                justifyContent:"center",
-
-                background:
-                  "rgba(255,255,255,.10)",
-
-                border:
-                  "1px solid rgba(255,255,255,.15)",
-
-                fontSize:"22px",
+                width: "48px",
+                height: "48px",
+                borderRadius: "12px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                background: "rgba(255, 255, 255, 0.15)",
+                border: "1px solid rgba(255, 255, 255, 0.25)",
+                fontSize: "22px",
               }}
             >
               🔐
@@ -1001,11 +936,11 @@ export default function PasswordSettings({ onNavigate }) {
 
               <div
                 style={{
-                  fontSize:"9px",
-                  fontWeight:800,
-                  letterSpacing:"1.7px",
-                  color:"#bfdbfe",
-                  marginBottom:"3px",
+                  fontSize: "10px",
+                  fontWeight: 800,
+                  letterSpacing: "1.8px",
+                  color: "#93c5fd",
+                  marginBottom: "2px",
                 }}
               >
                 SYSTEM SECURITY
@@ -1013,24 +948,18 @@ export default function PasswordSettings({ onNavigate }) {
 
               <h1
                 style={{
-                  margin:0,
-                  color:"#fff",
-                  fontSize:"23px",
-                  fontWeight:800,
-                  letterSpacing:"-.4px",
+                  margin: 0,
+                  color: "#ffffff",
+                  fontSize: "22px",
+                  fontWeight: 800,
+                  letterSpacing: "-0.4px",
                 }}
               >
                 Global Settings Hub
               </h1>
 
-              <div
-                style={{
-                  marginTop:"3px",
-                  color:"#dbeafe",
-                  fontSize:"10px",
-                }}
-              >
-                Manage passwords & system configurations
+              <div style={{ marginTop: "2px", color: "#e0f2fe", fontSize: "11px", fontWeight: 500 }}>
+                Manage system passwords & configuration entries
               </div>
 
             </div>
@@ -1039,26 +968,17 @@ export default function PasswordSettings({ onNavigate }) {
 
 
           <button
-            onClick={() =>
-              onNavigate("dashboard")
-            }
+            onClick={() => onNavigate("dashboard")}
             className="ps-action"
             style={{
-              border:
-                "1px solid rgba(255,255,255,.20)",
-
-              background:
-                "rgba(255,255,255,.10)",
-
-              color:"#fff",
-
-              padding:"8px 13px",
-              borderRadius:"10px",
-
-              fontWeight:800,
-              fontSize:"11px",
-
-              cursor:"pointer",
+              border: "1px solid rgba(255, 255, 255, 0.3)",
+              background: "rgba(255, 255, 255, 0.15)",
+              color: "#ffffff",
+              padding: "9px 16px",
+              borderRadius: "10px",
+              fontWeight: 800,
+              fontSize: "12px",
+              cursor: "pointer",
             }}
           >
             ← Dashboard
@@ -1069,72 +989,48 @@ export default function PasswordSettings({ onNavigate }) {
       </div>
 
 
-      <div
-        style={{
-          maxWidth:"1400px",
-          margin:"0 auto",
-        }}
-      >
+      <div style={{ maxWidth: "1400px", margin: "0 auto" }}>
 
         {/* =================================================
-            COMPACT STAT STRIP
+            STAT STRIP
         ================================================= */}
         <div
           style={{
-            display:"grid",
-            gridTemplateColumns:
-              "repeat(3,1fr)",
-            gap:"10px",
-            marginBottom:"10px",
+            display: "grid",
+            gridTemplateColumns: "repeat(3, 1fr)",
+            gap: "12px",
+            marginBottom: "12px",
           }}
         >
 
           <div
             style={{
-              background:"#fff",
-              border:"1px solid #e8eef7",
-              borderRadius:"13px",
-              padding:"10px 13px",
-              boxShadow:
-                "0 5px 15px rgba(15,23,42,.04)",
+              background: "#ffffff",
+              border: "1.5px solid #cbd5e1",
+              borderRadius: "14px",
+              padding: "12px 16px",
+              boxShadow: "0 4px 12px rgba(15, 23, 42, 0.04)",
             }}
           >
 
-            <div
-              style={{
-                fontSize:"9px",
-                color:"#64748b",
-                fontWeight:800,
-              }}
-            >
+            <div style={{ fontSize: "10px", color: "#475569", fontWeight: 800, letterSpacing: "0.5px" }}>
               TOTAL SETTINGS
             </div>
 
             <div
               style={{
-                display:"flex",
-                alignItems:"center",
-                justifyContent:"space-between",
-                marginTop:"2px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                marginTop: "4px",
               }}
             >
 
-              <strong
-                style={{
-                  fontSize:"21px",
-                  color:"#0f172a",
-                }}
-              >
+              <strong style={{ fontSize: "22px", color: "#0f172a", fontWeight: 800 }}>
                 {passwordsList.length}
               </strong>
 
-              <span
-                style={{
-                  fontSize:"17px",
-                }}
-              >
-                ⚙️
-              </span>
+              <span style={{ fontSize: "18px" }}>⚙️</span>
 
             </div>
 
@@ -1143,50 +1039,32 @@ export default function PasswordSettings({ onNavigate }) {
 
           <div
             style={{
-              background:"#fff",
-              border:"1px solid #e8eef7",
-              borderRadius:"13px",
-              padding:"10px 13px",
-              boxShadow:
-                "0 5px 15px rgba(15,23,42,.04)",
+              background: "#ffffff",
+              border: "1.5px solid #cbd5e1",
+              borderRadius: "14px",
+              padding: "12px 16px",
+              boxShadow: "0 4px 12px rgba(15, 23, 42, 0.04)",
             }}
           >
 
-            <div
-              style={{
-                fontSize:"9px",
-                color:"#64748b",
-                fontWeight:800,
-              }}
-            >
-              SHOWING
+            <div style={{ fontSize: "10px", color: "#475569", fontWeight: 800, letterSpacing: "0.5px" }}>
+              SHOWING RECORDS
             </div>
 
             <div
               style={{
-                display:"flex",
-                alignItems:"center",
-                justifyContent:"space-between",
-                marginTop:"2px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                marginTop: "4px",
               }}
             >
 
-              <strong
-                style={{
-                  fontSize:"21px",
-                  color:"#0f172a",
-                }}
-              >
+              <strong style={{ fontSize: "22px", color: "#0f172a", fontWeight: 800 }}>
                 {filteredPasswords.length}
               </strong>
 
-              <span
-                style={{
-                  fontSize:"17px",
-                }}
-              >
-                🔎
-              </span>
+              <span style={{ fontSize: "18px" }}>🔎</span>
 
             </div>
 
@@ -1195,53 +1073,32 @@ export default function PasswordSettings({ onNavigate }) {
 
           <div
             style={{
-              background:
-                "linear-gradient(135deg,#f0fdf4,#ecfdf5)",
-
-              border:"1px solid #d1fae5",
-              borderRadius:"13px",
-
-              padding:"10px 13px",
-              boxShadow:
-                "0 5px 15px rgba(15,23,42,.04)",
+              background: "#ecfdf5",
+              border: "1.5px solid #a7f3d0",
+              borderRadius: "14px",
+              padding: "12px 16px",
+              boxShadow: "0 4px 12px rgba(15, 23, 42, 0.04)",
             }}
           >
 
-            <div
-              style={{
-                fontSize:"9px",
-                color:"#047857",
-                fontWeight:800,
-              }}
-            >
-              SECURITY
+            <div style={{ fontSize: "10px", color: "#047857", fontWeight: 800, letterSpacing: "0.5px" }}>
+              SYSTEM SECURITY
             </div>
 
             <div
               style={{
-                display:"flex",
-                alignItems:"center",
-                justifyContent:"space-between",
-                marginTop:"2px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                marginTop: "4px",
               }}
             >
 
-              <strong
-                style={{
-                  fontSize:"14px",
-                  color:"#065f46",
-                }}
-              >
+              <strong style={{ fontSize: "16px", color: "#064e3b", fontWeight: 800 }}>
                 Protected
               </strong>
 
-              <span
-                style={{
-                  fontSize:"17px",
-                }}
-              >
-                🛡️
-              </span>
+              <span style={{ fontSize: "18px" }}>🛡️</span>
 
             </div>
 
@@ -1251,136 +1108,91 @@ export default function PasswordSettings({ onNavigate }) {
 
 
         {/* =================================================
-            COMPACT SEARCH
+            SEARCH BAR
         ================================================= */}
         <div
           style={{
-            background:"#fff",
-            border:"1px solid #e8eef7",
-            borderRadius:"13px",
-            padding:"10px",
-            marginBottom:"10px",
-            boxShadow:
-              "0 5px 15px rgba(15,23,42,.04)",
+            background: "#ffffff",
+            border: "1.5px solid #cbd5e1",
+            borderRadius: "14px",
+            padding: "12px 16px",
+            marginBottom: "12px",
+            boxShadow: "0 4px 12px rgba(15, 23, 42, 0.04)",
           }}
         >
 
-          <div
-            style={{
-              display:"flex",
-              alignItems:"center",
-              gap:"10px",
-            }}
-          >
+          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
 
             <div
               style={{
-                width:"34px",
-                height:"34px",
-                borderRadius:"9px",
-                display:"flex",
-                alignItems:"center",
-                justifyContent:"center",
-                background:"#eff6ff",
-                fontSize:"15px",
+                width: "36px",
+                height: "36px",
+                borderRadius: "10px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                background: "#dbeafe",
+                fontSize: "16px",
               }}
             >
               🔍
             </div>
 
-            <div
-              style={{
-                minWidth:"150px",
-              }}
-            >
+            <div style={{ minWidth: "160px" }}>
 
-              <div
-                style={{
-                  fontWeight:800,
-                  color:"#0f172a",
-                  fontSize:"11px",
-                }}
-              >
+              <div style={{ fontWeight: 800, color: "#0f172a", fontSize: "12px" }}>
                 Search Settings
               </div>
 
-              <div
-                style={{
-                  fontSize:"9px",
-                  color:"#94a3b8",
-                }}
-              >
-                Name, key or description
+              <div style={{ fontSize: "10px", color: "#475569", fontWeight: 600 }}>
+                Filter by name, key, or description
               </div>
 
             </div>
 
 
-            <div
-              className="ps-search-wrap"
-              style={{
-                marginLeft:"auto",
-                width:"min(450px,45%)",
-              }}
-            >
+            <div className="ps-search-wrap" style={{ marginLeft: "auto", width: "min(480px, 50%)" }}>
 
-              <div
-                style={{
-                  position:"relative",
-                }}
-              >
+              <div style={{ position: "relative" }}>
 
                 <input
                   type="text"
                   className="ps-search"
                   value={searchTerm}
-                  onChange={(e) =>
-                    setSearchTerm(e.target.value)
-                  }
-                  placeholder="Type to search..."
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  placeholder="Type to search settings..."
                   style={{
-                    width:"100%",
-                    height:"36px",
-                    boxSizing:"border-box",
-
-                    borderRadius:"9px",
-                    border:"1px solid #dbe3ef",
-
-                    background:"#f8fafc",
-
-                    padding:
-                      searchTerm
-                        ? "0 35px 0 11px"
-                        : "0 11px",
-
-                    fontSize:"11px",
-                    outline:"none",
+                    width: "100%",
+                    height: "38px",
+                    boxSizing: "border-box",
+                    borderRadius: "10px",
+                    border: "1.5px solid #cbd5e1",
+                    background: "#f8fafc",
+                    color: "#0f172a",
+                    fontWeight: "600",
+                    padding: searchTerm ? "0 36px 0 12px" : "0 12px",
+                    fontSize: "12px",
+                    outline: "none",
                   }}
                 />
 
                 {searchTerm && (
                   <button
                     type="button"
-                    onClick={() =>
-                      setSearchTerm("")
-                    }
+                    onClick={() => setSearchTerm("")}
                     style={{
-                      position:"absolute",
-                      right:"6px",
-                      top:"50%",
-                      transform:
-                        "translateY(-50%)",
-
-                      width:"25px",
-                      height:"25px",
-
-                      border:0,
-                      borderRadius:"7px",
-
-                      background:"#e2e8f0",
-                      color:"#475569",
-
-                      cursor:"pointer",
+                      position: "absolute",
+                      right: "7px",
+                      top: "50%",
+                      transform: "translateY(-50%)",
+                      width: "24px",
+                      height: "24px",
+                      border: 0,
+                      borderRadius: "6px",
+                      background: "#cbd5e1",
+                      color: "#0f172a",
+                      fontWeight: "bold",
+                      cursor: "pointer",
                     }}
                   >
                     ✕
@@ -1401,60 +1213,46 @@ export default function PasswordSettings({ onNavigate }) {
         ================================================= */}
         <div
           style={{
-            background:"#fff",
-            border:"1px solid #e8eef7",
-            borderRadius:"15px",
-            overflow:"hidden",
-            boxShadow:
-              "0 7px 20px rgba(15,23,42,.05)",
+            background: "#ffffff",
+            border: "1.5px solid #cbd5e1",
+            borderRadius: "16px",
+            overflow: "hidden",
+            boxShadow: "0 6px 20px rgba(15, 23, 42, 0.05)",
           }}
         >
 
           <div
             style={{
-              padding:"11px 15px",
-              borderBottom:
-                "1px solid #edf2f7",
-
-              display:"flex",
-              justifyContent:"space-between",
-              alignItems:"center",
+              padding: "12px 18px",
+              borderBottom: "1.5px solid #e2e8f0",
+              background: "#f8fafc",
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
             }}
           >
 
             <div>
 
-              <div
-                style={{
-                  fontSize:"14px",
-                  fontWeight:800,
-                  color:"#0f172a",
-                }}
-              >
-                🔐 System Credentials
+              <div style={{ fontSize: "14px", fontWeight: 800, color: "#0f172a" }}>
+                🔐 System Credentials & Configs
               </div>
 
-              <div
-                style={{
-                  fontSize:"9px",
-                  color:"#94a3b8",
-                  marginTop:"2px",
-                }}
-              >
-                Passwords and descriptions
+              <div style={{ fontSize: "10px", color: "#475569", fontWeight: 600, marginTop: "1px" }}>
+                Manage passwords and edit system descriptions
               </div>
 
             </div>
 
             <div
               style={{
-                background:"#f8fafc",
-                border:"1px solid #e2e8f0",
-                color:"#475569",
-                borderRadius:"999px",
-                padding:"5px 9px",
-                fontSize:"9px",
-                fontWeight:800,
+                background: "#e2e8f0",
+                border: "1px solid #cbd5e1",
+                color: "#0f172a",
+                borderRadius: "999px",
+                padding: "4px 10px",
+                fontSize: "10px",
+                fontWeight: 800,
               }}
             >
               {filteredPasswords.length} RECORDS
@@ -1467,69 +1265,73 @@ export default function PasswordSettings({ onNavigate }) {
 
             <table
               className="table table-hover align-middle mb-0"
-              style={{
-                fontSize:"11px",
-              }}
+              style={{ fontSize: "12px" }}
             >
 
               <thead>
 
-                <tr
-                  style={{
-                    background:"#f8fafc",
-                  }}
-                >
+                <tr style={{ background: "#f1f5f9", borderBottom: "1.5px solid #cbd5e1" }}>
 
                   <th
-                    className="px-3 py-2 text-muted"
+                    className="px-3 py-2.5 text-dark"
                     style={{
-                      width:"5%",
-                      fontSize:"9px",
-                      letterSpacing:".7px",
+                      width: "5%",
+                      fontSize: "10px",
+                      fontWeight: 800,
+                      letterSpacing: "0.8px",
+                      color: "#0f172a",
                     }}
                   >
                     #
                   </th>
 
                   <th
-                    className="py-2 text-muted"
+                    className="py-2.5 text-dark"
                     style={{
-                      width:"22%",
-                      fontSize:"9px",
-                      letterSpacing:".7px",
+                      width: "22%",
+                      fontSize: "10px",
+                      fontWeight: 800,
+                      letterSpacing: "0.8px",
+                      color: "#0f172a",
                     }}
                   >
                     DISPLAY NAME
                   </th>
 
                   <th
-                    className="py-2 text-muted"
+                    className="py-2.5 text-dark"
                     style={{
-                      width:"20%",
-                      fontSize:"9px",
-                      letterSpacing:".7px",
+                      width: "22%",
+                      fontSize: "10px",
+                      fontWeight: 800,
+                      letterSpacing: "0.8px",
+                      color: "#0f172a",
                     }}
                   >
                     SYSTEM KEY
                   </th>
 
                   <th
-                    className="py-2 text-muted"
+                    className="py-2.5 text-dark"
                     style={{
-                      width:"28%",
-                      fontSize:"9px",
-                      letterSpacing:".7px",
+                      width: "26%",
+                      fontSize: "10px",
+                      fontWeight: 800,
+                      letterSpacing: "0.8px",
+                      color: "#0f172a",
                     }}
                   >
                     DESCRIPTION
                   </th>
 
                   <th
-                    className="py-2 pe-3 text-center text-muted"
+                    className="py-2.5 pe-3 text-center text-dark"
                     style={{
-                      width:"25%",
-                      fontSize:"9px",
-                      letterSpacing:".7px",
+                      width: "25%",
+                      fontSize: "10px",
+                      fontWeight: 800,
+                      letterSpacing: "0.8px",
+                      color: "#0f172a",
                     }}
                   >
                     ACTIONS
@@ -1547,39 +1349,22 @@ export default function PasswordSettings({ onNavigate }) {
                 {loading && (
                   <tr>
 
-                    <td
-                      colSpan={5}
-                      className="text-center"
-                      style={{
-                        padding:"28px 10px",
-                      }}
-                    >
+                    <td colSpan={5} className="text-center" style={{ padding: "30px 10px" }}>
 
                       <div
                         style={{
-                          width:"30px",
-                          height:"30px",
-                          borderRadius:"50%",
-                          border:
-                            "3px solid #dbeafe",
-                          borderTopColor:
-                            "#2563eb",
-
-                          margin:
-                            "0 auto 8px",
-
-                          animation:
-                            "spin 1s linear infinite",
+                          width: "32px",
+                          height: "32px",
+                          borderRadius: "50%",
+                          border: "3px solid #bfdbfe",
+                          borderTopColor: "#1d4ed8",
+                          margin: "0 auto 10px",
+                          animation: "spin 1s linear infinite",
                         }}
                       />
 
-                      <div
-                        style={{
-                          fontWeight:700,
-                          fontSize:"12px",
-                        }}
-                      >
-                        Loading settings...
+                      <div style={{ fontWeight: 800, fontSize: "13px", color: "#0f172a" }}>
+                        Loading system settings...
                       </div>
 
                     </td>
@@ -1591,298 +1376,216 @@ export default function PasswordSettings({ onNavigate }) {
                 {/* RECORDS */}
 
                 {!loading &&
-                  filteredPasswords.map(
-                    (p, index) => (
+                  filteredPasswords.map((p, index) => (
 
-                      <tr
-                        key={p.id}
-                        className="ps-row"
-                      >
+                    <tr key={p.id} className="ps-row" style={{ borderBottom: "1px solid #e2e8f0" }}>
 
-                        {/* NUMBER */}
+                      {/* NUMBER */}
 
-                        <td className="px-3 py-2">
+                      <td className="px-3 py-2.5">
+
+                        <div
+                          style={{
+                            width: "28px",
+                            height: "28px",
+                            borderRadius: "8px",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            background: "#e2e8f0",
+                            color: "#0f172a",
+                            fontWeight: 800,
+                            fontSize: "11px",
+                          }}
+                        >
+                          {index + 1}
+                        </div>
+
+                      </td>
+
+
+                      {/* DISPLAY NAME */}
+
+                      <td className="py-2.5">
+
+                        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
 
                           <div
                             style={{
-                              width:"27px",
-                              height:"27px",
-                              borderRadius:"8px",
-
-                              display:"flex",
-                              alignItems:"center",
-                              justifyContent:"center",
-
-                              background:"#f1f5f9",
-                              color:"#64748b",
-
-                              fontWeight:800,
-                              fontSize:"10px",
+                              width: "32px",
+                              height: "32px",
+                              borderRadius: "8px",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              background: "#dbeafe",
+                              fontSize: "16px",
                             }}
                           >
-                            {index + 1}
+                            🔒
                           </div>
 
-                        </td>
+                          <div>
 
-
-                        {/* DISPLAY NAME */}
-
-                        <td className="py-2">
-
-                          <div
-                            style={{
-                              display:"flex",
-                              alignItems:"center",
-                              gap:"8px",
-                            }}
-                          >
-
-                            <div
-                              style={{
-                                width:"31px",
-                                height:"31px",
-                                borderRadius:"9px",
-
-                                display:"flex",
-                                alignItems:"center",
-                                justifyContent:"center",
-
-                                background:
-                                  "linear-gradient(135deg,#eff6ff,#dbeafe)",
-
-                                fontSize:"15px",
-                              }}
-                            >
-                              🔒
+                            <div style={{ fontWeight: 800, color: "#0f172a", fontSize: "12px" }}>
+                              {p.display_name}
                             </div>
 
-                            <div>
-
-                              <div
-                                style={{
-                                  fontWeight:800,
-                                  color:"#0f172a",
-                                  fontSize:"11px",
-                                }}
-                              >
-                                {p.display_name}
-                              </div>
-
-                              <div
-                                style={{
-                                  fontSize:"8px",
-                                  color:"#94a3b8",
-                                }}
-                              >
-                                System credential
-                              </div>
-
+                            <div style={{ fontSize: "9px", color: "#475569", fontWeight: 700 }}>
+                              System Credential
                             </div>
 
                           </div>
 
-                        </td>
+                        </div>
+
+                      </td>
 
 
-                        {/* KEY */}
+                      {/* KEY */}
 
-                        <td className="py-2">
+                      <td className="py-2.5">
+
+                        <span
+                          style={{
+                            display: "inline-block",
+                            padding: "5px 9px",
+                            borderRadius: "6px",
+                            background: "#eff6ff",
+                            color: "#1e3a8a",
+                            border: "1px solid #bfdbfe",
+                            fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace",
+                            fontSize: "10px",
+                            fontWeight: 800,
+                          }}
+                        >
+                          {p.key_name}
+                        </span>
+
+                      </td>
+
+
+                      {/* DESCRIPTION */}
+
+                      <td className="py-2.5">
+
+                        {p.description ? (
+
+                          <div
+                            style={{
+                              color: "#1e293b",
+                              fontSize: "11px",
+                              fontWeight: 600,
+                              lineHeight: 1.4,
+                              maxWidth: "340px",
+                            }}
+                          >
+                            {p.description}
+                          </div>
+
+                        ) : (
 
                           <span
                             style={{
-                              display:"inline-block",
-                              padding:"5px 8px",
-                              borderRadius:"7px",
-
-                              background:"#eff6ff",
-                              color:"#1d4ed8",
-
-                              border:
-                                "1px solid #dbeafe",
-
-                              fontFamily:
-                                "ui-monospace,SFMono-Regular,Menlo,monospace",
-
-                              fontSize:"9px",
-                              fontWeight:700,
+                              color: "#64748b",
+                              fontSize: "11px",
+                              fontStyle: "italic",
+                              fontWeight: 500,
                             }}
                           >
-                            {p.key_name}
+                            No description provided
                           </span>
 
-                        </td>
+                        )}
+
+                      </td>
 
 
-                        {/* DESCRIPTION */}
+                      {/* ACTIONS */}
 
-                        <td className="py-2">
+                      <td className="py-2.5 pe-3">
 
-                          {p.description ? (
+                        <div
+                          style={{
+                            display: "flex",
+                            justifyContent: "center",
+                            flexWrap: "wrap",
+                            gap: "6px",
+                          }}
+                        >
 
-                            <div
-                              style={{
-                                color:"#475569",
-                                fontSize:"10px",
-                                lineHeight:1.4,
-                                maxWidth:"330px",
-                              }}
-                            >
-                              {p.description}
-                            </div>
-
-                          ) : (
-
-                            <span
-                              style={{
-                                color:"#94a3b8",
-                                fontSize:"10px",
-                                fontStyle:"italic",
-                              }}
-                            >
-                              No description
-                            </span>
-
-                          )}
-
-                        </td>
-
-
-                        {/* ACTIONS */}
-
-                        <td className="py-2 pe-3">
-
-                          <div
+                          <button
+                            type="button"
+                            className="ps-action"
+                            onClick={() => openPasswordModal(p.key_name, p.display_name)}
                             style={{
-                              display:"flex",
-                              justifyContent:"center",
-                              flexWrap:"wrap",
-                              gap:"5px",
+                              border: 0,
+                              color: "#ffffff",
+                              background: "linear-gradient(135deg, #1d4ed8, #1e40af)",
+                              padding: "7px 11px",
+                              borderRadius: "8px",
+                              fontSize: "10px",
+                              fontWeight: 800,
+                              cursor: "pointer",
+                              boxShadow: "0 3px 8px rgba(29, 78, 216, 0.25)",
                             }}
                           >
-
-                            <button
-                              type="button"
-                              className="ps-action"
-                              onClick={() =>
-                                openPasswordModal(
-                                  p.key_name,
-                                  p.display_name
-                                )
-                              }
-                              style={{
-                                border:0,
-
-                                color:"#fff",
-
-                                background:
-                                  "linear-gradient(135deg,#2563eb,#1d4ed8)",
-
-                                padding:"7px 9px",
-                                borderRadius:"8px",
-
-                                fontSize:"9px",
-                                fontWeight:800,
-
-                                cursor:"pointer",
-
-                                boxShadow:
-                                  "0 4px 10px rgba(37,99,235,.16)",
-                              }}
-                            >
-                              🔑 Change Password
-                            </button>
+                            🔑 Change Password
+                          </button>
 
 
-                            <button
-                              type="button"
-                              className="ps-action"
-                              onClick={() =>
-                                openDescriptionModal(
-                                  p.key_name,
-                                  p.display_name,
-                                  p.description
-                                )
-                              }
-                              style={{
-                                border:
-                                  "1px solid #cbd5e1",
+                          <button
+                            type="button"
+                            className="ps-action"
+                            onClick={() =>
+                              openDescriptionModal(p.key_name, p.display_name, p.description)
+                            }
+                            style={{
+                              border: "1.5px solid #94a3b8",
+                              color: "#0f172a",
+                              background: "#ffffff",
+                              padding: "6px 11px",
+                              borderRadius: "8px",
+                              fontSize: "10px",
+                              fontWeight: 800,
+                              cursor: "pointer",
+                            }}
+                          >
+                            📝 Description
+                          </button>
 
-                                color:"#334155",
-
-                                background:"#fff",
-
-                                padding:"7px 9px",
-                                borderRadius:"8px",
-
-                                fontSize:"9px",
-                                fontWeight:800,
-
-                                cursor:"pointer",
-                              }}
-                            >
-                              📝 Description
-                            </button>
-
-                          </div>
-
-                        </td>
-
-                      </tr>
-
-                    )
-                  )}
-
-
-                {/* EMPTY */}
-
-                {!loading &&
-                  filteredPasswords.length === 0 && (
-
-                    <tr>
-
-                      <td
-                        colSpan={5}
-                        className="text-center"
-                        style={{
-                          padding:"30px 10px",
-                        }}
-                      >
-
-                        <div
-                          style={{
-                            fontSize:"25px",
-                            marginBottom:"5px",
-                          }}
-                        >
-                          🔎
-                        </div>
-
-                        <div
-                          style={{
-                            fontWeight:800,
-                            color:"#0f172a",
-                            fontSize:"13px",
-                          }}
-                        >
-                          No matching settings
-                        </div>
-
-                        <div
-                          style={{
-                            color:"#94a3b8",
-                            fontSize:"10px",
-                            marginTop:"2px",
-                          }}
-                        >
-                          Try another search term.
                         </div>
 
                       </td>
 
                     </tr>
 
-                  )}
+                  ))}
+
+
+                {/* EMPTY STATE */}
+
+                {!loading && filteredPasswords.length === 0 && (
+
+                  <tr>
+
+                    <td colSpan={5} className="text-center" style={{ padding: "35px 10px" }}>
+
+                      <div style={{ fontSize: "28px", marginBottom: "6px" }}>🔎</div>
+
+                      <div style={{ fontWeight: 800, color: "#0f172a", fontSize: "14px" }}>
+                        No matching settings found
+                      </div>
+
+                      <div style={{ color: "#475569", fontSize: "11px", fontWeight: 600, marginTop: "2px" }}>
+                        Try searching with a different term.
+                      </div>
+
+                    </td>
+
+                  </tr>
+
+                )}
 
               </tbody>
 
@@ -1898,15 +1601,14 @@ export default function PasswordSettings({ onNavigate }) {
         ================================================= */}
         <div
           style={{
-            display:"flex",
-            justifyContent:"center",
-            alignItems:"center",
-            gap:"6px",
-
-            marginTop:"9px",
-
-            color:"#64748b",
-            fontSize:"9px",
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            gap: "6px",
+            marginTop: "12px",
+            color: "#334155",
+            fontWeight: 700,
+            fontSize: "10px",
           }}
         >
           🛡️
