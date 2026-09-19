@@ -370,8 +370,8 @@ export default function Dashboard({ onNavigate }) {
           <b style="color:#198754;font-size:14px">${titleText}</b><br>
           <span style="font-size:11px;color:#555">${subText}</span>
           <div style="position:relative; margin-top:8px">
-            <input type="password" id="swal-pass" class="swal2-input" placeholder="Enter password" style="height:28px; font-size:12px; padding:2px 6px; margin:0;">
-            <span id="toggle-pass" style="position:absolute; right:8px; top:50%; transform:translateY(-50%); cursor:pointer; font-size:12px;">👁</span>
+            <input type="password" id="swal-pass" class="swal2-input" placeholder="Enter password" style="height:28px; font-size:12px; padding:2px 24px 2px 6px; margin:0; width:100%; box-sizing:border-box;">
+            <span id="toggle-pass" style="position:absolute; right:8px; top:50%; transform:translateY(-50%); cursor:pointer; font-size:12px; user-select:none;">👁</span>
           </div>
           <div id="swal-error" style="color:#dc3545; font-size:10px; min-height:14px; margin-top:2px"></div>
         </div>
@@ -712,10 +712,10 @@ export default function Dashboard({ onNavigate }) {
               <div style={{ display: "flex", alignItems: "flex-start", gap: "8px", width: "100%" }}>
                 <div style={{ position: "relative", display: "flex", alignItems: "center", justifyContent: "center", marginTop: "2px" }}>
                   <span style={{ fontSize: "15px" }}>🇸🇦</span>
-<span style={{
-  position: "absolute", top: "-1px", right: "-1px", width: "4px", height: "4px",
-  borderRadius: "50%", background: "#4ade80", boxShadow: "0 0 4px #4ade80"
-}}></span>
+                  <span style={{
+                    position: "absolute", top: "-1px", right: "-1px", width: "4px", height: "4px",
+                    borderRadius: "50%", background: "#4ade80", boxShadow: "0 0 4px #4ade80"
+                  }}></span>
                 </div>
 
                 <div style={{ display: "flex", flexDirection: "column", width: "100%" }}>
