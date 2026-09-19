@@ -4,43 +4,43 @@ import "./dashboard.css";
 import axios from "axios";
 
 // =====================================================
-// FIXED SYSTEM BUILD / UPDATE TIME
+// SAFE BUILD / UPDATE TIME RESOLVER
 // =====================================================
 const getFormattedBuildTime = () => {
-  const raw =
-    typeof __MMT_BUILD_TIME__ !== "undefined"
-      ? __MMT_BUILD_TIME__
-      : import.meta.env.VITE_BUILD_TIME;
+  try {
+    const raw =
+      process.env.BUILD_TIME ||
+      import.meta.env.VITE_BUILD_TIME ||
+      new Date().toISOString();
 
-  if (!raw) {
+    const parsed = new Date(raw);
+    if (isNaN(parsed.getTime())) return "Build Time Not Configured";
+
+    return parsed.toLocaleString("en-GB", {
+      timeZone: "Asia/Karachi",
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true,
+    });
+  } catch (err) {
     return "Build Time Not Configured";
   }
-
-  const parsed = new Date(raw);
-
-  if (isNaN(parsed.getTime())) {
-    return "Build Time Not Configured";
-  }
-
-  return parsed.toLocaleString("en-GB", {
-    timeZone: "Asia/Karachi",
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: true,
-  });
 };
 
 const getCleanCommitMsg = () => {
-  const msg =
-    typeof __MMT_COMMIT_MSG__ !== "undefined"
-      ? __MMT_COMMIT_MSG__
-      : import.meta.env.VITE_VERCEL_GIT_COMMIT_MESSAGE ||
-        "System Update Applied";
+  try {
+    const msg =
+      process.env.COMMIT_MSG ||
+      import.meta.env.VITE_VERCEL_GIT_COMMIT_MESSAGE ||
+      "System Update Applied";
 
-  return msg.replace(/\.jsx?/gi, "");
+    return String(msg).replace(/\.jsx?/gi, "");
+  } catch (err) {
+    return "System Update Applied";
+  }
 };
 
 export default function Dashboard({ onNavigate }) {
@@ -306,7 +306,7 @@ export default function Dashboard({ onNavigate }) {
 
       return `
         <div style="font-family: 'Segoe UI', system-ui, sans-serif; padding: 2px;">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+          <div style="display: flex; justify-space-between; align-items: center; margin-bottom: 8px;">
             <button id="cal-prev" style="background:#f1f5f9; border:none; padding:4px 8px; border-radius:4px; cursor:pointer; font-weight:bold; color:#334155;">◀</button>
             <div style="text-align:center;">
               <h3 style="margin:0; font-weight:800; color:#0f172a; font-size:14px;">${monthNames[month]} ${year}</h3>
