@@ -3,23 +3,26 @@ import Swal from "sweetalert2";
 import "./dashboard.css";
 import axios from "axios";
 
-// 1. HARDCODED / FIXED BUILD TIMESTAMP
-const FIXED_BUILD_TIMESTAMP = (() => {
+// Dynamic Build Timestamp Function
+const getFormattedBuildTime = () => {
   const vercelTime =
     import.meta.env.VERCEL_GIT_COMMIT_TIMESTAMP ||
     import.meta.env.VITE_VERCEL_GIT_COMMIT_TIMESTAMP;
 
-  if (vercelTime) {
-    const parsed = new Date(isNaN(Number(vercelTime)) ? vercelTime : Number(vercelTime));
-    if (!isNaN(parsed.getTime())) return parsed;
-  }
-  
-  // Static fixed timestamp fallback
-  return new Date("2026-09-18T11:20:00");
-})();
+  let buildDate;
 
-const getFormattedBuildTime = () => {
-  return FIXED_BUILD_TIMESTAMP.toLocaleString("en-GB", {
+  if (vercelTime) {
+    const parsed = new Date(isNaN(Number(vercelTime)) ? vercelTime : Number(vercelTime) * 1000);
+    if (!isNaN(parsed.getTime())) {
+      buildDate = parsed;
+    }
+  }
+
+  if (!buildDate) {
+    buildDate = new Date();
+  }
+
+  return buildDate.toLocaleString("en-GB", {
     day: "2-digit",
     month: "short",
     year: "numeric",
@@ -706,7 +709,7 @@ export default function Dashboard({ onNavigate }) {
               </div>
             </div>
 
-            {/* HIGH GLOSS CALENDAR BUTTON (FIXED SYNTAX LINE 714) */}
+            {/* HIGH GLOSS CALENDAR BUTTON */}
             <button 
               onClick={openCalendarModal}
               style={{
