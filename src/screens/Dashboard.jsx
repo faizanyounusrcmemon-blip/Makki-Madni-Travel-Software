@@ -5,23 +5,24 @@ import axios from "axios";
 
 // =====================================================
 // FIXED SYSTEM BUILD / UPDATE TIME
-// IMPORTANT: This is NOT a live clock.
-// It only shows the Vercel/Git deployment timestamp.
+// Vite injects __MMT_BUILD_TIME__ during the production build.
+// This value is fixed for that deployment and never behaves like a clock.
 // =====================================================
 const getFormattedBuildTime = () => {
-  const vercelTime =
-    import.meta.env.VERCEL_GIT_COMMIT_TIMESTAMP ||
-    import.meta.env.VITE_VERCEL_GIT_COMMIT_TIMESTAMP;
+  const raw =
+    typeof __MMT_BUILD_TIME__ !== "undefined"
+      ? __MMT_BUILD_TIME__
+      : import.meta.env.VITE_BUILD_TIME;
 
-  if (!vercelTime) return "Update Time Not Available";
+  if (!raw || raw === "__MMT_BUILD_TIME__") {
+    return "Build Time Not Configured";
+  }
 
-  const parsed = new Date(
-    isNaN(Number(vercelTime))
-      ? vercelTime
-      : Number(vercelTime) * 1000
-  );
+  const parsed = new Date(raw);
 
-  if (isNaN(parsed.getTime())) return "Update Time Not Available";
+  if (isNaN(parsed.getTime())) {
+    return "Build Time Not Configured";
+  }
 
   return parsed.toLocaleString("en-GB", {
     timeZone: "Asia/Karachi",
@@ -567,6 +568,12 @@ export default function Dashboard({ onNavigate }) {
   const responsiveDashboardStyle = `
     .dashboard-top-bar { flex-wrap: wrap; }
     .dashboard-top-bar > * { min-width: 0; }
+    .system-update-card { transition: transform .2s ease, box-shadow .2s ease, border-color .2s ease; }
+    .system-update-card:hover {
+      transform: translateY(-2px);
+      border-color: rgba(125,211,252,.7) !important;
+      box-shadow: 0 12px 30px rgba(0,0,0,.42), 0 0 18px rgba(14,165,233,.10) !important;
+    }
     @media (max-width: 720px) {
       .dashboard-top-bar { flex-direction: column; align-items: stretch !important; }
       .time-card-box, .backup-side-box { max-width: 100% !important; flex-basis: auto !important; }
@@ -767,69 +774,185 @@ export default function Dashboard({ onNavigate }) {
               </span>
             </div>
 
-            {/* AUTOMATED LAST SYSTEM UPDATE CARD */}
+            {/* =================================================
+                 PREMIUM LAST SYSTEM UPDATE CARD
+                 Fixed deployment timestamp — NOT a live clock
+               ================================================= */}
             <div
+              className="system-update-card"
               style={{
-                background: "linear-gradient(135deg, rgba(15, 23, 42, 0.92), rgba(30, 41, 59, 0.88))",
-                backdropFilter: "blur(12px)",
-                WebkitBackdropFilter: "blur(12px)",
-                padding: "8px 10px",
-                borderRadius: "8px",
-                border: "1px solid rgba(56, 189, 248, 0.35)",
-                boxShadow: "0 4px 16px rgba(0, 0, 0, 0.4)",
+                position: "relative",
+                overflow: "hidden",
+                background:
+                  "linear-gradient(135deg, rgba(7,18,38,.96), rgba(12,48,72,.94) 55%, rgba(9,35,56,.96))",
+                backdropFilter: "blur(16px)",
+                WebkitBackdropFilter: "blur(16px)",
+                padding: "11px 12px",
+                borderRadius: "12px",
+                border: "1px solid rgba(56,189,248,.48)",
+                boxShadow:
+                  "0 8px 24px rgba(0,0,0,.34), inset 0 1px 0 rgba(255,255,255,.08)",
                 width: "100%",
                 boxSizing: "border-box",
                 display: "flex",
                 flexDirection: "column",
-                gap: "4px",
-                marginTop: "2px"
+                gap: "7px",
+                marginTop: "2px",
               }}
             >
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                <span style={{ fontSize: "10px", fontWeight: "800", color: "#38bdf8", display: "flex", alignItems: "center", gap: "4px" }}>
-                  📌 Last System Update
-                </span>
+              <div
+                style={{
+                  position: "absolute",
+                  width: "90px",
+                  height: "90px",
+                  right: "-35px",
+                  top: "-45px",
+                  borderRadius: "50%",
+                  background: "rgba(56,189,248,.16)",
+                  filter: "blur(2px)",
+                }}
+              />
+
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  gap: "8px",
+                  position: "relative",
+                  zIndex: 1,
+                }}
+              >
+                <div style={{ display: "flex", alignItems: "center", gap: "7px" }}>
+                  <div
+                    style={{
+                      width: "27px",
+                      height: "27px",
+                      borderRadius: "8px",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      background: "linear-gradient(135deg,#0ea5e9,#0369a1)",
+                      boxShadow: "0 4px 12px rgba(14,165,233,.35)",
+                      fontSize: "14px",
+                    }}
+                  >
+                    📌
+                  </div>
+                  <div>
+                    <div
+                      style={{
+                        fontSize: "10px",
+                        fontWeight: "900",
+                        color: "#e0f2fe",
+                        letterSpacing: ".25px",
+                        lineHeight: 1.15,
+                      }}
+                    >
+                      Last System Update
+                    </div>
+                    <div
+                      style={{
+                        fontSize: "7.5px",
+                        color: "#7dd3fc",
+                        fontWeight: "700",
+                        marginTop: "2px",
+                      }}
+                    >
+                      DEPLOYMENT INFORMATION
+                    </div>
+                  </div>
+                </div>
+
                 <span
                   style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "4px",
                     fontSize: "7px",
-                    background: "rgba(34, 197, 94, 0.25)",
-                    color: "#4ade80",
-                    border: "1px solid rgba(74, 222, 128, 0.3)",
-                    padding: "1px 5px",
-                    borderRadius: "3px",
+                    background: "rgba(34,197,94,.13)",
+                    color: "#86efac",
+                    border: "1px solid rgba(74,222,128,.35)",
+                    padding: "3px 6px",
+                    borderRadius: "20px",
+                    fontWeight: "900",
+                    letterSpacing: ".25px",
+                  }}
+                >
+                  <span
+                    style={{
+                      width: "5px",
+                      height: "5px",
+                      borderRadius: "50%",
+                      background: "#4ade80",
+                      boxShadow: "0 0 7px #4ade80",
+                    }}
+                  />
+                  AUTO
+                </span>
+              </div>
+
+              <div
+                style={{
+                  position: "relative",
+                  zIndex: 1,
+                  background: "rgba(255,255,255,.055)",
+                  border: "1px solid rgba(255,255,255,.08)",
+                  borderRadius: "8px",
+                  padding: "7px 8px",
+                }}
+              >
+                <div
+                  style={{
+                    fontSize: "10.5px",
+                    color: "#ffffff",
+                    fontWeight: "850",
+                    lineHeight: "1.25",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    whiteSpace: "nowrap",
+                  }}
+                  title={getCleanCommitMsg()}
+                >
+                  {getCleanCommitMsg()}
+                </div>
+              </div>
+
+              <div
+                style={{
+                  position: "relative",
+                  zIndex: 1,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  gap: "8px",
+                }}
+              >
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "5px",
+                    color: "#cbd5e1",
+                    fontSize: "8.5px",
                     fontWeight: "700",
                   }}
                 >
-                  AUTO LIVE
-                </span>
-              </div>
+                  <span style={{ fontSize: "10px" }}>🕒</span>
+                  Updated At
+                </div>
 
-              <div
-                style={{
-                  fontSize: "10px",
-                  color: "#ffffff",
-                  fontWeight: "700",
-                  lineHeight: "1.2",
-                  maxHeight: "28px",
-                  overflow: "hidden",
-                  textOverflow: "ellipsis",
-                }}
-              >
-                {getCleanCommitMsg()}
-              </div>
-
-              <div
-                style={{
-                  height: "1px",
-                  width: "100%",
-                  background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent)",
-                  margin: "1px 0",
-                }}
-              ></div>
-
-              <div style={{ fontSize: "9px", color: "#cbd5e1", fontWeight: "600", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <span>Updated At:</span>
-                <span style={{ color: "#38bdf8", fontWeight: "800", fontSize: "9.5px" }}>{getFormattedBuildTime()}</span>
+                <div
+                  style={{
+                    color: "#7dd3fc",
+                    fontWeight: "900",
+                    fontSize: "9px",
+                    textAlign: "right",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  {getFormattedBuildTime()}
+                </div>
               </div>
             </div>
 
