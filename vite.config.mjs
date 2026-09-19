@@ -22,15 +22,22 @@ export default defineConfig(({ mode }) => {
     env.VITE_VERCEL_GIT_COMMIT_SHA ||
     "main";
 
+  const commitMsg =
+    process.env.VERCEL_GIT_COMMIT_MESSAGE ||
+    env.VITE_VERCEL_GIT_COMMIT_MESSAGE ||
+    "System Update Applied";
+
+  const buildTime =
+    process.env.VERCEL_GIT_COMMIT_TIMESTAMP ||
+    env.VITE_BUILD_TIME ||
+    new Date().toISOString();
+
   return {
     plugins: [react()],
 
     define: {
-      __MMT_BUILD_TIME__: JSON.stringify(
-        process.env.VERCEL_GIT_COMMIT_TIMESTAMP ||
-          env.VITE_BUILD_TIME ||
-          new Date().toISOString()
-      ),
+      __MMT_BUILD_TIME__: JSON.stringify(buildTime),
+      __MMT_COMMIT_MSG__: JSON.stringify(commitMsg),
       __MMT_GITHUB_OWNER__: JSON.stringify(repoOwner),
       __MMT_GITHUB_REPO_FRONTEND__: JSON.stringify(repoFrontend),
       __MMT_GITHUB_REPO_BACKEND__: JSON.stringify(repoBackend),
