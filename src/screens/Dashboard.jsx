@@ -31,14 +31,33 @@ export default function Dashboard({ onNavigate }) {
   const [loading, setLoading] = useState(false);
   const [progress, setProgress] = useState(0);
 
-  // LIVE CLOCK STATE
+  // ACCURATE & SYNCHRONIZED LIVE CLOCK STATE
   const [currentTime, setCurrentTime] = useState(new Date());
 
   useEffect(() => {
-    const clockTimer = setInterval(() => {
-      setCurrentTime(new Date());
-    }, 1000);
-    return () => clearInterval(clockTimer);
+    let timeoutId;
+    let intervalId;
+
+    const updateClock = () => {
+      const now = new Date();
+      setCurrentTime(now);
+
+      // Exact target millisecond alignment to sync with system clock
+      const delay = 1000 - now.getMilliseconds();
+      timeoutId = setTimeout(() => {
+        setCurrentTime(new Date());
+        intervalId = setInterval(() => {
+          setCurrentTime(new Date());
+        }, 1000);
+      }, delay);
+    };
+
+    updateClock();
+
+    return () => {
+      if (timeoutId) clearTimeout(timeoutId);
+      if (intervalId) clearInterval(intervalId);
+    };
   }, []);
 
   // BACKGROUND IMAGES
@@ -672,7 +691,7 @@ export default function Dashboard({ onNavigate }) {
                 boxShadow: "0 2px 8px rgba(0,0,0,0.2)",
                 display: "flex",
                 alignItems: "center",
-                justifyContent: "center",
+                justify.content: "center",
                 gap: "4px"
               }}
             >
