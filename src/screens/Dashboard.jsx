@@ -512,74 +512,6 @@ export default function Dashboard({ onNavigate }) {
   };
 
   return (
-
-{/* AUTOMATED LAST UPDATE CARD */}
-<div
-  style={{
-    background: "linear-gradient(135deg, rgba(15, 23, 42, 0.88), rgba(30, 41, 59, 0.82))",
-    backdropFilter: "blur(12px)",
-    WebkitBackdropFilter: "blur(12px)",
-    padding: "8px 10px",
-    borderRadius: "10px",
-    border: "1px solid rgba(56, 189, 248, 0.3)",
-    boxShadow: "0 4px 16px rgba(0, 0, 0, 0.4)",
-    width: "100%",
-    maxWidth: "250px",
-    display: "flex",
-    flexDirection: "column",
-    gap: "4px",
-  }}
->
-  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-    <span style={{ fontSize: "10px", fontWeight: "800", color: "#38bdf8", display: "flex", alignItems: "center", gap: "4px" }}>
-      🚀 Last System Update
-    </span>
-    <span
-      style={{
-        fontSize: "7px",
-        background: "rgba(56, 189, 248, 0.2)",
-        color: "#38bdf8",
-        padding: "1px 5px",
-        borderRadius: "3px",
-        fontWeight: "700",
-      }}
-    >
-      AUTO LIVE
-    </span>
-  </div>
-
-  <div
-    style={{
-      fontSize: "9px",
-      color: "#f8fafc",
-      fontWeight: "600",
-      lineHeight: "1.2",
-      maxHeight: "26px",
-      overflow: "hidden",
-      textOverflow: "ellipsis",
-    }}
-  >
-    {lastCommitMsg}
-  </div>
-
-  <div
-    style={{
-      height: "1px",
-      width: "100%",
-      background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent)",
-      margin: "2px 0",
-    }}
-  ></div>
-
-  <div style={{ fontSize: "8px", color: "#94a3b8", fontWeight: "700", display: "flex", justifyContent: "space-between" }}>
-    <span>Updated At:</span>
-    <span style={{ color: "#38bdf8" }}>{getFormattedBuildTime()}</span>
-  </div>
-</div>
-
-
-
-    
     <div
       className="dashboard-container"
       style={{
@@ -748,6 +680,70 @@ export default function Dashboard({ onNavigate }) {
             >
               📅 Dual Calendar (English & Hijri)
             </button>
+          </div>
+
+          {/* AUTOMATED LAST UPDATE CARD */}
+          <div
+            style={{
+              background: "linear-gradient(135deg, rgba(15, 23, 42, 0.88), rgba(30, 41, 59, 0.82))",
+              backdropFilter: "blur(12px)",
+              WebkitBackdropFilter: "blur(12px)",
+              padding: "8px 10px",
+              borderRadius: "10px",
+              border: "1px solid rgba(56, 189, 248, 0.3)",
+              boxShadow: "0 4px 16px rgba(0, 0, 0, 0.4)",
+              width: "100%",
+              maxWidth: "250px",
+              display: "flex",
+              flexDirection: "column",
+              gap: "4px",
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+              <span style={{ fontSize: "10px", fontWeight: "800", color: "#38bdf8", display: "flex", alignItems: "center", gap: "4px" }}>
+                🚀 Last System Update
+              </span>
+              <span
+                style={{
+                  fontSize: "7px",
+                  background: "rgba(56, 189, 248, 0.2)",
+                  color: "#38bdf8",
+                  padding: "1px 5px",
+                  borderRadius: "3px",
+                  fontWeight: "700",
+                }}
+              >
+                AUTO LIVE
+              </span>
+            </div>
+
+            <div
+              style={{
+                fontSize: "9px",
+                color: "#f8fafc",
+                fontWeight: "600",
+                lineHeight: "1.2",
+                maxHeight: "26px",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+              }}
+            >
+              {lastCommitMsg}
+            </div>
+
+            <div
+              style={{
+                height: "1px",
+                width: "100%",
+                background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent)",
+                margin: "2px 0",
+              }}
+            ></div>
+
+            <div style={{ fontSize: "8px", color: "#94a3b8", fontWeight: "700", display: "flex", justifyContent: "space-between" }}>
+              <span>Updated At:</span>
+              <span style={{ color: "#38bdf8" }}>{getFormattedBuildTime()}</span>
+            </div>
           </div>
 
           {/* STANDARD NORMAL BACKUP BUTTONS */}
