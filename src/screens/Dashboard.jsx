@@ -3,10 +3,24 @@ import Swal from "sweetalert2";
 import "./dashboard.css";
 import axios from "axios";
 
-// AUTOMATED VERCEL BUILD/COMMIT DETAILS
+// AUTOMATED VERCEL BUILD/COMMIT DETAILS (FIXED STATIC TIME)
 const getFormattedBuildTime = () => {
-  const vercelTime = import.meta.env.VERCEL_GIT_COMMIT_TIMESTAMP || import.meta.env.VITE_VERCEL_GIT_COMMIT_TIMESTAMP;
-  const dateObj = vercelTime ? new Date(Number(vercelTime) ? Number(vercelTime) : vercelTime) : new Date();
+  const vercelTime =
+    import.meta.env.VERCEL_GIT_COMMIT_TIMESTAMP ||
+    import.meta.env.VITE_VERCEL_GIT_COMMIT_TIMESTAMP;
+
+  if (!vercelTime) {
+    return "Recently Updated";
+  }
+
+  // Parse exact timestamp string or unix epoch
+  const dateObj = new Date(
+    isNaN(Number(vercelTime)) ? vercelTime : Number(vercelTime)
+  );
+
+  if (isNaN(dateObj.getTime())) {
+    return "Recently Updated";
+  }
 
   return dateObj.toLocaleString("en-GB", {
     day: "2-digit",
@@ -20,7 +34,8 @@ const getFormattedBuildTime = () => {
 
 // Clean commit message without .jsx extension
 const getCleanCommitMsg = () => {
-  const msg = import.meta.env.VERCEL_GIT_COMMIT_MESSAGE ||
+  const msg =
+    import.meta.env.VERCEL_GIT_COMMIT_MESSAGE ||
     import.meta.env.VITE_VERCEL_GIT_COMMIT_MESSAGE ||
     "Update Dashboard";
   return msg.replace(/\.jsx?/gi, "");
@@ -31,7 +46,7 @@ export default function Dashboard({ onNavigate }) {
   const [loading, setLoading] = useState(false);
   const [progress, setProgress] = useState(0);
 
-  // ACCURATE & SYNCHRONIZED LIVE CLOCK STATE
+  // ACCURATE LIVE CLOCK STATE (Pakistan & KSA Live Time)
   const [currentTime, setCurrentTime] = useState(new Date());
 
   useEffect(() => {
@@ -42,7 +57,6 @@ export default function Dashboard({ onNavigate }) {
       const now = new Date();
       setCurrentTime(now);
 
-      // Exact target millisecond alignment to sync with system clock
       const delay = 1000 - now.getMilliseconds();
       timeoutId = setTimeout(() => {
         setCurrentTime(new Date());
@@ -691,7 +705,7 @@ export default function Dashboard({ onNavigate }) {
                 boxShadow: "0 2px 8px rgba(0,0,0,0.2)",
                 display: "flex",
                 alignItems: "center",
-                justify.content: "center",
+                justifyContent: "center",
                 gap: "4px"
               }}
             >
@@ -714,7 +728,7 @@ export default function Dashboard({ onNavigate }) {
               <b style={{ fontSize: "9px" }}>{lastBackup ? `${lastBackup.name} · ${formatDate(lastBackup.created_at)}` : "Not yet"}</b>
             </div>
 
-            {/* AUTOMATED LAST SYSTEM UPDATE CARD (PLACED DIRECTLY BELOW LAST BACKUP) */}
+            {/* AUTOMATED LAST SYSTEM UPDATE CARD (FIXED STATIC TIME) */}
             <div
               style={{
                 background: "linear-gradient(135deg, rgba(15, 23, 42, 0.92), rgba(30, 41, 59, 0.88))",
