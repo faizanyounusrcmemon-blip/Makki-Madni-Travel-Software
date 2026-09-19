@@ -410,32 +410,916 @@ export default function Dashboard({ onNavigate }) {
     });
   };
 
+  /* =====================================================
+     REPOSITORY FILE HISTORY
+     Opens inside Dashboard - NO NAVIGATION REQUIRED
+  ===================================================== */
+
+  const openRepositoryHistory = async () => {
+    const owner =
+      import.meta.env.VITE_GITHUB_OWNER ||
+      "faizanyounusrcmemon-blip";
+
+    const frontendRepo =
+      import.meta.env.VITE_GITHUB_REPO_FRONTEND ||
+      "Makki-Madni-Travel-Software";
+
+    const backendRepo =
+      import.meta.env.VITE_GITHUB_REPO_BACKEND ||
+      "makki-madni-backend";
+
+    let selectedRepo = "frontend";
+
+    const getRepoName = () =>
+      selectedRepo === "frontend" ? frontendRepo : backendRepo;
+
+    const getRepoUrl = () =>
+      `https://api.github.com/repos/${owner}/${getRepoName()}`;
+
+    const getFilesUrl = () =>
+      `https://api.github.com/repos/${owner}/${getRepoName()}/git/trees/main?recursive=1`;
+
+    const getCommitsUrl = (path = "") => {
+      let url =
+        `https://api.github.com/repos/${owner}/${getRepoName()}/commits?per_page=20`;
+
+      if (path) {
+        url += `&path=${encodeURIComponent(path)}`;
+      }
+
+      return url;
+    };
+
+    const escapeHtml = (value) => {
+      return String(value ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    };
+
+    const formatGitHubDate = (date) => {
+      if (!date) return "Date unavailable";
+
+      try {
+        return new Date(date).toLocaleString("en-GB", {
+          timeZone: "Asia/Karachi",
+          day: "2-digit",
+          month: "short",
+          year: "numeric",
+          hour: "2-digit",
+          minute: "2-digit",
+          hour12: true,
+        });
+      } catch {
+        return "Date unavailable";
+      }
+    };
+
+    const getFileIcon = (path) => {
+      const lower = path.toLowerCase();
+
+      if (lower.endsWith(".jsx")) return "⚛️";
+      if (lower.endsWith(".js")) return "🟨";
+      if (lower.endsWith(".css")) return "🎨";
+      if (lower.endsWith(".json")) return "📦";
+      if (lower.endsWith(".html")) return "🌐";
+      if (lower.endsWith(".sql")) return "🗄️";
+      if (lower.endsWith(".md")) return "📝";
+      if (lower.endsWith(".png") || lower.endsWith(".jpg") || lower.endsWith(".jpeg"))
+        return "🖼️";
+      if (lower.endsWith(".pdf")) return "📕";
+      if (lower.endsWith(".zip")) return "📦";
+
+      return "📄";
+    };
+
+    const renderLoading = () => {
+      return `
+        <div style="
+          padding:35px 15px;
+          text-align:center;
+          font-family:Segoe UI,Arial,sans-serif;
+        ">
+          <div style="
+            width:42px;
+            height:42px;
+            border:4px solid #e2e8f0;
+            border-top-color:#8b5cf6;
+            border-radius:50%;
+            margin:0 auto 14px;
+            animation:repoSpin .8s linear infinite;
+          "></div>
+
+          <div style="
+            font-size:14px;
+            font-weight:900;
+            color:#0f172a;
+          ">
+            Loading Repository...
+          </div>
+
+          <div style="
+            margin-top:5px;
+            font-size:11px;
+            color:#64748b;
+            font-weight:600;
+          ">
+            Please wait
+          </div>
+        </div>
+
+        <style>
+          @keyframes repoSpin {
+            from { transform:rotate(0deg); }
+            to { transform:rotate(360deg); }
+          }
+        </style>
+      `;
+    };
+
+    const renderError = (message) => {
+      return `
+        <div style="
+          margin:15px;
+          padding:18px;
+          border-radius:12px;
+          background:#fff1f2;
+          border:1px solid #fecdd3;
+          color:#9f1239;
+          text-align:center;
+          font-family:Segoe UI,Arial,sans-serif;
+        ">
+          <div style="font-size:28px;">⚠️</div>
+
+          <div style="
+            font-size:14px;
+            font-weight:900;
+            margin-top:5px;
+          ">
+            Repository Load Failed
+          </div>
+
+          <div style="
+            font-size:11px;
+            font-weight:600;
+            margin-top:7px;
+            line-height:1.5;
+          ">
+            ${escapeHtml(message)}
+          </div>
+
+          <div style="
+            font-size:9px;
+            color:#64748b;
+            margin-top:10px;
+          ">
+            Repository: ${escapeHtml(owner)}/${escapeHtml(getRepoName())}
+          </div>
+        </div>
+      `;
+    };
+
+    const renderRepository = (repoInfo, treeData) => {
+      const files = (treeData.tree || [])
+        .filter((item) => item.type === "blob")
+        .sort((a, b) => a.path.localeCompare(b.path));
+
+      const folders = new Set();
+
+      files.forEach((file) => {
+        const parts = file.path.split("/");
+
+        if (parts.length > 1) {
+          parts.pop();
+          folders.add(parts.join("/"));
+        }
+      });
+
+      return `
+        <div style="
+          font-family:Segoe UI,Arial,sans-serif;
+          color:#0f172a;
+        ">
+
+          <!-- HEADER -->
+          <div style="
+            background:
+              linear-gradient(
+                135deg,
+                #312e81 0%,
+                #6d28d9 48%,
+                #8b5cf6 100%
+              );
+            color:#fff;
+            padding:14px;
+            border-radius:12px;
+            margin-bottom:10px;
+            box-shadow:0 8px 20px rgba(76,29,149,.28);
+          ">
+
+            <div style="
+              display:flex;
+              justify-content:space-between;
+              align-items:center;
+              gap:10px;
+            ">
+
+              <div style="
+                display:flex;
+                align-items:center;
+                gap:9px;
+              ">
+                <div style="
+                  width:36px;
+                  height:36px;
+                  border-radius:10px;
+                  background:rgba(255,255,255,.16);
+                  display:flex;
+                  align-items:center;
+                  justify-content:center;
+                  font-size:20px;
+                ">
+                  📜
+                </div>
+
+                <div>
+                  <div style="
+                    font-size:14px;
+                    font-weight:900;
+                  ">
+                    Repository File History
+                  </div>
+
+                  <div style="
+                    font-size:9px;
+                    opacity:.88;
+                    margin-top:2px;
+                  ">
+                    ${escapeHtml(owner)}/${escapeHtml(getRepoName())}
+                  </div>
+                </div>
+              </div>
+
+              <div style="
+                background:rgba(255,255,255,.14);
+                border:1px solid rgba(255,255,255,.22);
+                padding:5px 8px;
+                border-radius:20px;
+                font-size:9px;
+                font-weight:900;
+              ">
+                ${files.length} FILES
+              </div>
+
+            </div>
+
+            <div style="
+              margin-top:10px;
+              display:flex;
+              gap:6px;
+            ">
+
+              <button
+                id="repoFrontendBtn"
+                style="
+                  flex:1;
+                  border:none;
+                  border-radius:7px;
+                  padding:7px 5px;
+                  cursor:pointer;
+                  font-size:10px;
+                  font-weight:900;
+                  background:${selectedRepo === "frontend" ? "#fff" : "rgba(255,255,255,.12)"};
+                  color:${selectedRepo === "frontend" ? "#4c1d95" : "#fff"};
+                "
+              >
+                ⚛️ Frontend
+              </button>
+
+              <button
+                id="repoBackendBtn"
+                style="
+                  flex:1;
+                  border:none;
+                  border-radius:7px;
+                  padding:7px 5px;
+                  cursor:pointer;
+                  font-size:10px;
+                  font-weight:900;
+                  background:${selectedRepo === "backend" ? "#fff" : "rgba(255,255,255,.12)"};
+                  color:${selectedRepo === "backend" ? "#4c1d95" : "#fff"};
+                "
+              >
+                🟢 Backend
+              </button>
+
+            </div>
+          </div>
+
+          <!-- SEARCH -->
+          <div style="
+            display:flex;
+            gap:7px;
+            margin-bottom:9px;
+          ">
+
+            <input
+              id="repoFileSearch"
+              type="text"
+              placeholder="🔎 Search file..."
+              style="
+                flex:1;
+                height:34px;
+                border:1px solid #cbd5e1;
+                border-radius:8px;
+                padding:0 10px;
+                font-size:11px;
+                outline:none;
+                box-sizing:border-box;
+                font-weight:600;
+              "
+            />
+
+            <button
+              id="repoRefreshBtn"
+              style="
+                width:38px;
+                height:34px;
+                border:none;
+                border-radius:8px;
+                background:#f1f5f9;
+                color:#334155;
+                cursor:pointer;
+                font-size:15px;
+              "
+              title="Refresh"
+            >
+              🔄
+            </button>
+
+          </div>
+
+          <!-- REPOSITORY INFO -->
+          <div style="
+            display:flex;
+            gap:6px;
+            margin-bottom:9px;
+            flex-wrap:wrap;
+          ">
+
+            <div style="
+              flex:1;
+              min-width:90px;
+              background:#f8fafc;
+              border:1px solid #e2e8f0;
+              border-radius:8px;
+              padding:7px;
+            ">
+              <div style="
+                font-size:8px;
+                color:#64748b;
+                font-weight:800;
+              ">
+                DEFAULT BRANCH
+              </div>
+
+              <div style="
+                font-size:10px;
+                color:#0f172a;
+                font-weight:900;
+                margin-top:2px;
+              ">
+                ${escapeHtml(repoInfo.default_branch || "main")}
+              </div>
+            </div>
+
+            <div style="
+              flex:1;
+              min-width:90px;
+              background:#f8fafc;
+              border:1px solid #e2e8f0;
+              border-radius:8px;
+              padding:7px;
+            ">
+              <div style="
+                font-size:8px;
+                color:#64748b;
+                font-weight:800;
+              ">
+                FILES
+              </div>
+
+              <div style="
+                font-size:10px;
+                color:#0f172a;
+                font-weight:900;
+                margin-top:2px;
+              ">
+                ${files.length}
+              </div>
+            </div>
+
+            <div style="
+              flex:1;
+              min-width:90px;
+              background:#f8fafc;
+              border:1px solid #e2e8f0;
+              border-radius:8px;
+              padding:7px;
+            ">
+              <div style="
+                font-size:8px;
+                color:#64748b;
+                font-weight:800;
+              ">
+                UPDATED
+              </div>
+
+              <div style="
+                font-size:9px;
+                color:#0f172a;
+                font-weight:900;
+                margin-top:2px;
+              ">
+                ${formatGitHubDate(repoInfo.pushed_at)}
+              </div>
+            </div>
+
+          </div>
+
+          <!-- FILE LIST -->
+          <div
+            id="repoFilesList"
+            style="
+              max-height:390px;
+              overflow-y:auto;
+              border:1px solid #e2e8f0;
+              border-radius:10px;
+              background:#fff;
+            "
+          >
+
+            ${files
+              .map(
+                (file, index) => `
+                <div
+                  class="repo-file-row"
+                  data-path="${escapeHtml(file.path)}"
+                  style="
+                    padding:9px 10px;
+                    border-bottom:${index === files.length - 1 ? "none" : "1px solid #eef2f7"};
+                    display:flex;
+                    align-items:center;
+                    gap:9px;
+                    cursor:pointer;
+                    transition:.15s;
+                  "
+                  onmouseover="this.style.background='#f8fafc'"
+                  onmouseout="this.style.background='#fff'"
+                >
+
+                  <div style="
+                    width:30px;
+                    height:30px;
+                    border-radius:7px;
+                    background:#f1f5f9;
+                    display:flex;
+                    align-items:center;
+                    justify-content:center;
+                    flex:none;
+                    font-size:15px;
+                  ">
+                    ${getFileIcon(file.path)}
+                  </div>
+
+                  <div style="
+                    min-width:0;
+                    flex:1;
+                  ">
+
+                    <div style="
+                      font-size:10px;
+                      color:#0f172a;
+                      font-weight:850;
+                      white-space:nowrap;
+                      overflow:hidden;
+                      text-overflow:ellipsis;
+                    ">
+                      ${escapeHtml(file.path)}
+                    </div>
+
+                    <div style="
+                      font-size:8px;
+                      color:#94a3b8;
+                      margin-top:2px;
+                    ">
+                      ${escapeHtml(file.sha.substring(0, 10))}
+                    </div>
+
+                  </div>
+
+                  <div style="
+                    font-size:13px;
+                    color:#8b5cf6;
+                    flex:none;
+                  ">
+                    ›
+                  </div>
+
+                </div>
+              `
+              )
+              .join("")}
+
+          </div>
+
+          <div style="
+            margin-top:7px;
+            text-align:center;
+            font-size:8px;
+            color:#94a3b8;
+            font-weight:600;
+          ">
+            Click any file to view its update history
+          </div>
+
+        </div>
+      `;
+    };
+
+    const loadRepo = async () => {
+      Swal.update({
+        html: renderLoading(),
+      });
+
+      try {
+        const repoResponse = await fetch(getRepoUrl());
+
+        if (!repoResponse.ok) {
+          const errorData = await repoResponse.json().catch(() => ({}));
+
+          throw new Error(
+            errorData.message ||
+            `GitHub returned HTTP ${repoResponse.status}`
+          );
+        }
+
+        const repoInfo = await repoResponse.json();
+
+        const branch = repoInfo.default_branch || "main";
+
+        const treeResponse = await fetch(
+          `https://api.github.com/repos/${owner}/${getRepoName()}/git/trees/${encodeURIComponent(branch)}?recursive=1`
+        );
+
+        if (!treeResponse.ok) {
+          const errorData = await treeResponse.json().catch(() => ({}));
+
+          throw new Error(
+            errorData.message ||
+            `Unable to load repository files (HTTP ${treeResponse.status})`
+          );
+        }
+
+        const treeData = await treeResponse.json();
+
+        if (treeData.truncated) {
+          console.warn("GitHub repository tree was truncated.");
+        }
+
+        Swal.update({
+          html: renderRepository(repoInfo, treeData),
+        });
+
+        attachRepositoryEvents();
+      } catch (error) {
+        console.error("Repository History Error:", error);
+
+        Swal.update({
+          html: renderError(
+            error.message ||
+            "Unable to load repository history."
+          ),
+        });
+      }
+    };
+
+    const openFileHistory = async (filePath) => {
+      Swal.fire({
+        width: "600px",
+        padding: "12px",
+        background: "#ffffff",
+        showCloseButton: true,
+        showConfirmButton: false,
+        html: renderLoading(),
+        customClass: {
+          popup: "repo-history-popup",
+        },
+      });
+
+      try {
+        const response = await fetch(getCommitsUrl(filePath));
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+
+          throw new Error(
+            errorData.message ||
+            `GitHub returned HTTP ${response.status}`
+          );
+        }
+
+        const commits = await response.json();
+
+        if (!Array.isArray(commits) || commits.length === 0) {
+          Swal.update({
+            html: `
+              <div style="
+                font-family:Segoe UI,Arial,sans-serif;
+                text-align:center;
+                padding:25px 10px;
+              ">
+                <div style="font-size:35px;">📭</div>
+
+                <div style="
+                  font-size:14px;
+                  font-weight:900;
+                  color:#0f172a;
+                  margin-top:8px;
+                ">
+                  No Commit History Found
+                </div>
+
+                <div style="
+                  font-size:10px;
+                  color:#64748b;
+                  margin-top:5px;
+                ">
+                  ${escapeHtml(filePath)}
+                </div>
+              </div>
+            `,
+          });
+
+          return;
+        }
+
+        const historyHtml = `
+          <div style="
+            font-family:Segoe UI,Arial,sans-serif;
+            text-align:left;
+          ">
+
+            <div style="
+              background:linear-gradient(135deg,#312e81,#7c3aed);
+              color:#fff;
+              padding:13px;
+              border-radius:11px;
+              margin-bottom:10px;
+            ">
+
+              <div style="
+                font-size:13px;
+                font-weight:900;
+                word-break:break-word;
+              ">
+                ${getFileIcon(filePath)}
+                ${escapeHtml(filePath)}
+              </div>
+
+              <div style="
+                font-size:9px;
+                opacity:.85;
+                margin-top:4px;
+              ">
+                ${escapeHtml(owner)}/${escapeHtml(getRepoName())}
+              </div>
+
+            </div>
+
+            <div style="
+              max-height:420px;
+              overflow-y:auto;
+              padding-right:2px;
+            ">
+
+              ${commits
+                .map((commit, index) => {
+                  const sha = commit.sha || "";
+                  const message =
+                    commit.commit?.message?.split("\n")[0] ||
+                    "Commit message unavailable";
+
+                  const author =
+                    commit.commit?.author?.name ||
+                    commit.author?.login ||
+                    "Unknown";
+
+                  const date =
+                    commit.commit?.author?.date ||
+                    commit.commit?.committer?.date;
+
+                  const githubUser =
+                    commit.author?.login
+                      ? `@${commit.author.login}`
+                      : "";
+
+                  return `
+                    <div style="
+                      position:relative;
+                      padding:10px 10px 10px 38px;
+                      margin-bottom:6px;
+                      background:#f8fafc;
+                      border:1px solid #e2e8f0;
+                      border-radius:9px;
+                    ">
+
+                      <div style="
+                        position:absolute;
+                        left:12px;
+                        top:12px;
+                        width:17px;
+                        height:17px;
+                        border-radius:50%;
+                        background:#8b5cf6;
+                        color:#fff;
+                        display:flex;
+                        align-items:center;
+                        justify-content:center;
+                        font-size:8px;
+                        font-weight:900;
+                      ">
+                        ${index + 1}
+                      </div>
+
+                      <div style="
+                        font-size:10px;
+                        font-weight:900;
+                        color:#0f172a;
+                        line-height:1.35;
+                        word-break:break-word;
+                      ">
+                        ${escapeHtml(message)}
+                      </div>
+
+                      <div style="
+                        display:flex;
+                        flex-wrap:wrap;
+                        gap:8px;
+                        margin-top:5px;
+                        font-size:8px;
+                        color:#64748b;
+                        font-weight:700;
+                      ">
+                        <span>👤 ${escapeHtml(author)}</span>
+                        <span>🕒 ${formatGitHubDate(date)}</span>
+                        ${
+                          githubUser
+                            ? `<span style="color:#7c3aed">${escapeHtml(githubUser)}</span>`
+                            : ""
+                        }
+                      </div>
+
+                      <div style="
+                        margin-top:5px;
+                        font-family:Consolas,monospace;
+                        font-size:7px;
+                        color:#94a3b8;
+                        word-break:break-all;
+                      ">
+                        ${escapeHtml(sha)}
+                      </div>
+
+                    </div>
+                  `;
+                })
+                .join("")}
+
+            </div>
+
+          </div>
+        `;
+
+        Swal.update({
+          width: "600px",
+          html: historyHtml,
+        });
+      } catch (error) {
+        console.error("File History Error:", error);
+
+        Swal.update({
+          html: renderError(
+            error.message ||
+            "Unable to load file commit history."
+          ),
+        });
+      }
+    };
+
+    const attachRepositoryEvents = () => {
+      const frontendBtn =
+        document.getElementById("repoFrontendBtn");
+
+      const backendBtn =
+        document.getElementById("repoBackendBtn");
+
+      const refreshBtn =
+        document.getElementById("repoRefreshBtn");
+
+      const searchInput =
+        document.getElementById("repoFileSearch");
+
+      if (frontendBtn) {
+        frontendBtn.onclick = () => {
+          selectedRepo = "frontend";
+          loadRepo();
+        };
+      }
+
+      if (backendBtn) {
+        backendBtn.onclick = () => {
+          selectedRepo = "backend";
+          loadRepo();
+        };
+      }
+
+      if (refreshBtn) {
+        refreshBtn.onclick = () => {
+          loadRepo();
+        };
+      }
+
+      if (searchInput) {
+        searchInput.oninput = () => {
+          const searchValue =
+            searchInput.value.trim().toLowerCase();
+
+          document
+            .querySelectorAll(".repo-file-row")
+            .forEach((row) => {
+              const path =
+                row.getAttribute("data-path")?.toLowerCase() || "";
+
+              row.style.display =
+                !searchValue || path.includes(searchValue)
+                  ? "flex"
+                  : "none";
+            });
+        };
+      }
+
+      document
+        .querySelectorAll(".repo-file-row")
+        .forEach((row) => {
+          row.onclick = () => {
+            const path =
+              row.getAttribute("data-path");
+
+            if (path) {
+              openFileHistory(path);
+            }
+          };
+        });
+    };
+
+    Swal.fire({
+      width: "720px",
+      padding: "12px",
+      background: "#ffffff",
+      showCloseButton: true,
+      showConfirmButton: false,
+      allowOutsideClick: true,
+      html: renderLoading(),
+      customClass: {
+        popup: "repo-history-popup",
+      },
+    });
+
+    await loadRepo();
+  };
+
   /* ================= HISTORY BUTTON PASSWORD HANDLER ================= */
   const handleOpenHistory = async () => {
     const res = await askPassword(
-      "🔒 History Access", 
-      "Enter password to view repository history"
+      "🔒 History Access",
+      "Enter password to view repository file history"
     );
 
     if (res.isDismissed || !res.value) return;
 
     if (res.value === "faizan2122") {
-      if (typeof onNavigate === "function") {
-        onNavigate("history");
-      } else {
-        Swal.fire({
-          icon: "success",
-          title: "Access Granted ✅",
-          text: "Repository Explorer & File History opened.",
-          confirmButtonColor: "#0284c7"
-        });
-      }
+      // IMPORTANT:
+      // Do NOT navigate to "history".
+      // Open repository history directly inside a popup.
+      openRepositoryHistory();
     } else {
       Swal.fire({
         icon: "error",
         title: "Access Denied ❌",
         text: "Incorrect password! Please try again.",
-        confirmButtonColor: "#ef4444"
+        confirmButtonColor: "#ef4444",
       });
     }
   };
