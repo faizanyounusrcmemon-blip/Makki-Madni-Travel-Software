@@ -3,32 +3,36 @@ import Swal from "sweetalert2";
 import "./dashboard.css";
 import axios from "axios";
 
-// Dynamic Build Timestamp Function
+// =====================================================
+// FIXED SYSTEM BUILD / UPDATE TIME
+// This time will NOT run like a live clock
+// =====================================================
 const getFormattedBuildTime = () => {
   const vercelTime =
     import.meta.env.VERCEL_GIT_COMMIT_TIMESTAMP ||
     import.meta.env.VITE_VERCEL_GIT_COMMIT_TIMESTAMP;
 
-  let buildDate;
-
-  if (vercelTime) {
-    const parsed = new Date(isNaN(Number(vercelTime)) ? vercelTime : Number(vercelTime) * 1000);
-    if (!isNaN(parsed.getTime())) {
-      buildDate = parsed;
-    }
+  if (!vercelTime) {
+    return "Update Time Not Available";
   }
 
-  if (!buildDate) {
-    buildDate = new Date();
+  const parsed = new Date(
+    isNaN(Number(vercelTime))
+      ? vercelTime
+      : Number(vercelTime) * 1000
+  );
+
+  if (isNaN(parsed.getTime())) {
+    return "Update Time Not Available";
   }
 
-  return buildDate.toLocaleString("en-GB", {
+  return parsed.toLocaleString("en-GB", {
+    timeZone: "Asia/Karachi",
     day: "2-digit",
     month: "short",
     year: "numeric",
     hour: "2-digit",
     minute: "2-digit",
-    second: "2-digit",
     hour12: true,
   });
 };
