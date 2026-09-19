@@ -36,12 +36,12 @@ export default defineConfig(({ mode }) => {
     plugins: [react()],
 
     define: {
-      __MMT_BUILD_TIME__: JSON.stringify(buildTime),
-      __MMT_COMMIT_MSG__: JSON.stringify(commitMsg),
-      __MMT_GITHUB_OWNER__: JSON.stringify(repoOwner),
-      __MMT_GITHUB_REPO_FRONTEND__: JSON.stringify(repoFrontend),
-      __MMT_GITHUB_REPO_BACKEND__: JSON.stringify(repoBackend),
-      __MMT_GITHUB_COMMIT_SHA__: JSON.stringify(commitSha),
+      "process.env.BUILD_TIME": JSON.stringify(buildTime),
+      "process.env.COMMIT_MSG": JSON.stringify(commitMsg),
+      "process.env.GITHUB_OWNER": JSON.stringify(repoOwner),
+      "process.env.GITHUB_REPO_FRONTEND": JSON.stringify(repoFrontend),
+      "process.env.GITHUB_REPO_BACKEND": JSON.stringify(repoBackend),
+      "process.env.GITHUB_COMMIT_SHA": JSON.stringify(commitSha),
     },
   };
 });
