@@ -5,16 +5,15 @@ import axios from "axios";
 
 // =====================================================
 // FIXED SYSTEM BUILD / UPDATE TIME
-// This time will NOT run like a live clock
+// IMPORTANT: This is NOT a live clock.
+// It only shows the Vercel/Git deployment timestamp.
 // =====================================================
 const getFormattedBuildTime = () => {
   const vercelTime =
     import.meta.env.VERCEL_GIT_COMMIT_TIMESTAMP ||
     import.meta.env.VITE_VERCEL_GIT_COMMIT_TIMESTAMP;
 
-  if (!vercelTime) {
-    return "Update Time Not Available";
-  }
+  if (!vercelTime) return "Update Time Not Available";
 
   const parsed = new Date(
     isNaN(Number(vercelTime))
@@ -22,9 +21,7 @@ const getFormattedBuildTime = () => {
       : Number(vercelTime) * 1000
   );
 
-  if (isNaN(parsed.getTime())) {
-    return "Update Time Not Available";
-  }
+  if (isNaN(parsed.getTime())) return "Update Time Not Available";
 
   return parsed.toLocaleString("en-GB", {
     timeZone: "Asia/Karachi",
@@ -567,7 +564,18 @@ export default function Dashboard({ onNavigate }) {
     }
   };
 
+  const responsiveDashboardStyle = `
+    .dashboard-top-bar { flex-wrap: wrap; }
+    .dashboard-top-bar > * { min-width: 0; }
+    @media (max-width: 720px) {
+      .dashboard-top-bar { flex-direction: column; align-items: stretch !important; }
+      .time-card-box, .backup-side-box { max-width: 100% !important; flex-basis: auto !important; }
+    }
+  `;
+
   return (
+    <>
+      <style>{responsiveDashboardStyle}</style>
     <div
       className="dashboard-container"
       style={{
@@ -592,10 +600,10 @@ export default function Dashboard({ onNavigate }) {
       <div style={{ position: "relative", zIndex: 2, padding: "8px 12px", width: "100%", boxSizing: "border-box" }}>
         
         {/* TOP BAR */}
-        <div className="dashboard-top-bar" style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginTop: 2, position: "relative", zIndex: 10, width: "100%", boxSizing: "border-box" }}>
+        <div className="dashboard-top-bar" style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "14px", marginTop: 2, position: "relative", zIndex: 10, width: "100%", boxSizing: "border-box" }}>
           
           {/* DUAL TIME CARD WITH VERTICALLY STACKED DATE & HIJRI */}
-          <div className="time-card-box" style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: "6px", width: "100%", maxWidth: "260px" }}>
+          <div className="time-card-box" style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: "6px", width: "100%", maxWidth: "285px", flex: "1 1 285px" }}>
             <div style={{
               background: "linear-gradient(135deg, rgba(15, 23, 42, 0.88), rgba(30, 41, 59, 0.82))",
               backdropFilter: "blur(12px)",
@@ -739,7 +747,7 @@ export default function Dashboard({ onNavigate }) {
           </div>
 
           {/* BACKUP & LAST SYSTEM UPDATE CONTAINER (RIGHT COLUMN) */}
-          <div className="backup-side-box" style={{ display: "flex", flexDirection: "column", gap: "6px", width: "100%", maxWidth: "250px" }}>
+          <div className="backup-side-box" style={{ display: "flex", flexDirection: "column", gap: "7px", width: "100%", maxWidth: "285px", flex: "1 1 285px" }}>
             <button className="vip-backup-btn" onClick={runBackup} disabled={loading} style={{ padding: "8px 12px", fontSize: "11px", borderRadius: "8px" }}>
               {loading ? (<><span className="btn-loader"></span> Backing up...</>) : "Cloud Backup Now"}
             </button>
@@ -851,5 +859,6 @@ export default function Dashboard({ onNavigate }) {
         </div>
       </div>
     </div>
+    </>
   );
 }
