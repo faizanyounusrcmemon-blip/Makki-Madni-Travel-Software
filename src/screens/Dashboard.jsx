@@ -712,10 +712,10 @@ export default function Dashboard({ onNavigate }) {
               <div style={{ display: "flex", alignItems: "flex-start", gap: "8px", width: "100%" }}>
                 <div style={{ position: "relative", display: "flex", alignItems: "center", justifyContent: "center", marginTop: "2px" }}>
                   <span style={{ fontSize: "15px" }}>🇸🇦</span>
-                  <span style={{
-                    position: "absolute", top="-1px", right: "-1px", width: "4px", height: "4px",
-                    borderRadius: "50%", background: "#4ade80", boxShadow: "0 0 4px #4ade80"
-                  }}></span>
+<span style={{
+  position: "absolute", top: "-1px", right: "-1px", width: "4px", height: "4px",
+  borderRadius: "50%", background: "#4ade80", boxShadow: "0 0 4px #4ade80"
+}}></span>
                 </div>
 
                 <div style={{ display: "flex", flexDirection: "column", width: "100%" }}>
