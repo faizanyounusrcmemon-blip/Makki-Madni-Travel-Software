@@ -15,7 +15,8 @@ export default defineConfig(({ mode }) => {
     "Makki-Madni-Travel-Software";
 
   const repoBackend =
-    env.VITE_GITHUB_REPO_BACKEND || "makki-madni-backend";
+    env.VITE_GITHUB_REPO_BACKEND ||
+    "makki-madni-backend";
 
   const commitSha =
     process.env.VERCEL_GIT_COMMIT_SHA ||
@@ -38,10 +39,18 @@ export default defineConfig(({ mode }) => {
     define: {
       "process.env.BUILD_TIME": JSON.stringify(buildTime),
       "process.env.COMMIT_MSG": JSON.stringify(commitMsg),
-      "process.env.GITHUB_OWNER": JSON.stringify(repoOwner),
-      "process.env.GITHUB_REPO_FRONTEND": JSON.stringify(repoFrontend),
-      "process.env.GITHUB_REPO_BACKEND": JSON.stringify(repoBackend),
-      "process.env.GITHUB_COMMIT_SHA": JSON.stringify(commitSha),
+
+      "process.env.GITHUB_OWNER":
+        JSON.stringify(repoOwner),
+
+      "process.env.GITHUB_REPO_FRONTEND":
+        JSON.stringify(repoFrontend),
+
+      "process.env.GITHUB_REPO_BACKEND":
+        JSON.stringify(repoBackend),
+
+      "process.env.GITHUB_COMMIT_SHA":
+        JSON.stringify(commitSha),
     },
   };
 });
