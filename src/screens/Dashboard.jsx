@@ -1203,7 +1203,6 @@ export default function Dashboard({ onNavigate }) {
         `;
 
         Swal.update({
-          width: "600px",
           html: historyHtml,
         });
       } catch (error) {
