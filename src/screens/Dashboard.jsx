@@ -12,7 +12,7 @@ const getFormattedBuildTime = () => {
       ? __MMT_BUILD_TIME__
       : import.meta.env.VITE_BUILD_TIME;
 
-  if (!raw || raw === "__MMT_BUILD_TIME__") {
+  if (!raw) {
     return "Build Time Not Configured";
   }
 
@@ -35,9 +35,11 @@ const getFormattedBuildTime = () => {
 
 const getCleanCommitMsg = () => {
   const msg =
-    import.meta.env.VERCEL_GIT_COMMIT_MESSAGE ||
-    import.meta.env.VITE_VERCEL_GIT_COMMIT_MESSAGE ||
-    "System Update Applied";
+    typeof __MMT_COMMIT_MSG__ !== "undefined"
+      ? __MMT_COMMIT_MSG__
+      : import.meta.env.VITE_VERCEL_GIT_COMMIT_MESSAGE ||
+        "System Update Applied";
+
   return msg.replace(/\.jsx?/gi, "");
 };
 
