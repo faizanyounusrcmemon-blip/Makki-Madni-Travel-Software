@@ -3,23 +3,19 @@ import Swal from "sweetalert2";
 import "./dashboard.css";
 import axios from "axios";
 
-// AUTOMATED VERCEL BUILD/COMMIT DETAILS (FIXED STATIC TIME)
+// AUTOMATED BUILD/COMMIT DETAILS (FIXED STATIC TIME)
 const getFormattedBuildTime = () => {
   const vercelTime =
     import.meta.env.VERCEL_GIT_COMMIT_TIMESTAMP ||
     import.meta.env.VITE_VERCEL_GIT_COMMIT_TIMESTAMP;
 
-  if (!vercelTime) {
-    return "Recently Updated";
-  }
-
-  // Parse exact timestamp string or unix epoch
-  const dateObj = new Date(
-    isNaN(Number(vercelTime)) ? vercelTime : Number(vercelTime)
-  );
+  // Local development fallback / parse exact timestamp string or unix epoch
+  const dateObj = vercelTime 
+    ? new Date(isNaN(Number(vercelTime)) ? vercelTime : Number(vercelTime))
+    : new Date(); // Defaults to fixed load time if env variable missing
 
   if (isNaN(dateObj.getTime())) {
-    return "Recently Updated";
+    return "18 Sept 2026, 11:20 am";
   }
 
   return dateObj.toLocaleString("en-GB", {
@@ -37,7 +33,7 @@ const getCleanCommitMsg = () => {
   const msg =
     import.meta.env.VERCEL_GIT_COMMIT_MESSAGE ||
     import.meta.env.VITE_VERCEL_GIT_COMMIT_MESSAGE ||
-    "Update Dashboard";
+    "System Update Applied";
   return msg.replace(/\.jsx?/gi, "");
 };
 
@@ -103,7 +99,16 @@ export default function Dashboard({ onNavigate }) {
   useEffect(() => { loadLastBackup(); }, []);
 
   const formatDate = (d) =>
-    d ? new Date(d).toLocaleString("en-GB", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: true }) : "-";
+    d ? new Date(d).toLocaleString("en-GB", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit", hour12: true }) : "-";
+
+  // Clean backup name display (removes long timestamp strings from filename display)
+  const getCleanBackupName = (name) => {
+    if (!name) return "Backup File";
+    if (name.length > 20) {
+      return name.substring(0, 15) + "...zip";
+    }
+    return name;
+  };
 
   /* ================= DYNAMIC HIJRI CONVERSION ================= */
   const [pkOffset, setPkOffset] = useState(() => {
@@ -723,9 +728,15 @@ export default function Dashboard({ onNavigate }) {
               📥 Download ZIP to PC
             </button>
 
-            <div className="last-backup-box" style={{ padding: "6px 10px", fontSize: "9px" }}>
-              <span>Last Backup</span>
-              <b style={{ fontSize: "9px" }}>{lastBackup ? `${lastBackup.name} · ${formatDate(lastBackup.created_at)}` : "Not yet"}</b>
+            {/* CLEAN FORMATTED LAST BACKUP BOX */}
+            <div className="last-backup-box" style={{ padding: "6px 10px", fontSize: "9px", display: "flex", flexDirection: "column", gap: "2px" }}>
+              <span style={{ fontWeight: "700", color: "#94a3b8" }}>Last Backup:</span>
+              <b style={{ fontSize: "9px", color: "#38bdf8", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                {lastBackup ? `${getCleanBackupName(lastBackup.name)}` : "Not yet"}
+              </b>
+              <span style={{ fontSize: "8.5px", color: "#e2e8f0" }}>
+                {lastBackup ? formatDate(lastBackup.created_at) : ""}
+              </span>
             </div>
 
             {/* AUTOMATED LAST SYSTEM UPDATE CARD (FIXED STATIC TIME) */}
