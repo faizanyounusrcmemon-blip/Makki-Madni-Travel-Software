@@ -18,11 +18,13 @@ const getFormattedBuildTime = () => {
   });
 };
 
-const lastCommitMsg =
-  import.meta.env.VERCEL_GIT_COMMIT_MESSAGE ||
-  import.meta.env.VITE_VERCEL_GIT_COMMIT_MESSAGE ||
-  "Latest System & Feature Update";
-
+// Clean commit message without .jsx extension
+const getCleanCommitMsg = () => {
+  const msg = import.meta.env.VERCEL_GIT_COMMIT_MESSAGE ||
+    import.meta.env.VITE_VERCEL_GIT_COMMIT_MESSAGE ||
+    "Update Dashboard";
+  return msg.replace(/\.jsx?/gi, "");
+};
 
 export default function Dashboard({ onNavigate }) {
   const [lastBackup, setLastBackup] = useState(null);
@@ -70,8 +72,7 @@ export default function Dashboard({ onNavigate }) {
   const formatDate = (d) =>
     d ? new Date(d).toLocaleString("en-GB", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: true }) : "-";
 
-/* ================= DYNAMIC HIJRI CONVERSION ================= */
-  // Auto-calibrated offsets for PK (27th) and KSA (28th)
+  /* ================= DYNAMIC HIJRI CONVERSION ================= */
   const [pkOffset, setPkOffset] = useState(() => {
     const saved = localStorage.getItem("pk_hijri_offset_v2");
     return saved !== null ? parseInt(saved, 10) : 1; 
@@ -104,7 +105,6 @@ export default function Dashboard({ onNavigate }) {
     localStorage.setItem("ksa_hijri_offset_v2", val.toString());
   };
 
-  /* EXACT HIJRI CALCULATION WITH ISLAMIC MONTH NAMES */
   const getDynamicHijriDate = (dateObj, dayOffset = 0) => {
     const islamicMonths = [
       "Muharram", "Safar", "Rabi' al-Awwal", "Rabi' al-Thani",
@@ -116,9 +116,8 @@ export default function Dashboard({ onNavigate }) {
       const date = new Date(dateObj);
       date.setDate(date.getDate() + dayOffset);
 
-      // Julian Day Calculation
       let day = date.getDate();
-      let month = date.getMonth(); // 0-indexed
+      let month = date.getMonth();
       let year = date.getFullYear();
 
       if (month < 2) {
@@ -133,7 +132,6 @@ export default function Dashboard({ onNavigate }) {
                  Math.floor(30.6001 * (month + 2)) +
                  day + b - 1524.5;
 
-      // Hijri Calculation from Julian Day
       const l = jd - 1948440 + 10632;
       const n = Math.floor((l - 1) / 10631);
       const l1 = l - 10631 * n + 354;
@@ -682,71 +680,7 @@ export default function Dashboard({ onNavigate }) {
             </button>
           </div>
 
-          {/* AUTOMATED LAST UPDATE CARD */}
-          <div
-            style={{
-              background: "linear-gradient(135deg, rgba(15, 23, 42, 0.88), rgba(30, 41, 59, 0.82))",
-              backdropFilter: "blur(12px)",
-              WebkitBackdropFilter: "blur(12px)",
-              padding: "8px 10px",
-              borderRadius: "10px",
-              border: "1px solid rgba(56, 189, 248, 0.3)",
-              boxShadow: "0 4px 16px rgba(0, 0, 0, 0.4)",
-              width: "100%",
-              maxWidth: "250px",
-              display: "flex",
-              flexDirection: "column",
-              gap: "4px",
-            }}
-          >
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-              <span style={{ fontSize: "10px", fontWeight: "800", color: "#38bdf8", display: "flex", alignItems: "center", gap: "4px" }}>
-                🚀 Last System Update
-              </span>
-              <span
-                style={{
-                  fontSize: "7px",
-                  background: "rgba(56, 189, 248, 0.2)",
-                  color: "#38bdf8",
-                  padding: "1px 5px",
-                  borderRadius: "3px",
-                  fontWeight: "700",
-                }}
-              >
-                AUTO LIVE
-              </span>
-            </div>
-
-            <div
-              style={{
-                fontSize: "9px",
-                color: "#f8fafc",
-                fontWeight: "600",
-                lineHeight: "1.2",
-                maxHeight: "26px",
-                overflow: "hidden",
-                textOverflow: "ellipsis",
-              }}
-            >
-              {lastCommitMsg}
-            </div>
-
-            <div
-              style={{
-                height: "1px",
-                width: "100%",
-                background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent)",
-                margin: "2px 0",
-              }}
-            ></div>
-
-            <div style={{ fontSize: "8px", color: "#94a3b8", fontWeight: "700", display: "flex", justifyContent: "space-between" }}>
-              <span>Updated At:</span>
-              <span style={{ color: "#38bdf8" }}>{getFormattedBuildTime()}</span>
-            </div>
-          </div>
-
-          {/* STANDARD NORMAL BACKUP BUTTONS */}
+          {/* BACKUP & LAST SYSTEM UPDATE CONTAINER (RIGHT COLUMN) */}
           <div className="backup-side-box" style={{ display: "flex", flexDirection: "column", gap: "6px", width: "100%", maxWidth: "250px" }}>
             <button className="vip-backup-btn" onClick={runBackup} disabled={loading} style={{ padding: "8px 12px", fontSize: "11px", borderRadius: "8px" }}>
               {loading ? (<><span className="btn-loader"></span> Backing up...</>) : "Cloud Backup Now"}
@@ -759,6 +693,72 @@ export default function Dashboard({ onNavigate }) {
             <div className="last-backup-box" style={{ padding: "6px 10px", fontSize: "9px" }}>
               <span>Last Backup</span>
               <b style={{ fontSize: "9px" }}>{lastBackup ? `${lastBackup.name} · ${formatDate(lastBackup.created_at)}` : "Not yet"}</b>
+            </div>
+
+            {/* AUTOMATED LAST SYSTEM UPDATE CARD (PLACED DIRECTLY BELOW LAST BACKUP) */}
+            <div
+              style={{
+                background: "linear-gradient(135deg, rgba(15, 23, 42, 0.92), rgba(30, 41, 59, 0.88))",
+                backdropFilter: "blur(12px)",
+                WebkitBackdropFilter: "blur(12px)",
+                padding: "8px 10px",
+                borderRadius: "8px",
+                border: "1px solid rgba(56, 189, 248, 0.35)",
+                boxShadow: "0 4px 16px rgba(0, 0, 0, 0.4)",
+                width: "100%",
+                boxSizing: "border-box",
+                display: "flex",
+                flexDirection: "column",
+                gap: "4px",
+                marginTop: "2px"
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                <span style={{ fontSize: "10px", fontWeight: "800", color: "#38bdf8", display: "flex", alignItems: "center", gap: "4px" }}>
+                  📌 Last System Update
+                </span>
+                <span
+                  style={{
+                    fontSize: "7px",
+                    background: "rgba(34, 197, 94, 0.25)",
+                    color: "#4ade80",
+                    border: "1px solid rgba(74, 222, 128, 0.3)",
+                    padding: "1px 5px",
+                    borderRadius: "3px",
+                    fontWeight: "700",
+                  }}
+                >
+                  AUTO LIVE
+                </span>
+              </div>
+
+              <div
+                style={{
+                  fontSize: "10px",
+                  color: "#ffffff",
+                  fontWeight: "700",
+                  lineHeight: "1.2",
+                  maxHeight: "28px",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                }}
+              >
+                {getCleanCommitMsg()}
+              </div>
+
+              <div
+                style={{
+                  height: "1px",
+                  width: "100%",
+                  background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent)",
+                  margin: "1px 0",
+                }}
+              ></div>
+
+              <div style={{ fontSize: "9px", color: "#cbd5e1", fontWeight: "600", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <span>Updated At:</span>
+                <span style={{ color: "#38bdf8", fontWeight: "800", fontSize: "9.5px" }}>{getFormattedBuildTime()}</span>
+              </div>
             </div>
 
             {loading && (
