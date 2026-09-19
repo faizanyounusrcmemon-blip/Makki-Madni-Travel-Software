@@ -3,22 +3,23 @@ import Swal from "sweetalert2";
 import "./dashboard.css";
 import axios from "axios";
 
-// AUTOMATED BUILD/COMMIT DETAILS (FIXED STATIC TIME)
-const getFormattedBuildTime = () => {
+// 1. HARDCODED / FIXED BUILD TIMESTAMP (Application load hote hi freeze ho jayega)
+const FIXED_BUILD_TIMESTAMP = (() => {
   const vercelTime =
     import.meta.env.VERCEL_GIT_COMMIT_TIMESTAMP ||
     import.meta.env.VITE_VERCEL_GIT_COMMIT_TIMESTAMP;
 
-  // Local development fallback / parse exact timestamp string or unix epoch
-  const dateObj = vercelTime 
-    ? new Date(isNaN(Number(vercelTime)) ? vercelTime : Number(vercelTime))
-    : new Date(); // Defaults to fixed load time if env variable missing
-
-  if (isNaN(dateObj.getTime())) {
-    return "18 Sept 2026, 11:20 am";
+  if (vercelTime) {
+    const parsed = new Date(isNaN(Number(vercelTime)) ? vercelTime : Number(vercelTime));
+    if (!isNaN(parsed.getTime())) return parsed;
   }
+  
+  // Static fixed timestamp fallback (18 Sept 2026, 11:20 AM)
+  return new Date("2026-09-18T11:20:00");
+})();
 
-  return dateObj.toLocaleString("en-GB", {
+const getFormattedBuildTime = () => {
+  return FIXED_BUILD_TIMESTAMP.toLocaleString("en-GB", {
     day: "2-digit",
     month: "short",
     year: "numeric",
@@ -101,7 +102,7 @@ export default function Dashboard({ onNavigate }) {
   const formatDate = (d) =>
     d ? new Date(d).toLocaleString("en-GB", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit", hour12: true }) : "-";
 
-  // Clean backup name display (removes long timestamp strings from filename display)
+  // Clean backup name display
   const getCleanBackupName = (name) => {
     if (!name) return "Backup File";
     if (name.length > 20) {
@@ -710,7 +711,7 @@ export default function Dashboard({ onNavigate }) {
                 boxShadow: "0 2px 8px rgba(0,0,0,0.2)",
                 display: "flex",
                 alignItems: "center",
-                justifyContent: "center",
+                justify.content: "center",
                 gap: "4px"
               }}
             >
