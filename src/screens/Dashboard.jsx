@@ -3,7 +3,7 @@ import Swal from "sweetalert2";
 import "./dashboard.css";
 import axios from "axios";
 
-// 1. HARDCODED / FIXED BUILD TIMESTAMP (Application load hote hi freeze ho jayega)
+// 1. HARDCODED / FIXED BUILD TIMESTAMP
 const FIXED_BUILD_TIMESTAMP = (() => {
   const vercelTime =
     import.meta.env.VERCEL_GIT_COMMIT_TIMESTAMP ||
@@ -14,7 +14,7 @@ const FIXED_BUILD_TIMESTAMP = (() => {
     if (!isNaN(parsed.getTime())) return parsed;
   }
   
-  // Static fixed timestamp fallback (18 Sept 2026, 11:20 AM)
+  // Static fixed timestamp fallback
   return new Date("2026-09-18T11:20:00");
 })();
 
@@ -25,6 +25,7 @@ const getFormattedBuildTime = () => {
     year: "numeric",
     hour: "2-digit",
     minute: "2-digit",
+    second: "2-digit",
     hour12: true,
   });
 };
@@ -43,7 +44,7 @@ export default function Dashboard({ onNavigate }) {
   const [loading, setLoading] = useState(false);
   const [progress, setProgress] = useState(0);
 
-  // ACCURATE LIVE CLOCK STATE (Pakistan & KSA Live Time)
+  // ACCURATE LIVE CLOCK STATE
   const [currentTime, setCurrentTime] = useState(new Date());
 
   useEffect(() => {
@@ -99,8 +100,19 @@ export default function Dashboard({ onNavigate }) {
 
   useEffect(() => { loadLastBackup(); }, []);
 
+  // LAST BACKUP DATE WITH SECONDS
   const formatDate = (d) =>
-    d ? new Date(d).toLocaleString("en-GB", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit", hour12: true }) : "-";
+    d
+      ? new Date(d).toLocaleString("en-GB", {
+          day: "2-digit",
+          month: "short",
+          year: "numeric",
+          hour: "2-digit",
+          minute: "2-digit",
+          second: "2-digit",
+          hour12: true,
+        })
+      : "-";
 
   // Clean backup name display
   const getCleanBackupName = (name) => {
@@ -694,7 +706,7 @@ export default function Dashboard({ onNavigate }) {
               </div>
             </div>
 
-            {/* HIGH GLOSS CALENDAR BUTTON */}
+            {/* HIGH GLOSS CALENDAR BUTTON (FIXED SYNTAX LINE 714) */}
             <button 
               onClick={openCalendarModal}
               style={{
@@ -711,7 +723,7 @@ export default function Dashboard({ onNavigate }) {
                 boxShadow: "0 2px 8px rgba(0,0,0,0.2)",
                 display: "flex",
                 alignItems: "center",
-                justify.content: "center",
+                justifyContent: "center",
                 gap: "4px"
               }}
             >
@@ -729,7 +741,7 @@ export default function Dashboard({ onNavigate }) {
               📥 Download ZIP to PC
             </button>
 
-            {/* CLEAN FORMATTED LAST BACKUP BOX */}
+            {/* CLEAN FORMATTED LAST BACKUP BOX WITH SECONDS */}
             <div className="last-backup-box" style={{ padding: "6px 10px", fontSize: "9px", display: "flex", flexDirection: "column", gap: "2px" }}>
               <span style={{ fontWeight: "700", color: "#94a3b8" }}>Last Backup:</span>
               <b style={{ fontSize: "9px", color: "#38bdf8", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
@@ -740,7 +752,7 @@ export default function Dashboard({ onNavigate }) {
               </span>
             </div>
 
-            {/* AUTOMATED LAST SYSTEM UPDATE CARD (FIXED STATIC TIME) */}
+            {/* AUTOMATED LAST SYSTEM UPDATE CARD */}
             <div
               style={{
                 background: "linear-gradient(135deg, rgba(15, 23, 42, 0.92), rgba(30, 41, 59, 0.88))",
