@@ -3,77 +3,19 @@ import Swal from "sweetalert2";
 import "./dashboard.css";
 import axios from "axios";
 
-// =====================================================
-// SAFE BUILD / UPDATE TIME RESOLVER
-// =====================================================
-const getFormattedBuildTime = () => {
-  try {
-    const raw =
-      process.env.BUILD_TIME ||
-      import.meta.env.VITE_BUILD_TIME ||
-      new Date().toISOString();
-
-    const parsed = new Date(raw);
-    if (isNaN(parsed.getTime())) return "Build Time Not Configured";
-
-    return parsed.toLocaleString("en-GB", {
-      timeZone: "Asia/Karachi",
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-      hour12: true,
-    });
-  } catch (err) {
-    return "Build Time Not Configured";
-  }
-};
-
-const getCleanCommitMsg = () => {
-  try {
-    const msg =
-      process.env.COMMIT_MSG ||
-      import.meta.env.VITE_VERCEL_GIT_COMMIT_MESSAGE ||
-      "System Update Applied";
-
-    return String(msg).replace(/\.jsx?/gi, "");
-  } catch (err) {
-    return "System Update Applied";
-  }
-};
-
 export default function Dashboard({ onNavigate }) {
   const [lastBackup, setLastBackup] = useState(null);
   const [loading, setLoading] = useState(false);
   const [progress, setProgress] = useState(0);
 
-  // ACCURATE LIVE CLOCK STATE
+  // LIVE CLOCK STATE
   const [currentTime, setCurrentTime] = useState(new Date());
 
   useEffect(() => {
-    let timeoutId;
-    let intervalId;
-
-    const updateClock = () => {
-      const now = new Date();
-      setCurrentTime(now);
-
-      const delay = 1000 - now.getMilliseconds();
-      timeoutId = setTimeout(() => {
-        setCurrentTime(new Date());
-        intervalId = setInterval(() => {
-          setCurrentTime(new Date());
-        }, 1000);
-      }, delay);
-    };
-
-    updateClock();
-
-    return () => {
-      if (timeoutId) clearTimeout(timeoutId);
-      if (intervalId) clearInterval(intervalId);
-    };
+    const clockTimer = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 1000);
+    return () => clearInterval(clockTimer);
   }, []);
 
   // BACKGROUND IMAGES
@@ -105,27 +47,10 @@ export default function Dashboard({ onNavigate }) {
   useEffect(() => { loadLastBackup(); }, []);
 
   const formatDate = (d) =>
-    d
-      ? new Date(d).toLocaleString("en-GB", {
-          day: "2-digit",
-          month: "short",
-          year: "numeric",
-          hour: "2-digit",
-          minute: "2-digit",
-          second: "2-digit",
-          hour12: true,
-        })
-      : "-";
+    d ? new Date(d).toLocaleString("en-GB", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: true }) : "-";
 
-  const getCleanBackupName = (name) => {
-    if (!name) return "Backup File";
-    if (name.length > 20) {
-      return name.substring(0, 15) + "...zip";
-    }
-    return name;
-  };
-
-  /* ================= DYNAMIC HIJRI CONVERSION ================= */
+/* ================= DYNAMIC HIJRI CONVERSION ================= */
+  // Auto-calibrated offsets for PK (27th) and KSA (28th)
   const [pkOffset, setPkOffset] = useState(() => {
     const saved = localStorage.getItem("pk_hijri_offset_v2");
     return saved !== null ? parseInt(saved, 10) : 1; 
@@ -158,6 +83,7 @@ export default function Dashboard({ onNavigate }) {
     localStorage.setItem("ksa_hijri_offset_v2", val.toString());
   };
 
+  /* EXACT HIJRI CALCULATION WITH ISLAMIC MONTH NAMES */
   const getDynamicHijriDate = (dateObj, dayOffset = 0) => {
     const islamicMonths = [
       "Muharram", "Safar", "Rabi' al-Awwal", "Rabi' al-Thani",
@@ -169,8 +95,9 @@ export default function Dashboard({ onNavigate }) {
       const date = new Date(dateObj);
       date.setDate(date.getDate() + dayOffset);
 
+      // Julian Day Calculation
       let day = date.getDate();
-      let month = date.getMonth();
+      let month = date.getMonth(); // 0-indexed
       let year = date.getFullYear();
 
       if (month < 2) {
@@ -185,6 +112,7 @@ export default function Dashboard({ onNavigate }) {
                  Math.floor(30.6001 * (month + 2)) +
                  day + b - 1524.5;
 
+      // Hijri Calculation from Julian Day
       const l = jd - 1948440 + 10632;
       const n = Math.floor((l - 1) / 10631);
       const l1 = l - 10631 * n + 354;
@@ -228,7 +156,7 @@ export default function Dashboard({ onNavigate }) {
       html: `
         <div style="font-family:'Segoe UI',sans-serif; text-align:center; padding-top:2px;">
           <p style="margin:0 0 10px 0; font-size:12px; color:#475569; font-weight:600;">
-            Offset: <b style="font-size:14px; color:#0f172a;">${currentVal > 0 ? "+" + currentVal : currentVal} Day(s)</b>
+            Offset: <b style="font-size:14px; color:#0f172a;">${currentVal > 0 ? `+${currentVal}` : currentVal} Day(s)</b>
           </p>
           <div style="display:flex; justify-content:center; gap:4px; margin-bottom:5px;">
             <button id="offset-minus" style="flex:1; background:#ef4444; color:#fff; border:none; padding:6px; border-radius:6px; font-weight:800; font-size:12px; cursor:pointer;">-1 Day</button>
@@ -306,7 +234,7 @@ export default function Dashboard({ onNavigate }) {
 
       return `
         <div style="font-family: 'Segoe UI', system-ui, sans-serif; padding: 2px;">
-          <div style="display: flex; justify-space-between; align-items: center; margin-bottom: 8px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
             <button id="cal-prev" style="background:#f1f5f9; border:none; padding:4px 8px; border-radius:4px; cursor:pointer; font-weight:bold; color:#334155;">◀</button>
             <div style="text-align:center;">
               <h3 style="margin:0; font-weight:800; color:#0f172a; font-size:14px;">${monthNames[month]} ${year}</h3>
@@ -358,7 +286,7 @@ export default function Dashboard({ onNavigate }) {
     showModal();
   };
 
-  /* ================= SAFE PASSWORD PROMPT WITH EYE TOGGLE ================= */
+  // SYSTEM PASSWORD VERIFICATION
   const askPassword = async (titleText, subText) => {
     return await Swal.fire({
       width: "300px",
@@ -368,8 +296,8 @@ export default function Dashboard({ onNavigate }) {
           <b style="color:#198754;font-size:14px">${titleText}</b><br>
           <span style="font-size:11px;color:#555">${subText}</span>
           <div style="position:relative; margin-top:8px">
-            <input type="password" id="swal-pass" class="swal2-input" placeholder="Enter password" style="height:32px; font-size:12px; padding:2px 30px 2px 8px; margin:0; width:100%; box-sizing:border-box;">
-            <span id="toggle-pass" style="position:absolute; right:8px; top:50%; transform:translateY(-50%); cursor:pointer; font-size:14px; user-select:none;">👁</span>
+            <input type="password" id="swal-pass" class="swal2-input" placeholder="Enter password" style="height:28px; font-size:12px; padding:2px 6px; margin:0;">
+            <span id="toggle-pass" style="position:absolute; right:8px; top:50%; transform:translateY(-50%); cursor:pointer; font-size:12px;">👁</span>
           </div>
           <div id="swal-error" style="color:#dc3545; font-size:10px; min-height:14px; margin-top:2px"></div>
         </div>
@@ -377,7 +305,12 @@ export default function Dashboard({ onNavigate }) {
       showCancelButton: true,
       confirmButtonText: "Proceed",
       cancelButtonText: "Cancel",
-      buttonsStyling: true,
+      buttonsStyling: false,
+      customClass: {
+        confirmButton: "swal-btn-confirm",
+        cancelButton: "swal-btn-cancel",
+        popup: "swal-backup-popup",
+      },
       didOpen: () => {
         const input = document.getElementById("swal-pass");
         const toggle = document.getElementById("toggle-pass");
@@ -391,18 +324,23 @@ export default function Dashboard({ onNavigate }) {
           });
           input.addEventListener("keyup", (e) => {
             if (e.key === "Enter") {
-              const confirmBtn = Swal.getConfirmButton();
+              const confirmBtn = document.querySelector(".swal-btn-confirm");
               if (confirmBtn) confirmBtn.click();
             }
           });
         }
       },
-      preConfirm: () => {
+      preConfirm: async () => {
         const input = document.getElementById("swal-pass");
         const errorBox = document.getElementById("swal-error");
+        const popup = document.querySelector(".swal-backup-popup");
 
         if (!input || !input.value) {
           if (errorBox) errorBox.textContent = "Password required";
+          if (popup) {
+            popup.classList.add("shake");
+            setTimeout(() => popup.classList.remove("shake"), 500);
+          }
           return false;
         }
         return input.value;
@@ -410,924 +348,10 @@ export default function Dashboard({ onNavigate }) {
     });
   };
 
-  /* =====================================================
-     REPOSITORY FILE HISTORY
-     Opens inside Dashboard - NO NAVIGATION REQUIRED
-  ===================================================== */
-
-  const openRepositoryHistory = async () => {
-    const owner =
-      import.meta.env.VITE_GITHUB_OWNER ||
-      "faizanyounusrcmemon-blip";
-
-    const frontendRepo =
-      import.meta.env.VITE_GITHUB_REPO_FRONTEND ||
-      "Makki-Madni-Travel-Software";
-
-    const backendRepo =
-      import.meta.env.VITE_GITHUB_REPO_BACKEND ||
-      "makki-madni-backend";
-
-    let selectedRepo = "frontend";
-
-    const getRepoName = () =>
-      selectedRepo === "frontend" ? frontendRepo : backendRepo;
-
-    const getRepoUrl = () =>
-      `https://api.github.com/repos/${owner}/${getRepoName()}`;
-
-    const getFilesUrl = () =>
-      `https://api.github.com/repos/${owner}/${getRepoName()}/git/trees/main?recursive=1`;
-
-    const getCommitsUrl = (path = "") => {
-      let url =
-        `https://api.github.com/repos/${owner}/${getRepoName()}/commits?per_page=20`;
-
-      if (path) {
-        url += `&path=${encodeURIComponent(path)}`;
-      }
-
-      return url;
-    };
-
-    const escapeHtml = (value) => {
-      return String(value ?? "")
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#039;");
-    };
-
-    const formatGitHubDate = (date) => {
-      if (!date) return "Date unavailable";
-
-      try {
-        return new Date(date).toLocaleString("en-GB", {
-          timeZone: "Asia/Karachi",
-          day: "2-digit",
-          month: "short",
-          year: "numeric",
-          hour: "2-digit",
-          minute: "2-digit",
-          hour12: true,
-        });
-      } catch {
-        return "Date unavailable";
-      }
-    };
-
-    const getFileIcon = (path) => {
-      const lower = path.toLowerCase();
-
-      if (lower.endsWith(".jsx")) return "⚛️";
-      if (lower.endsWith(".js")) return "🟨";
-      if (lower.endsWith(".css")) return "🎨";
-      if (lower.endsWith(".json")) return "📦";
-      if (lower.endsWith(".html")) return "🌐";
-      if (lower.endsWith(".sql")) return "🗄️";
-      if (lower.endsWith(".md")) return "📝";
-      if (lower.endsWith(".png") || lower.endsWith(".jpg") || lower.endsWith(".jpeg"))
-        return "🖼️";
-      if (lower.endsWith(".pdf")) return "📕";
-      if (lower.endsWith(".zip")) return "📦";
-
-      return "📄";
-    };
-
-    const renderLoading = () => {
-      return `
-        <div style="
-          padding:35px 15px;
-          text-align:center;
-          font-family:Segoe UI,Arial,sans-serif;
-        ">
-          <div style="
-            width:42px;
-            height:42px;
-            border:4px solid #e2e8f0;
-            border-top-color:#8b5cf6;
-            border-radius:50%;
-            margin:0 auto 14px;
-            animation:repoSpin .8s linear infinite;
-          "></div>
-
-          <div style="
-            font-size:14px;
-            font-weight:900;
-            color:#0f172a;
-          ">
-            Loading Repository...
-          </div>
-
-          <div style="
-            margin-top:5px;
-            font-size:11px;
-            color:#64748b;
-            font-weight:600;
-          ">
-            Please wait
-          </div>
-        </div>
-
-        <style>
-          @keyframes repoSpin {
-            from { transform:rotate(0deg); }
-            to { transform:rotate(360deg); }
-          }
-        </style>
-      `;
-    };
-
-    const renderError = (message) => {
-      return `
-        <div style="
-          margin:15px;
-          padding:18px;
-          border-radius:12px;
-          background:#fff1f2;
-          border:1px solid #fecdd3;
-          color:#9f1239;
-          text-align:center;
-          font-family:Segoe UI,Arial,sans-serif;
-        ">
-          <div style="font-size:28px;">⚠️</div>
-
-          <div style="
-            font-size:14px;
-            font-weight:900;
-            margin-top:5px;
-          ">
-            Repository Load Failed
-          </div>
-
-          <div style="
-            font-size:11px;
-            font-weight:600;
-            margin-top:7px;
-            line-height:1.5;
-          ">
-            ${escapeHtml(message)}
-          </div>
-
-          <div style="
-            font-size:9px;
-            color:#64748b;
-            margin-top:10px;
-          ">
-            Repository: ${escapeHtml(owner)}/${escapeHtml(getRepoName())}
-          </div>
-        </div>
-      `;
-    };
-
-    const renderRepository = (repoInfo, treeData) => {
-      const files = (treeData.tree || [])
-        .filter((item) => item.type === "blob")
-        .sort((a, b) => a.path.localeCompare(b.path));
-
-      const folders = new Set();
-
-      files.forEach((file) => {
-        const parts = file.path.split("/");
-
-        if (parts.length > 1) {
-          parts.pop();
-          folders.add(parts.join("/"));
-        }
-      });
-
-      return `
-        <div style="
-          font-family:Segoe UI,Arial,sans-serif;
-          color:#0f172a;
-        ">
-
-          <!-- HEADER -->
-          <div style="
-            background:
-              linear-gradient(
-                135deg,
-                #312e81 0%,
-                #6d28d9 48%,
-                #8b5cf6 100%
-              );
-            color:#fff;
-            padding:14px;
-            border-radius:12px;
-            margin-bottom:10px;
-            box-shadow:0 8px 20px rgba(76,29,149,.28);
-          ">
-
-            <div style="
-              display:flex;
-              justify-content:space-between;
-              align-items:center;
-              gap:10px;
-            ">
-
-              <div style="
-                display:flex;
-                align-items:center;
-                gap:9px;
-              ">
-                <div style="
-                  width:36px;
-                  height:36px;
-                  border-radius:10px;
-                  background:rgba(255,255,255,.16);
-                  display:flex;
-                  align-items:center;
-                  justify-content:center;
-                  font-size:20px;
-                ">
-                  📜
-                </div>
-
-                <div>
-                  <div style="
-                    font-size:14px;
-                    font-weight:900;
-                  ">
-                    Repository File History
-                  </div>
-
-                  <div style="
-                    font-size:9px;
-                    opacity:.88;
-                    margin-top:2px;
-                  ">
-                    ${escapeHtml(owner)}/${escapeHtml(getRepoName())}
-                  </div>
-                </div>
-              </div>
-
-              <div style="
-                background:rgba(255,255,255,.14);
-                border:1px solid rgba(255,255,255,.22);
-                padding:5px 8px;
-                border-radius:20px;
-                font-size:9px;
-                font-weight:900;
-              ">
-                ${files.length} FILES
-              </div>
-
-            </div>
-
-            <div style="
-              margin-top:10px;
-              display:flex;
-              gap:6px;
-            ">
-
-              <button
-                id="repoFrontendBtn"
-                style="
-                  flex:1;
-                  border:none;
-                  border-radius:7px;
-                  padding:7px 5px;
-                  cursor:pointer;
-                  font-size:10px;
-                  font-weight:900;
-                  background:${selectedRepo === "frontend" ? "#fff" : "rgba(255,255,255,.12)"};
-                  color:${selectedRepo === "frontend" ? "#4c1d95" : "#fff"};
-                "
-              >
-                ⚛️ Frontend
-              </button>
-
-              <button
-                id="repoBackendBtn"
-                style="
-                  flex:1;
-                  border:none;
-                  border-radius:7px;
-                  padding:7px 5px;
-                  cursor:pointer;
-                  font-size:10px;
-                  font-weight:900;
-                  background:${selectedRepo === "backend" ? "#fff" : "rgba(255,255,255,.12)"};
-                  color:${selectedRepo === "backend" ? "#4c1d95" : "#fff"};
-                "
-              >
-                🟢 Backend
-              </button>
-
-            </div>
-          </div>
-
-          <!-- SEARCH -->
-          <div style="
-            display:flex;
-            gap:7px;
-            margin-bottom:9px;
-          ">
-
-            <input
-              id="repoFileSearch"
-              type="text"
-              placeholder="🔎 Search file..."
-              style="
-                flex:1;
-                height:34px;
-                border:1px solid #cbd5e1;
-                border-radius:8px;
-                padding:0 10px;
-                font-size:11px;
-                outline:none;
-                box-sizing:border-box;
-                font-weight:600;
-              "
-            />
-
-            <button
-              id="repoRefreshBtn"
-              style="
-                width:38px;
-                height:34px;
-                border:none;
-                border-radius:8px;
-                background:#f1f5f9;
-                color:#334155;
-                cursor:pointer;
-                font-size:15px;
-              "
-              title="Refresh"
-            >
-              🔄
-            </button>
-
-          </div>
-
-          <!-- REPOSITORY INFO -->
-          <div style="
-            display:flex;
-            gap:6px;
-            margin-bottom:9px;
-            flex-wrap:wrap;
-          ">
-
-            <div style="
-              flex:1;
-              min-width:90px;
-              background:#f8fafc;
-              border:1px solid #e2e8f0;
-              border-radius:8px;
-              padding:7px;
-            ">
-              <div style="
-                font-size:8px;
-                color:#64748b;
-                font-weight:800;
-              ">
-                DEFAULT BRANCH
-              </div>
-
-              <div style="
-                font-size:10px;
-                color:#0f172a;
-                font-weight:900;
-                margin-top:2px;
-              ">
-                ${escapeHtml(repoInfo.default_branch || "main")}
-              </div>
-            </div>
-
-            <div style="
-              flex:1;
-              min-width:90px;
-              background:#f8fafc;
-              border:1px solid #e2e8f0;
-              border-radius:8px;
-              padding:7px;
-            ">
-              <div style="
-                font-size:8px;
-                color:#64748b;
-                font-weight:800;
-              ">
-                FILES
-              </div>
-
-              <div style="
-                font-size:10px;
-                color:#0f172a;
-                font-weight:900;
-                margin-top:2px;
-              ">
-                ${files.length}
-              </div>
-            </div>
-
-            <div style="
-              flex:1;
-              min-width:90px;
-              background:#f8fafc;
-              border:1px solid #e2e8f0;
-              border-radius:8px;
-              padding:7px;
-            ">
-              <div style="
-                font-size:8px;
-                color:#64748b;
-                font-weight:800;
-              ">
-                UPDATED
-              </div>
-
-              <div style="
-                font-size:9px;
-                color:#0f172a;
-                font-weight:900;
-                margin-top:2px;
-              ">
-                ${formatGitHubDate(repoInfo.pushed_at)}
-              </div>
-            </div>
-
-          </div>
-
-          <!-- FILE LIST -->
-          <div
-            id="repoFilesList"
-            style="
-              max-height:390px;
-              overflow-y:auto;
-              border:1px solid #e2e8f0;
-              border-radius:10px;
-              background:#fff;
-            "
-          >
-
-            ${files
-              .map(
-                (file, index) => `
-                <div
-                  class="repo-file-row"
-                  data-path="${escapeHtml(file.path)}"
-                  style="
-                    padding:9px 10px;
-                    border-bottom:${index === files.length - 1 ? "none" : "1px solid #eef2f7"};
-                    display:flex;
-                    align-items:center;
-                    gap:9px;
-                    cursor:pointer;
-                    transition:.15s;
-                  "
-                  onmouseover="this.style.background='#f8fafc'"
-                  onmouseout="this.style.background='#fff'"
-                >
-
-                  <div style="
-                    width:30px;
-                    height:30px;
-                    border-radius:7px;
-                    background:#f1f5f9;
-                    display:flex;
-                    align-items:center;
-                    justify-content:center;
-                    flex:none;
-                    font-size:15px;
-                  ">
-                    ${getFileIcon(file.path)}
-                  </div>
-
-                  <div style="
-                    min-width:0;
-                    flex:1;
-                  ">
-
-                    <div style="
-                      font-size:10px;
-                      color:#0f172a;
-                      font-weight:850;
-                      white-space:nowrap;
-                      overflow:hidden;
-                      text-overflow:ellipsis;
-                    ">
-                      ${escapeHtml(file.path)}
-                    </div>
-
-                    <div style="
-                      font-size:8px;
-                      color:#94a3b8;
-                      margin-top:2px;
-                    ">
-                      ${escapeHtml(file.sha.substring(0, 10))}
-                    </div>
-
-                  </div>
-
-                  <div style="
-                    font-size:13px;
-                    color:#8b5cf6;
-                    flex:none;
-                  ">
-                    ›
-                  </div>
-
-                </div>
-              `
-              )
-              .join("")}
-
-          </div>
-
-          <div style="
-            margin-top:7px;
-            text-align:center;
-            font-size:8px;
-            color:#94a3b8;
-            font-weight:600;
-          ">
-            Click any file to view its update history
-          </div>
-
-        </div>
-      `;
-    };
-
-    const loadRepo = async () => {
-      Swal.update({
-        html: renderLoading(),
-      });
-
-      try {
-        const repoResponse = await fetch(getRepoUrl());
-
-        if (!repoResponse.ok) {
-          const errorData = await repoResponse.json().catch(() => ({}));
-
-          throw new Error(
-            errorData.message ||
-            `GitHub returned HTTP ${repoResponse.status}`
-          );
-        }
-
-        const repoInfo = await repoResponse.json();
-
-        const branch = repoInfo.default_branch || "main";
-
-        const treeResponse = await fetch(
-          `https://api.github.com/repos/${owner}/${getRepoName()}/git/trees/${encodeURIComponent(branch)}?recursive=1`
-        );
-
-        if (!treeResponse.ok) {
-          const errorData = await treeResponse.json().catch(() => ({}));
-
-          throw new Error(
-            errorData.message ||
-            `Unable to load repository files (HTTP ${treeResponse.status})`
-          );
-        }
-
-        const treeData = await treeResponse.json();
-
-        if (treeData.truncated) {
-          console.warn("GitHub repository tree was truncated.");
-        }
-
-        Swal.update({
-          html: renderRepository(repoInfo, treeData),
-        });
-
-        attachRepositoryEvents();
-      } catch (error) {
-        console.error("Repository History Error:", error);
-
-        Swal.update({
-          html: renderError(
-            error.message ||
-            "Unable to load repository history."
-          ),
-        });
-      }
-    };
-
-    const openFileHistory = async (filePath) => {
-      Swal.fire({
-        width: "600px",
-        padding: "12px",
-        background: "#ffffff",
-        showCloseButton: true,
-        showConfirmButton: false,
-        html: renderLoading(),
-        customClass: {
-          popup: "repo-history-popup",
-        },
-      });
-
-      try {
-        const response = await fetch(getCommitsUrl(filePath));
-
-        if (!response.ok) {
-          const errorData = await response.json().catch(() => ({}));
-
-          throw new Error(
-            errorData.message ||
-            `GitHub returned HTTP ${response.status}`
-          );
-        }
-
-        const commits = await response.json();
-
-        if (!Array.isArray(commits) || commits.length === 0) {
-          Swal.update({
-            html: `
-              <div style="
-                font-family:Segoe UI,Arial,sans-serif;
-                text-align:center;
-                padding:25px 10px;
-              ">
-                <div style="font-size:35px;">📭</div>
-
-                <div style="
-                  font-size:14px;
-                  font-weight:900;
-                  color:#0f172a;
-                  margin-top:8px;
-                ">
-                  No Commit History Found
-                </div>
-
-                <div style="
-                  font-size:10px;
-                  color:#64748b;
-                  margin-top:5px;
-                ">
-                  ${escapeHtml(filePath)}
-                </div>
-              </div>
-            `,
-          });
-
-          return;
-        }
-
-        const historyHtml = `
-          <div style="
-            font-family:Segoe UI,Arial,sans-serif;
-            text-align:left;
-          ">
-
-            <div style="
-              background:linear-gradient(135deg,#312e81,#7c3aed);
-              color:#fff;
-              padding:13px;
-              border-radius:11px;
-              margin-bottom:10px;
-            ">
-
-              <div style="
-                font-size:13px;
-                font-weight:900;
-                word-break:break-word;
-              ">
-                ${getFileIcon(filePath)}
-                ${escapeHtml(filePath)}
-              </div>
-
-              <div style="
-                font-size:9px;
-                opacity:.85;
-                margin-top:4px;
-              ">
-                ${escapeHtml(owner)}/${escapeHtml(getRepoName())}
-              </div>
-
-            </div>
-
-            <div style="
-              max-height:420px;
-              overflow-y:auto;
-              padding-right:2px;
-            ">
-
-              ${commits
-                .map((commit, index) => {
-                  const sha = commit.sha || "";
-                  const message =
-                    commit.commit?.message?.split("\n")[0] ||
-                    "Commit message unavailable";
-
-                  const author =
-                    commit.commit?.author?.name ||
-                    commit.author?.login ||
-                    "Unknown";
-
-                  const date =
-                    commit.commit?.author?.date ||
-                    commit.commit?.committer?.date;
-
-                  const githubUser =
-                    commit.author?.login
-                      ? `@${commit.author.login}`
-                      : "";
-
-                  return `
-                    <div style="
-                      position:relative;
-                      padding:10px 10px 10px 38px;
-                      margin-bottom:6px;
-                      background:#f8fafc;
-                      border:1px solid #e2e8f0;
-                      border-radius:9px;
-                    ">
-
-                      <div style="
-                        position:absolute;
-                        left:12px;
-                        top:12px;
-                        width:17px;
-                        height:17px;
-                        border-radius:50%;
-                        background:#8b5cf6;
-                        color:#fff;
-                        display:flex;
-                        align-items:center;
-                        justify-content:center;
-                        font-size:8px;
-                        font-weight:900;
-                      ">
-                        ${index + 1}
-                      </div>
-
-                      <div style="
-                        font-size:10px;
-                        font-weight:900;
-                        color:#0f172a;
-                        line-height:1.35;
-                        word-break:break-word;
-                      ">
-                        ${escapeHtml(message)}
-                      </div>
-
-                      <div style="
-                        display:flex;
-                        flex-wrap:wrap;
-                        gap:8px;
-                        margin-top:5px;
-                        font-size:8px;
-                        color:#64748b;
-                        font-weight:700;
-                      ">
-                        <span>👤 ${escapeHtml(author)}</span>
-                        <span>🕒 ${formatGitHubDate(date)}</span>
-                        ${
-                          githubUser
-                            ? `<span style="color:#7c3aed">${escapeHtml(githubUser)}</span>`
-                            : ""
-                        }
-                      </div>
-
-                      <div style="
-                        margin-top:5px;
-                        font-family:Consolas,monospace;
-                        font-size:7px;
-                        color:#94a3b8;
-                        word-break:break-all;
-                      ">
-                        ${escapeHtml(sha)}
-                      </div>
-
-                    </div>
-                  `;
-                })
-                .join("")}
-
-            </div>
-
-          </div>
-        `;
-
-        Swal.update({
-          html: historyHtml,
-        });
-      } catch (error) {
-        console.error("File History Error:", error);
-
-        Swal.update({
-          html: renderError(
-            error.message ||
-            "Unable to load file commit history."
-          ),
-        });
-      }
-    };
-
-    const attachRepositoryEvents = () => {
-      const frontendBtn =
-        document.getElementById("repoFrontendBtn");
-
-      const backendBtn =
-        document.getElementById("repoBackendBtn");
-
-      const refreshBtn =
-        document.getElementById("repoRefreshBtn");
-
-      const searchInput =
-        document.getElementById("repoFileSearch");
-
-      if (frontendBtn) {
-        frontendBtn.onclick = () => {
-          selectedRepo = "frontend";
-          loadRepo();
-        };
-      }
-
-      if (backendBtn) {
-        backendBtn.onclick = () => {
-          selectedRepo = "backend";
-          loadRepo();
-        };
-      }
-
-      if (refreshBtn) {
-        refreshBtn.onclick = () => {
-          loadRepo();
-        };
-      }
-
-      if (searchInput) {
-        searchInput.oninput = () => {
-          const searchValue =
-            searchInput.value.trim().toLowerCase();
-
-          document
-            .querySelectorAll(".repo-file-row")
-            .forEach((row) => {
-              const path =
-                row.getAttribute("data-path")?.toLowerCase() || "";
-
-              row.style.display =
-                !searchValue || path.includes(searchValue)
-                  ? "flex"
-                  : "none";
-            });
-        };
-      }
-
-      document
-        .querySelectorAll(".repo-file-row")
-        .forEach((row) => {
-          row.onclick = () => {
-            const path =
-              row.getAttribute("data-path");
-
-            if (path) {
-              openFileHistory(path);
-            }
-          };
-        });
-    };
-
-    Swal.fire({
-      width: "720px",
-      padding: "12px",
-      background: "#ffffff",
-      showCloseButton: true,
-      showConfirmButton: false,
-      allowOutsideClick: true,
-      html: renderLoading(),
-      customClass: {
-        popup: "repo-history-popup",
-      },
-    });
-
-    await loadRepo();
-  };
-
-  /* ================= HISTORY BUTTON PASSWORD HANDLER ================= */
-  const handleOpenHistory = async () => {
-    const res = await askPassword(
-      "🔒 History Access",
-      "Enter password to view repository file history"
-    );
-
-    if (res.isDismissed || !res.value) return;
-
-    if (res.value === "faizan2122") {
-      // IMPORTANT:
-      // Do NOT navigate to "history".
-      // Open repository history directly inside a popup.
-      openRepositoryHistory();
-    } else {
-      Swal.fire({
-        icon: "error",
-        title: "Access Denied ❌",
-        text: "Incorrect password! Please try again.",
-        confirmButtonColor: "#ef4444",
-      });
-    }
-  };
-
   // 1. CLOUD BACKUP
   const runBackup = async () => {
-    const res = await askPassword("💾 Cloud Backup", "Enter password to start cloud backup");
-    if (res.isDismissed || !res.value) return;
-    const pass = res.value;
+    const { value: pass, isDismissed } = await askPassword("💾 Cloud Backup", "Enter password to start cloud backup");
+    if (isDismissed || !pass) return;
 
     Swal.fire({
       title: "💾 Creating Cloud Backup...",
@@ -1355,13 +379,13 @@ export default function Dashboard({ onNavigate }) {
     }, 250);
 
     try {
-      const apiRes = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/backup/manual`, {
+      const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/backup/manual`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ password: pass }),
       });
 
-      const data = await apiRes.json();
+      const data = await res.json();
       clearInterval(timer);
 
       const bar = document.getElementById("backupBar");
@@ -1387,9 +411,8 @@ export default function Dashboard({ onNavigate }) {
 
   // 2. DOWNLOAD ZIP TO PC
   const downloadPCBackup = async () => {
-    const res = await askPassword("📥 Download ZIP", "Enter password to download backup");
-    if (res.isDismissed || !res.value) return;
-    const pass = res.value;
+    const { value: pass, isDismissed } = await askPassword("📥 Download ZIP", "Enter password to download backup");
+    if (isDismissed || !pass) return;
 
     Swal.fire({
       title: "📦 Generating PC ZIP Backup...",
@@ -1467,410 +490,217 @@ export default function Dashboard({ onNavigate }) {
     }
   };
 
-  const responsiveDashboardStyle = `
-    .dashboard-top-bar { flex-wrap: wrap; }
-    .dashboard-top-bar > * { min-width: 0; }
-    .system-update-card { transition: transform .2s ease, box-shadow .2s ease, border-color .2s ease; }
-    .system-update-card:hover {
-      transform: translateY(-2px);
-      border-color: rgba(125,211,252,.7) !important;
-      box-shadow: 0 12px 30px rgba(0,0,0,.42), 0 0 18px rgba(14,165,233,.10) !important;
-    }
-    @media (max-width: 720px) {
-      .dashboard-top-bar { flex-direction: column; align-items: stretch !important; }
-      .time-card-box, .backup-side-box { max-width: 100% !important; flex-basis: auto !important; }
-    }
-  `;
-
   return (
-    <>
-      <style>{responsiveDashboardStyle}</style>
-      <div
-        className="dashboard-container"
-        style={{
-          position: "relative",
-          minHeight: "100vh",
-          width: "100%",
-          maxWidth: "100vw",
-          boxSizing: "border-box",
-          overflowX: "hidden",
-          color: "white",
-          backgroundImage: `url(${images[bgIndex]})`,
-          backgroundSize: "cover",
-          backgroundPosition: "center",
-          backgroundRepeat: "no-repeat",
-          transition: "background-image 1s ease-in-out",
-        }}
-      >
-        <div style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", backgroundColor: "rgba(0,0,0,0.25)", zIndex: 0 }}></div>
+    <div
+      className="dashboard-container"
+      style={{
+        position: "relative",
+        minHeight: "100vh",
+        width: "100%",
+        maxWidth: "100vw",
+        boxSizing: "border-box",
+        overflowX: "hidden",
+        color: "white",
+        backgroundImage: `url(${images[bgIndex]})`,
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+        backgroundRepeat: "no-repeat",
+        transition: "background-image 1s ease-in-out",
+      }}
+    >
+      {/* LIGHT OVERLAY */}
+      <div style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", backgroundColor: "rgba(0,0,0,0.25)", zIndex: 0 }}></div>
 
-        <div style={{ position: "relative", zIndex: 2, padding: "8px 12px", width: "100%", boxSizing: "border-box" }}>
+      {/* CONTENT CONTAINER */}
+      <div style={{ position: "relative", zIndex: 2, padding: "8px 12px", width: "100%", boxSizing: "border-box" }}>
+        
+        {/* TOP BAR */}
+        <div className="dashboard-top-bar" style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginTop: 2, position: "relative", zIndex: 10, width: "100%", boxSizing: "border-box" }}>
           
-          <div className="dashboard-top-bar" style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "14px", marginTop: 2, position: "relative", zIndex: 10, width: "100%", boxSizing: "border-box" }}>
-            
-            <div className="time-card-box" style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: "6px", width: "100%", maxWidth: "285px", flex: "1 1 285px" }}>
-              <div style={{
-                background: "linear-gradient(135deg, rgba(15, 23, 42, 0.88), rgba(30, 41, 59, 0.82))",
-                backdropFilter: "blur(12px)",
-                WebkitBackdropFilter: "blur(12px)",
-                padding: "8px 10px",
-                borderRadius: "10px",
-                border: "1px solid rgba(255, 255, 255, 0.18)",
-                boxShadow: "0 4px 16px rgba(0, 0, 0, 0.4)",
-                display: "flex",
-                flexDirection: "column",
-                gap: "6px",
-                width: "100%",
-                boxSizing: "border-box"
-              }}>
-                
-                {/* PAKISTAN TIME */}
-                <div style={{ display: "flex", alignItems: "flex-start", gap: "8px", width: "100%" }}>
-                  <div style={{ position: "relative", display: "flex", alignItems: "center", justifyContent: "center", marginTop: "2px" }}>
-                    <span style={{ fontSize: "15px" }}>🇵🇰</span>
-                    <span style={{
-                      position: "absolute", top: "-1px", right: "-1px", width: "4px", height: "4px",
-                      borderRadius: "50%", background: "#38bdf8", boxShadow: "0 0 4px #38bdf8"
-                    }}></span>
-                  </div>
-
-                  <div style={{ display: "flex", flexDirection: "column", width: "100%" }}>
-                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-                        <span style={{ fontSize: "10px", fontWeight: "800", color: "#38bdf8" }}>Pakistan</span>
-                        <span style={{ fontSize: "7px", background: "rgba(56, 189, 248, 0.2)", color: "#38bdf8", padding: "0px 3px", borderRadius: "2px", fontWeight: "700" }}>PKT</span>
-                      </div>
-
-                      <button 
-                        onClick={() => openDayAdjustModal("PK")} 
-                        style={{ 
-                          border: "1px solid rgba(56, 189, 248, 0.4)", 
-                          background: "rgba(2, 132, 199, 0.25)", 
-                          color: "#e0f2fe", 
-                          padding: "1px 4px", 
-                          borderRadius: "3px", 
-                          fontSize: "8px", 
-                          fontWeight: "700", 
-                          cursor: "pointer"
-                        }}
-                      >
-                        ⚙️ Day ({pkOffset > 0 ? "+" + pkOffset : pkOffset})
-                      </button>
-                    </div>
-
-                    <div style={{ fontSize: "13px", fontWeight: "800", fontFamily: "'Courier New', Courier, monospace", color: "#ffffff", marginTop: "2px", lineHeight: "1.1" }}>
-                      {currentTime.toLocaleTimeString("en-US", { timeZone: "Asia/Karachi", hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: true })}
-                    </div>
-                    <div style={{ fontSize: "9px", color: "#e2e8f0", fontWeight: "600", marginTop: "1px", lineHeight: "1.1" }}>
-                      {currentTime.toLocaleDateString("en-US", { timeZone: "Asia/Karachi", weekday: "short", day: "2-digit", month: "short", year: "numeric" })}
-                    </div>
-                    <div style={{ fontSize: "9px", color: "#38bdf8", fontWeight: "700", marginTop: "1px", lineHeight: "1.1" }}>
-                      🌙 {formatHijriFull(currentTime, pkOffset)}
-                    </div>
-                  </div>
+          {/* DUAL TIME CARD WITH VERTICALLY STACKED DATE & HIJRI */}
+          <div className="time-card-box" style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: "6px", width: "100%", maxWidth: "260px" }}>
+            <div style={{
+              background: "linear-gradient(135deg, rgba(15, 23, 42, 0.88), rgba(30, 41, 59, 0.82))",
+              backdropFilter: "blur(12px)",
+              WebkitBackdropFilter: "blur(12px)",
+              padding: "8px 10px",
+              borderRadius: "10px",
+              border: "1px solid rgba(255, 255, 255, 0.18)",
+              boxShadow: "0 4px 16px rgba(0, 0, 0, 0.4)",
+              display: "flex",
+              flexDirection: "column",
+              gap: "6px",
+              width: "100%",
+              boxSizing: "border-box"
+            }}>
+              
+              {/* PAKISTAN TIME */}
+              <div style={{ display: "flex", alignItems: "flex-start", gap: "8px", width: "100%" }}>
+                <div style={{ position: "relative", display: "flex", alignItems: "center", justifyContent: "center", marginTop: "2px" }}>
+                  <span style={{ fontSize: "15px" }}>🇵🇰</span>
+                  <span style={{
+                    position: "absolute", top: "-1px", right: "-1px", width: "4px", height: "4px",
+                    borderRadius: "50%", background: "#38bdf8", boxShadow: "0 0 4px #38bdf8"
+                  }}></span>
                 </div>
 
-                <div style={{ height: "1px", width: "100%", background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent)" }}></div>
-
-                {/* SAUDI ARABIA TIME */}
-                <div style={{ display: "flex", alignItems: "flex-start", gap: "8px", width: "100%" }}>
-                  <div style={{ position: "relative", display: "flex", alignItems: "center", justifyContent: "center", marginTop: "2px" }}>
-                    <span style={{ fontSize: "15px" }}>🇸🇦</span>
-                    <span style={{
-                      position: "absolute", top: "-1px", right: "-1px", width: "4px", height: "4px",
-                      borderRadius: "50%", background: "#4ade80", boxShadow: "0 0 4px #4ade80"
-                    }}></span>
-                  </div>
-
-                  <div style={{ display: "flex", flexDirection: "column", width: "100%" }}>
-                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-                        <span style={{ fontSize: "10px", fontWeight: "800", color: "#4ade80" }}>Saudi Arabia</span>
-                        <span style={{ fontSize: "7px", background: "rgba(74, 222, 128, 0.2)", color: "#4ade80", padding: "0px 3px", borderRadius: "2px", fontWeight: "700" }}>KSA</span>
-                      </div>
-
-                      <button 
-                        onClick={() => openDayAdjustModal("KSA")} 
-                        style={{ 
-                          border: "1px solid rgba(74, 222, 128, 0.4)", 
-                          background: "rgba(22, 163, 74, 0.25)", 
-                          color: "#dcfce7", 
-                          padding: "1px 4px", 
-                          borderRadius: "3px", 
-                          fontSize: "8px", 
-                          fontWeight: "700", 
-                          cursor: "pointer"
-                        }}
-                      >
-                        ⚙️ Day ({ksaOffset > 0 ? "+" + ksaOffset : ksaOffset})
-                      </button>
+                <div style={{ display: "flex", flexDirection: "column", width: "100%" }}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                      <span style={{ fontSize: "10px", fontWeight: "800", color: "#38bdf8" }}>Pakistan</span>
+                      <span style={{ fontSize: "7px", background: "rgba(56, 189, 248, 0.2)", color: "#38bdf8", padding: "0px 3px", borderRadius: "2px", fontWeight: "700" }}>PKT</span>
                     </div>
 
-                    <div style={{ fontSize: "13px", fontWeight: "800", fontFamily: "'Courier New', Courier, monospace", color: "#ffffff", marginTop: "2px", lineHeight: "1.1" }}>
-                      {currentTime.toLocaleTimeString("en-US", { timeZone: "Asia/Riyadh", hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: true })}
-                    </div>
-                    <div style={{ fontSize: "9px", color: "#e2e8f0", fontWeight: "600", marginTop: "1px", lineHeight: "1.1" }}>
-                      {currentTime.toLocaleDateString("en-US", { timeZone: "Asia/Riyadh", weekday: "short", day: "2-digit", month: "short", year: "numeric" })}
-                    </div>
-                    <div style={{ fontSize: "9px", color: "#4ade80", fontWeight: "700", marginTop: "1px", lineHeight: "1.1" }}>
-                      🌙 {formatHijriFull(currentTime, ksaOffset)}
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <button 
-                onClick={openCalendarModal}
-                style={{
-                  width: "100%",
-                  padding: "6px 10px",
-                  fontSize: "10px",
-                  fontWeight: "700",
-                  borderRadius: "8px",
-                  border: "1px solid rgba(255,255,255,0.2)",
-                  background: "linear-gradient(135deg, rgba(255,255,255,0.18), rgba(255,255,255,0.05))",
-                  backdropFilter: "blur(8px)",
-                  color: "#ffffff",
-                  cursor: "pointer",
-                  boxShadow: "0 2px 8px rgba(0,0,0,0.2)",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  gap: "4px"
-                }}
-              >
-                📅 Dual Calendar (English & Hijri)
-              </button>
-            </div>
-
-            <div className="backup-side-box" style={{ display: "flex", flexDirection: "column", gap: "7px", width: "100%", maxWidth: "285px", flex: "1 1 285px" }}>
-              <button className="vip-backup-btn" onClick={runBackup} disabled={loading} style={{ padding: "8px 12px", fontSize: "11px", borderRadius: "8px" }}>
-                {loading ? (<><span className="btn-loader"></span> Backing up...</>) : "Cloud Backup Now"}
-              </button>
-
-              <button className="vip-backup-btn" onClick={downloadPCBackup} style={{ background: "linear-gradient(135deg, #0284c7, #0369a1)", padding: "8px 12px", fontSize: "11px", borderRadius: "8px" }}>
-                📥 Download ZIP to PC
-              </button>
-
-              <button 
-                className="vip-backup-btn" 
-                onClick={handleOpenHistory} 
-                style={{ background: "linear-gradient(135deg, #8b5cf6, #6d28d9)", padding: "8px 12px", fontSize: "11px", borderRadius: "8px" }}
-              >
-                📜 Repository File History
-              </button>
-
-              <div className="last-backup-box" style={{ padding: "6px 10px", fontSize: "9px", display: "flex", flexDirection: "column", gap: "2px" }}>
-                <span style={{ fontWeight: "700", color: "#94a3b8" }}>Last Backup:</span>
-                <b style={{ fontSize: "9px", color: "#38bdf8", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                  {lastBackup ? `${getCleanBackupName(lastBackup.name)}` : "Not yet"}
-                </b>
-                <span style={{ fontSize: "8.5px", color: "#e2e8f0" }}>
-                  {lastBackup ? formatDate(lastBackup.created_at) : ""}
-                </span>
-              </div>
-
-              <div
-                className="system-update-card"
-                style={{
-                  position: "relative",
-                  overflow: "hidden",
-                  background:
-                    "linear-gradient(135deg, rgba(7,18,38,.96), rgba(12,48,72,.94) 55%, rgba(9,35,56,.96))",
-                  backdropFilter: "blur(16px)",
-                  WebkitBackdropFilter: "blur(16px)",
-                  padding: "11px 12px",
-                  borderRadius: "12px",
-                  border: "1px solid rgba(56,189,248,.48)",
-                  boxShadow:
-                    "0 8px 24px rgba(0,0,0,.34), inset 0 1px 0 rgba(255,255,255,.08)",
-                  width: "100%",
-                  boxSizing: "border-box",
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: "7px",
-                  marginTop: "2px",
-                }}
-              >
-                <div
-                  style={{
-                    position: "absolute",
-                    width: "90px",
-                    height: "90px",
-                    right: "-35px",
-                    top: "-45px",
-                    borderRadius: "50%",
-                    background: "rgba(56,189,248,.16)",
-                    filter: "blur(2px)",
-                  }}
-                />
-
-                <div
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    gap: "8px",
-                    position: "relative",
-                    zIndex: 1,
-                  }}
-                >
-                  <div style={{ display: "flex", alignItems: "center", gap: "7px" }}>
-                    <div
-                      style={{
-                        width: "27px",
-                        height: "27px",
-                        borderRadius: "8px",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        background: "linear-gradient(135deg,#0ea5e9,#0369a1)",
-                        boxShadow: "0 4px 12px rgba(14,165,233,.35)",
-                        fontSize: "14px",
+                    <button 
+                      onClick={() => openDayAdjustModal("PK")} 
+                      style={{ 
+                        border: "1px solid rgba(56, 189, 248, 0.4)", 
+                        background: "rgba(2, 132, 199, 0.25)", 
+                        color: "#e0f2fe", 
+                        padding: "1px 4px", 
+                        borderRadius: "3px", 
+                        fontSize: "8px", 
+                        fontWeight: "700", 
+                        cursor: "pointer"
                       }}
                     >
-                      📌
-                    </div>
-                    <div>
-                      <div
-                        style={{
-                          fontSize: "10px",
-                          fontWeight: "900",
-                          color: "#e0f2fe",
-                          letterSpacing: ".25px",
-                          lineHeight: 1.15,
-                        }}
-                      >
-                        Last System Update
-                      </div>
-                      <div
-                        style={{
-                          fontSize: "7.5px",
-                          color: "#7dd3fc",
-                          fontWeight: "700",
-                          marginTop: "2px",
-                        }}
-                      >
-                        DEPLOYMENT INFORMATION
-                      </div>
-                    </div>
+                      ⚙️ Day ({pkOffset > 0 ? `+${pkOffset}` : pkOffset})
+                    </button>
                   </div>
 
-                  <span
-                    style={{
-                      display: "inline-flex",
-                      alignItems: "center",
-                      gap: "4px",
-                      fontSize: "7px",
-                      background: "rgba(34,197,94,.13)",
-                      color: "#86efac",
-                      border: "1px solid rgba(74,222,128,.35)",
-                      padding: "3px 6px",
-                      borderRadius: "20px",
-                      fontWeight: "900",
-                      letterSpacing: ".25px",
-                    }}
-                  >
-                    <span
-                      style={{
-                        width: "5px",
-                        height: "5px",
-                        borderRadius: "50%",
-                        background: "#4ade80",
-                        boxShadow: "0 0 7px #4ade80",
-                      }}
-                    />
-                    AUTO
-                  </span>
-                </div>
-
-                <div
-                  style={{
-                    position: "relative",
-                    zIndex: 1,
-                    background: "rgba(255,255,255,.055)",
-                    border: "1px solid rgba(255,255,255,.08)",
-                    borderRadius: "8px",
-                    padding: "7px 8px",
-                  }}
-                >
-                  <div
-                    style={{
-                      fontSize: "10.5px",
-                      color: "#ffffff",
-                      fontWeight: "850",
-                      lineHeight: "1.25",
-                      overflow: "hidden",
-                      textOverflow: "ellipsis",
-                      whiteSpace: "nowrap",
-                    }}
-                    title={getCleanCommitMsg()}
-                  >
-                    {getCleanCommitMsg()}
+                  {/* LINE 1: TIME */}
+                  <div style={{ fontSize: "13px", fontWeight: "800", fontFamily: "'Courier New', Courier, monospace", color: "#ffffff", marginTop: "2px", lineHeight: "1.1" }}>
+                    {currentTime.toLocaleTimeString("en-US", { timeZone: "Asia/Karachi", hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: true })}
                   </div>
-                </div>
-
-                <div
-                  style={{
-                    position: "relative",
-                    zIndex: 1,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    gap: "8px",
-                  }}
-                >
-                  <div
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "5px",
-                      color: "#cbd5e1",
-                      fontSize: "8.5px",
-                      fontWeight: "700",
-                    }}
-                  >
-                    <span style={{ fontSize: "10px" }}>🕒</span>
-                    Updated At
+                  {/* LINE 2: ENGLISH DATE */}
+                  <div style={{ fontSize: "9px", color: "#e2e8f0", fontWeight: "600", marginTop: "1px", lineHeight: "1.1" }}>
+                    {currentTime.toLocaleDateString("en-US", { timeZone: "Asia/Karachi", weekday: "short", day: "2-digit", month: "short", year: "numeric" })}
                   </div>
-
-                  <div
-                    style={{
-                      color: "#7dd3fc",
-                      fontWeight: "900",
-                      fontSize: "9px",
-                      textAlign: "right",
-                      whiteSpace: "nowrap",
-                    }}
-                  >
-                    {getFormattedBuildTime()}
+                  {/* LINE 3: HIJRI DATE */}
+                  <div style={{ fontSize: "9px", color: "#38bdf8", fontWeight: "700", marginTop: "1px", lineHeight: "1.1" }}>
+                    🌙 {formatHijriFull(currentTime, pkOffset)}
                   </div>
                 </div>
               </div>
 
-              {loading && (
-                <div className="vip-progress">
-                  <div className="vip-progress-bar" style={{ width: `${progress}%` }}>{progress}%</div>
+              {/* SEPARATOR GRADIENT LINE */}
+              <div style={{ height: "1px", width: "100%", background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent)" }}></div>
+
+              {/* SAUDI ARABIA TIME */}
+              <div style={{ display: "flex", alignItems: "flex-start", gap: "8px", width: "100%" }}>
+                <div style={{ position: "relative", display: "flex", alignItems: "center", justifyContent: "center", marginTop: "2px" }}>
+                  <span style={{ fontSize: "15px" }}>🇸🇦</span>
+                  <span style={{
+                    position: "absolute", top: "-1px", right: "-1px", width: "4px", height: "4px",
+                    borderRadius: "50%", background: "#4ade80", boxShadow: "0 0 4px #4ade80"
+                  }}></span>
                 </div>
-              )}
+
+                <div style={{ display: "flex", flexDirection: "column", width: "100%" }}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                      <span style={{ fontSize: "10px", fontWeight: "800", color: "#4ade80" }}>Saudi Arabia</span>
+                      <span style={{ fontSize: "7px", background: "rgba(74, 222, 128, 0.2)", color: "#4ade80", padding: "0px 3px", borderRadius: "2px", fontWeight: "700" }}>KSA</span>
+                    </div>
+
+                    <button 
+                      onClick={() => openDayAdjustModal("KSA")} 
+                      style={{ 
+                        border: "1px solid rgba(74, 222, 128, 0.4)", 
+                        background: "rgba(22, 163, 74, 0.25)", 
+                        color: "#dcfce7", 
+                        padding: "1px 4px", 
+                        borderRadius: "3px", 
+                        fontSize: "8px", 
+                        fontWeight: "700", 
+                        cursor: "pointer"
+                      }}
+                    >
+                      ⚙️ Day ({ksaOffset > 0 ? `+${ksaOffset}` : ksaOffset})
+                    </button>
+                  </div>
+
+                  {/* LINE 1: TIME */}
+                  <div style={{ fontSize: "13px", fontWeight: "800", fontFamily: "'Courier New', Courier, monospace", color: "#ffffff", marginTop: "2px", lineHeight: "1.1" }}>
+                    {currentTime.toLocaleTimeString("en-US", { timeZone: "Asia/Riyadh", hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: true })}
+                  </div>
+                  {/* LINE 2: ENGLISH DATE */}
+                  <div style={{ fontSize: "9px", color: "#e2e8f0", fontWeight: "600", marginTop: "1px", lineHeight: "1.1" }}>
+                    {currentTime.toLocaleDateString("en-US", { timeZone: "Asia/Riyadh", weekday: "short", day: "2-digit", month: "short", year: "numeric" })}
+                  </div>
+                  {/* LINE 3: HIJRI DATE */}
+                  <div style={{ fontSize: "9px", color: "#4ade80", fontWeight: "700", marginTop: "1px", lineHeight: "1.1" }}>
+                    🌙 {formatHijriFull(currentTime, ksaOffset)}
+                  </div>
+                </div>
+              </div>
             </div>
+
+            {/* HIGH GLOSS CALENDAR BUTTON */}
+            <button 
+              onClick={openCalendarModal}
+              style={{
+                width: "100%",
+                padding: "6px 10px",
+                fontSize: "10px",
+                fontWeight: "700",
+                borderRadius: "8px",
+                border: "1px solid rgba(255,255,255,0.2)",
+                background: "linear-gradient(135deg, rgba(255,255,255,0.18), rgba(255,255,255,0.05))",
+                backdropFilter: "blur(8px)",
+                color: "#ffffff",
+                cursor: "pointer",
+                boxShadow: "0 2px 8px rgba(0,0,0,0.2)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: "4px"
+              }}
+            >
+              📅 Dual Calendar (English & Hijri)
+            </button>
           </div>
 
-          <div style={{ textAlign: "center", paddingTop: 10 }}>
-            <h2 style={{ fontSize: "18px", margin: 0, textShadow: "0 2px 6px rgba(0,0,0,0.6)" }}>Makki Madni Travel & Tours</h2>
-            <i style={{ opacity: 0.9, fontSize: "11px" }}>Live Travel Management Dashboard</i>
-          </div>
+          {/* STANDARD NORMAL BACKUP BUTTONS */}
+          <div className="backup-side-box" style={{ display: "flex", flexDirection: "column", gap: "6px", width: "100%", maxWidth: "250px" }}>
+            <button className="vip-backup-btn" onClick={runBackup} disabled={loading} style={{ padding: "8px 12px", fontSize: "11px", borderRadius: "8px" }}>
+              {loading ? (<><span className="btn-loader"></span> Backing up...</>) : "Cloud Backup Now"}
+            </button>
 
-          <div className="cloud cloud1"></div>
-          <div className="cloud cloud2"></div>
-          <div className="cloud cloud3"></div>
+            <button className="vip-backup-btn" onClick={downloadPCBackup} style={{ background: "linear-gradient(135deg, #0284c7, #0369a1)", padding: "8px 12px", fontSize: "11px", borderRadius: "8px" }}>
+              📥 Download ZIP to PC
+            </button>
 
-          <div className="airplane">
-            <img src="/images/plane.png" alt="plane" />
-            <div className="trail"></div>
+            <div className="last-backup-box" style={{ padding: "6px 10px", fontSize: "9px" }}>
+              <span>Last Backup</span>
+              <b style={{ fontSize: "9px" }}>{lastBackup ? `${lastBackup.name} · ${formatDate(lastBackup.created_at)}` : "Not yet"}</b>
+            </div>
+
+            {loading && (
+              <div className="vip-progress">
+                <div className="vip-progress-bar" style={{ width: `${progress}%` }}>{progress}%</div>
+              </div>
+            )}
           </div>
         </div>
+
+        {/* HEADER */}
+        <div style={{ textAlign: "center", paddingTop: 10 }}>
+          <h2 style={{ fontSize: "18px", margin: 0, textShadow: "0 2px 6px rgba(0,0,0,0.6)" }}>Makki Madni Travel & Tours</h2>
+          <i style={{ opacity: 0.9, fontSize: "11px" }}>Live Travel Management Dashboard</i>
+        </div>
+
+        {/* CLOUDS */}
+        <div className="cloud cloud1"></div>
+        <div className="cloud cloud2"></div>
+        <div className="cloud cloud3"></div>
+
+        {/* AIRPLANE */}
+        <div className="airplane">
+          <img src="/images/plane.png" alt="plane" />
+          <div className="trail"></div>
+        </div>
       </div>
-    </>
+    </div>
   );
 }
