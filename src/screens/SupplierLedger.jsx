@@ -34,6 +34,21 @@ const formatDate = (d) => {
   return `${day}/${month}/${year}`;
 };
 
+// Category Icon Helper
+const getCategoryIcon = (refStr = "") => {
+  const str = String(refStr).toUpperCase();
+  if (str.includes("VISA")) return "🛂";
+  if (str.includes("TIC") || str.includes("TKT")) return "✈️";
+  if (str.includes("HOT")) return "🏨";
+  if (str.includes("TRN")) return "🚐";
+  if (str.includes("ZIY")) return "🕌";
+  if (str.includes("PKG") || str.includes("BKG")) return "📦";
+  if (str.includes("CRD") || str.includes("CARD")) return "💳";
+  if (str.includes("GRP")) return "👥";
+  return "📄";
+};
+
+
 const numberToWords = (num) => {
   if (!num) return "";
   const a = [
@@ -1025,9 +1040,54 @@ export default function SupplierLedger({ onNavigate }) {
               {r.type}
             </span>
           </td>
-          <td className="text-center fw-bold text-secondary">
-            {r.ref_no || "-"}
-          </td>
+<td className="text-center align-middle">
+  {r.ref_no && r.ref_no !== "-" ? (
+    (() => {
+      const str = String(r.ref_no).toUpperCase();
+      // Supplier wale Primary Blue se bilkul alag colors:
+      let badgeBg = "#f3e8ff";    // Soft Purple
+      let badgeColor = "#6b21a8"; // Dark Violet
+
+      if (str.includes("HOT")) { 
+        badgeBg = "#ffedd5"; 
+        badgeColor = "#c2410c"; // Warm Orange/Amber
+      } else if (str.includes("PKG") || str.includes("BKG")) { 
+        badgeBg = "#ecfdf5"; 
+        badgeColor = "#047857"; // Deep Emerald Green
+      } else if (str.includes("ZIY")) { 
+        badgeBg = "#fef3c7"; 
+        badgeColor = "#b45309"; // Warm Bronze/Gold
+      } else if (str.includes("TIC") || str.includes("TKT")) { 
+        badgeBg = "#fae8ff"; 
+        badgeColor = "#86198f"; // Magenta / Fuchsia
+      } else if (str.includes("VISA")) { 
+        badgeBg = "#ffe4e6"; 
+        badgeColor = "#be123c"; // Crimson Rose
+      }
+
+      return (
+        <span
+          className="badge fw-bold px-2 py-1"
+          style={{
+            fontSize: "10px",
+            letterSpacing: "0.4px",
+            backgroundColor: badgeBg,
+            color: badgeColor,
+            border: `1px solid ${badgeColor}30`,
+            borderRadius: "5px"
+          }}
+        >
+          <span style={{ fontSize: "11px", marginRight: "3px" }}>
+            {getCategoryIcon(r.ref_no || r.detail || r.description)}
+          </span>
+          {r.ref_no}
+        </span>
+      );
+    })()
+  ) : (
+    <span className="text-muted small">-</span>
+  )}
+</td>
           <td className="fw-bold text-primary">
             {currentType === "purchase" ? r.supplier_name : "-"}
           </td>

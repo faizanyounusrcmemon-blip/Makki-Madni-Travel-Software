@@ -40,7 +40,7 @@ const getDescriptionColor = (desc, debit, credit) => {
 
   // 1. Supplier / Vendor / Purchase Transactions (Orange / Dark Yellow / Amber)
   if (str.includes("supplier") || str.includes("purchase") || str.includes("vendor")) {
-    return "fw-bold text-warning-emphasis"; // Vibrant Amber / Dark Yellow
+    return "fw-bold text-success"; // Vibrant Amber / Dark Yellow
   }
 
   // 2. Customer / Sale / Client Transactions (Bright Blue)
