@@ -42,6 +42,20 @@ const formatDate = (d) => {
   return `${day}/${month}/${year}`;
 };
 
+// Category Icon Helper
+const getCategoryIcon = (refStr = "") => {
+  const str = String(refStr).toUpperCase();
+  if (str.includes("VISA")) return "🛂";
+  if (str.includes("TIC") || str.includes("TKT")) return "✈️";
+  if (str.includes("HOT")) return "🏨";
+  if (str.includes("TRN")) return "🚐";
+  if (str.includes("ZIY")) return "🕌";
+  if (str.includes("PKG") || str.includes("BKG")) return "📦";
+  if (str.includes("CRD") || str.includes("CARD")) return "💳";
+  if (str.includes("GRP")) return "👥";
+  return "📄";
+};
+
 const getTripDurationText = (dates) => {
   if (!Array.isArray(dates) || dates.length < 2) return "Standard Duration";
   const valid = dates.map((d) => new Date(d)).filter((d) => !isNaN(d.getTime())).sort((a, b) => a - b);
@@ -1183,7 +1197,7 @@ export default function RegisteredCustomerLedger({ onNavigate }) {
                     </tr>
                   </thead>
                   <tbody>
-                    {ledgerView.length === 0 ? (
+{ledgerView.length === 0 ? (
                       <tr>
                         <td colSpan="7" className="text-center p-4 text-muted fs-6">
                           No transactions to display. Enter a Customer Code above and click "Load".
@@ -1210,28 +1224,42 @@ export default function RegisteredCustomerLedger({ onNavigate }) {
 
                         return (
                           <tr key={r.id || i}>
-                            <td className="fw-semibold">{getRowDate(r)}</td>
+                            {/* Date Field */}
+                            <td>{getRowDate(r)}</td>
+
+                            {/* Details / Description Field */}
                             <td>
-                              {isSale ? (
-                                <div>
-                                  <span className="badge bg-primary me-2" style={{ fontSize: "10px" }}>
-                                    🧾 SALE INVOICE
-                                  </span>
-                                  <span className="fw-semibold text-dark">{r.description}</span>
-                                </div>
-                              ) : isAdjustment ? (
-                                <div>
-                                  <span className="badge bg-warning text-dark me-2" style={{ fontSize: "10px" }}>
+                              {isSale ? (() => {
+                                const refNo = r.ref_no || r.description?.match(/Ref:\s*([^\s]+)/i)?.[1] || r.id;
+                                const catIcon = getCategoryIcon(r.description || refNo);
+
+                                return (
+                                  <div className="d-flex align-items-center gap-1">
+                                    <span className="badge bg-primary" style={{ fontSize: "10px" }}>
+                                      🧾 SALE INVOICE
+                                    </span>
+                                    <span className="fw-semibold text-dark ms-1">
+                                      {catIcon} {refNo}
+                                    </span>
+                                  </div>
+                                );
+                              })() : isAdjustment ? (
+                                <div className="d-flex align-items-center gap-1">
+                                  <span className="badge bg-warning text-dark" style={{ fontSize: "10px" }}>
                                     ⚙️ ADJUSTMENT
                                   </span>
-                                  <span className="fw-semibold text-dark">{r.description}</span>
+                                  <span className="fw-semibold text-dark ms-1">
+                                    {r.ref_no || r.description?.match(/Ref:\s*([^\s]+)/i)?.[1] || r.description}
+                                  </span>
                                 </div>
                               ) : isPayment ? (
-                                <div>
-                                  <span className="badge bg-success me-2" style={{ fontSize: "10px" }}>
+                                <div className="d-flex align-items-center gap-1">
+                                  <span className="badge bg-success" style={{ fontSize: "10px" }}>
                                     💵 PAYMENT / RECEIPT
                                   </span>
-                                  <span className="fw-semibold text-dark">{r.description}</span>
+                                  <span className="fw-semibold text-dark ms-1">
+                                    {r.ref_no || r.description?.match(/Ref:\s*([^\s]+)/i)?.[1] || (r.payment_method ? `(${r.payment_method})` : "")}
+                                  </span>
                                 </div>
                               ) : (
                                 <span className="fw-semibold text-dark">{r.description}</span>
