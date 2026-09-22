@@ -49,6 +49,44 @@ const getCategoryIcon = (refStr = "") => {
 };
 
 
+const showRefDetails = (row) => {
+  const isReg = row.customer_type === "REGISTERED";
+  const typeBadgeHtml = isReg
+    ? `<span style="background:#e0f2fe; color:#0369a1; padding:2px 8px; border-radius:4px; font-size:11px; font-weight:bold; border:1px solid #bae6fd;">REGISTERED</span>`
+    : `<span style="background:#fef3c7; color:#b45309; padding:2px 8px; border-radius:4px; font-size:11px; font-weight:bold; border:1px solid #fde68a;">WALK-IN</span>`;
+
+  Swal.fire({
+    title: "📋 Ref Details",
+    width: "380px",
+    html: `
+      <div style="text-align:left; font-size:13px; background:#f8f9fa; padding:14px; border-radius:8px; border:1px solid #e9ecef;">
+        <div style="margin-bottom:10px; display:flex; justify-content:space-between; align-items:center;">
+          <div>
+            <b style="color:#52647a; font-size:11px;">REF NO:</b><br/>
+            <span style="color:#0d6efd; font-weight:bold; font-size:15px;">${row.ref_no}</span>
+          </div>
+          <div>
+            ${typeBadgeHtml}
+          </div>
+        </div>
+
+        <div style="margin-bottom:10px;">
+          <b style="color:#52647a; font-size:11px;">CUSTOMER / PASSENGER NAME:</b><br/>
+          <span style="color:#198754; font-weight:bold; font-size:14px;">${row.customer_name || "N/A"}</span>
+        </div>
+
+        <div>
+          <b style="color:#52647a; font-size:11px;">DATE:</b><br/>
+          <span style="font-weight:bold; color:#212529;">${formatDate(row.date)}</span>
+        </div>
+      </div>
+    `,
+    confirmButtonText: "Close",
+    confirmButtonColor: "#0d6efd"
+  });
+};
+
+
 const numberToWords = (num) => {
   if (!num) return "";
   const a = [
@@ -178,23 +216,25 @@ export default function SupplierLedger({ onNavigate }) {
       setSnapshotDate(d.snapshotDate || null);
       setOpeningBalance(Number(d.openingBalance || 0));
 
-      const mapped = (d.ledger || []).map((row) => {
-        const debit = Math.round(normalizeZero(row.debit));
-        const credit = Math.round(normalizeZero(row.credit));
-        const balance = Math.round(normalizeZero(row.balance));
+const mapped = (d.ledger || []).map((row) => {
+  const debit = Math.round(normalizeZero(row.debit));
+  const credit = Math.round(normalizeZero(row.credit));
+  const balance = Math.round(normalizeZero(row.balance));
 
-        return {
-          ...row,
-          entry_type: row.entry_type,
-          id: row.id,
-          type: row.type,
-          detail: row.description || row.item || "Purchase Entry",
-          debit,
-          credit,
-          balance,
-          ref_no: row.ref_no || "-",
-        };
-      });
+  return {
+    ...row,
+    entry_type: row.entry_type,
+    id: row.id,
+    type: row.type,
+    detail: row.description || row.item || "Purchase Entry",
+    debit,
+    credit,
+    balance,
+    ref_no: row.ref_no || "-",
+    // ✨ Customer name yahan ensure karein:
+    customer_name: row.customer_name || row.passenger_name || row.pax_name || "-"
+  };
+});
 
       setLedger(mapped);
       setLedgerView(mapped);
@@ -1044,29 +1084,24 @@ export default function SupplierLedger({ onNavigate }) {
   {r.ref_no && r.ref_no !== "-" ? (
     (() => {
       const str = String(r.ref_no).toUpperCase();
-      // Supplier wale Primary Blue se bilkul alag colors:
-      let badgeBg = "#f3e8ff";    // Soft Purple
-      let badgeColor = "#6b21a8"; // Dark Violet
+      let badgeBg = "#f3e8ff";    
+      let badgeColor = "#6b21a8"; 
 
       if (str.includes("HOT")) { 
-        badgeBg = "#ffedd5"; 
-        badgeColor = "#c2410c"; // Warm Orange/Amber
+        badgeBg = "#ffedd5"; badgeColor = "#c2410c"; 
       } else if (str.includes("PKG") || str.includes("BKG")) { 
-        badgeBg = "#ecfdf5"; 
-        badgeColor = "#047857"; // Deep Emerald Green
+        badgeBg = "#ecfdf5"; badgeColor = "#047857"; 
       } else if (str.includes("ZIY")) { 
-        badgeBg = "#fef3c7"; 
-        badgeColor = "#b45309"; // Warm Bronze/Gold
+        badgeBg = "#fef3c7"; badgeColor = "#b45309"; 
       } else if (str.includes("TIC") || str.includes("TKT")) { 
-        badgeBg = "#fae8ff"; 
-        badgeColor = "#86198f"; // Magenta / Fuchsia
+        badgeBg = "#fae8ff"; badgeColor = "#86198f"; 
       } else if (str.includes("VISA")) { 
-        badgeBg = "#ffe4e6"; 
-        badgeColor = "#be123c"; // Crimson Rose
+        badgeBg = "#ffe4e6"; badgeColor = "#be123c"; 
       }
 
       return (
         <span
+          onClick={() => showRefDetails(r)} // ✨ Click handler added
           className="badge fw-bold px-2 py-1"
           style={{
             fontSize: "10px",
@@ -1074,7 +1109,8 @@ export default function SupplierLedger({ onNavigate }) {
             backgroundColor: badgeBg,
             color: badgeColor,
             border: `1px solid ${badgeColor}30`,
-            borderRadius: "5px"
+            borderRadius: "5px",
+            cursor: "pointer" // ✨ Pointer cursor
           }}
         >
           <span style={{ fontSize: "11px", marginRight: "3px" }}>
