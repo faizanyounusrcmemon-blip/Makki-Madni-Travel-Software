@@ -55,6 +55,9 @@ const showRefDetails = (row) => {
     ? `<span style="background:#e0f2fe; color:#0369a1; padding:2px 8px; border-radius:4px; font-size:11px; font-weight:bold; border:1px solid #bae6fd;">REGISTERED</span>`
     : `<span style="background:#fef3c7; color:#b45309; padding:2px 8px; border-radius:4px; font-size:11px; font-weight:bold; border:1px solid #fde68a;">WALK-IN</span>`;
 
+  // Prefer Sale Date if available, fallback to entry date
+  const displayDate = row.sale_date || row.date;
+
   Swal.fire({
     title: "📋 Ref Details",
     width: "380px",
@@ -76,8 +79,8 @@ const showRefDetails = (row) => {
         </div>
 
         <div>
-          <b style="color:#52647a; font-size:11px;">DATE:</b><br/>
-          <span style="font-weight:bold; color:#212529;">${formatDate(row.date)}</span>
+          <b style="color:#52647a; font-size:11px;">SALE DATE:</b><br/>
+          <span style="font-weight:bold; color:#212529;">${formatDate(displayDate)}</span>
         </div>
       </div>
     `,
