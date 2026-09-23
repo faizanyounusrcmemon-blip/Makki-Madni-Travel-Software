@@ -492,10 +492,42 @@ export default function Groups({ onNavigate }) {
             <small className="text-muted d-block">{showDate(endDate)}</small>
           </div>
 
-          <div className="col-md-4">
-            <label className="fw-bold">Duration (Days)</label>
-            <input className="form-control form-control-sm text-center fw-bold bg-light" value={`${duration} Days`} readOnly />
-          </div>
+<div className="col-md-2">
+  <label className="fw-bold text-dark mb-1 d-block" style={{ fontSize: "12px", opacity: 0.8 }}>
+    📅 Duration
+  </label>
+
+  <div
+    style={{
+      minWidth: "160px",
+      padding: "12px 10px",
+      borderRadius: "12px",
+      background: "#ffffff",
+      borderTop: "4px solid #10b981",
+      borderLeft: "1px solid #e5e7eb",
+      borderRight: "1px solid #e5e7eb",
+      borderBottom: "1px solid #e5e7eb",
+      textAlign: "center",
+      boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.05)",
+    }}
+  >
+    <div style={{ fontSize: "24px", fontWeight: "900", color: "#0f172a", lineHeight: "1" }}>
+      {duration || 0}
+    </div>
+    <div
+      style={{
+        fontSize: "11px",
+        fontWeight: "800",
+        color: "#10b981",
+        textTransform: "uppercase",
+        letterSpacing: "1px",
+        marginTop: "4px",
+      }}
+    >
+      Days
+    </div>
+  </div>
+</div>
         </div>
 
         <h5 style={styles.sectionHeader}>👨‍👩‍👧‍👦 GROUPS PACKAGE Details</h5>
