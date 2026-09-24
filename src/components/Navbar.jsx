@@ -137,9 +137,9 @@ export default function Navbar({ onNavigate }) {
           </span>
           {open === "ledger" && (
             <div className="menu-box">
-              {can("customer_ledger") && <a onClick={() => go("customerLedger")}>📒 Customer Ledger</a>}
-              {can("registered_customer_ledger") && <a onClick={() => go("registeredCustomerLedger")}>📒 Registered Customer Ledger</a>}
-              {can("supplier_ledger") && <a onClick={() => go("supplierLedger")}>📦 Supplier Ledger</a>}
+              {can("customer_ledger") && <a onClick={() => go("customerLedger")}>🚶 Customer Ledger</a>}
+              {can("registered_customer_ledger") && <a onClick={() => go("registeredCustomerLedger")}>👤 Registered Customer Ledger</a>}
+              {can("supplier_ledger") && <a onClick={() => go("supplierLedger")}>🏢 Supplier Ledger</a>}
               {can("bank_ledger") && <a onClick={() => go("bankLedger")}>🏦 Bank Ledger</a>}
               {can("cash_ledger") && <a onClick={() => go("cashLedger")}>💵 Cash Ledger</a>}
               {can("expense_ledger") && <a onClick={() => go("expenseLedger")}>💸 Expense Ledger</a>}
