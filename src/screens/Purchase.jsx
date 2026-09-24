@@ -113,8 +113,6 @@ export default function Purchase({ onNavigate }) {
   const [customerName, setCustomerName] = useState("");
   const [pendingSearch, setPendingSearch] = useState("");
 
-  // ⌨️ Navigation refs matrix: inputRefs.current[displayRowIndex][fieldIndex]
-  // 0: pur_sar, 1: pur_rate, 2: supplier_select
   const inputRefs = useRef([]);
 
   /* ================= LOAD SUPPLIERS ================= */
@@ -236,6 +234,14 @@ export default function Purchase({ onNavigate }) {
     }
   };
 
+  /* ================= RESET / CANCEL FUNCTION ================= */
+  const handleCancel = () => {
+    setRows([]);
+    setRefNo("");
+    setCustomerName("");
+    setIsEdit(false);
+  };
+
   /* ================= UPDATE ROW ================= */
   const updateRow = (i, field, value) => {
     const copy = [...rows];
@@ -332,10 +338,7 @@ export default function Purchase({ onNavigate }) {
             : "Purchase Record Saved Successfully",
         });
 
-        setRows([]);
-        setRefNo("");
-        setCustomerName("");
-        setIsEdit(false);
+        handleCancel();
         loadPending();
         onNavigate("purchase");
       } else {
@@ -421,6 +424,18 @@ export default function Purchase({ onNavigate }) {
   return (
     <div style={{ backgroundColor: "#f1f5f9", minHeight: "100vh", fontFamily: "'Inter', system-ui, sans-serif" }} className="p-3">
       
+      {/* Dynamic Lift-up animation CSS */}
+      <style>{`
+        .lift-hover {
+          transition: transform 0.2s ease, box-shadow 0.2s ease;
+          cursor: pointer;
+        }
+        .lift-hover:hover {
+          transform: translateY(-3px);
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12) !important;
+        }
+      `}</style>
+
       {/* 🚀 BANNER HEADER */}
       <div 
         className="card border-0 shadow-sm mb-3 overflow-hidden" 
@@ -451,7 +466,7 @@ export default function Purchase({ onNavigate }) {
           </div>
 
           <button 
-            className="btn btn-outline-light btn-sm rounded-pill px-3 py-1.5 fw-bold"
+            className="btn btn-outline-light btn-sm rounded-pill px-3 py-1.5 fw-bold lift-hover"
             style={{ fontSize: "12px", borderColor: "rgba(255,255,255,0.3)" }}
             onClick={() => onNavigate("dashboard")}
           >
@@ -568,7 +583,7 @@ export default function Purchase({ onNavigate }) {
                       </div>
 
                       <button
-                        className="btn btn-sm w-100 fw-bold border-0 text-white rounded-2 py-1"
+                        className="btn btn-sm w-100 fw-bold border-0 text-white rounded-2 py-1 lift-hover"
                         style={{ fontSize: "11.5px", backgroundColor: "#4f46e5" }}
                         onClick={() => loadPackage(p.ref_no)}
                       >
@@ -594,7 +609,7 @@ export default function Purchase({ onNavigate }) {
             </div>
           )}
 
-          {/* REF SEARCH HEADER */}
+          {/* REF SEARCH & ACTION BUTTONS HEADER */}
           <div className="card border-0 shadow-sm rounded-3 mb-2 bg-white p-3">
             <div className="row g-2 align-items-center">
               <div className="col-md-5">
@@ -608,7 +623,7 @@ export default function Purchase({ onNavigate }) {
                     onKeyDown={(e) => e.key === "Enter" && loadPackage()}
                   />
                   <button
-                    className="btn fw-bold px-4 text-white shadow-2xs"
+                    className="btn fw-bold px-4 text-white shadow-2xs lift-hover"
                     style={{ fontSize: "12px", backgroundColor: "#4f46e5", height: "36px", whiteSpace: "nowrap" }}
                     onClick={() => loadPackage()}
                     disabled={loading}
@@ -618,27 +633,42 @@ export default function Purchase({ onNavigate }) {
                 </div>
               </div>
 
+              {/* 🎯 CUSTOMER NAME -> CANCEL BUTTON -> SAVE/UPDATE BUTTON SEQUENCE */}
               <div className="col-md-7 d-flex align-items-center justify-content-md-end gap-2">
+                {/* 1. CUSTOMER NAME BADGE */}
                 {customerName && (
                   <div 
-                    className="px-3 py-1.5 rounded-2 fw-extrabold text-truncate border shadow-2xs d-flex align-items-center gap-1.5" 
+                    className="px-3 py-1.5 rounded-2 fw-extrabold text-truncate border shadow-2xs d-flex align-items-center gap-1.5 lift-hover" 
                     style={{ 
                       fontSize: "13px", 
-                      maxWidth: "280px",
+                      maxWidth: "250px",
                       backgroundColor: "#ecfdf5", 
                       color: "#047857",
                       borderColor: "#a7f3d0",
-                      fontWeight: "800"
+                      fontWeight: "800",
+                      height: "36px"
                     }}
                   >
                     <span>👤</span> {customerName}
                   </div>
                 )}
                 
+                {/* 2. CANCEL BUTTON */}
+                {(rows.length > 0 || refNo) && (
+                  <button
+                    className="btn btn-secondary rounded-2 px-3 fw-bold shadow-2xs lift-hover"
+                    style={{ fontSize: "12px", height: "36px", whiteSpace: "nowrap", backgroundColor: "#64748b", border: "none" }}
+                    onClick={handleCancel}
+                  >
+                    ✖ Cancel
+                  </button>
+                )}
+
+                {/* 3. SAVE / UPDATE BUTTON */}
                 {rows.length > 0 && (
                   <button
-                    className={`btn rounded-2 px-4 fw-bold shadow-2xs text-white`}
-                    style={{ fontSize: "12px", height: "36px", backgroundColor: isEdit ? "#d97706" : "#10b981", whiteSpace: "nowrap" }}
+                    className="btn rounded-2 px-4 fw-bold shadow-2xs text-white lift-hover"
+                    style={{ fontSize: "12px", height: "36px", backgroundColor: isEdit ? "#d97706" : "#10b981", border: "none", whiteSpace: "nowrap" }}
                     onClick={savePurchase}
                   >
                     {isEdit ? "Update Entry" : "Save Purchase"}
@@ -648,9 +678,7 @@ export default function Purchase({ onNavigate }) {
             </div>
           </div>
 
-{/* 📊 FORM DATA TABLE (DESKTOP & MOBILE RESPONSIVE) */}
-          
-          {/* DESKTOP TABLE VIEW (Visible on md and larger screens) */}
+          {/* 📊 FORM DATA TABLE (DESKTOP & MOBILE RESPONSIVE) */}
           <div className="d-none d-md-block card border-0 shadow-sm rounded-3 overflow-hidden bg-white">
             <div className="w-100 overflow-auto">
               <table className="table align-middle mb-0" style={{ fontSize: "13px", minWidth: "900px", tableLayout: "fixed" }}>
@@ -710,7 +738,7 @@ export default function Purchase({ onNavigate }) {
                               {badge.icon} {r.item_label || r.item}
                             </span>
                             <button 
-                              className="btn btn-sm text-muted border-0 p-0 fs-6" 
+                              className="btn btn-sm text-muted border-0 p-0 fs-6 lift-hover" 
                               title="Copy Sale to Purchase"
                               onClick={() => copySaleToPurchase(r.originalIndex)}
                             >
@@ -719,7 +747,6 @@ export default function Purchase({ onNavigate }) {
                           </div>
                         </td>
 
-                        {/* 🟢 COMPACT NUMERIC FIELDS */}
                         <td className="text-end fw-bold px-1" style={{ backgroundColor: rowBg, color: "#475569", fontSize: "12.5px" }}>
                           {fmt(r.sale_sar)}
                         </td>
@@ -730,8 +757,6 @@ export default function Purchase({ onNavigate }) {
                           {fmt(r.sale_pkr)}
                         </td>
 
-                        {/* 🔵 INPUT FIELDS */}
-                        {/* 1. Pur. SAR Input */}
                         <td className="px-1" style={{ backgroundColor: rowBg }}>
                           <input
                             ref={(el) => {
@@ -767,7 +792,6 @@ export default function Purchase({ onNavigate }) {
                           />
                         </td>
 
-                        {/* 2. Pur. Rate Input */}
                         <td className="px-1" style={{ backgroundColor: rowBg }}>
                           <input
                             ref={(el) => {
@@ -811,7 +835,6 @@ export default function Purchase({ onNavigate }) {
                           {fmt(r.profit)}
                         </td>
 
-                        {/* 3. Supplier Select Input */}
                         <td className="px-2" style={{ backgroundColor: rowBg }}>
                           <div
                             onKeyDown={(e) => {
@@ -885,7 +908,7 @@ export default function Purchase({ onNavigate }) {
             </div>
           </div>
 
-          {/* MOBILE CARDS VIEW (Visible on screens smaller than md) */}
+          {/* MOBILE CARDS VIEW */}
           <div className="d-block d-md-none">
             {visibleRows.length === 0 ? (
               <div className="card border-0 shadow-sm p-4 text-center text-muted bg-white">
@@ -918,7 +941,7 @@ export default function Purchase({ onNavigate }) {
                           {badge.icon} {r.item_label || r.item}
                         </span>
                         <button 
-                          className="btn btn-sm btn-outline-secondary border-0 p-1"
+                          className="btn btn-sm btn-outline-secondary border-0 p-1 lift-hover"
                           onClick={() => copySaleToPurchase(r.originalIndex)}
                         >
                           📋 Copy
