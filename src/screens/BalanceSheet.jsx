@@ -67,12 +67,12 @@ export default function BalanceSheet({ onNavigate }) {
   
   const totalExtraPaid = Number(data.summary?.total_extra_paid || 0);
 
-  // Single Row Amounts
+  // Unpurchased Amounts
   const pendingAmount = Number(data.summary?.pending_purchases_amount || 0);
   const partialAmount = Number(data.summary?.partial_purchases_amount || 0);
   const totalUnpurchasedSales = Number(data.summary?.total_unpurchased_sales || (pendingAmount + partialAmount));
 
-  // Assets, Liabilities & Net Calculation (LESS Unpurchased Deals)
+  // Totals & Net Calculations
   const totalAssets = Number(data.summary?.total_assets || (cashInHand + bankBalance + totalReceivable + totalExtraPaid));
   const totalLiabilities = Number(data.summary?.total_liabilities || (totalPayable + totalExtraReceived + totalUnpurchasedSales));
   const netPosition = Number(data.summary?.net_position || (totalAssets - totalLiabilities));
@@ -138,7 +138,7 @@ export default function BalanceSheet({ onNavigate }) {
         <div className="col-md">
           <div className="card shadow-sm border-0 border-start border-4 border-secondary h-100">
             <div className="card-body">
-              <small className="text-muted fw-bold text-uppercase">⏳ Unpurchased Sales (Pending)</small>
+              <small className="text-muted fw-bold text-uppercase">⏳ Unpurchased Sales</small>
               <h5 className="fw-bold text-danger mt-1 mb-0">- PKR {fmt(totalUnpurchasedSales)}</h5>
             </div>
           </div>
@@ -295,7 +295,7 @@ export default function BalanceSheet({ onNavigate }) {
         </div>
       </div>
 
-      {/* SINGLE 2-ROW TABLE: PENDING & PARTIAL PURCHASES */}
+      {/* UNPURCHASED SALES SUMMARY TABLE */}
       <div className="card shadow-sm mb-4 border-start border-secondary border-3">
         <div className="card-header bg-white fw-bold text-secondary d-flex justify-content-between align-items-center">
           <span>🛒 Unpurchased Sales Status Summary</span>
@@ -336,7 +336,7 @@ export default function BalanceSheet({ onNavigate }) {
         </div>
       </div>
 
-      {/* SUMMARY */}
+      {/* BLOCK-WISE AUDIT SUMMARY */}
       <div className="card shadow-sm border-0 mb-4">
         <div className="card-header bg-dark text-white fw-bold py-3 d-flex justify-content-between align-items-center">
           <span>📊 Block-wise Balance Sheet Audit Summary</span>
@@ -345,6 +345,7 @@ export default function BalanceSheet({ onNavigate }) {
         <div className="card-body p-0">
           <table className="table table-bordered mb-0 align-middle">
             <tbody>
+              {/* BLOCK A */}
               <tr className="table-light">
                 <td colSpan="2" className="fw-bold text-uppercase text-secondary">Block A: Cash & Bank Liquid Assets</td>
               </tr>
@@ -356,7 +357,12 @@ export default function BalanceSheet({ onNavigate }) {
                 <td>🏛️ Total Combined Bank Balance</td>
                 <td className="text-end text-primary">{fmt(bankBalance)}</td>
               </tr>
+              <tr className="table-success table-opacity-10 fw-bold">
+                <td>💰 Total Liquid Funds (Cash + Total Banks)</td>
+                <td className="text-end text-success">{fmt(cashInHand + bankBalance)}</td>
+              </tr>
 
+              {/* BLOCK B */}
               <tr className="table-light">
                 <td colSpan="2" className="fw-bold text-uppercase text-secondary">Block B: Receivables & Payables Ledger</td>
               </tr>
@@ -368,27 +374,56 @@ export default function BalanceSheet({ onNavigate }) {
                 <td>🔑 Registered Customer Receivables</td>
                 <td className="text-end fw-bold text-warning">{fmt(registeredReceivable)}</td>
               </tr>
+              <tr className="fw-bold bg-light">
+                <td>📈 Total Customer Receivables</td>
+                <td className="text-end text-dark">{fmt(totalReceivable)}</td>
+              </tr>
               <tr>
                 <td>📦 Total Supplier Payables</td>
                 <td className="text-end fw-bold text-danger">{fmt(totalPayable)}</td>
               </tr>
 
+              {/* BLOCK C */}
               <tr className="table-light">
-                <td colSpan="2" className="fw-bold text-uppercase text-secondary">Block C: Unpurchased Commitments (Lessed / Deducted)</td>
+                <td colSpan="2" className="fw-bold text-uppercase text-secondary">Block C: Advance & Extra Adjustments</td>
               </tr>
               <tr>
-                <td>🛒 Less: Pending Purchases Total</td>
+                <td>💎 Extra Received from Customers (Walk-In: {fmt(walkinExtraReceived)} | Reg: {fmt(registeredExtraReceived)})</td>
+                <td className="text-end fw-bold text-primary">{fmt(totalExtraReceived)}</td>
+              </tr>
+              <tr>
+                <td>💸 Extra Paid to Suppliers (Advance Supplier Credit / Asset)</td>
+                <td className="text-end fw-bold text-primary">{fmt(totalExtraPaid)}</td>
+              </tr>
+
+              {/* BLOCK D */}
+              <tr className="table-light">
+                <td colSpan="2" className="fw-bold text-uppercase text-secondary">Block D: Unpurchased Commitments (Lessed / Deducted)</td>
+              </tr>
+              <tr>
+                <td>🛒 Less: Pending Purchases Total (No Entry)</td>
                 <td className="text-end fw-bold text-danger">- {fmt(pendingAmount)}</td>
               </tr>
               <tr>
-                <td>🛒 Less: Partial Purchases Total</td>
+                <td>🛒 Less: Partial Purchases Total (Missing Rates)</td>
                 <td className="text-end fw-bold text-warning">- {fmt(partialAmount)}</td>
               </tr>
+              <tr className="fw-bold bg-light">
+                <td>📉 Total Unpurchased Sales Amount</td>
+                <td className="text-end text-danger">- {fmt(totalUnpurchasedSales)}</td>
+              </tr>
 
+              {/* NET FINANCIAL POSITION */}
               <tr className="table-dark fw-bold fs-5">
-                <td>🔄 Net System Financial Position (Assets - Liabilities - Unpurchased)</td>
+                <td>
+                  🔄 Net System Financial Position
+                  <br />
+                  <small className="fw-normal fs-6 text-light opacity-75">
+                    {netPosition >= 0 ? "Positive Net Position (Assets exceed Liabilities & Unpurchased)" : "Negative Net Position (Liabilities exceed Assets)"}
+                  </small>
+                </td>
                 <td className={`text-end ${netPosition >= 0 ? "text-success" : "text-danger"}`}>
-                  PKR {fmt(netPosition)}
+                  PKR {fmt(Math.abs(netPosition))}
                 </td>
               </tr>
             </tbody>
