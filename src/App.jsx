@@ -35,7 +35,6 @@ import BankProfiles from "./screens/BankProfiles";
 // LEDGERS
 import CustomerLedger from "./screens/CustomerLedger";
 import RegisteredCustomerLedger from "./screens/RegisteredCustomerLedger";
-import PurchaseLedger from "./screens/PurchaseLedger";
 import SupplierLedger from "./screens/SupplierLedger";
 import BankLedger from "./screens/BankLedger";
 import CashLedger from "./screens/CashLedger";
@@ -180,7 +179,6 @@ export default function App() {
       {/* ================= LEDGERS ================= */}
       {page === "customerLedger" && <CustomerLedger onNavigate={navigate} />}
       {page === "registeredCustomerLedger" && <RegisteredCustomerLedger onNavigate={navigate} />}
-      {page === "purchaseLedger" && <PurchaseLedger onNavigate={navigate} />}
       {page === "supplierLedger" && <SupplierLedger onNavigate={navigate} />}
       {page === "bankLedger" && <BankLedger onNavigate={navigate} />}
       {page === "cashLedger" && <CashLedger onNavigate={navigate} />}
