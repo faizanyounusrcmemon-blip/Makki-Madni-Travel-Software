@@ -27,7 +27,6 @@ export default function UploadRestoreCard() {
     "bank_transactions",
     "cash_transactions",
     "customer_payments",
-    "purchase_payments",
     "supplier_payments",
     "suppliers",
     "ziyarat",
