@@ -812,18 +812,69 @@ export default function BankLedger({ onNavigate }) {
 
             {/* Data Table */}
             <div className="table-card">
-              <div className="table-head">
-                <div>
-                  <strong>
-                    {selectedProfile
-                      ? `Bank Transactions for ${
-                          profiles.find((p) => String(p.id) === String(selectedProfile))?.bank_name || ""
-                        }`
-                      : "Bank Ledger Transactions"}
-                  </strong>
-                </div>
-                <span className="badge bg-primary">Total Records: {filtered.length}</span>
-              </div>
+{/* NAYA & KHOOBSURAT COLORED CODE */}
+<div className="table-head d-flex justify-content-between align-items-center flex-wrap gap-2 py-2 px-3">
+  <div>
+    {(() => {
+      const selectedBankObj = profiles.find(
+        (p) => String(p.id) === String(selectedProfile)
+      );
+
+      if (!selectedBankObj) {
+        return (
+          <span className="fw-bold text-primary fs-6">
+            🏦 Bank Ledger Transactions
+          </span>
+        );
+      }
+
+      return (
+        <div className="d-flex align-items-center gap-2 flex-wrap">
+          {/* Bank Name Badge */}
+          <span className="badge bg-primary fs-6 px-3 py-2 rounded-pill shadow-sm">
+            🏦 {selectedBankObj.bank_name}
+          </span>
+          
+          {/* Account Title Badge - Dark Navy / Elegant Amber style */}
+          {selectedBankObj.account_title && (
+            <span 
+              className="badge shadow-sm px-3 py-2 rounded-pill"
+              style={{
+                backgroundColor: "#0f172a",
+                color: "#f8fafc",
+                fontSize: "12px",
+                letterSpacing: "0.5px"
+              }}
+            >
+              👤 {selectedBankObj.account_title}
+            </span>
+          )}
+
+          {/* Account Number Badge - Cyan / Teal Soft Accent */}
+          {selectedBankObj.account_number && (
+            <span 
+              className="badge shadow-sm px-3 py-2 rounded-pill fw-bold"
+              style={{
+                backgroundColor: "#e0f2fe",
+                color: "#0369a1",
+                border: "1px solid #bae6fd",
+                fontSize: "12px"
+              }}
+            >
+              💳 A/C: {selectedBankObj.account_number}
+            </span>
+          )}
+        </div>
+      );
+    })()}
+  </div>
+  
+  <div className="d-flex align-items-center gap-2">
+    <span className="badge bg-primary-subtle text-primary border border-primary fw-bold px-3 py-2 rounded-pill">
+      Total Records: {filtered.length}
+    </span>
+  </div>
+</div>
 
               <div className="table-responsive">
                 <table className="report-table">
@@ -837,73 +888,82 @@ export default function BankLedger({ onNavigate }) {
                       <th style={{ width: "12%", textAlign: "center" }}>Actions</th>
                     </tr>
                   </thead>
-                  <tbody style={{ fontSize: "12px" }}>
-                    {paginatedRows.length === 0 ? (
-                      <tr>
-                        <td colSpan="6" className="text-center py-4 text-muted">
-                          {selectedProfile
-                            ? "No transaction entries found for this bank account."
-                            : "👈 Please select a Bank Profile from the sidebar to view transactions."}
-                        </td>
-                      </tr>
-                    ) : (
-                      paginatedRows.map((r, i) => {
-                        // Dynamic Description Pre-formatting Logic
-                        const isCredit = normalizeZero(r.credit) > 0;
-                        const isDebit = normalizeZero(r.debit) > 0;
-                        const prefix = isCredit ? "Cash Deposit" : isDebit ? "Cash Withdraw" : "";
+<tbody style={{ fontSize: "12px" }}>
+  {paginatedRows.length === 0 ? (
+    <tr>
+      <td colSpan="6" className="text-center py-4 text-muted">
+        {selectedProfile
+          ? "No transaction entries found for this bank account."
+          : "👈 Please select a Bank Profile from the sidebar to view transactions."}
+      </td>
+    </tr>
+  ) : (
+    paginatedRows.map((r, i) => {
+      // Dynamic Description Formatting
+      const isCredit = normalizeZero(r.credit) > 0;
+      const isDebit = normalizeZero(r.debit) > 0;
 
-                        let displayDesc = r.description || prefix || "-";
+      let displayDesc = r.description || "-";
 
-                        if (r.source === "manual" && r.description) {
-                          const lowerDesc = r.description.toLowerCase();
-                          if (!lowerDesc.startsWith("cash deposit") && !lowerDesc.startsWith("cash withdraw")) {
-                            displayDesc = prefix ? `${prefix} - ${r.description}` : r.description;
-                          }
-                        }
+      if (r.source === "manual" || !r.source) {
+        const prefix = isCredit ? "Cash Deposit" : isDebit ? "Cash Withdraw" : "";
+        const cleanDesc = (r.description || "").trim();
+        const lower = cleanDesc.toLowerCase();
 
-                        return (
-                          <tr key={i}>
-                            <td className="text-center fw-semibold">{formatDate(r.txn_date)}</td>
-                            <td className={getDescriptionColor(displayDesc, r.debit, r.credit)}>
-                              {displayDesc}
-                            </td>
-                            <td style={{ textAlign: "right" }} className="text-danger fw-bold">
-                              {normalizeZero(r.debit) > 0 ? fmtAmt(r.debit) : "-"}
-                            </td>
-                            <td style={{ textAlign: "right" }} className="text-success fw-bold">
-                              {normalizeZero(r.credit) > 0 ? fmtAmt(r.credit) : "-"}
-                            </td>
-                            <td style={{ textAlign: "right" }} className="fw-bold text-dark">
-                              {fmtAmt(r.balance)}
-                            </td>
-                            <td style={{ textAlign: "center" }}>
-                              {r.source === "manual" ? (
-                                <div className="d-flex gap-1 justify-content-center">
-                                  <button
-                                    className="btn btn-outline-primary btn-sm py-0 px-1"
-                                    style={{ fontSize: "10px" }}
-                                    onClick={() => editRow(r)}
-                                  >
-                                    Edit
-                                  </button>
-                                  <button
-                                    className="btn btn-outline-danger btn-sm py-0 px-1"
-                                    style={{ fontSize: "10px" }}
-                                    onClick={() => del(r.id)}
-                                  >
-                                    Del
-                                  </button>
-                                </div>
-                              ) : (
-                                <span className="text-muted small">-</span>
-                              )}
-                            </td>
-                          </tr>
-                        );
-                      })
-                    )}
-                  </tbody>
+        if (!cleanDesc || cleanDesc === "-" || lower === "cash deposit" || lower === "cash withdraw" || lower === "deposit" || lower === "withdraw") {
+          // Agar sirf cash deposit/withdraw likha ho ya khali ho
+          displayDesc = prefix || "-";
+        } else if (lower.startsWith("cash deposit - ") || lower.startsWith("cash withdraw - ")) {
+          // Agar pehle se formatted ho
+          displayDesc = cleanDesc;
+        } else {
+          // Rest cases ke liye "Cash Deposit - [User Text]" format
+          displayDesc = prefix ? `${prefix} - ${cleanDesc}` : cleanDesc;
+        }
+      }
+
+      return (
+        <tr key={i}>
+          <td className="text-center fw-semibold">{formatDate(r.txn_date)}</td>
+          <td className={getDescriptionColor(displayDesc, r.debit, r.credit)}>
+            {displayDesc}
+          </td>
+          <td style={{ textAlign: "right" }} className="text-danger fw-bold">
+            {normalizeZero(r.debit) > 0 ? fmtAmt(r.debit) : "-"}
+          </td>
+          <td style={{ textAlign: "right" }} className="text-success fw-bold">
+            {normalizeZero(r.credit) > 0 ? fmtAmt(r.credit) : "-"}
+          </td>
+          <td style={{ textAlign: "right" }} className="fw-bold text-dark">
+            {fmtAmt(r.balance)}
+          </td>
+          <td style={{ textAlign: "center" }}>
+            {r.source === "manual" ? (
+              <div className="d-flex gap-1 justify-content-center">
+                <button
+                  className="btn btn-outline-primary btn-sm py-0 px-1"
+                  style={{ fontSize: "10px" }}
+                  onClick={() => editRow(r)}
+                >
+                  Edit
+                </button>
+                <button
+                  className="btn btn-outline-danger btn-sm py-0 px-1"
+                  style={{ fontSize: "10px" }}
+                  onClick={() => del(r.id)}
+                >
+                  Del
+                </button>
+              </div>
+            ) : (
+              <span className="text-muted small">-</span>
+            )}
+          </td>
+        </tr>
+      );
+    })
+  )}
+</tbody>
                 </table>
               </div>
 
