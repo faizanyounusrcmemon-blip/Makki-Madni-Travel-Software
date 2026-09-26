@@ -51,43 +51,41 @@ export default function SaleChangeCheckReport({ onNavigate }) {
       if (!reportRes.ok) throw new Error("Failed to fetch reports");
       const reportData = await reportRes.json();
 
-// 🔹 FETCH BOOKINGS DETAILS
-let bookingsMap = {};
-try {
-  const bookingsRes = await fetch(`${BACKEND_URL}/api/bookings/list`);
-  if (bookingsRes.ok) {
-    const bookingsData = await bookingsRes.json();
-    const rows = Array.isArray(bookingsData) ? bookingsData : (bookingsData.rows || []);
-    
-    rows.forEach((b) => {
-      if (b.ref_no) {
-        // Agent Commission total (exact database column or fallbacks)
-        const agentComm = 
-          parseFloat(b.agent_comm_total) || 
-          parseFloat(b.agent_commission) || 
-          parseFloat(b.agent_commission_pkr) || 
-          parseFloat(b.agent_comm) || 
-          parseFloat(b.commission) || 0;
+      // 🔹 FETCH BOOKINGS DETAILS (Updated to extract agent_comm_total & gifting_total)
+      let bookingsMap = {};
+      try {
+        const bookingsRes = await fetch(`${BACKEND_URL}/api/bookings/list`);
+        if (bookingsRes.ok) {
+          const bookingsData = await bookingsRes.json();
+          const rows = Array.isArray(bookingsData) ? bookingsData : (bookingsData.rows || []);
+          
+          rows.forEach((b) => {
+            if (b.ref_no) {
+              // Exact database columns: agent_comm_total & gifting_total
+              const agentComm = 
+                parseFloat(b.agent_comm_total) || 
+                parseFloat(b.agent_commission) || 
+                parseFloat(b.agent_commission_pkr) || 
+                parseFloat(b.agent_comm) || 
+                parseFloat(b.commission) || 0;
 
-        // Gifting Total (exact database column or fallbacks)
-        const giftingAmt = 
-          parseFloat(b.gifting_total) || 
-          parseFloat(b.gifting_amount) || 
-          parseFloat(b.gifting_pkr) || 
-          parseFloat(b.gifting) || 
-          parseFloat(b.gift_pkr) || 0;
+              const giftingAmt = 
+                parseFloat(b.gifting_total) || 
+                parseFloat(b.gifting_amount) || 
+                parseFloat(b.gifting_pkr) || 
+                parseFloat(b.gifting) || 
+                parseFloat(b.gift_pkr) || 0;
 
-        // Discount if applicable
-        const discountAmt = parseFloat(b.discount) || parseFloat(b.discount_pkr) || 0;
+              const discountAmt = parseFloat(b.discount) || parseFloat(b.discount_pkr) || 0;
 
-        // Total extra deductions
-        bookingsMap[b.ref_no] = agentComm + giftingAmt + discountAmt;
+              // Sum of all deductions
+              bookingsMap[b.ref_no] = agentComm + giftingAmt + discountAmt;
+            }
+          });
+        }
+      } catch (e) {
+        console.warn("Could not fetch bookings extra amounts", e);
       }
-    });
-  }
-} catch (e) {
-  console.warn("Could not fetch bookings extra amounts", e);
-}
 
       // 🔹 COMBINE AND CALCULATE DIFF
       const combined = (reportData || [])
@@ -96,7 +94,7 @@ try {
           const saleFromPurchase = purchaseMap[r.ref_no] || 0;
           let saleFromReport = parseFloat(r.total_pkr) || 0;
 
-          // 🎯 JUGAR FIX: Extra amounts deduct karein agar Package record ho
+          // 🎯 Extra amounts deduct karein agar Package record ho
           if (r.type === "Packages" || (r.ref_no && r.ref_no.startsWith("PKG-"))) {
             const extraDeductions = bookingsMap[r.ref_no] || 0;
             saleFromReport = saleFromReport - extraDeductions;
