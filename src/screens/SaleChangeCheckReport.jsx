@@ -52,12 +52,39 @@ export default function SaleChangeCheckReport({ onNavigate }) {
       if (!reportRes.ok) throw new Error("Failed to fetch reports");
       const reportData = await reportRes.json();
 
+      // 🔹 JUGAR: FETCH BOOKINGS DETAILS TO GET AGENT COMMISSION & GIFTING AMOUNT
+      // Is se hum koi route change kiye bina 'bookings' table ki extra values subtract karenge
+      let bookingsMap = {};
+      try {
+        const bookingsRes = await fetch(`${BACKEND_URL}/api/bookings/list`);
+        if (bookingsRes.ok) {
+          const bookingsData = await bookingsRes.json();
+          const rows = Array.isArray(bookingsData) ? bookingsData : (bookingsData.rows || []);
+          rows.forEach((b) => {
+            if (b.ref_no) {
+              const agentComm = parseFloat(b.agent_commission || b.agent_commission_pkr || 0) || 0;
+              const giftingAmt = parseFloat(b.gifting_amount || b.gifting_pkr || b.gifting || 0) || 0;
+              bookingsMap[b.ref_no] = agentComm + giftingAmt;
+            }
+          });
+        }
+      } catch (e) {
+        console.warn("Could not fetch bookings extra amounts, fallback to default total_pkr", e);
+      }
+
       // 🔹 COMBINE AND CALCULATE DIFF
       const combined = (reportData || [])
         .filter((r) => r.total_pkr && purchaseMap[r.ref_no])
         .map((r) => {
           const saleFromPurchase = purchaseMap[r.ref_no] || 0;
-          const saleFromReport = parseFloat(r.total_pkr) || 0;
+          let saleFromReport = parseFloat(r.total_pkr) || 0;
+
+          // 🎯 JUGAR FIX: Agar record 'Packages' (bookings table) ka hai, to Agent Commission & Gifting subtract karein
+          if (r.type === "Packages" || (r.ref_no && r.ref_no.startsWith("PKG-"))) {
+            const extraDeductions = bookingsMap[r.ref_no] || 0;
+            saleFromReport = Math.max(0, saleFromReport - extraDeductions);
+          }
+
           const diff = saleFromReport - saleFromPurchase;
           return {
             ref_no: r.ref_no,
@@ -68,7 +95,7 @@ export default function SaleChangeCheckReport({ onNavigate }) {
             diff,
           };
         })
-        .filter((row) => row.diff !== 0);
+        .filter((row) => Math.abs(row.diff) > 0.01); // Minor decimal values ignorable
 
       setData(combined);
       setCurrentPage(1);
