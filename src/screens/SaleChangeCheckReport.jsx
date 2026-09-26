@@ -37,7 +37,6 @@ export default function SaleChangeCheckReport({ onNavigate }) {
       const purchaseData = await purchaseRes.json();
       if (!purchaseData.success) throw new Error(purchaseData.error || "Purchase API error");
 
-      // Create map for faster lookup
       const purchaseMap = {};
       (purchaseData.rows || []).forEach((p) => {
         const salePkr = parseFloat(p.sale_pkr) || 0;
@@ -52,24 +51,39 @@ export default function SaleChangeCheckReport({ onNavigate }) {
       if (!reportRes.ok) throw new Error("Failed to fetch reports");
       const reportData = await reportRes.json();
 
-      // 🔹 JUGAR: FETCH BOOKINGS DETAILS TO GET AGENT COMMISSION & GIFTING AMOUNT
-      // Is se hum koi route change kiye bina 'bookings' table ki extra values subtract karenge
+      // 🔹 FETCH BOOKINGS DETAILS (Covering all possible backend field keys)
       let bookingsMap = {};
       try {
         const bookingsRes = await fetch(`${BACKEND_URL}/api/bookings/list`);
         if (bookingsRes.ok) {
           const bookingsData = await bookingsRes.json();
           const rows = Array.isArray(bookingsData) ? bookingsData : (bookingsData.rows || []);
+          
           rows.forEach((b) => {
             if (b.ref_no) {
-              const agentComm = parseFloat(b.agent_commission || b.agent_commission_pkr || 0) || 0;
-              const giftingAmt = parseFloat(b.gifting_amount || b.gifting_pkr || b.gifting || 0) || 0;
-              bookingsMap[b.ref_no] = agentComm + giftingAmt;
+              // Extract all possible agent commission key names
+              const agentComm = 
+                parseFloat(b.agent_commission) || 
+                parseFloat(b.agent_commission_pkr) || 
+                parseFloat(b.agent_comm) || 
+                parseFloat(b.commission) || 0;
+
+              // Extract all possible gifting amount key names
+              const giftingAmt = 
+                parseFloat(b.gifting_amount) || 
+                parseFloat(b.gifting_pkr) || 
+                parseFloat(b.gifting) || 
+                parseFloat(b.gift_pkr) || 0;
+
+              // Extract discount if applicable
+              const discountAmt = parseFloat(b.discount) || parseFloat(b.discount_pkr) || 0;
+
+              bookingsMap[b.ref_no] = agentComm + giftingAmt + discountAmt;
             }
           });
         }
       } catch (e) {
-        console.warn("Could not fetch bookings extra amounts, fallback to default total_pkr", e);
+        console.warn("Could not fetch bookings extra amounts", e);
       }
 
       // 🔹 COMBINE AND CALCULATE DIFF
@@ -79,10 +93,10 @@ export default function SaleChangeCheckReport({ onNavigate }) {
           const saleFromPurchase = purchaseMap[r.ref_no] || 0;
           let saleFromReport = parseFloat(r.total_pkr) || 0;
 
-          // 🎯 JUGAR FIX: Agar record 'Packages' (bookings table) ka hai, to Agent Commission & Gifting subtract karein
+          // 🎯 JUGAR FIX: Extra amounts deduct karein agar Package record ho
           if (r.type === "Packages" || (r.ref_no && r.ref_no.startsWith("PKG-"))) {
             const extraDeductions = bookingsMap[r.ref_no] || 0;
-            saleFromReport = Math.max(0, saleFromReport - extraDeductions);
+            saleFromReport = saleFromReport - extraDeductions;
           }
 
           const diff = saleFromReport - saleFromPurchase;
@@ -95,7 +109,7 @@ export default function SaleChangeCheckReport({ onNavigate }) {
             diff,
           };
         })
-        .filter((row) => Math.abs(row.diff) > 0.01); // Minor decimal values ignorable
+        .filter((row) => Math.abs(row.diff) > 0.01);
 
       setData(combined);
       setCurrentPage(1);
@@ -188,7 +202,7 @@ export default function SaleChangeCheckReport({ onNavigate }) {
   return (
     <div style={{ backgroundColor: "#f8fafc", minHeight: "100vh", fontFamily: "'Inter', sans-serif" }} className="p-3 p-lg-4">
       
-      {/* 🚀 BANNER HEADER */}
+      {/* BANNER HEADER */}
       <div 
         className="card border-0 shadow-sm mb-4" 
         style={{ 
@@ -217,7 +231,7 @@ export default function SaleChangeCheckReport({ onNavigate }) {
         </div>
       </div>
 
-      {/* 💳 SUMMARY STATS CARDS */}
+      {/* SUMMARY STATS CARDS */}
       <div className="row g-3 mb-4">
         <div className="col-md-4">
           <div className="card border-0 shadow-sm p-3 rounded-4" style={{ background: "#ffffff" }}>
@@ -256,7 +270,7 @@ export default function SaleChangeCheckReport({ onNavigate }) {
         </div>
       </div>
 
-      {/* 🎛️ SEARCH & FILTERS CARD */}
+      {/* SEARCH & FILTERS CARD */}
       <div className="card border-0 shadow-sm mb-4 rounded-4 p-3" style={{ background: "#ffffff" }}>
         <div className="row g-2 mb-3">
           <div className="col-lg-3 col-md-6">
@@ -314,7 +328,7 @@ export default function SaleChangeCheckReport({ onNavigate }) {
         </div>
       </div>
 
-      {/* 📊 ELEGANT TABLE CONTAINER */}
+      {/* TABLE CONTAINER */}
       <div className="card border-0 shadow-sm rounded-4 overflow-hidden" style={{ background: "#ffffff" }}>
         <div className="table-responsive">
           <table className="table align-middle mb-0" style={{ fontSize: "13px" }}>
@@ -392,7 +406,7 @@ export default function SaleChangeCheckReport({ onNavigate }) {
         </div>
       </div>
 
-      {/* 📑 FOOTER PAGINATION */}
+      {/* FOOTER PAGINATION */}
       {!loading && !error && data.length > 0 && (
         <div className="d-flex justify-content-between align-items-center mt-3 flex-wrap gap-2 text-muted" style={{ fontSize: "13px" }}>
           <div className="d-flex align-items-center gap-2">
