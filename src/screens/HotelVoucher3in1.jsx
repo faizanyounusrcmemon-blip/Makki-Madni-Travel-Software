@@ -39,7 +39,7 @@ const normalizeHotel = (h = {}) => ({
   contact2: "",
 });
 
-export default function HotelVoucher({ onNavigate }) {
+export default function HotelVoucher3in1({ onNavigate }) {
   const [ref, setRef] = useState("");
   const [data, setData] = useState(null);
   const voucherRef = useRef(null);
@@ -284,7 +284,7 @@ export default function HotelVoucher({ onNavigate }) {
             border: "2px solid #0d6efd",
             borderRadius: "8px",
             padding: "15px",
-            fontSize: "11px",
+            fontSize: "12px",
             boxSizing: "border-box",
             display: "flex",
             flexDirection: "column",
@@ -296,7 +296,7 @@ export default function HotelVoucher({ onNavigate }) {
             <Header title="HOTEL VOUCHER" />
 
             {/* INFO */}
-            <div className="row mb-1 pdf-ref-row">
+            <div className="row mb-1 pdf-ref-row fs-6">
               <div className="col fw-bold">
                 <b>Ref No:</b> {data.ref_no}
               </div>
@@ -305,34 +305,34 @@ export default function HotelVoucher({ onNavigate }) {
               </div>
             </div>
 
-            {/* AGENT NAME */}
-            <div className="mb-1 pdf-agent">
-              <label className="fw-bold mb-0">Agent Name</label>
-              <input
-                type="text"
-                className="form-control form-control-sm fw-bold"
-                style={{ padding: "2px 6px", fontSize: "11px" }}
-                value={data.agent_name}
-                onChange={(e) =>
-                  setData({ ...data, agent_name: e.target.value })
-                }
-                placeholder="Enter Agent Name"
-              />
-            </div>
-
-            {/* CUSTOMER NAME */}
-            <div className="mb-2 pdf-customer">
-              <label className="fw-bold mb-0">Customer Name</label>
-              <input
-                type="text"
-                className="form-control form-control-sm fw-bold"
-                style={{ padding: "2px 6px", fontSize: "11px" }}
-                value={data.customer_name || ""}
-                onChange={(e) =>
-                  setData({ ...data, customer_name: e.target.value })
-                }
-                placeholder="Enter Customer Name"
-              />
+            {/* CUSTOMER NAME FIRST, THEN AGENT NAME IN THE SAME ROW */}
+            <div className="row mb-2 pdf-names-row">
+              <div className="col">
+                <label className="fw-bold mb-0">Customer Name</label>
+                <input
+                  type="text"
+                  className="form-control form-control-sm fw-bold"
+                  style={{ padding: "3px 8px", fontSize: "12px" }}
+                  value={data.customer_name || ""}
+                  onChange={(e) =>
+                    setData({ ...data, customer_name: e.target.value })
+                  }
+                  placeholder="Enter Customer Name"
+                />
+              </div>
+              <div className="col">
+                <label className="fw-bold mb-0">Agent Name</label>
+                <input
+                  type="text"
+                  className="form-control form-control-sm fw-bold"
+                  style={{ padding: "3px 8px", fontSize: "12px" }}
+                  value={data.agent_name}
+                  onChange={(e) =>
+                    setData({ ...data, agent_name: e.target.value })
+                  }
+                  placeholder="Enter Agent Name"
+                />
+              </div>
             </div>
 
             {/* HOTELS LIST */}
@@ -341,50 +341,56 @@ export default function HotelVoucher({ onNavigate }) {
                 key={i}
                 className="pdf-hotel-block mb-2 p-2 bg-light rounded border fw-bold"
                 style={{
-                  fontSize: "11px",
+                  fontSize: "12px",
                   lineHeight: "1.3",
                 }}
               >
-                {/* BLUE HEADER */}
+                {/* BLUE HEADER SECTION */}
                 <h6
                   className="bg-primary text-white rounded mb-1 d-flex align-items-center fw-bold"
                   style={{
-                    padding: "3px 8px",
-                    fontSize: "12px",
+                    padding: "4px 8px",
+                    fontSize: "13px",
                     margin: 0,
                   }}
                 >
                   {i + 1} 🏨 Hotel Details
                 </h6>
 
-                <div className="mt-1">
-                  <label className="fw-bold mb-0">Confirm No</label>
-                  <input
-                    className="form-control form-control-sm mb-1 fw-bold"
-                    style={{
-                      padding: "2px 6px",
-                      fontSize: "11px",
-                      height: "26px",
-                    }}
-                    placeholder="Enter Confirm No"
-                    value={h.confirmNo}
-                    onChange={(e) =>
-                      handleHotelChange(i, "confirmNo", e.target.value)
-                    }
-                  />
-                </div>
-
-                {/* DISTINCT HOTEL NAME BLOCK (DARK NAVY BACKGROUND & GOLDEN TEXT) */}
+                {/* HOTEL NAME ROW WITH CONFIRM NO INTEGRATED ON RIGHT SIDE */}
                 <div
-                  className="mb-1 px-2 py-1 rounded fw-bold d-flex align-items-center"
+                  className="mb-1 px-2 py-1 rounded fw-bold d-flex align-items-center justify-content-between"
                   style={{
                     backgroundColor: "#1a2530",
                     color: "#ffc107",
-                    fontSize: "12px",
-                    letterSpacing: "0.3px",
+                    fontSize: "13px",
                   }}
                 >
-                  🏨 Hotel: &nbsp;<span className="text-uppercase fw-extrabold">{h.hotel}</span>
+                  <div className="d-flex align-items-center me-2">
+                    🏨 Hotel: &nbsp;<span className="text-uppercase fw-bold">{h.hotel}</span>
+                  </div>
+
+                  <div className="d-flex align-items-center" style={{ minWidth: "210px" }}>
+                    <span className="text-white me-1 text-nowrap" style={{ fontSize: "11px" }}>
+                      CONFIRM NO:
+                    </span>
+                    <input
+                      className="form-control form-control-sm fw-bold text-uppercase"
+                      style={{
+                        padding: "1px 6px",
+                        fontSize: "11px",
+                        height: "24px",
+                        color: "#000",
+                        backgroundColor: "#fff",
+                        border: "1px solid #ffc107"
+                      }}
+                      placeholder="Enter Confirm No"
+                      value={h.confirmNo}
+                      onChange={(e) =>
+                        handleHotelChange(i, "confirmNo", e.target.value)
+                      }
+                    />
+                  </div>
                 </div>
 
                 <div className="mb-1 fw-bold">
@@ -402,23 +408,23 @@ export default function HotelVoucher({ onNavigate }) {
 
                 <div className="row my-1 align-items-center fw-bold">
                   <div
-                    className="col bg-warning text-dark fw-bold rounded me-1 p-1"
+                    className="col bg-warning text-dark fw-bold rounded me-1 p-1 text-center"
                     style={{ fontSize: "11px" }}
                   >
                     Check-In: {showDate(h.checkIn)}
                   </div>
                   <div
-                    className="col bg-success text-white fw-bold rounded me-1 p-1"
+                    className="col bg-success text-white fw-bold rounded me-1 p-1 text-center"
                     style={{ fontSize: "11px" }}
                   >
                     Check-Out: {showDate(h.checkOut)}
                   </div>
-                  <div className="col fw-bold">Nights: {h.nights}</div>
+                  <div className="col fw-bold ps-2">Nights: {h.nights}</div>
                 </div>
 
-                <div className="row mt-1">
+                <div className="row mt-2">
                   <div className="col">
-                    <label className="fw-bold mb-0">CONTACT 1</label>
+                    <label className="fw-bold mb-0" style={{ fontSize: "11px" }}>CONTACT 1</label>
                     <input
                       className="form-control form-control-sm fw-bold"
                       style={{
@@ -434,7 +440,7 @@ export default function HotelVoucher({ onNavigate }) {
                     />
                   </div>
                   <div className="col">
-                    <label className="fw-bold mb-0">CONTACT 2</label>
+                    <label className="fw-bold mb-0" style={{ fontSize: "11px" }}>CONTACT 2</label>
                     <input
                       className="form-control form-control-sm fw-bold"
                       style={{

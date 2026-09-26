@@ -13,7 +13,7 @@ const showDate = (val) => {
   const day = String(d.getDate()).padStart(2, "0");
   const month = d
     .toLocaleString("en-US", { month: "short" })
-    .toLowerCase(); // 🔥 lowercase month
+    .toLowerCase(); // lowercase month
   const year = d.getFullYear();
 
   return `${day}/${month}/${year}`;
@@ -36,7 +36,6 @@ export default function TransportVoucher({ onNavigate }) {
     try {
       const upperRef = ref.trim().toUpperCase();
 
-      // EMPTY
       if (!upperRef) {
         return Swal.fire({
           width: "300px",
@@ -48,7 +47,6 @@ export default function TransportVoucher({ onNavigate }) {
       let r;
       let d;
 
-      // LOADING
       Swal.fire({
         width: "260px",
         title: "Loading Voucher...",
@@ -60,12 +58,10 @@ export default function TransportVoucher({ onNavigate }) {
         r = await fetch(
           `${import.meta.env.VITE_BACKEND_URL}/api/bookings/get/${upperRef}`
         );
-
         d = await r.json();
 
         if (!d.success) {
           Swal.close();
-
           return Swal.fire({
             width: "300px",
             icon: "error",
@@ -77,7 +73,6 @@ export default function TransportVoucher({ onNavigate }) {
         setData(d.row);
         setRows(transportRows);
 
-        // ⚡ Automatically map travel_date / date to pickupDates
         const initialPickupDates = {};
         transportRows.forEach((row, idx) => {
           if (row.travel_date || row.date) {
@@ -90,12 +85,10 @@ export default function TransportVoucher({ onNavigate }) {
         r = await fetch(
           `${import.meta.env.VITE_BACKEND_URL}/api/transport/get/${upperRef}`
         );
-
         d = await r.json();
 
         if (!d.success) {
           Swal.close();
-
           return Swal.fire({
             width: "300px",
             icon: "error",
@@ -107,7 +100,6 @@ export default function TransportVoucher({ onNavigate }) {
         setData(d.row);
         setRows(transportRows);
 
-        // ⚡ Automatically map travel_date / date to pickupDates
         const initialPickupDates = {};
         transportRows.forEach((row, idx) => {
           if (row.travel_date || row.date) {
@@ -118,7 +110,6 @@ export default function TransportVoucher({ onNavigate }) {
 
       } else {
         Swal.close();
-
         return Swal.fire({
           width: "300px",
           icon: "error",
@@ -137,7 +128,6 @@ export default function TransportVoucher({ onNavigate }) {
       });
     } catch (err) {
       Swal.close();
-
       Swal.fire({
         width: "300px",
         icon: "error",
@@ -154,7 +144,6 @@ export default function TransportVoucher({ onNavigate }) {
       backgroundColor: "#ffffff",
       ignoreElements: (el) => el.tagName === "CANVAS",
       onclone: (doc) => {
-        // Fix background gradients
         doc.querySelectorAll("*").forEach((el) => {
           const bg = el.style.backgroundImage;
           if (bg && bg.includes("gradient")) {
@@ -162,7 +151,6 @@ export default function TransportVoucher({ onNavigate }) {
           }
         });
 
-        // 🔥 FIX TEXTAREA AND INPUT HEIGHTS FOR PDF
         doc.querySelectorAll("textarea").forEach((textarea) => {
           const parent = textarea.parentElement;
           if (parent) {
@@ -173,7 +161,7 @@ export default function TransportVoucher({ onNavigate }) {
             div.style.padding = "6px 10px";
             div.style.border = "1px solid #ced4da";
             div.style.borderRadius = "6px";
-            div.style.fontSize = "13px";
+            div.style.fontSize = "12px";
             div.style.color = "#212529";
             div.style.backgroundColor = "#fff";
             div.innerText = textarea.value;
@@ -182,7 +170,6 @@ export default function TransportVoucher({ onNavigate }) {
           }
         });
 
-        // FIX INPUT FIELDS APPEARANCE
         doc.querySelectorAll("input.form-control").forEach((input) => {
           const parent = input.parentElement;
           if (parent && input.type !== "hidden") {
@@ -191,7 +178,7 @@ export default function TransportVoucher({ onNavigate }) {
             div.style.padding = "4px 8px";
             div.style.border = "1px solid #ced4da";
             div.style.borderRadius = "6px";
-            div.style.fontSize = "13px";
+            div.style.fontSize = "12px";
             div.style.color = "#212529";
             div.style.backgroundColor = "#fff";
             div.innerText = input.value;
@@ -249,7 +236,6 @@ export default function TransportVoucher({ onNavigate }) {
       });
     } catch (err) {
       Swal.close();
-
       Swal.fire({
         width: "300px",
         icon: "error",
@@ -343,7 +329,6 @@ export default function TransportVoucher({ onNavigate }) {
                   });
                 } catch (err) {
                   Swal.close();
-
                   Swal.fire({
                     width: "300px",
                     icon: "error",
@@ -362,48 +347,33 @@ export default function TransportVoucher({ onNavigate }) {
         <div
           ref={voucherRef}
           style={{
-            maxWidth: 900,
+            maxWidth: 850,
             margin: "auto",
-            padding: 25,
-            borderRadius: 20,
+            padding: 20,
+            borderRadius: 16,
             background: "#fff",
-            border: "3px solid #0d6efd",
-            boxShadow: "0 10px 30px rgba(0,0,0,.12)",
+            border: "2px solid #0d6efd",
+            boxShadow: "0 10px 30px rgba(0,0,0,.08)",
             position: "relative",
             overflow: "hidden",
-            fontFamily: "Segoe UI",
+            fontFamily: "Segoe UI, sans-serif",
           }}
         >
           {/* HEADER */}
-          <Header title="🚐 TRANSPORT VOUCHER" />
-
-          <img
-            src="/logo.png"
-            alt=""
-            style={{
-              position: "absolute",
-              top: "50%",
-              left: "50%",
-              transform: "translate(-50%, -50%)",
-              width: "380px",
-              opacity: 0.05,
-              pointerEvents: "none",
-              zIndex: 0,
-            }}
-          />
+          <Header title="TRANSPORT VOUCHER" />
 
           {/* INFO */}
           <div
+            className="fw-bold"
             style={{
               background: "#f8fbff",
               border: "1px solid #dbeafe",
-              borderRadius: 12,
-              padding: "12px 18px",
+              borderRadius: 8,
+              padding: "10px 15px",
               display: "flex",
               justifyContent: "space-between",
-              marginBottom: 15,
-              position: "relative",
-              zIndex: 1,
+              marginBottom: 12,
+              fontSize: "13px",
             }}
           >
             <div>
@@ -415,53 +385,73 @@ export default function TransportVoucher({ onNavigate }) {
             </div>
           </div>
 
-          {/* CUSTOMER (EDITABLE INPUT) */}
+          {/* CUSTOMER NAME */}
           <div
             style={{
               background: "#f8fbff",
               border: "1px solid #dbeafe",
-              borderLeft: "5px solid #0d6efd",
-              borderRadius: 12,
-              padding: 15,
-              marginBottom: 20,
-              position: "relative",
-              zIndex: 1,
+              borderLeft: "4px solid #0d6efd",
+              borderRadius: 8,
+              padding: "10px 12px",
+              marginBottom: 15,
             }}
           >
-            <label className="fw-bold mb-1 d-block" style={{ fontSize: 15 }}>
+            <label className="fw-bold mb-1 d-block" style={{ fontSize: "12px", color: "#333" }}>
               👤 Customer Name
             </label>
             <input
               type="text"
-              className="form-control fw-bold"
+              className="form-control form-control-sm fw-bold"
               value={data.customer_name || ""}
               onChange={(e) =>
                 setData({ ...data, customer_name: e.target.value })
               }
               placeholder="Enter Customer Name"
+              style={{ fontSize: "13px", padding: "4px 8px" }}
             />
           </div>
 
-          {/* SERVICES */}
+          {/* SERVICES / ROUTE CARDS */}
           {rows.map((r, i) => (
             <div
               key={i}
               style={{
-                background: "#fff",
-                border: "1px solid #dbeafe",
-                boxShadow: "0 4px 12px rgba(0,0,0,0.05)",
-                borderRadius: 20,
-                padding: 22,
-                marginBottom: 18,
+                background: "#fcfdfe",
+                border: "1px solid #cce0ff",
+                borderRadius: 10,
+                padding: "12px 14px",
+                marginBottom: 14,
+                boxShadow: "0 2px 6px rgba(13,110,253,0.05)",
               }}
             >
-              <b>🚐 {r.text || r.description}</b>
+              {/* BEAUTIFIED SERVICE HEADER BAR */}
+              <div
+                className="d-flex align-items-center justify-content-between text-uppercase fw-bold px-3 py-2 rounded"
+                style={{
+                  backgroundColor: "#1a2530",
+                  color: "#ffc107",
+                  fontSize: "13px",
+                  letterSpacing: "0.5px",
+                  marginBottom: "12px",
+                  boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
+                }}
+              >
+                <span>🚐 ROUTE {i + 1}: &nbsp;{r.text || r.description}</span>
+                <span className="badge bg-warning text-dark px-2 py-1" style={{ fontSize: "10px" }}>
+                  CONFIRMED
+                </span>
+              </div>
 
-              <div className="row g-3 mt-2">
+              {/* INPUT FIELDS ROW */}
+              <div className="row g-2">
                 <div className="col-md-2">
-                  <label className="small fw-bold">Vehicle</label>
+                  <label className="fw-bold text-secondary mb-1" style={{ fontSize: "11px" }}>
+                    🚘 Vehicle
+                  </label>
                   <input
-                    className="form-control form-control-sm"
+                    className="form-control form-control-sm fw-bold"
+                    style={{ fontSize: "11px", height: "30px", padding: "2px 6px" }}
+                    placeholder="e.g. GMC / Coaster"
                     value={vehicles[i] || ""}
                     onChange={(e) =>
                       setVehicles({ ...vehicles, [i]: e.target.value })
@@ -469,27 +459,47 @@ export default function TransportVoucher({ onNavigate }) {
                   />
                 </div>
 
-                <div className="col-md-2">
-                  <label className="small fw-bold">Pick-up Date</label>
-                  <input
-                    type="date"
-                    className="form-control form-control-sm"
-                    value={pickupDates[i] || ""}
-                    onChange={(e) =>
-                      setPickupDates({ ...pickupDates, [i]: e.target.value })
-                    }
-                  />
-                  {pickupDates[i] && (
-                    <div className="small mt-1 text-primary fw-bold">
-                      {showDate(pickupDates[i])}
-                    </div>
-                  )}
+                <div className="col-md-3">
+                  <label className="fw-bold text-secondary mb-1" style={{ fontSize: "11px" }}>
+                    📅 Pick-up Date
+                  </label>
+                  <div className="d-flex flex-column gap-1">
+                    <input
+                      type="date"
+                      className="form-control form-control-sm fw-bold"
+                      style={{ fontSize: "11px", height: "30px", padding: "2px 4px" }}
+                      value={pickupDates[i] || ""}
+                      onChange={(e) =>
+                        setPickupDates({ ...pickupDates, [i]: e.target.value })
+                      }
+                    />
+                    {pickupDates[i] && (
+                      <div
+                        className="text-center rounded mt-1"
+                        style={{
+                          backgroundColor: "#0b5ed7",
+                          color: "#ffffff",
+                          fontSize: "11px",
+                          fontWeight: "700",
+                          padding: "3px 6px",
+                          letterSpacing: "0.5px",
+                          boxShadow: "0 2px 4px rgba(11,94,215,0.2)"
+                        }}
+                      >
+                        {showDate(pickupDates[i])}
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 <div className="col-md-2">
-                  <label className="small fw-bold">Contact</label>
+                  <label className="fw-bold text-secondary mb-1" style={{ fontSize: "11px" }}>
+                    📞 Contact 1
+                  </label>
                   <input
-                    className="form-control form-control-sm"
+                    className="form-control form-control-sm fw-bold"
+                    style={{ fontSize: "11px", height: "30px", padding: "2px 6px" }}
+                    placeholder="Mobile 1"
                     value={contacts[i]?.c1 || ""}
                     onChange={(e) =>
                       setContacts({
@@ -501,9 +511,13 @@ export default function TransportVoucher({ onNavigate }) {
                 </div>
 
                 <div className="col-md-2">
-                  <label className="small fw-bold">Alternate</label>
+                  <label className="fw-bold text-secondary mb-1" style={{ fontSize: "11px" }}>
+                    📞 Contact 2
+                  </label>
                   <input
-                    className="form-control form-control-sm"
+                    className="form-control form-control-sm fw-bold"
+                    style={{ fontSize: "11px", height: "30px", padding: "2px 6px" }}
+                    placeholder="Mobile 2"
                     value={contacts[i]?.c2 || ""}
                     onChange={(e) =>
                       setContacts({
@@ -514,19 +528,23 @@ export default function TransportVoucher({ onNavigate }) {
                   />
                 </div>
 
-                <div className="col-md-4">
-                  <label className="small fw-bold">Details</label>
+                <div className="col-md-3">
+                  <label className="fw-bold text-secondary mb-1" style={{ fontSize: "11px" }}>
+                    📝 Extra Details
+                  </label>
                   <textarea
-                    className="form-control form-control-sm"
+                    className="form-control form-control-sm fw-bold"
                     rows={1}
                     style={{
+                      fontSize: "11px",
                       resize: "none",
-                      minHeight: "38px",
+                      minHeight: "30px",
                       overflow: "hidden",
                       whiteSpace: "pre-wrap",
                       wordBreak: "break-word",
+                      padding: "4px 6px",
                     }}
-                    placeholder="Enter details..."
+                    placeholder="Driver / Remarks..."
                     value={details[i] || ""}
                     onChange={(e) => {
                       setDetails({ ...details, [i]: e.target.value });
@@ -539,20 +557,23 @@ export default function TransportVoucher({ onNavigate }) {
             </div>
           ))}
 
-          {/* NOTE */}
+          {/* INSTRUCTIONS / NOTE */}
           <div
             style={{
-              marginTop: 20,
+              marginTop: 15,
               background: "#fff1eb",
-              padding: 16,
-              borderRadius: 14,
+              border: "1px dashed #fd7e14",
+              padding: 12,
+              borderRadius: 8,
+              fontSize: "12px",
               fontWeight: 600,
+              color: "#856404",
             }}
           >
             <b>اہم ہدایات:</b>
             <br />
             براہِ کرم ڈرائیور اور گاڑی کی تفصیلات وقت پر کنفرم کریں۔ کسی بھی
-            مسئلے کی صورت میں مکّی مدنی ٹریول سے فوری رابطہ کریں۔
+            مسئلے کی صورت میں  فوری رابطہ کریں۔
           </div>
         </div>
       )}

@@ -2,7 +2,7 @@ import React, { useState, useRef } from "react";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 import Header from "../components/Header";
-import Swal from "sweetalert2"; // ✅ SweetAlert Import Kiya
+import Swal from "sweetalert2";
 
 /* ================= HELPERS ================= */
 const showDate = (val) => {
@@ -46,7 +46,7 @@ export default function HotelVoucher({ onNavigate }) {
 
   /* ================= LOAD VOUCHER ================= */
   const loadVoucher = async () => {
-    const upperRef = ref.toUpperCase();
+    const upperRef = ref.toUpperCase().trim();
 
     if (!upperRef.startsWith("PKG-") && !upperRef.startsWith("HOT-")) {
       Swal.fire({
@@ -58,7 +58,6 @@ export default function HotelVoucher({ onNavigate }) {
       return;
     }
 
-    // Loader starting
     Swal.fire({
       title: "Fetching Voucher...",
       text: "Please wait while we load the data.",
@@ -103,7 +102,6 @@ export default function HotelVoucher({ onNavigate }) {
         hotels: (rawHotels || []).map(normalizeHotel),
       });
 
-      // Close loading alert on success
       Swal.close();
     } catch (e) {
       Swal.fire({
@@ -115,11 +113,10 @@ export default function HotelVoucher({ onNavigate }) {
     }
   };
 
-  /* ================= PDF ================= */
+  /* ================= PDF EXPORT ================= */
   const exportPDF = async () => {
     if (!voucherRef.current || !data) return;
 
-    // Show Loader for PDF Generation
     Swal.fire({
       title: "Generating PDF...",
       text: "Please wait while your PDF is being compiled.",
@@ -166,15 +163,13 @@ export default function HotelVoucher({ onNavigate }) {
         y += height + 4;
       };
 
-      // HEADER, REF, AGENT, CUSTOMER
       await addCanvas(voucherRef.current.querySelector(".pdf-header"));
       await addCanvas(voucherRef.current.querySelector(".pdf-ref-row"));
-      await addCanvas(voucherRef.current.querySelector(".pdf-agent"));
-      await addCanvas(voucherRef.current.querySelector(".pdf-customer"));
+      await addCanvas(voucherRef.current.querySelector(".pdf-names-row"));
 
       const hotels = voucherRef.current.querySelectorAll(".pdf-hotel-block");
       for (let h of hotels) {
-        const canvasBlock = await html2canvas(h, { scale: 3 });
+        const canvasBlock = await html2canvas(h, { scale: 3, useCORS: true });
         const imgBlock = canvasBlock.toDataURL("image/png");
         const heightBlock = (canvasBlock.height * usableWidth) / canvasBlock.width * 0.95;
 
@@ -187,13 +182,11 @@ export default function HotelVoucher({ onNavigate }) {
         y += heightBlock + 4;
       }
 
-      // TIMING AND FOOTER
       await addCanvas(voucherRef.current.querySelector(".pdf-timing"));
       await addCanvas(voucherRef.current.querySelector(".pdf-footer"));
 
       pdf.save(`Hotel-Voucher-${data.ref_no}.pdf`);
 
-      // Success Alert
       Swal.fire({
         icon: "success",
         title: "Downloaded!",
@@ -222,35 +215,34 @@ export default function HotelVoucher({ onNavigate }) {
       {/* TOP BAR */}
       <div className="d-flex gap-2 mb-3 flex-wrap">
         <button
-          className="btn btn-dark btn-sm"
+          className="btn btn-dark btn-sm fw-bold"
           onClick={() => onNavigate("dashboard")}
         >
           ← Back
         </button>
 
         <input
-          className="form-control form-control-sm w-25"
+          className="form-control form-control-sm w-25 fw-bold"
           placeholder="PKG-00001 / HOT-00001"
           value={ref}
           onChange={(e) => setRef(e.target.value)}
         />
 
-        <button className="btn btn-primary btn-sm" onClick={loadVoucher}>
+        <button className="btn btn-primary btn-sm fw-bold" onClick={loadVoucher}>
           Load Voucher
         </button>
 
         {data && (
           <>
-            <button className="btn btn-success btn-sm" onClick={exportPDF}>
+            <button className="btn btn-success btn-sm fw-bold" onClick={exportPDF}>
               📄 Download PDF
             </button>
 
             <button
-              className="btn btn-secondary btn-sm"
+              className="btn btn-secondary btn-sm fw-bold"
               onClick={async () => {
                 if (!voucherRef.current || !data) return;
 
-                // Show Print Processing Alert
                 Swal.fire({
                   title: "Preparing Print Layout...",
                   text: "Please wait a moment.",
@@ -300,8 +292,7 @@ export default function HotelVoucher({ onNavigate }) {
 
                   await addCanvas(voucherRef.current.querySelector(".pdf-header"));
                   await addCanvas(voucherRef.current.querySelector(".pdf-ref-row"));
-                  await addCanvas(voucherRef.current.querySelector(".pdf-agent"));
-                  await addCanvas(voucherRef.current.querySelector(".pdf-customer"));
+                  await addCanvas(voucherRef.current.querySelector(".pdf-names-row"));
 
                   const hotels = voucherRef.current.querySelectorAll(".pdf-hotel-block");
                   for (let h of hotels) {
@@ -322,8 +313,6 @@ export default function HotelVoucher({ onNavigate }) {
                   await addCanvas(voucherRef.current.querySelector(".pdf-footer"));
 
                   window.open(pdf.output("bloburl"), "_blank");
-                  
-                  // Close printing alert
                   Swal.close();
                 } catch (err) {
                   Swal.fire({
@@ -354,64 +343,108 @@ export default function HotelVoucher({ onNavigate }) {
             padding: "20px",
           }}
         >
-          <Header title="HOTEL VOUCHER" />
+          <div className="pdf-header mb-2">
+            <Header title="HOTEL VOUCHER" />
+          </div>
 
-          {/* INFO */}
-          <div className="row mb-2 pdf-ref-row">
+          {/* REF & DATE */}
+          <div className="row mb-2 pdf-ref-row fw-bold" style={{ fontSize: "13px" }}>
             <div className="col">
               <b>Ref No:</b> {data.ref_no}
             </div>
-            <div className="col mb-2 pdf-date-row">
+            <div className="col text-end pdf-date-row">
               <b>Date:</b> {showDate(data.booking_date)}
             </div>
           </div>
 
-          {/* AGENT NAME */}
-          <div className="mb-2 pdf-agent">
-            <label className="fw-bold">Agent Name</label>
-            <input
-              type="text"
-              className="form-control form-control-sm fw-bold"
-              value={data.agent_name}
-              onChange={(e) =>
-                setData({ ...data, agent_name: e.target.value })
-              }
-              placeholder="Enter Agent Name"
-            />
+          {/* CUSTOMER NAME FIRST, THEN AGENT NAME */}
+          <div className="row mb-3 pdf-names-row fw-bold">
+            <div className="col">
+              <label className="fw-bold mb-1" style={{ fontSize: "12px", display: "block" }}>Customer Name</label>
+              <input
+                type="text"
+                className="form-control fw-bold"
+                value={data.customer_name || ""}
+                onChange={(e) =>
+                  setData({ ...data, customer_name: e.target.value })
+                }
+                placeholder="Enter Customer Name"
+                style={{
+                  fontSize: "12px",
+                  height: "32px",
+                  padding: "4px 8px",
+                  lineHeight: "1.2"
+                }}
+              />
+            </div>
+            <div className="col">
+              <label className="fw-bold mb-1" style={{ fontSize: "12px", display: "block" }}>Agent Name</label>
+              <input
+                type="text"
+                className="form-control fw-bold"
+                value={data.agent_name}
+                onChange={(e) =>
+                  setData({ ...data, agent_name: e.target.value })
+                }
+                placeholder="Enter Agent Name"
+                style={{
+                  fontSize: "12px",
+                  height: "32px",
+                  padding: "4px 8px",
+                  lineHeight: "1.2"
+                }}
+              />
+            </div>
           </div>
 
-{/* CUSTOMER NAME (EDITABLE INPUT) */}
-<div className="mb-2 pdf-customer">
-  <label className="fw-bold">Customer Name</label>
-  <input
-    type="text"
-    className="form-control form-control-sm fw-bold"
-    value={data.customer_name || ""}
-    onChange={(e) =>
-      setData({ ...data, customer_name: e.target.value })
-    }
-    placeholder="Enter Customer Name"
-  />
-</div>
-
+          {/* HOTEL LIST */}
           {data.hotels.map((h, i) => (
-            <div key={i} className="pdf-hotel-block mb-3 p-2 bg-light rounded">
-              <h6 className="bg-primary text-white p-2 rounded mb-2">
+            <div key={i} className="pdf-hotel-block mb-3 p-3 bg-light rounded border fw-bold" style={{ fontSize: "12px" }}>
+              <h6 className="bg-primary text-white p-2 rounded mb-2 fw-bold" style={{ fontSize: "13px" }}>
                 {i + 1} 🏨 Hotel Details
               </h6>
 
-              <label className="fw-bold">Confirm No</label>
-              <input
-                className="form-control form-control-sm mb-2 fw-bold"
-                placeholder=""
-                value={h.confirmNo}
-                onChange={(e) => handleHotelChange(i, "confirmNo", e.target.value)}
-              />
-              <b>🏨 Hotel:</b> {h.hotel}
-              <br />
-              <b>📍 Address:</b> {h.location}
+              {/* HOTEL NAME ROW WITH CONFIRM NO ON THE RIGHT */}
+              <div
+                className="mb-2 px-2 py-2 rounded fw-bold d-flex align-items-center justify-content-between"
+                style={{
+                  backgroundColor: "#1a2530",
+                  color: "#ffc107",
+                  fontSize: "13px",
+                  boxShadow: "0 2px 4px rgba(0,0,0,0.1)"
+                }}
+              >
+                <div className="d-flex align-items-center me-2">
+                  🏨 Hotel: &nbsp;<span className="text-uppercase fw-bold">{h.hotel}</span>
+                </div>
 
-              <div className="row mt-2">
+                <div className="d-flex align-items-center" style={{ minWidth: "230px" }}>
+                  <span className="text-white me-1 text-nowrap fw-bold" style={{ fontSize: "11px" }}>
+                    CONFIRM NO:
+                  </span>
+                  <input
+                    className="form-control fw-bold text-uppercase"
+                    style={{
+                      padding: "2px 6px",
+                      fontSize: "11px",
+                      height: "28px",
+                      color: "#000",
+                      backgroundColor: "#ffffff",
+                      border: "1px solid #ffc107",
+                      lineHeight: "1.2"
+                    }}
+                    placeholder="Enter Confirm No"
+                    value={h.confirmNo}
+                    onChange={(e) => handleHotelChange(i, "confirmNo", e.target.value)}
+                  />
+                </div>
+              </div>
+
+              <div className="mb-2 fw-bold">
+                <b>📍 Address:</b> {h.location}
+              </div>
+
+              <div className="row my-2 fw-bold">
                 <div className="col">
                   <b>🚪 Room:</b> {h.room}
                 </div>
@@ -420,35 +453,47 @@ export default function HotelVoucher({ onNavigate }) {
                 </div>
               </div>
 
-              <div className="row mt-2">
-                <div className="col bg-warning p-2">
+              <div className="row my-2 align-items-center fw-bold text-center">
+                <div className="col bg-warning p-2 rounded me-1 text-dark">
                   <b>Check-In:</b> {showDate(h.checkIn)}
                 </div>
-                <div className="col bg-success text-white p-2">
+                <div className="col bg-success text-white p-2 rounded me-1">
                   <b>Check-Out:</b> {showDate(h.checkOut)}
                 </div>
-                <div className="col">
+                <div className="col text-start ps-2">
                   <b>Nights:</b> {h.nights}
                 </div>
               </div>
 
-              <div className="row mt-2">
+              <div className="row mt-3 fw-bold">
                 <div className="col">
-                  <label className="fw-bold">CONTACT 1</label>
+                  <label className="fw-bold mb-1" style={{ fontSize: "11px", display: "block" }}>CONTACT 1</label>
                   <input
-                    className="form-control form-control-sm fw-bold"
-                    placeholder=""
+                    className="form-control fw-bold"
+                    placeholder="Enter Contact 1"
                     value={h.contact1}
                     onChange={(e) => handleHotelChange(i, "contact1", e.target.value)}
+                    style={{
+                      fontSize: "11px",
+                      height: "30px",
+                      padding: "4px 6px",
+                      lineHeight: "1.2"
+                    }}
                   />
                 </div>
                 <div className="col">
-                  <label className="fw-bold">CONTACT 2</label>
+                  <label className="fw-bold mb-1" style={{ fontSize: "11px", display: "block" }}>CONTACT 2</label>
                   <input
-                    className="form-control form-control-sm fw-bold"
-                    placeholder=""
+                    className="form-control fw-bold"
+                    placeholder="Enter Contact 2"
                     value={h.contact2}
                     onChange={(e) => handleHotelChange(i, "contact2", e.target.value)}
+                    style={{
+                      fontSize: "11px",
+                      height: "30px",
+                      padding: "4px 6px",
+                      lineHeight: "1.2"
+                    }}
                   />
                 </div>
               </div>
@@ -463,13 +508,14 @@ export default function HotelVoucher({ onNavigate }) {
               border: "1px dashed #0d6efd",
               borderRadius: "8px",
               color: "#0d6efd",
+              fontSize: "12px"
             }}
           >
             ⏰ CHECK IN TIME: 04:00 PM &nbsp; | &nbsp; CHECK OUT TIME: 02:00 PM
           </div>
 
           {/* FOOTER */}
-          <div className="text-center small mt-3 pdf-footer" style={{ color: "#555" }}>
+          <div className="text-center mt-3 pdf-footer fw-bold" style={{ color: "#555", fontSize: "11px" }}>
             Please check your hotel details carefully.
             <br />
             This voucher is valid only for the mentioned booking.
