@@ -1052,85 +1052,155 @@ const mapped = (d.ledger || []).map((row) => {
     </tr>
   ) : (
     ledgerView.map((r, i) => {
-      const currentType = (r.type || "").toLowerCase();
-      let badgeClass = "bg-primary";
-      if (currentType === "purchase") badgeClass = "bg-danger";
-      if (currentType === "payment") badgeClass = "bg-success";
-      if (currentType === "opening bal" || currentType === "opening_balance")
-        badgeClass = "bg-warning text-dark";
-      if (currentType === "adjustment") badgeClass = "bg-info text-dark";
-
-      let itemDetail = "-";
-      if (currentType === "purchase") {
-        itemDetail = r.detail || "Purchase Entry";
-      } else if (
-        currentType === "opening bal" ||
-        currentType === "opening_balance"
-      ) {
-        itemDetail = "🔑 Opening Balance Entry";
-      } else if (r.type === "Snapshot Opening") {
-        itemDetail = "📦 Archived Snapshot Balance";
-      } else {
-        itemDetail =
-          r.description || `${r.type} (${r.payment_method || ""})`;
-      }
-
       return (
-        <tr key={i}>
+        <tr key={r.id || i}>
           <td className="text-center fw-bold">{formatDate(r.date)}</td>
-<td className="text-center">
-            <span className={`badge ${badgeClass} fw-semibold px-2 py-1`}>
-              {r.type}
-            </span>
+          
+          {/* TYPE COLUMN WITH CUSTOM BADGES */}
+          <td className="text-center">
+            {(() => {
+              const rawType = String(r.type || "").toLowerCase();
+              
+              if (rawType.includes("payment") || rawType.includes("receipt")) {
+                return (
+                  <span
+                    className="badge fw-bold px-2 py-1"
+                    style={{
+                      fontSize: "10px",
+                      backgroundColor: "#d1fae5",
+                      color: "#047857",
+                      border: "1px solid #a7f3d0",
+                      borderRadius: "5px"
+                    }}
+                  >
+                    💵 PAYMENT
+                  </span>
+                );
+              }
+              
+              if (rawType.includes("adjust")) {
+                return (
+                  <span
+                    className="badge fw-bold px-2 py-1"
+                    style={{
+                      fontSize: "10px",
+                      backgroundColor: "#e0f2fe",
+                      color: "#0369a1",
+                      border: "1px solid #bae6fd",
+                      borderRadius: "5px"
+                    }}
+                  >
+                    ⚙️ ADJUSTMENT
+                  </span>
+                );
+              }
+
+if (rawType.includes("purchase") || rawType.includes("sale") || rawType.includes("invoice")) {
+  return (
+    <span
+      className="badge fw-bold px-2 py-1"
+      style={{
+        fontSize: "10px",
+        backgroundColor: "#dbeafe",
+        color: "#1d4ed8",
+        border: "1px solid #bfdbfe",
+        borderRadius: "5px"
+      }}
+    >
+      📄 PURCHASE
+    </span>
+  );
+}
+
+              if (rawType.includes("opening")) {
+                return (
+                  <span
+                    className="badge fw-bold px-2 py-1"
+                    style={{
+                      fontSize: "10px",
+                      backgroundColor: "#fef3c7",
+                      color: "#b45309",
+                      border: "1px solid #fde68a",
+                      borderRadius: "5px"
+                    }}
+                  >
+                    🔑 OPENING BALANCE
+                  </span>
+                );
+              }
+
+              return (
+                <span
+                  className="badge fw-bold px-2 py-1"
+                  style={{
+                    fontSize: "10px",
+                    backgroundColor: "#f3f4f6",
+                    color: "#374151",
+                    border: "1px solid #e5e7eb",
+                    borderRadius: "5px"
+                  }}
+                >
+                  {r.type || "-"}
+                </span>
+              );
+            })()}
           </td>
-<td className="text-center align-middle">
-  {r.ref_no && r.ref_no !== "-" ? (
-    (() => {
-      const str = String(r.ref_no).toUpperCase();
-      let badgeBg = "#f3e8ff";    
-      let badgeColor = "#6b21a8"; 
 
-      if (str.includes("HOT")) { 
-        badgeBg = "#ffedd5"; badgeColor = "#c2410c"; 
-      } else if (str.includes("PKG") || str.includes("BKG")) { 
-        badgeBg = "#ecfdf5"; badgeColor = "#047857"; 
-      } else if (str.includes("ZIY")) { 
-        badgeBg = "#fef3c7"; badgeColor = "#b45309"; 
-      } else if (str.includes("TIC") || str.includes("TKT")) { 
-        badgeBg = "#fae8ff"; badgeColor = "#86198f"; 
-      } else if (str.includes("VISA")) { 
-        badgeBg = "#ffe4e6"; badgeColor = "#be123c"; 
-      }
+          {/* REF NO COLUMN */}
+          <td className="text-center align-middle">
+            {r.ref_no && r.ref_no !== "-" ? (
+              (() => {
+                const str = String(r.ref_no).toUpperCase();
+                let badgeBg = "#f3e8ff";    
+                let badgeColor = "#6b21a8"; 
 
-      return (
-        <span
-          onClick={() => showRefDetails(r)} // ✨ Click handler added
-          className="badge fw-bold px-2 py-1"
-          style={{
-            fontSize: "10px",
-            letterSpacing: "0.4px",
-            backgroundColor: badgeBg,
-            color: badgeColor,
-            border: `1px solid ${badgeColor}30`,
-            borderRadius: "5px",
-            cursor: "pointer" // ✨ Pointer cursor
-          }}
-        >
-          <span style={{ fontSize: "11px", marginRight: "3px" }}>
-            {getCategoryIcon(r.ref_no || r.detail || r.description)}
-          </span>
-          {r.ref_no}
-        </span>
-      );
-    })()
-  ) : (
-    <span className="text-muted small">-</span>
-  )}
-</td>
+                if (str.includes("HOT")) { 
+                  badgeBg = "#ffedd5"; badgeColor = "#c2410c"; 
+                } else if (str.includes("PKG") || str.includes("BKG")) { 
+                  badgeBg = "#ecfdf5"; badgeColor = "#047857"; 
+                } else if (str.includes("ZIY")) { 
+                  badgeBg = "#fef3c7"; badgeColor = "#b45309"; 
+                } else if (str.includes("TIC") || str.includes("TKT")) { 
+                  badgeBg = "#fae8ff"; badgeColor = "#86198f"; 
+                } else if (str.includes("VISA")) { 
+                  badgeBg = "#ffe4e6"; badgeColor = "#be123c"; 
+                }
+
+                return (
+                  <span
+                    onClick={() => showRefDetails(r)}
+                    className="badge fw-bold px-2 py-1"
+                    style={{
+                      fontSize: "10px",
+                      letterSpacing: "0.4px",
+                      backgroundColor: badgeBg,
+                      color: badgeColor,
+                      border: `1px solid ${badgeColor}30`,
+                      borderRadius: "5px",
+                      cursor: "pointer"
+                    }}
+                  >
+                    <span style={{ fontSize: "11px", marginRight: "3px" }}>
+                      {getCategoryIcon(r.ref_no || r.detail || r.description)}
+                    </span>
+                    {r.ref_no}
+                  </span>
+                );
+              })()
+            ) : (
+              <span className="text-muted small">-</span>
+            )}
+          </td>
+
+          {/* SUPPLIER NAME */}
           <td className="fw-bold text-primary">
-            {currentType === "purchase" ? r.supplier_name : "-"}
+            {r.supplier_name || r.supplier_code || "-"}
           </td>
-          <td className="fw-bold text-success">{itemDetail}</td>
+
+          {/* ITEM DETAIL */}
+          <td className="fw-bold text-success">{r.detail || r.description || "-"}</td>
+
+          {/* METHOD */}
           <td className="text-center">
             {r.payment_method && r.payment_method !== "-" ? (
               <span
@@ -1146,6 +1216,8 @@ const mapped = (d.ledger || []).map((row) => {
               <span className="text-muted">-</span>
             )}
           </td>
+
+          {/* DEBIT / CREDIT / BALANCE */}
           <td style={{ textAlign: "right", fontSize: "0.85rem" }} className="text-danger fw-bold">
             {normalizeZero(r.debit) > 0 ? fmtAmt(r.debit) : "-"}
           </td>
@@ -1155,6 +1227,8 @@ const mapped = (d.ledger || []).map((row) => {
           <td style={{ textAlign: "right", fontSize: "0.85rem" }} className="fw-bold">
             {fmtAmt(r.balance)}
           </td>
+
+          {/* ACTIONS */}
           <td style={{ textAlign: "center" }}>
             {r.entry_type === "payment" && r.id && r.id !== 0 ? (
               <div className="d-flex gap-1 justify-content-center">
