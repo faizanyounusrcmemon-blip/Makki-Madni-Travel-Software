@@ -510,29 +510,51 @@ export default function Ziyarat({ onNavigate }) {
           </div>
         </div>
 
-        {/* Ziyarat Table */}
-        <div className="mb-3">
-          <h5 style={styles.sectionHeader}>🕌 Ziyarat</h5>
-          <button className="btn btn-outline-success btn-sm mb-2" style={styles.button} onClick={addRow}>➕ Add Row</button>
-          <table style={styles.table}>
-            <thead>
-              <tr>
-                <th style={styles.th}>Description</th>
-                <th style={styles.th}>SAR</th>
-                <th style={styles.th}>Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((r, i) => (
-                <tr key={i} style={{ background: i % 2 === 0 ? "#f0fff0" : "#fff" }}>
-                  <td style={styles.td}><input className="form-control" value={r.description} onChange={(e) => updateRow(i, "description", e.target.value)} /></td>
-                  <td style={styles.td}><input type="number" className="form-control" value={r.sar} onChange={(e) => updateRow(i, "sar", e.target.value)} /></td>
-                  <td style={{ ...styles.td, textAlign: "center" }}><button className="btn btn-sm btn-danger" onClick={() => removeRow(i)}>✖</button></td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+{/* Ziyarat Table */}
+<div className="mb-3">
+  <h5 style={styles.sectionHeader}>🕌 Ziyarat</h5>
+  <button className="btn btn-outline-success btn-sm mb-2" style={styles.button} onClick={addRow}>➕ Add Row</button>
+  <table style={styles.table}>
+    <thead>
+      <tr>
+        {/* Description Header Bada Kar Diya */}
+        <th style={{ ...styles.th, width: "70%" }}>Description</th>
+        {/* SAR Header Chota Kar Diya */}
+        <th style={{ ...styles.th, width: "20%", textAlign: "center" }}>SAR</th>
+        <th style={{ ...styles.th, width: "10%", textAlign: "center" }}>Action</th>
+      </tr>
+    </thead>
+    <tbody>
+      {rows.map((r, i) => (
+        <tr key={i} style={{ background: i % 2 === 0 ? "#f0fff0" : "#fff" }}>
+          {/* Description Input Normal Single-Line Input */}
+          <td style={styles.td}>
+            <input 
+              type="text" 
+              className="form-control form-control-sm" 
+              placeholder="Ziyarat description..." 
+              value={r.description} 
+              onChange={(e) => updateRow(i, "description", e.target.value)} 
+            />
+          </td>
+          {/* SAR Input Width Compact & Centered */}
+          <td style={{ ...styles.td, textAlign: "center" }}>
+            <input 
+              type="number" 
+              className="form-control form-control-sm text-center fw-bold" 
+              style={{ maxWidth: "120px", margin: "0 auto" }} 
+              value={r.sar} 
+              onChange={(e) => updateRow(i, "sar", e.target.value)} 
+            />
+          </td>
+          <td style={{ ...styles.td, textAlign: "center" }}>
+            <button className="btn btn-sm btn-danger px-2 py-0" onClick={() => removeRow(i)}>✖</button>
+          </td>
+        </tr>
+      ))}
+    </tbody>
+  </table>
+</div>
 
         {/* Summary */}
         <div className="mb-3">

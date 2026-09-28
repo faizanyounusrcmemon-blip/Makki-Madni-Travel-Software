@@ -60,8 +60,8 @@ const styles = {
   td: {
     padding: "8px",
     borderBottom: "1px solid #ddd",
+    verticalAlign: "top",
   },
-
 };
 
 export default function Visa({ onNavigate }) {
@@ -119,6 +119,12 @@ export default function Visa({ onNavigate }) {
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+
+  // Auto-resize textarea height dynamically
+  const handleAutoResize = (e) => {
+    e.target.style.height = "auto";
+    e.target.style.height = `${e.target.scrollHeight}px`;
+  };
 
   // -------------------- Row Management --------------------
   const addRow = () => setRows([...rows, { type: "", persons: 0, rate: 0, total: 0 }]);
@@ -235,7 +241,7 @@ export default function Visa({ onNavigate }) {
 
     const payload = {
       ref_no: refNo || null,
-      customer_code: customerCode || null, // Included customer_code
+      customer_code: customerCode || null,
       customer_name: customerName,
       booking_date: bookingDate,
       rows,
@@ -303,20 +309,40 @@ export default function Visa({ onNavigate }) {
 
   return (
     <div style={styles.container}>
+      {/* ⚡ PRINT / PDF STYLING CONTROL */}
+      <style>{`
+        @media print {
+          .no-print {
+            display: none !important;
+          }
+          .print-only {
+            display: block !important;
+          }
+          input, textarea {
+            border: none !important;
+            background: transparent !important;
+            box-shadow: none !important;
+          }
+        }
+        @media screen {
+          .print-only {
+            display: none !important;
+          }
+        }
+      `}</style>
+
       {/* ⚡ TOP CONTROL BAR */}
-      <div className="d-flex justify-content-between mb-3">
-        <button className="btn btn-dark btn-sm" style={styles.button} onClick={() => onNavigate("dashboard")}>← Back</button>
+      <div className="d-flex justify-content-between mb-3 no-print">
+        <button className="btn btn-dark btn-sm" onClick={() => onNavigate("dashboard")}>← Back</button>
         <div className="d-flex gap-2">
           <button
             className={`btn btn-sm ${isEdit ? "btn-warning text-dark" : "btn-primary"}`}
-            style={styles.button}
             onClick={saveData}
             disabled={saving}
           >
             {saving ? "Saving..." : isEdit ? "✏ Update Save" : "💾 Save"}
           </button>
           
-          {/* REF SEARCH INPUT */}
           <input 
             className="form-control form-control-sm" 
             style={{ width: 140, borderRadius: 50 }} 
@@ -324,7 +350,7 @@ export default function Visa({ onNavigate }) {
             value={searchRef} 
             onChange={(e) => setSearchRef(e.target.value)} 
           />
-          <button className="btn btn-warning btn-sm" style={styles.button} onClick={loadVisa}>🔄 Load / Edit</button>
+          <button className="btn btn-warning btn-sm" onClick={loadVisa}>🔄 Load / Edit</button>
           
 {/* 📄 Export PDF (With Uplift Effect) */}
           <button
@@ -379,8 +405,6 @@ export default function Visa({ onNavigate }) {
 
         {/* ⚡ CUSTOMER INFO ROW WITH SMART SEPARATION */}
         <div className="row g-3 mb-4">
-          
-          {/* FIELD 1: Ref No Display */}
           <div className="col-md-2">
             <label className="fw-bold mb-1 d-block">Ref No</label>
             <input
@@ -390,10 +414,9 @@ export default function Visa({ onNavigate }) {
             />
           </div>
 
-          {/* FIELD 2: SMART DROPDOWN FOR REGISTERED CLIENTS */}
           <div className="col-md-4" ref={dropdownRef} style={{ position: "relative" }}>
             <label className="fw-bold mb-1 text-primary">🔍 Select Registered Customer</label>
-            <div className="input-group input-group-sm">
+            <div className="input-group input-group-sm no-print">
               <input
                 className="form-control"
                 placeholder="Type code or name to search..."
@@ -418,11 +441,14 @@ export default function Visa({ onNavigate }) {
                 </button>
               )}
             </div>
+            
+            <div className="print-only fw-bold p-1">
+              {searchQuery || "N/A"}
+            </div>
 
-            {/* Selector Dropdown List */}
             {showDropdown && (
               <div 
-                className="dropdown-menu show shadow w-100 p-2" 
+                className="dropdown-menu show shadow w-100 p-2 no-print" 
                 style={{ 
                   maxHeight: "220px", 
                   overflowY: "auto", 
@@ -453,10 +479,9 @@ export default function Visa({ onNavigate }) {
                 )}
               </div>
             )}
-            <small className="text-muted d-block mt-1">Use ONLY for registered profiles</small>
+            <small className="text-muted d-block mt-1 no-print">Use ONLY for registered profiles</small>
           </div>
 
-          {/* FIELD 3: CUSTOMER NAME INPUT (AUTO-FILLED / MANUAL WRITING) */}
           <div className="col-md-3">
             <label className="fw-bold mb-1 text-dark">👤 Customer Name</label>
             <input
@@ -473,54 +498,109 @@ export default function Visa({ onNavigate }) {
               }}
             />
             {customerCode ? (
-              <small className="text-success d-block mt-1 fw-bold">
+              <small className="text-success d-block mt-1 fw-bold no-print">
                 ✓ Registered Linked ({customerCode})
               </small>
             ) : (
               customerName && (
-                <small className="text-warning d-block mt-1 fw-bold">
+                <small className="text-warning d-block mt-1 fw-bold no-print">
                   ⚠ Manual Walk-In (No Code)
                 </small>
               )
             )}
           </div>
 
-          {/* FIELD 4: BOOKING DATE */}
           <div className="col-md-3">
             <label className="fw-bold mb-1 d-block">Booking Date</label>
             <input
               type="date"
-              className="form-control form-control-sm"
+              className="form-control form-control-sm no-print"
               value={bookingDate}
               onChange={(e) => setBookingDate(e.target.value)}
             />
-            <small className="text-muted d-block mt-1">
+            <div className="fw-bold mt-1">
               {showDate(bookingDate)}
-            </small>
+            </div>
           </div>
         </div>
 
         <h5 style={styles.sectionHeader}>🛂 Visa Details</h5>
-        <button className="btn btn-outline-primary btn-sm mb-2" style={styles.button} onClick={addRow}>➕ Add Visa Row</button>
+        <button className="btn btn-outline-primary btn-sm mb-2 no-print" onClick={addRow}>➕ Add Visa Row</button>
 
         <table style={styles.table}>
           <thead>
             <tr>
               <th style={styles.th}>Type</th>
-              <th style={styles.th}>Persons</th>
-              <th style={styles.th}>Rate (SAR)</th>
-              <th style={styles.th}>Total (SAR)</th>
-              <th style={styles.th}>Action</th>
+              <th style={{ ...styles.th, width: "110px" }}>Persons</th>
+              <th style={{ ...styles.th, width: "130px" }}>Rate (SAR)</th>
+              <th style={{ ...styles.th, width: "130px" }}>Total (SAR)</th>
+              <th style={{ ...styles.th, width: "80px", textAlign: "center" }} className="no-print">Action</th>
             </tr>
           </thead>
           <tbody>
             {rows.map((r, i) => (
               <tr key={i} style={{ background: i % 2 === 0 ? "#f0e6ff" : "#fff" }}>
-                <td style={styles.td}><input className="form-control form-control-sm" value={r.type} onChange={(e) => updateRow(i, "type", e.target.value)} /></td>
-                <td style={styles.td}><input type="number" className="form-control form-control-sm" value={r.persons} onChange={(e) => updateRow(i, "persons", e.target.value)} /></td>
-                <td style={styles.td}><input type="number" className="form-control form-control-sm" value={r.rate} onChange={(e) => updateRow(i, "rate", e.target.value)} /></td>
-                <td style={{...styles.td, fontWeight:"bold"}}>{r.total}</td>
-                <td style={{...styles.td, textAlign:"center"}}><button className="btn btn-sm btn-danger" onClick={() => removeRow(i)}>✖</button></td>
+                {/* ⚡ Type Field Fix (Proper word break & pre-wrap for auto multi-line) */}
+                <td style={styles.td}>
+                  <textarea
+                    className="form-control form-control-sm no-print"
+                    rows={1}
+                    value={r.type}
+                    placeholder="Enter details..."
+                    style={{
+                      resize: "none",
+                      overflow: "hidden",
+                      minHeight: "35px",
+                      width: "100%",
+                      whiteSpace: "pre-wrap",
+                      wordBreak: "break-all"
+                    }}
+                    onFocus={handleAutoResize}
+                    onInput={handleAutoResize}
+                    onChange={(e) => updateRow(i, "type", e.target.value)}
+                  />
+                  
+                  {/* Print & PDF Canvas render block */}
+                  <div 
+                    className="print-only" 
+                    style={{ 
+                      whiteSpace: "pre-wrap", 
+                      wordBreak: "break-all",
+                      padding: "4px 0",
+                      fontSize: "13px",
+                      lineHeight: "1.4"
+                    }}
+                  >
+                    {r.type}
+                  </div>
+                </td>
+
+                <td style={styles.td}>
+                  <input
+                    type="number"
+                    className="form-control form-control-sm no-print"
+                    style={{ width: "90px" }}
+                    value={r.persons}
+                    onChange={(e) => updateRow(i, "persons", e.target.value)}
+                  />
+                  <div className="print-only fw-bold">{r.persons}</div>
+                </td>
+
+                <td style={styles.td}>
+                  <input
+                    type="number"
+                    className="form-control form-control-sm no-print"
+                    style={{ width: "110px" }}
+                    value={r.rate}
+                    onChange={(e) => updateRow(i, "rate", e.target.value)}
+                  />
+                  <div className="print-only fw-bold">{r.rate}</div>
+                </td>
+
+                <td style={{ ...styles.td, fontWeight: "bold" }}>{r.total}</td>
+                <td style={{ ...styles.td, textAlign: "center" }} className="no-print">
+                  <button className="btn btn-sm btn-danger" onClick={() => removeRow(i)}>✖</button>
+                </td>
               </tr>
             ))}
           </tbody>
@@ -533,7 +613,15 @@ export default function Visa({ onNavigate }) {
               <td>Total SAR</td>
               <td style={{ fontWeight: "bold" }}>{totalSAR}</td>
               <td>PKR Rate</td>
-              <td><input className="form-control form-control-sm" type="number" value={pkrRate} onChange={(e) => setPkrRate(+e.target.value)} /></td>
+              <td>
+                <input 
+                  className="form-control form-control-sm no-print" 
+                  type="number" 
+                  value={pkrRate} 
+                  onChange={(e) => setPkrRate(+e.target.value)} 
+                />
+                <span className="print-only fw-bold">{pkrRate}</span>
+              </td>
               <td style={{ fontWeight: "bold" }}>{totalPKR.toLocaleString()}</td>
             </tr>
           </tbody>

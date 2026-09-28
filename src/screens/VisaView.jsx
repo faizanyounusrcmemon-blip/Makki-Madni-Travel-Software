@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useRef } from "react";
 import usePdf from "../hooks/usePdf";
 import Header from "../components/Header";
+import Swal from "sweetalert2";
 
 /* ================= HELPERS ================= */
 const fmt = (v) => Number(v || 0).toLocaleString("en-US");
@@ -115,29 +116,42 @@ export default function VisaView({ id, onNavigate, fromPage }) {
           <p className="text-muted">No visa rows</p>
         )}
 
-        {data.rows.map((r, i) => {
-          const qty = Number(r.persons || 1);
-          const total = Number(r.total || 0);
-          const unitRate = r.rate ? Number(r.rate) : qty > 0 ? total / qty : 0;
+{data.rows.map((r, i) => {
+  const qty = Number(r.persons || 1);
+  const total = Number(r.total || 0);
+  const unitRate = r.rate ? Number(r.rate) : qty > 0 ? total / qty : 0;
 
-          return (
-            <div
-              key={i}
-              className="border rounded p-2 mb-2 shadow-sm d-flex justify-content-between align-items-center"
-            >
-              <div style={{ flex: 1 }}><b>Type:</b> {r.type}</div>
-              <div className="text-center" style={{ flex: 1 }}>
-                <b>Persons:</b> {r.persons}
-              </div>
-              <div className="text-center text-muted" style={{ flex: 1 }}>
-                <b>Rate (1 Visa):</b> {fmt(unitRate)}
-              </div>
-              <div className="fw-bold text-end" style={{ flex: 1 }}>
-                <b>Total:</b> {fmt(r.total)}
-              </div>
-            </div>
-          );
-        })}
+  return (
+    <div
+      key={i}
+      className="border rounded-3 p-3 mb-2 shadow-sm d-flex align-items-start gap-3 bg-light"
+    >
+      {/* Type Column - Flex Grow with Auto Wrap */}
+      <div style={{ flex: "1 1 40%", minWidth: 0, wordBreak: "break-word", whiteSpace: "pre-wrap" }}>
+        <span className="text-muted d-block small fw-semibold">Type</span>
+        <span className="fw-bold text-dark">{r.type || "-"}</span>
+      </div>
+
+      {/* Persons Column */}
+      <div className="text-center" style={{ flex: "1 1 20%" }}>
+        <span className="text-muted d-block small fw-semibold">Persons</span>
+        <span className="fw-bold text-dark">{r.persons}</span>
+      </div>
+
+      {/* Rate Column */}
+      <div className="text-center" style={{ flex: "1 1 20%" }}>
+        <span className="text-muted d-block small fw-semibold">Rate (1 Visa)</span>
+        <span className="text-muted fw-medium">{fmt(unitRate)}</span>
+      </div>
+
+      {/* Total Column */}
+      <div className="text-end" style={{ flex: "1 1 20%" }}>
+        <span className="text-muted d-block small fw-semibold">Total</span>
+        <span className="fw-bold text-primary">{fmt(r.total)}</span>
+      </div>
+    </div>
+  );
+})}
 
         <hr />
 

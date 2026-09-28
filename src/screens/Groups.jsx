@@ -530,31 +530,61 @@ export default function Groups({ onNavigate }) {
 </div>
         </div>
 
-        <h5 style={styles.sectionHeader}>👨‍👩‍👧‍👦 GROUPS PACKAGE Details</h5>
-        <button className="btn btn-outline-primary btn-sm mb-2" style={styles.button} onClick={addRow}>➕ Add Groups Row</button>
+<h5 style={styles.sectionHeader}>👨‍👩‍👧‍👦 GROUPS PACKAGE Details</h5>
+<button className="btn btn-outline-primary btn-sm mb-2" style={styles.button} onClick={addRow}>➕ Add Groups Row</button>
 
-        <table style={styles.table}>
-          <thead>
-            <tr>
-              <th style={styles.th}>Type</th>
-              <th style={styles.th}>Persons</th>
-              <th style={styles.th}>Rate (SAR)</th>
-              <th style={styles.th}>Total (SAR)</th>
-              <th style={styles.th}>Action</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((r, i) => (
-              <tr key={i} style={{ background: i % 2 === 0 ? "#f0e6ff" : "#fff" }}>
-                <td style={styles.td}><input className="form-control form-control-sm" value={r.type} onChange={(e) => updateRow(i, "type", e.target.value)} /></td>
-                <td style={styles.td}><input type="number" className="form-control form-control-sm" value={r.persons} onChange={(e) => updateRow(i, "persons", e.target.value)} /></td>
-                <td style={styles.td}><input type="number" className="form-control form-control-sm" value={r.rate} onChange={(e) => updateRow(i, "rate", e.target.value)} /></td>
-                <td style={{ ...styles.td, fontWeight: "bold" }}>{r.total}</td>
-                <td style={{ ...styles.td, textAlign: "center" }}><button className="btn btn-sm btn-danger" onClick={() => removeRow(i)}>✖</button></td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+<table style={styles.table}>
+  <thead>
+    <tr>
+      {/* Type column ki width 50% kar di gayi hai taaki input field thora bada ho jaye */}
+      <th style={{ ...styles.th, width: "50%", textAlign: "left" }}>Type</th>
+      <th style={{ ...styles.th, width: "12%" }}>Persons</th>
+      <th style={{ ...styles.th, width: "15%" }}>Rate (SAR)</th>
+      <th style={{ ...styles.th, width: "15%" }}>Total (SAR)</th>
+      <th style={{ ...styles.th, width: "8%" }}>Action</th>
+    </tr>
+  </thead>
+  <tbody>
+    {rows.map((r, i) => (
+      <tr key={i} style={{ background: i % 2 === 0 ? "#f0e6ff" : "#fff" }}>
+        {/* Type Input Field */}
+        <td style={styles.td}>
+          <input 
+            type="text"
+            className="form-control form-control-sm" 
+            placeholder="Package/Visa Type details..."
+            value={r.type} 
+            onChange={(e) => updateRow(i, "type", e.target.value)} 
+          />
+        </td>
+        <td style={styles.td}>
+          <input 
+            type="number" 
+            className="form-control form-control-sm text-center" 
+            value={r.persons} 
+            onChange={(e) => updateRow(i, "persons", e.target.value)} 
+          />
+        </td>
+        <td style={styles.td}>
+          <input 
+            type="number" 
+            className="form-control form-control-sm text-center" 
+            value={r.rate} 
+            onChange={(e) => updateRow(i, "rate", e.target.value)} 
+          />
+        </td>
+        <td style={{ ...styles.td, fontWeight: "bold", textAlign: "center" }}>
+          {r.total}
+        </td>
+        <td style={{ ...styles.td, textAlign: "center" }}>
+          <button className="btn btn-sm btn-danger px-2 py-0" onClick={() => removeRow(i)}>
+            ✖
+          </button>
+        </td>
+      </tr>
+    ))}
+  </tbody>
+</table>
 
         <h5 style={styles.sectionHeader}>✨ Summary</h5>
         <table className="table table-sm">
