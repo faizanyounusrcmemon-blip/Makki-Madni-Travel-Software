@@ -219,28 +219,76 @@ export default function SupplierLedger({ onNavigate }) {
       setSnapshotDate(d.snapshotDate || null);
       setOpeningBalance(Number(d.openingBalance || 0));
 
-const mapped = (d.ledger || []).map((row) => {
-  const debit = Math.round(normalizeZero(row.debit));
-  const credit = Math.round(normalizeZero(row.credit));
-  const balance = Math.round(normalizeZero(row.balance));
+/* =========================================================
+ * LEDGER ORDER: NEWEST / LATEST ENTRY MUST BE ON TOP
+ * ---------------------------------------------------------
+ * Backend se purchases/payments mixed order me aa sakte hain.
+ * Sirf reverse() karna reliable nahi hai. Complete ledger ko
+ * transaction date + created timestamp ke basis par DESC sort
+ * karte hain, is liye latest/new entry hamesha sab se upar rahegi.
+ * ========================================================= */
+const mapped = (d.ledger || [])
+  .map((row, originalIndex) => {
+    const debit = Math.round(normalizeZero(row.debit));
+    const credit = Math.round(normalizeZero(row.credit));
+    const balance = Math.round(normalizeZero(row.balance));
 
-  return {
-    ...row,
-    entry_type: row.entry_type,
-    id: row.id,
-    type: row.type,
-    detail: row.description || row.item || "Purchase Entry",
-    debit,
-    credit,
-    balance,
-    ref_no: row.ref_no || "-",
-    // ✨ Customer name yahan ensure karein:
-    customer_name: row.customer_name || row.passenger_name || row.pax_name || "-"
-  };
-});
+    return {
+      ...row,
+      entry_type: row.entry_type,
+      id: row.id,
+      type: row.type,
+      detail: row.description || row.item || "Purchase Entry",
+      debit,
+      credit,
+      balance,
+      ref_no: row.ref_no || "-",
+      customer_name: row.customer_name || row.passenger_name || row.pax_name || "-",
+      _originalIndex: originalIndex,
+    };
+  })
+  .sort((a, b) => {
+    const getDateTime = (row) => {
+      const value =
+        row.created_at ||
+        row.updated_at ||
+        row.entry_timestamp ||
+        row.transaction_date ||
+        row.date ||
+        row.entry_date ||
+        row.payment_date;
 
-      setLedger(mapped);
-      setLedgerView(mapped);
+      const time = value ? new Date(value).getTime() : 0;
+      return Number.isNaN(time) ? 0 : time;
+    };
+
+    // Primary: latest transaction/payment date first.
+    const dateA = new Date(
+      a.date || a.entry_date || a.payment_date || a.transaction_date || 0
+    ).getTime();
+    const dateB = new Date(
+      b.date || b.entry_date || b.payment_date || b.transaction_date || 0
+    ).getTime();
+
+    const safeDateA = Number.isNaN(dateA) ? 0 : dateA;
+    const safeDateB = Number.isNaN(dateB) ? 0 : dateB;
+
+    if (safeDateA !== safeDateB) return safeDateB - safeDateA;
+
+    // Same date: newly inserted record first.
+    const timeA = getDateTime(a);
+    const timeB = getDateTime(b);
+
+    if (timeA !== timeB) return timeB - timeA;
+
+    // Final stable fallback: preserve backend order, but newest backend
+    // row is treated as the latest row.
+    return b._originalIndex - a._originalIndex;
+  })
+  .map(({ _originalIndex, ...row }) => row);
+
+setLedger(mapped);
+setLedgerView(mapped);
 
       let supplierName = "Unknown Supplier";
       const found = pending?.find((p) => p.supplier_code === code);
@@ -282,12 +330,30 @@ const mapped = (d.ledger || []).map((row) => {
 
   /* =========================
      AUTO DATE FILTER
+     NEWEST ENTRY -> TOP
   ========================== */
   useEffect(() => {
     let rows = [...ledger];
-    if (fromDate) rows = rows.filter((r) => new Date(r.date) >= new Date(fromDate));
-    if (toDate) rows = rows.filter((r) => new Date(r.date) <= new Date(toDate));
-    setLedgerView([...rows].reverse());
+
+    if (fromDate) {
+      const from = new Date(`${fromDate}T00:00:00`);
+      rows = rows.filter((r) => {
+        const d = new Date(r.date || r.entry_date || r.payment_date);
+        return !Number.isNaN(d.getTime()) && d >= from;
+      });
+    }
+
+    if (toDate) {
+      const to = new Date(`${toDate}T23:59:59.999`);
+      rows = rows.filter((r) => {
+        const d = new Date(r.date || r.entry_date || r.payment_date);
+        return !Number.isNaN(d.getTime()) && d <= to;
+      });
+    }
+
+    // IMPORTANT: Do NOT reverse here. ledger is already sorted
+    // newest -> oldest inside loadLedger().
+    setLedgerView(rows);
   }, [fromDate, toDate, ledger]);
 
   /* =========================
@@ -706,7 +772,8 @@ const mapped = (d.ledger || []).map((row) => {
   // Metrics computation for summary cards
   const totalDebit = ledgerView.reduce((acc, r) => acc + (Number(r.debit) || 0), 0);
   const totalCredit = ledgerView.reduce((acc, r) => acc + (Number(r.credit) || 0), 0);
-  const currentBal = ledger.length ? ledger[ledger.length - 1].balance : 0;
+  // ledger is newest -> oldest, therefore first row has the current balance.
+  const currentBal = ledger.length ? ledger[0].balance : 0;
 
   return (
     <div className="supplier-ledger-page">
@@ -1052,155 +1119,85 @@ const mapped = (d.ledger || []).map((row) => {
     </tr>
   ) : (
     ledgerView.map((r, i) => {
+      const currentType = (r.type || "").toLowerCase();
+      let badgeClass = "bg-primary";
+      if (currentType === "purchase") badgeClass = "bg-danger";
+      if (currentType === "payment") badgeClass = "bg-success";
+      if (currentType === "opening bal" || currentType === "opening_balance")
+        badgeClass = "bg-warning text-dark";
+      if (currentType === "adjustment") badgeClass = "bg-info text-dark";
+
+      let itemDetail = "-";
+      if (currentType === "purchase") {
+        itemDetail = r.detail || "Purchase Entry";
+      } else if (
+        currentType === "opening bal" ||
+        currentType === "opening_balance"
+      ) {
+        itemDetail = "🔑 Opening Balance Entry";
+      } else if (r.type === "Snapshot Opening") {
+        itemDetail = "📦 Archived Snapshot Balance";
+      } else {
+        itemDetail =
+          r.description || `${r.type} (${r.payment_method || ""})`;
+      }
+
       return (
-        <tr key={r.id || i}>
+        <tr key={i}>
           <td className="text-center fw-bold">{formatDate(r.date)}</td>
-          
-          {/* TYPE COLUMN WITH CUSTOM BADGES */}
-          <td className="text-center">
-            {(() => {
-              const rawType = String(r.type || "").toLowerCase();
-              
-              if (rawType.includes("payment") || rawType.includes("receipt")) {
-                return (
-                  <span
-                    className="badge fw-bold px-2 py-1"
-                    style={{
-                      fontSize: "10px",
-                      backgroundColor: "#d1fae5",
-                      color: "#047857",
-                      border: "1px solid #a7f3d0",
-                      borderRadius: "5px"
-                    }}
-                  >
-                    💵 PAYMENT
-                  </span>
-                );
-              }
-              
-              if (rawType.includes("adjust")) {
-                return (
-                  <span
-                    className="badge fw-bold px-2 py-1"
-                    style={{
-                      fontSize: "10px",
-                      backgroundColor: "#e0f2fe",
-                      color: "#0369a1",
-                      border: "1px solid #bae6fd",
-                      borderRadius: "5px"
-                    }}
-                  >
-                    ⚙️ ADJUSTMENT
-                  </span>
-                );
-              }
-
-if (rawType.includes("purchase") || rawType.includes("sale") || rawType.includes("invoice")) {
-  return (
-    <span
-      className="badge fw-bold px-2 py-1"
-      style={{
-        fontSize: "10px",
-        backgroundColor: "#dbeafe",
-        color: "#1d4ed8",
-        border: "1px solid #bfdbfe",
-        borderRadius: "5px"
-      }}
-    >
-      📄 PURCHASE
-    </span>
-  );
-}
-
-              if (rawType.includes("opening")) {
-                return (
-                  <span
-                    className="badge fw-bold px-2 py-1"
-                    style={{
-                      fontSize: "10px",
-                      backgroundColor: "#fef3c7",
-                      color: "#b45309",
-                      border: "1px solid #fde68a",
-                      borderRadius: "5px"
-                    }}
-                  >
-                    🔑 OPENING BALANCE
-                  </span>
-                );
-              }
-
-              return (
-                <span
-                  className="badge fw-bold px-2 py-1"
-                  style={{
-                    fontSize: "10px",
-                    backgroundColor: "#f3f4f6",
-                    color: "#374151",
-                    border: "1px solid #e5e7eb",
-                    borderRadius: "5px"
-                  }}
-                >
-                  {r.type || "-"}
-                </span>
-              );
-            })()}
+<td className="text-center">
+            <span className={`badge ${badgeClass} fw-semibold px-2 py-1`}>
+              {r.type}
+            </span>
           </td>
+<td className="text-center align-middle">
+  {r.ref_no && r.ref_no !== "-" ? (
+    (() => {
+      const str = String(r.ref_no).toUpperCase();
+      let badgeBg = "#f3e8ff";    
+      let badgeColor = "#6b21a8"; 
 
-          {/* REF NO COLUMN */}
-          <td className="text-center align-middle">
-            {r.ref_no && r.ref_no !== "-" ? (
-              (() => {
-                const str = String(r.ref_no).toUpperCase();
-                let badgeBg = "#f3e8ff";    
-                let badgeColor = "#6b21a8"; 
+      if (str.includes("HOT")) { 
+        badgeBg = "#ffedd5"; badgeColor = "#c2410c"; 
+      } else if (str.includes("PKG") || str.includes("BKG")) { 
+        badgeBg = "#ecfdf5"; badgeColor = "#047857"; 
+      } else if (str.includes("ZIY")) { 
+        badgeBg = "#fef3c7"; badgeColor = "#b45309"; 
+      } else if (str.includes("TIC") || str.includes("TKT")) { 
+        badgeBg = "#fae8ff"; badgeColor = "#86198f"; 
+      } else if (str.includes("VISA")) { 
+        badgeBg = "#ffe4e6"; badgeColor = "#be123c"; 
+      }
 
-                if (str.includes("HOT")) { 
-                  badgeBg = "#ffedd5"; badgeColor = "#c2410c"; 
-                } else if (str.includes("PKG") || str.includes("BKG")) { 
-                  badgeBg = "#ecfdf5"; badgeColor = "#047857"; 
-                } else if (str.includes("ZIY")) { 
-                  badgeBg = "#fef3c7"; badgeColor = "#b45309"; 
-                } else if (str.includes("TIC") || str.includes("TKT")) { 
-                  badgeBg = "#fae8ff"; badgeColor = "#86198f"; 
-                } else if (str.includes("VISA")) { 
-                  badgeBg = "#ffe4e6"; badgeColor = "#be123c"; 
-                }
-
-                return (
-                  <span
-                    onClick={() => showRefDetails(r)}
-                    className="badge fw-bold px-2 py-1"
-                    style={{
-                      fontSize: "10px",
-                      letterSpacing: "0.4px",
-                      backgroundColor: badgeBg,
-                      color: badgeColor,
-                      border: `1px solid ${badgeColor}30`,
-                      borderRadius: "5px",
-                      cursor: "pointer"
-                    }}
-                  >
-                    <span style={{ fontSize: "11px", marginRight: "3px" }}>
-                      {getCategoryIcon(r.ref_no || r.detail || r.description)}
-                    </span>
-                    {r.ref_no}
-                  </span>
-                );
-              })()
-            ) : (
-              <span className="text-muted small">-</span>
-            )}
-          </td>
-
-          {/* SUPPLIER NAME */}
+      return (
+        <span
+          onClick={() => showRefDetails(r)} // ✨ Click handler added
+          className="badge fw-bold px-2 py-1"
+          style={{
+            fontSize: "10px",
+            letterSpacing: "0.4px",
+            backgroundColor: badgeBg,
+            color: badgeColor,
+            border: `1px solid ${badgeColor}30`,
+            borderRadius: "5px",
+            cursor: "pointer" // ✨ Pointer cursor
+          }}
+        >
+          <span style={{ fontSize: "11px", marginRight: "3px" }}>
+            {getCategoryIcon(r.ref_no || r.detail || r.description)}
+          </span>
+          {r.ref_no}
+        </span>
+      );
+    })()
+  ) : (
+    <span className="text-muted small">-</span>
+  )}
+</td>
           <td className="fw-bold text-primary">
-            {r.supplier_name || r.supplier_code || "-"}
+            {currentType === "purchase" ? r.supplier_name : "-"}
           </td>
-
-          {/* ITEM DETAIL */}
-          <td className="fw-bold text-success">{r.detail || r.description || "-"}</td>
-
-          {/* METHOD */}
+          <td className="fw-bold text-success">{itemDetail}</td>
           <td className="text-center">
             {r.payment_method && r.payment_method !== "-" ? (
               <span
@@ -1216,8 +1213,6 @@ if (rawType.includes("purchase") || rawType.includes("sale") || rawType.includes
               <span className="text-muted">-</span>
             )}
           </td>
-
-          {/* DEBIT / CREDIT / BALANCE */}
           <td style={{ textAlign: "right", fontSize: "0.85rem" }} className="text-danger fw-bold">
             {normalizeZero(r.debit) > 0 ? fmtAmt(r.debit) : "-"}
           </td>
@@ -1227,8 +1222,6 @@ if (rawType.includes("purchase") || rawType.includes("sale") || rawType.includes
           <td style={{ textAlign: "right", fontSize: "0.85rem" }} className="fw-bold">
             {fmtAmt(r.balance)}
           </td>
-
-          {/* ACTIONS */}
           <td style={{ textAlign: "center" }}>
             {r.entry_type === "payment" && r.id && r.id !== 0 ? (
               <div className="d-flex gap-1 justify-content-center">
