@@ -219,76 +219,28 @@ export default function SupplierLedger({ onNavigate }) {
       setSnapshotDate(d.snapshotDate || null);
       setOpeningBalance(Number(d.openingBalance || 0));
 
-/* =========================================================
- * LEDGER ORDER: NEWEST / LATEST ENTRY MUST BE ON TOP
- * ---------------------------------------------------------
- * Backend se purchases/payments mixed order me aa sakte hain.
- * Sirf reverse() karna reliable nahi hai. Complete ledger ko
- * transaction date + created timestamp ke basis par DESC sort
- * karte hain, is liye latest/new entry hamesha sab se upar rahegi.
- * ========================================================= */
-const mapped = (d.ledger || [])
-  .map((row, originalIndex) => {
-    const debit = Math.round(normalizeZero(row.debit));
-    const credit = Math.round(normalizeZero(row.credit));
-    const balance = Math.round(normalizeZero(row.balance));
+const mapped = (d.ledger || []).map((row) => {
+  const debit = Math.round(normalizeZero(row.debit));
+  const credit = Math.round(normalizeZero(row.credit));
+  const balance = Math.round(normalizeZero(row.balance));
 
-    return {
-      ...row,
-      entry_type: row.entry_type,
-      id: row.id,
-      type: row.type,
-      detail: row.description || row.item || "Purchase Entry",
-      debit,
-      credit,
-      balance,
-      ref_no: row.ref_no || "-",
-      customer_name: row.customer_name || row.passenger_name || row.pax_name || "-",
-      _originalIndex: originalIndex,
-    };
-  })
-  .sort((a, b) => {
-    const getDateTime = (row) => {
-      const value =
-        row.created_at ||
-        row.updated_at ||
-        row.entry_timestamp ||
-        row.transaction_date ||
-        row.date ||
-        row.entry_date ||
-        row.payment_date;
+  return {
+    ...row,
+    entry_type: row.entry_type,
+    id: row.id,
+    type: row.type,
+    detail: row.description || row.item || "Purchase Entry",
+    debit,
+    credit,
+    balance,
+    ref_no: row.ref_no || "-",
+    // ✨ Customer name yahan ensure karein:
+    customer_name: row.customer_name || row.passenger_name || row.pax_name || "-"
+  };
+});
 
-      const time = value ? new Date(value).getTime() : 0;
-      return Number.isNaN(time) ? 0 : time;
-    };
-
-    // Primary: latest transaction/payment date first.
-    const dateA = new Date(
-      a.date || a.entry_date || a.payment_date || a.transaction_date || 0
-    ).getTime();
-    const dateB = new Date(
-      b.date || b.entry_date || b.payment_date || b.transaction_date || 0
-    ).getTime();
-
-    const safeDateA = Number.isNaN(dateA) ? 0 : dateA;
-    const safeDateB = Number.isNaN(dateB) ? 0 : dateB;
-
-    if (safeDateA !== safeDateB) return safeDateB - safeDateA;
-
-    // Same date: newly inserted record first.
-    const timeA = getDateTime(a);
-    const timeB = getDateTime(b);
-
-    if (timeA !== timeB) return timeB - timeA;
-
-    // Final stable fallback: preserve backend order, but newest backend
-    // row is treated as the latest row.
-    return b._originalIndex - a._originalIndex;
-  })
-  .map(({ _originalIndex, ...row }) => row);
-
-setLedger(mapped);
-setLedgerView(mapped);
+      setLedger(mapped);
+      setLedgerView(mapped);
 
       let supplierName = "Unknown Supplier";
       const found = pending?.find((p) => p.supplier_code === code);
@@ -330,30 +282,12 @@ setLedgerView(mapped);
 
   /* =========================
      AUTO DATE FILTER
-     NEWEST ENTRY -> TOP
   ========================== */
   useEffect(() => {
     let rows = [...ledger];
-
-    if (fromDate) {
-      const from = new Date(`${fromDate}T00:00:00`);
-      rows = rows.filter((r) => {
-        const d = new Date(r.date || r.entry_date || r.payment_date);
-        return !Number.isNaN(d.getTime()) && d >= from;
-      });
-    }
-
-    if (toDate) {
-      const to = new Date(`${toDate}T23:59:59.999`);
-      rows = rows.filter((r) => {
-        const d = new Date(r.date || r.entry_date || r.payment_date);
-        return !Number.isNaN(d.getTime()) && d <= to;
-      });
-    }
-
-    // IMPORTANT: Do NOT reverse here. ledger is already sorted
-    // newest -> oldest inside loadLedger().
-    setLedgerView(rows);
+    if (fromDate) rows = rows.filter((r) => new Date(r.date) >= new Date(fromDate));
+    if (toDate) rows = rows.filter((r) => new Date(r.date) <= new Date(toDate));
+    setLedgerView([...rows].reverse());
   }, [fromDate, toDate, ledger]);
 
   /* =========================
@@ -772,8 +706,7 @@ setLedgerView(mapped);
   // Metrics computation for summary cards
   const totalDebit = ledgerView.reduce((acc, r) => acc + (Number(r.debit) || 0), 0);
   const totalCredit = ledgerView.reduce((acc, r) => acc + (Number(r.credit) || 0), 0);
-  // ledger is newest -> oldest, therefore first row has the current balance.
-  const currentBal = ledger.length ? ledger[0].balance : 0;
+  const currentBal = ledger.length ? ledger[ledger.length - 1].balance : 0;
 
   return (
     <div className="supplier-ledger-page">
