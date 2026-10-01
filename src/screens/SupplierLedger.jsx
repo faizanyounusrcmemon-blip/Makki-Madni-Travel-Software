@@ -123,6 +123,7 @@ export default function SupplierLedger({ onNavigate }) {
   const handleExportExcel = exportUtils?.handleExportExcel || exportUtils?.exportExcel;
 
   const [supplierCode, setSupplierCode] = useState("");
+  const [supplierName, setSupplierName] = useState("");
   const [ledger, setLedger] = useState([]);
   const [pending, setPending] = useState([]);
   const [amountRaw, setAmountRaw] = useState(0);
@@ -159,20 +160,28 @@ export default function SupplierLedger({ onNavigate }) {
   /* =========================
      LOAD PENDING / PARTIAL
   ========================== */
-  const loadPendingAlways = async () => {
+const loadPendingAlways = async () => {
     try {
       const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/supplier-ledger/pending`);
       const d = await res.json();
       if (d.success) {
         const clean = (d.pending || [])
-          .map((p) => ({
-            ...p,
-            pending_amount: normalizeZero(p.pending_amount),
-            total_purchase: normalizeZero(p.total_purchase),
-            total_paid: normalizeZero(p.total_paid),
-          }))
+          .map((p) => {
+            // ✨ Amounts ko exact round number banayein:
+            const pending_amount = Math.round(normalizeZero(p.pending_amount));
+            const total_purchase = Math.round(normalizeZero(p.total_purchase));
+            const total_paid = Math.round(normalizeZero(p.total_paid));
+
+            return {
+              ...p,
+              pending_amount,
+              total_purchase,
+              total_paid,
+            };
+          })
           .filter((p) => p.status !== "PAID" && Math.abs(p.pending_amount) > 0.5)
           .sort((a, b) => b.pending_amount - a.pending_amount);
+          
         setPending(clean);
       }
     } catch (e) {
@@ -242,33 +251,34 @@ const mapped = (d.ledger || []).map((row) => {
       setLedger(mapped);
       setLedgerView(mapped);
 
-      let supplierName = "Unknown Supplier";
-      const found = pending?.find((p) => p.supplier_code === code);
-      if (found?.supplier_name) {
-        supplierName = found.supplier_name;
-      }
+// Backend se aye ledger rows me se supplier_name nikalna, fallback pending list
+const loadedName = d.ledger?.find((r) => r.supplier_name)?.supplier_name 
+  || pending?.find((p) => p.supplier_code === code)?.supplier_name 
+  || "Unknown Supplier";
+
+setSupplierName(loadedName);
 
       Swal.close();
 
-      Swal.fire({
-        width: "360px",
-        icon: "success",
-        title: "Ledger Loaded Successfully",
-        html: `
-          <div style="text-align:left;font-size:14px">
-            <div style="background:#f8f9fa; padding:10px; border-radius:8px; margin-top:5px;">
-              <b>Supplier Code:</b><br/>
-              <span style="color:#0d6efd">${code}</span>
-              <hr style="margin:8px 0"/>
-              <b>Supplier Name:</b><br/>
-              <span style="color:#198754">${supplierName}</span>
-            </div>
-          </div>
-        `,
-        showConfirmButton: true,
-        confirmButtonText: "OK",
-        confirmButtonColor: "#0d6efd",
-      });
+Swal.fire({
+  width: "360px",
+  icon: "success",
+  title: "Ledger Loaded Successfully",
+  html: `
+    <div style="text-align:left;font-size:14px">
+      <div style="background:#f8f9fa; padding:10px; border-radius:8px; margin-top:5px;">
+        <b>Supplier Code:</b><br/>
+        <span style="color:#0d6efd">${code}</span>
+        <hr style="margin:8px 0"/>
+        <b>Supplier Name:</b><br/>
+        <span style="color:#198754">${loadedName}</span>
+      </div>
+    </div>
+  `,
+  showConfirmButton: true,
+  confirmButtonText: "OK",
+  confirmButtonColor: "#0d6efd",
+});
     } catch (e) {
       console.error("Ledger load error:", e);
       Swal.close();
@@ -657,30 +667,29 @@ const mapped = (d.ledger || []).map((row) => {
   };
 
   /* EXPORT FUNCTIONS */
-  const exportPDF = () => {
-    if (!supplierCode || ledger.length === 0) {
-      return Swal.fire({ width: "300px", icon: "warning", text: "Please load a supplier first!" });
-    }
+const exportPDF = () => {
+  if (!supplierCode || ledger.length === 0) {
+    return Swal.fire({ width: "300px", icon: "warning", text: "Please load a supplier first!" });
+  }
 
-    if (typeof handleExportPDF !== "function") {
-      return Swal.fire({ width: "300px", icon: "error", text: "PDF Export Hook Function Error!" });
-    }
+  if (typeof handleExportPDF !== "function") {
+    return Swal.fire({ width: "300px", icon: "error", text: "PDF Export Hook Function Error!" });
+  }
 
-    const currentSupplier = pending.find((p) => p.supplier_code === supplierCode);
-    const supplierName = currentSupplier ? currentSupplier.supplier_name : "Supplier";
+  const sName = supplierName || "Supplier";
 
-    handleExportPDF({
-      code: supplierCode,
-      name: supplierName,
-      fromDate: fromDate,
-      toDate: toDate,
-      ledgerData: ledgerView,
-      title: "SUPPLIER LEDGER STATEMENT",
-      filePrefix: `Supplier_Ledger_${supplierName.replace(/\s+/g, "_")}`,
-    });
-  };
+  handleExportPDF({
+    code: supplierCode,
+    name: sName,
+    fromDate: fromDate,
+    toDate: toDate,
+    ledgerData: ledgerView,
+    title: "SUPPLIER LEDGER STATEMENT",
+    filePrefix: `Supplier_Ledger_${sName.replace(/\s+/g, "_")}`,
+  });
+};
 
-  const exportExcel = () => {
+const exportExcel = () => {
     if (!supplierCode || ledger.length === 0) {
       return Swal.fire({ width: "300px", icon: "warning", text: "Please load a supplier first!" });
     }
@@ -689,17 +698,17 @@ const mapped = (d.ledger || []).map((row) => {
       return Swal.fire({ width: "300px", icon: "error", text: "Excel Export Hook Function Error!" });
     }
 
-    const currentSupplier = pending.find((p) => p.supplier_code === supplierCode);
-    const supplierName = currentSupplier ? currentSupplier.supplier_name : "Supplier";
+    // Direct state se name lein, fallback ke liye "Supplier"
+    const sName = supplierName || "Supplier";
 
     handleExportExcel({
       code: supplierCode,
-      name: supplierName,
+      name: sName,
       fromDate: fromDate,
       toDate: toDate,
       ledgerData: ledgerView,
       title: "SUPPLIER FINANCIAL LEDGER",
-      filePrefix: `Supplier_Ledger_${supplierName.replace(/\s+/g, "_")}`,
+      filePrefix: `Supplier_Ledger_${sName.replace(/\s+/g, "_")}`,
     });
   };
 
@@ -829,9 +838,9 @@ const mapped = (d.ledger || []).map((row) => {
                         <div className="fw-bold text-truncate text-primary" style={{ fontSize: "0.8rem" }}>
                           {p.supplier_name || "-"}
                         </div>
-                        <div className="text-danger fw-bold mt-1" style={{ fontSize: "0.75rem" }}>
-                          Rs {fmtAmt(p.pending_amount)}
-                        </div>
+<div className="text-danger fw-bold mt-1" style={{ fontSize: "0.75rem" }}>
+  Rs {fmtAmt(Math.round(p.pending_amount))}
+</div>
                       </div>
                     ))}
                   </div>
@@ -1021,11 +1030,16 @@ const mapped = (d.ledger || []).map((row) => {
 
             {/* Data Table */}
             <div ref={pdfRef} className="table-card">
-              <div className="table-head">
-                <div>
-                  <strong>Ledger Records for {supplierCode || "Selected Supplier"}</strong>
-                </div>
-              </div>
+<div className="table-head d-flex justify-content-between align-items-center">
+  <div>
+    <strong>Ledger Records for {supplierCode || "Selected Supplier"}</strong>
+  </div>
+  {supplierName && (
+    <div className="fw-bold text-primary fs-6">
+      👤 {supplierName}
+    </div>
+  )}
+</div>
 
               <div className="table-responsive">
                 <table className="report-table">
