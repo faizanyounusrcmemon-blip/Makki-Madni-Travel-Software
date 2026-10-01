@@ -365,27 +365,31 @@ export default function DeletedReports({ onNavigate }) {
 
   const fmtPKR = (v) => Number(v || 0).toLocaleString("en-PK");
 
-  const typeIcon = (type) => {
-    const map = {
-      PACKAGE: "📦",
-      PACKAGES: "📦",
-      HOTEL: "🏨",
-      HOTELS: "🏨",
-      TICKETING: "✈️",
-      TRANSPORT: "🚐",
-      ZIYARAT: "🕌",
-      VISA: "🛂",
-      CARD: "💳",
-      GROUPS: "👥",
-      PURCHASE: "🛒",
-      SUPPLIER: "🏢",
-      CUSTOMER: "👤",
-    };
-    return map[type?.toUpperCase()] || "📄";
+const typeIcon = (type) => {
+  const map = {
+    PACKAGE: "📦",
+    PACKAGES: "📦",
+    HOTEL: "🏨",
+    HOTELS: "🏨",
+    TICKETING: "✈️",
+    TRANSPORT: "🚐",
+    ZIYARAT: "🕌",
+    VISA: "🛂",
+    CARD: "💳",
+    GROUPS: "👥",
+    PURCHASE: "🛒",
+    SUPPLIER: "🏢",
+    CUSTOMER: "👤",
+    USER: "👤",
+    BANK: "🏦",
   };
+  return map[type?.toUpperCase()] || "📄";
+};
 
-  const isSupplier = (t) => t?.toUpperCase() === "SUPPLIER";
-  const isCustomer = (t) => t?.toUpperCase() === "CUSTOMER";
+const isSupplier = (t) => t?.toUpperCase() === "SUPPLIER";
+const isCustomer = (t) => t?.toUpperCase() === "CUSTOMER";
+const isUser = (t) => t?.toUpperCase() === "USER";
+const isBank = (t) => t?.toUpperCase() === "BANK";
 
   return (
     <div
@@ -480,25 +484,27 @@ export default function DeletedReports({ onNavigate }) {
           </div>
 
           <div className="col-lg-3 col-md-6">
-            <select
-              className="form-select border-light-subtle bg-light shadow-none"
-              style={{ fontSize: "13px", padding: "10px 14px", borderRadius: "10px" }}
-              value={category}
-              onChange={(e) => setCategory(e.target.value)}
-            >
-              <option value="ALL">All Services</option>
-              <option value="PACKAGE">Packages</option>
-              <option value="HOTEL">Hotels</option>
-              <option value="TICKETING">Ticketing</option>
-              <option value="TRANSPORT">Transport</option>
-              <option value="ZIYARAT">Ziyarat</option>
-              <option value="VISA">Visa</option>
-              <option value="CARD">Card</option>
-              <option value="GROUPS">Groups</option>
-              <option value="PURCHASE">Purchase</option>
-              <option value="SUPPLIER">Supplier</option>
-              <option value="CUSTOMER">Customer</option>
-            </select>
+<select
+  className="form-select border-light-subtle bg-light shadow-none"
+  style={{ fontSize: "13px", padding: "10px 14px", borderRadius: "10px" }}
+  value={category}
+  onChange={(e) => setCategory(e.target.value)}
+>
+  <option value="ALL">All Services</option>
+  <option value="PACKAGE">Packages</option>
+  <option value="HOTEL">Hotels</option>
+  <option value="TICKETING">Ticketing</option>
+  <option value="TRANSPORT">Transport</option>
+  <option value="ZIYARAT">Ziyarat</option>
+  <option value="VISA">Visa</option>
+  <option value="CARD">Card</option>
+  <option value="GROUPS">Groups</option>
+  <option value="PURCHASE">Purchase</option>
+  <option value="SUPPLIER">Supplier</option>
+  <option value="CUSTOMER">Customer</option>
+  <option value="USER">Users</option>
+  <option value="BANK">Bank Accounts</option>
+</select>
           </div>
 
           <div className="col-lg-2 col-md-3">
@@ -636,17 +642,17 @@ export default function DeletedReports({ onNavigate }) {
                         }}
                       >
                         {/* VIEW BUTTON */}
-                        {!isSupplier(r.type) && !isCustomer(r.type) ? (
-                          <button
-                            className="btn btn-sm btn-outline-primary rounded-pill px-1 py-1 fw-semibold w-100"
-                            style={{ fontSize: "11px", whiteSpace: "nowrap" }}
-                            onClick={() => handleView(r.type, r.ref_no)}
-                          >
-                            👁️ View
-                          </button>
-                        ) : (
-                          <div></div>
-                        )}
+{!isSupplier(r.type) && !isCustomer(r.type) && !isUser(r.type) && !isBank(r.type) ? (
+  <button
+    className="btn btn-sm btn-outline-primary rounded-pill px-1 py-1 fw-semibold w-100"
+    style={{ fontSize: "11px", whiteSpace: "nowrap" }}
+    onClick={() => handleView(r.type, r.ref_no)}
+  >
+    👁️ View
+  </button>
+) : (
+  <div></div>
+)}
 
                         {/* RESTORE BUTTON */}
                         <button

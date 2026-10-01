@@ -621,19 +621,19 @@ export default function BankProfiles({ onNavigate }) {
                         <strong className="text-primary">{b.account_number}</strong>
                       </td>
                       <td>
-                        <span
-                          style={{
-                            padding: "4px 10px",
-                            borderRadius: "12px",
-                            fontSize: "11px",
-                            fontWeight: "800",
-                            background: b.status === "Active" ? "#d1fae5" : "#fee2e2",
-                            color: b.status === "Active" ? "#047857" : "#dc2626",
-                            border: `1px solid ${b.status === "Active" ? "#a7f3d0" : "#fca5a5"}`,
-                          }}
-                        >
-                          {b.status}
-                        </span>
+<span
+  style={{
+    padding: "4px 10px",
+    borderRadius: "12px",
+    fontSize: "11px",
+    fontWeight: "800",
+    background: b.status === "Active" ? "#d1fae5" : "#fef3c7",
+    color: b.status === "Active" ? "#047857" : "#b45309",
+    border: `1px solid ${b.status === "Active" ? "#a7f3d0" : "#fde68a"}`,
+  }}
+>
+  {b.status}
+</span>
                       </td>
                       <td style={{ textAlign: "right" }}>
                         <div className="action-buttons" style={{ justifyContent: "flex-end" }}>

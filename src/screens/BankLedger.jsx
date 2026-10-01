@@ -645,29 +645,32 @@ export default function BankLedger({ onNavigate }) {
                 <span className="badge bg-light text-primary">{profiles.length}</span>
               </div>
               <div className="p-1" style={{ maxHeight: "72vh", overflowY: "auto" }}>
-                {profiles.map((p) => (
-                  <div
-                    key={p.id}
-                    onClick={() => {
-                      setSelectedProfile(p.id);
-                      setBankProfileId(p.id);
-                    }}
-                    className="list-group-item list-group-item-action p-2 mb-1 rounded border-start border-3"
-                    style={{
-                      cursor: "pointer",
-                      borderStartColor: String(selectedProfile) === String(p.id) ? "#0d6efd" : "#6c757d",
-                      backgroundColor: String(selectedProfile) === String(p.id) ? "#e6f0ff" : "#fff",
-                    }}
-                  >
-                    <div className="fw-bold text-truncate text-primary" style={{ fontSize: "0.8rem" }}>
-                      {p.bank_name}
-                    </div>
-                    <div className="text-muted fw-semibold mt-1" style={{ fontSize: "0.75rem" }}>
-                      {p.account_title ? `${p.account_title} - ` : ""}
-                      {p.account_number}
-                    </div>
-                  </div>
-                ))}
+
+{profiles
+  .filter((p) => !p.is_deleted && p.status !== 'inactive') // 👈 Soft-deleted aur inactive profiles hide karne ke liye
+  .map((p) => (
+    <div
+      key={p.id}
+      onClick={() => {
+        setSelectedProfile(p.id);
+        setBankProfileId(p.id);
+      }}
+      className="list-group-item list-group-item-action p-2 mb-1 rounded border-start border-3"
+      style={{
+        cursor: "pointer",
+        borderStartColor: String(selectedProfile) === String(p.id) ? "#0d6efd" : "#6c757d",
+        backgroundColor: String(selectedProfile) === String(p.id) ? "#e6f0ff" : "#fff",
+      }}
+    >
+      <div className="fw-bold text-truncate text-primary" style={{ fontSize: "0.8rem" }}>
+        {p.bank_name}
+      </div>
+      <div className="text-muted fw-semibold mt-1" style={{ fontSize: "0.75rem" }}>
+        {p.account_title ? `${p.account_title} - ` : ""}
+        {p.account_number}
+      </div>
+    </div>
+  ))}
               </div>
             </div>
           </div>
@@ -746,18 +749,20 @@ export default function BankLedger({ onNavigate }) {
                 </div>
                 <div className="col-md-3">
                   <div className="filter-label">Bank Profile</div>
-                  <select
-                    className="form-select form-select-sm fw-bold"
-                    value={bankProfileId || selectedProfile}
-                    onChange={(e) => setBankProfileId(e.target.value)}
-                  >
-                    <option value="">Select Bank Profile</option>
-                    {profiles.map((p) => (
-                      <option key={p.id} value={p.id}>
-                        {p.bank_name} ({p.account_number})
-                      </option>
-                    ))}
-                  </select>
+<select
+  className="form-select form-select-sm fw-bold"
+  value={bankProfileId || selectedProfile}
+  onChange={(e) => setBankProfileId(e.target.value)}
+>
+  <option value="">Select Bank Profile</option>
+  {profiles
+    .filter((p) => !p.is_deleted && p.status !== 'inactive') // 👈 Inactive/Deleted profiles filter
+    .map((p) => (
+      <option key={p.id} value={p.id}>
+        {p.bank_name} ({p.account_number})
+      </option>
+    ))}
+</select>
                 </div>
                 <div className="col-md-2">
                   <div className="filter-label">Type</div>

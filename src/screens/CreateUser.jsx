@@ -397,35 +397,25 @@ export default function CreateUser({ onNavigate }) {
      DELETE USER
   ========================================================= */
   const deleteUser = async (u) => {
-    const confirmDelete = await Swal.fire({
-      width: "390px",
-      padding: "0",
-      icon: "warning",
-      title: "Delete User?",
-      html: `
-        <div style="
-          font-size:13px;
-          color:#334155;
-          line-height:1.6;
-          font-weight:600;
-        ">
-          You are about to delete
-          <strong style="color:#0f172a;">
-            ${u.name || u.username}
-          </strong>
-          <br/>
-          This action requires security verification.
-        </div>
-      `,
-      showCancelButton: true,
-      confirmButtonText: "🗑️ Delete User",
-      cancelButtonText: "Keep User",
-      confirmButtonColor: "#dc2626",
-      cancelButtonColor: "#64748b",
-      customClass: {
-        popup: "rounded-4 shadow-lg border-0",
-      },
-    });
+// CreateUser.jsx me deleteUser function ka popup update
+const confirmDelete = await Swal.fire({
+  width: "390px",
+  padding: "0",
+  icon: "warning",
+  title: "Deactivate & Remove User?",
+  html: `
+    <div style="font-size:13px; color:#334155; line-height:1.6; font-weight:600;">
+      You are about to remove <strong style="color:#0f172a;">${u.name || u.username}</strong>.
+      <br/>
+      This account will be deactivated and hidden from active user list.
+    </div>
+  `,
+  showCancelButton: true,
+  confirmButtonText: "🗑️ Remove User",
+  cancelButtonText: "Keep User",
+  confirmButtonColor: "#dc2626",
+  cancelButtonColor: "#64748b"
+});
 
     if (!confirmDelete.isConfirmed) return;
 
