@@ -30,19 +30,29 @@ export default function CustomizHotelVoucher({ onNavigate }) {
     setVoucherData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleBookingChange = (index, field, value) => {
-    const updatedBookings = [...voucherData.bookings];
-    updatedBookings[index][field] = value;
-    setVoucherData((prev) => ({ ...prev, bookings: updatedBookings }));
-  };
-
+  // ✅ Add Row Function Added
   const addBookingRow = () => {
     setVoucherData((prev) => ({
       ...prev,
-      bookings: [...prev.bookings, { sNo: (prev.bookings.length + 1).toString(), hotelName: "", address: "", roomType: "", checkIn: "", checkOut: "", nights: "", noOfRooms: "", bookingRef: "", contactNo: "" }]
+      bookings: [
+        ...prev.bookings,
+        {
+          sNo: (prev.bookings.length + 1).toString(),
+          hotelName: "",
+          address: "",
+          roomType: "",
+          checkIn: "",
+          checkOut: "",
+          nights: "",
+          noOfRooms: "",
+          bookingRef: "",
+          contactNo: ""
+        }
+      ]
     }));
   };
 
+  // ✅ Delete Row Function Added
   const deleteBookingRow = (index) => {
     if (voucherData.bookings.length === 1) return;
     const updatedBookings = voucherData.bookings
@@ -51,100 +61,135 @@ export default function CustomizHotelVoucher({ onNavigate }) {
     setVoucherData((prev) => ({ ...prev, bookings: updatedBookings }));
   };
 
-  const handleDownloadPDF = async () => {
+  // ✅ Updated handleBookingChange with proper Date diff
+  const handleBookingChange = (index, field, value) => {
+    const updatedBookings = [...voucherData.bookings];
+    updatedBookings[index][field] = value;
+
+    if (field === "checkIn" || field === "checkOut") {
+      const cIn = updatedBookings[index].checkIn;
+      const cOut = updatedBookings[index].checkOut;
+
+      if (cIn && cOut) {
+        // Safe Date Parsing without timezone offset issue
+        const [y1, m1, d1] = cIn.split("-").map(Number);
+        const [y2, m2, d2] = cOut.split("-").map(Number);
+
+        const date1 = new Date(y1, m1 - 1, d1);
+        const date2 = new Date(y2, m2 - 1, d2);
+
+        const diffTime = date2.getTime() - date1.getTime();
+        const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
+
+        if (diffDays > 0) {
+          updatedBookings[index].nights = `${diffDays} ${diffDays === 1 ? "Night" : "Nights"}`;
+        } else {
+          updatedBookings[index].nights = "0 Nights";
+        }
+      }
+    }
+
+    setVoucherData((prev) => ({ ...prev, bookings: updatedBookings }));
+  };
+
+const handleDownloadPDF = async () => {
     const originalElement = document.getElementById("hotel-voucher-print-area");
     if (!originalElement) return;
 
     setIsGeneratingPDF(true);
-    
-    // 1. Element ka deep clone banayein
-    const clonedElement = originalElement.cloneNode(true);
-    
-    // 2. Clone me se buttons aur 'no-print' items ko remove karein
-    const noPrintElements = clonedElement.querySelectorAll('.no-print');
-    noPrintElements.forEach(el => el.remove());
 
-    // 3. Inputs/textareas ko reliable spans se replace karein
-    clonedElement.querySelectorAll('input, textarea').forEach(input => {
+    // 1. Deep Clone
+    const clonedElement = originalElement.cloneNode(true);
+
+    // 2. Remove no-print items
+    const noPrintElements = clonedElement.querySelectorAll(".no-print");
+    noPrintElements.forEach((el) => el.remove());
+
+    // 3. Inputs & Textareas replace with formatted span text
+    clonedElement.querySelectorAll("input, textarea").forEach((input) => {
       const parent = input.parentNode;
-      const textNode = document.createElement('span');
-      
-      if (input.type === 'date' && input.getAttribute('data-date')) {
-        textNode.innerText = input.getAttribute('data-date');
+      const textNode = document.createElement("span");
+
+      if (input.type === "date" && input.getAttribute("data-date")) {
+        textNode.innerText = input.getAttribute("data-date");
       } else {
-        textNode.innerText = input.value || input.placeholder || '';
+        textNode.innerText = input.value || input.placeholder || "";
       }
 
-      textNode.style.fontSize = window.getComputedStyle(input).fontSize || '13px';
-      textNode.style.fontWeight = 'bold';
-      textNode.style.display = 'inline-block';
-      textNode.style.minWidth = '20px';
-      textNode.style.minHeight = '18px';
-      textNode.style.padding = '2px 4px';
+      textNode.style.fontSize = window.getComputedStyle(input).fontSize || "12px";
+      textNode.style.fontWeight = "bold";
+      textNode.style.display = "inline-block";
+      textNode.style.minWidth = "20px";
+      textNode.style.minHeight = "18px";
+      textNode.style.padding = "2px 4px";
+      textNode.style.wordBreak = "break-word";
+      textNode.style.whiteSpace = "pre-wrap";
       parent.replaceChild(textNode, input);
     });
 
-    // 4. Logo aur images par crossOrigin attribute lagayein aur unke load hone ka wait karein
+    // 4. Handle Images
     const images = clonedElement.querySelectorAll("img");
-    images.forEach(img => {
-      img.setAttribute("crossOrigin", "anonymous");
-    });
+    images.forEach((img) => img.setAttribute("crossOrigin", "anonymous"));
 
     await Promise.all(
-      Array.from(images).map(img => {
+      Array.from(images).map((img) => {
         if (img.complete && img.naturalWidth > 0) return Promise.resolve();
-        return new Promise(resolve => { 
-          img.onload = resolve; 
-          img.onerror = resolve; 
+        return new Promise((resolve) => {
+          img.onload = resolve;
+          img.onerror = resolve;
         });
       })
     );
 
-    // 5. Jin canvases ka size 0 hai unhe clone se saaf karein taake createPattern crash na ho
+    // 5. Remove zero-size canvases
     const canvases = clonedElement.querySelectorAll("canvas");
-    canvases.forEach(c => {
-      if (c.width === 0 || c.height === 0) {
-        c.remove();
-      }
+    canvases.forEach((c) => {
+      if (c.width === 0 || c.height === 0) c.remove();
     });
 
-    // 6. Clone ko layout rendering ke liye temporary append karein
-    clonedElement.style.position = 'fixed';
-    clonedElement.style.left = '-9999px';
-    clonedElement.style.top = '0';
-    clonedElement.style.width = '1000px'; 
+    // 6. Temporary positioning for accurate canvas calculation
+    clonedElement.style.position = "absolute";
+    clonedElement.style.left = "-9999px";
+    clonedElement.style.top = "0";
+    clonedElement.style.width = "800px"; // Clean A4 container width
+    clonedElement.style.height = "auto";
+    clonedElement.style.padding = "25px";
+    clonedElement.style.backgroundColor = "#ffffff";
     document.body.appendChild(clonedElement);
 
     try {
-      // 7. Aapki customized settings ke sath html2canvas call
       const canvas = await html2canvas(clonedElement, {
         scale: 2,
         useCORS: true,
         allowTaint: false,
-        foreignObjectRendering: false,
         backgroundColor: "#ffffff",
         logging: false,
         imageTimeout: 0,
-        removeContainer: true
+        windowWidth: 1024,
       });
-      
-      const imgData = canvas.toDataURL("image/jpeg", 0.95);
+
       const pdf = new jsPDF("p", "mm", "a4");
-      
-      const imgWidth = 210 - (12 * 2);
-      const pageHeight = 295;
+      const pdfWidth = pdf.internal.pageSize.getWidth(); // 210mm
+      const pdfHeight = pdf.internal.pageSize.getHeight(); // 297mm
+
+      const imgWidth = pdfWidth - 20; // 10mm margins on left/right
       const imgHeight = (canvas.height * imgWidth) / canvas.width;
+
       let heightLeft = imgHeight;
-      let position = 12;
+      let position = 10; // Top margin
 
-      pdf.addImage(imgData, "JPEG", 12, position, imgWidth, imgHeight);
-      heightLeft -= pageHeight;
+      const imgData = canvas.toDataURL("image/jpeg", 0.98);
 
-      while (heightLeft >= 0) {
-        position = heightLeft - imgHeight + 12;
+      // Page 1
+      pdf.addImage(imgData, "JPEG", 10, position, imgWidth, imgHeight);
+      heightLeft -= pdfHeight - 20;
+
+      // Multi-page auto slice if booking blocks extend past page 1
+      while (heightLeft > 0) {
+        position = heightLeft - imgHeight + 10;
         pdf.addPage();
-        pdf.addImage(imgData, "JPEG", 12, position, imgWidth, imgHeight);
-        heightLeft -= pageHeight;
+        pdf.addImage(imgData, "JPEG", 10, position, imgWidth, imgHeight);
+        heightLeft -= pdfHeight - 20;
       }
 
       pdf.save(`Hotel-Voucher-${voucherData.voucherNo || "Draft"}.pdf`);
@@ -206,7 +251,16 @@ export default function CustomizHotelVoucher({ onNavigate }) {
                 <div style={styles.fieldBox}><label style={styles.fieldLabel}>Room Type</label><input type="text" value={booking.roomType} onChange={(e) => handleBookingChange(index, "roomType", e.target.value)} style={styles.blockInput} placeholder="e.g. QUAINT (R.O)" /></div>
                 <div style={styles.fieldBox}><label style={styles.fieldLabel}>Check-In Date</label><input type="date" value={booking.checkIn} onChange={(e) => handleBookingChange(index, "checkIn", e.target.value)} data-date={formatCustomDate(booking.checkIn)} className="custom-date-input" style={styles.blockInputDate} /></div>
                 <div style={styles.fieldBox}><label style={styles.fieldLabel}>Check-Out Date</label><input type="date" value={booking.checkOut} onChange={(e) => handleBookingChange(index, "checkOut", e.target.value)} data-date={formatCustomDate(booking.checkOut)} className="custom-date-input" style={styles.blockInputDate} /></div>
-                <div style={styles.fieldBox}><label style={styles.fieldLabel}>Nights</label><input type="text" value={booking.nights} onChange={(e) => handleBookingChange(index, "nights", e.target.value)} style={styles.blockInput} placeholder="e.g. 8 Nights" /></div>
+                <div style={styles.fieldBox}>
+                  <label style={styles.fieldLabel}>Nights</label>
+                  <input 
+                    type="text" 
+                    value={booking.nights} 
+                    onChange={(e) => handleBookingChange(index, "nights", e.target.value)} 
+                    style={styles.blockInput} 
+                    placeholder="Auto-calculated" 
+                  />
+                </div>
                 <div style={styles.fieldBox}><label style={styles.fieldLabel}>No of Rooms</label><input type="text" value={booking.noOfRooms} onChange={(e) => handleBookingChange(index, "noOfRooms", e.target.value)} style={styles.blockInput} placeholder="No of Rooms" /></div>
                 <div style={styles.fieldBox}><label style={styles.fieldLabel}>Booking Ref No</label><input type="text" value={booking.bookingRef} onChange={(e) => handleBookingChange(index, "bookingRef", e.target.value)} style={styles.blockInput} placeholder="Ref Number" /></div>
                 <div style={styles.fieldBox}><label style={styles.fieldLabel}>Hotel Address / Contact</label><textarea value={booking.address} onChange={(e) => handleBookingChange(index, "address", e.target.value)} style={styles.blockTextarea} placeholder="Address & Contact info..." rows={2} /></div>
