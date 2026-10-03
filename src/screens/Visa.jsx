@@ -71,6 +71,7 @@ export default function Visa({ onNavigate }) {
 
   // ⚡ Separated Customer States
   const [customerName, setCustomerName] = useState("");
+  const [subCustomerName, setSubCustomerName] = useState("");
   const [customerCode, setCustomerCode] = useState("");
   const [savedCustomers, setSavedCustomers] = useState([]);
   const [showDropdown, setShowDropdown] = useState(false);
@@ -177,7 +178,8 @@ export default function Visa({ onNavigate }) {
 
       // 🔹 Load data
       setRefNo(d.ref_no);
-      setCustomerName(d.customer_name);
+      setCustomerName(d.customer_name || "");
+      setSubCustomerName(d.sub_customer_name || "");
       setCustomerCode(d.customer_code || "");
 
       // Sync UI search query with customer code
@@ -243,6 +245,7 @@ export default function Visa({ onNavigate }) {
       ref_no: refNo || null,
       customer_code: customerCode || null,
       customer_name: customerName,
+      sub_customer_name: subCustomerName || null,
       booking_date: bookingDate,
       rows,
       pkr_rate: pkrRate,
@@ -269,7 +272,8 @@ export default function Visa({ onNavigate }) {
           html: `
             <div style="text-align:left">
               <b>Ref#:</b> ${data.ref_no}<br/>
-              <b>Customer:</b> ${customerName} ${customerCode ? `(${customerCode})` : "(Walk-In)"}
+              <b>Customer:</b> ${customerName} ${customerCode ? `(${customerCode})` : "(Walk-In)"}<br/>
+              ${subCustomerName ? `<b>Sub Customer:</b> ${subCustomerName}` : ''}
             </div>
           `
         });
@@ -352,7 +356,7 @@ export default function Visa({ onNavigate }) {
           />
           <button className="btn btn-warning btn-sm" onClick={loadVisa}>🔄 Load / Edit</button>
           
-{/* 📄 Export PDF (With Uplift Effect) */}
+          {/* 📄 Export PDF */}
           <button
             className="btn fw-bold text-white shadow"
             style={{
@@ -375,7 +379,7 @@ export default function Visa({ onNavigate }) {
             📄 Export PDF
           </button>
 
-          {/* 🖨️ Print (With Uplift Effect) */}
+          {/* 🖨️ Print */}
           <button
             className="btn fw-bold text-white shadow"
             style={{
@@ -414,12 +418,12 @@ export default function Visa({ onNavigate }) {
             />
           </div>
 
-          <div className="col-md-4" ref={dropdownRef} style={{ position: "relative" }}>
+          <div className="col-md-3" ref={dropdownRef} style={{ position: "relative" }}>
             <label className="fw-bold mb-1 text-primary">🔍 Select Registered Customer</label>
             <div className="input-group input-group-sm no-print">
               <input
                 className="form-control"
-                placeholder="Type code or name to search..."
+                placeholder="Type code or name..."
                 value={searchQuery}
                 onFocus={() => setShowDropdown(true)}
                 onChange={(e) => {
@@ -435,6 +439,7 @@ export default function Visa({ onNavigate }) {
                     setSearchQuery("");
                     setCustomerCode("");
                     setCustomerName("");
+                    setSubCustomerName("");
                   }}
                 >
                   ✕
@@ -482,12 +487,12 @@ export default function Visa({ onNavigate }) {
             <small className="text-muted d-block mt-1 no-print">Use ONLY for registered profiles</small>
           </div>
 
-          <div className="col-md-3">
+          <div className="col-md-2.5" style={{ flex: "1" }}>
             <label className="fw-bold mb-1 text-dark">👤 Customer Name</label>
             <input
               type="text"
               className="form-control form-control-sm"
-              placeholder="Enter customer name manually..."
+              placeholder="Customer name..."
               value={customerName}
               onChange={(e) => {
                 setCustomerName(e.target.value);
@@ -510,7 +515,20 @@ export default function Visa({ onNavigate }) {
             )}
           </div>
 
-          <div className="col-md-3">
+  {/* FIELD 4: SUB / END CUSTOMER NAME (2 cols) */}
+  <div className="col-md-2">
+    <label className="fw-bold mb-1 text-dark">👥 Sub Customer</label>
+    <input
+      type="text"
+      className="form-control form-control-sm"
+      placeholder="Passenger / Client..."
+      value={subCustomerName}
+      onChange={(e) => setSubCustomerName(e.target.value)}
+    />
+    <small className="text-muted d-block mt-1">End client / Pax</small>
+  </div>
+
+          <div className="col-md-2">
             <label className="fw-bold mb-1 d-block">Booking Date</label>
             <input
               type="date"
@@ -540,7 +558,6 @@ export default function Visa({ onNavigate }) {
           <tbody>
             {rows.map((r, i) => (
               <tr key={i} style={{ background: i % 2 === 0 ? "#f0e6ff" : "#fff" }}>
-                {/* ⚡ Type Field Fix (Proper word break & pre-wrap for auto multi-line) */}
                 <td style={styles.td}>
                   <textarea
                     className="form-control form-control-sm no-print"
@@ -560,7 +577,6 @@ export default function Visa({ onNavigate }) {
                     onChange={(e) => updateRow(i, "type", e.target.value)}
                   />
                   
-                  {/* Print & PDF Canvas render block */}
                   <div 
                     className="print-only" 
                     style={{ 

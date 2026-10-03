@@ -69,6 +69,7 @@ export default function Card({ onNavigate }) {
   
   // ⚡ Separated Customer States
   const [customerName, setCustomerName] = useState("");
+  const [subCustomerName, setSubCustomerName] = useState(""); // ⚡ SUB CUSTOMER NAME STATE
   const [customerCode, setCustomerCode] = useState(""); 
   const [savedCustomers, setSavedCustomers] = useState([]); 
   const [showDropdown, setShowDropdown] = useState(false);
@@ -165,6 +166,7 @@ export default function Card({ onNavigate }) {
 
     setRefNo(d.ref_no);
     setCustomerName(d.customer_name);
+    setSubCustomerName(d.sub_customer_name || ""); // ⚡ LOAD SUB CUSTOMER NAME
     setCustomerCode(d.customer_code || "");
     
     // UI input fields load management
@@ -222,6 +224,7 @@ export default function Card({ onNavigate }) {
       ref_no: refNo || null,
       customer_code: customerCode || null,
       customer_name: customerName,
+      sub_customer_name: subCustomerName || null, // ⚡ ADDED TO PAYLOAD
       booking_date: bookingDate,
       rows,
       pkr_rate: pkrRate,
@@ -248,7 +251,8 @@ export default function Card({ onNavigate }) {
           html: `
             <div style="text-align:left">
               <b>Ref#:</b> ${data.ref_no}<br/>
-              <b>Customer:</b> ${customerName} ${customerCode ? `(${customerCode})` : "(Walk-In)"}
+              <b>Customer:</b> ${customerName} ${customerCode ? `(${customerCode})` : "(Walk-In)"}<br/>
+              ${subCustomerName ? `<b>Sub Customer:</b> ${subCustomerName}` : ""}
             </div>
           `
         });
@@ -305,8 +309,8 @@ export default function Card({ onNavigate }) {
             onChange={(e) => setSearchRef(e.target.value)}
           />
           <button className="btn btn-warning btn-sm" style={styles.button} onClick={loadCard}>🔄 Load / Edit</button>
-          
-{/* 📄 Export PDF (With Uplift Effect) */}
+
+          {/* 📄 Export PDF */}
           <button
             className="btn fw-bold text-white shadow"
             style={{
@@ -329,7 +333,7 @@ export default function Card({ onNavigate }) {
             📄 Export PDF
           </button>
 
-          {/* 🖨️ Print (With Uplift Effect) */}
+          {/* 🖨️ Print */}
           <button
             className="btn fw-bold text-white shadow"
             style={{
@@ -358,7 +362,7 @@ export default function Card({ onNavigate }) {
         <Header title="💳 VACCINATION CARD QUOTATION" />
 
         {/* ⚡ CUSTOMER INFO ROW */}
-        <div className="row g-3 mb-4">
+        <div className="row g-3 mb-4 align-items-end">
           
           {/* FIELD 1: Ref No Display (ReadOnly) */}
           <div className="col-md-2">
@@ -371,12 +375,12 @@ export default function Card({ onNavigate }) {
           </div>
 
           {/* FIELD 2: SMART DROPDOWN (ONLY FOR REGISTERED CUSTOMERS) */}
-          <div className="col-md-4" ref={dropdownRef} style={{ position: "relative" }}>
+          <div className="col-md-3" ref={dropdownRef} style={{ position: "relative" }}>
             <label className="fw-bold mb-1 text-primary">🔍 Select Registered Customer</label>
             <div className="input-group input-group-sm">
               <input
                 className="form-control"
-                placeholder="Type code or name to search..."
+                placeholder="Search by code or name..."
                 value={searchQuery}
                 onFocus={() => setShowDropdown(true)}
                 onChange={(e) => {
@@ -386,7 +390,7 @@ export default function Card({ onNavigate }) {
               />
               {searchQuery && (
                 <button 
-                  className="btn btn-outline-danger" 
+                  className="btn btn-outline-danger btn-sm" 
                   type="button" 
                   onClick={() => {
                     setSearchQuery("");
@@ -436,13 +440,13 @@ export default function Card({ onNavigate }) {
             <small className="text-muted d-block mt-1">Use ONLY for registered profiles</small>
           </div>
 
-          {/* FIELD 3: CUSTOMER NAME INPUT (AUTO-FILLED OR MANUALLY WRITTEN) */}
-          <div className="col-md-3">
+          {/* FIELD 3: CUSTOMER NAME INPUT */}
+          <div className="col-md-2">
             <label className="fw-bold mb-1 text-dark">👤 Customer Name</label>
             <input
               type="text"
               className="form-control form-control-sm"
-              placeholder="Enter customer name manually..."
+              placeholder="Or write manually..."
               value={customerName}
               onChange={(e) => {
                 setCustomerName(e.target.value);
@@ -465,8 +469,21 @@ export default function Card({ onNavigate }) {
             )}
           </div>
 
-          {/* FIELD 4: BOOKING DATE */}
-          <div className="col-md-3">
+  {/* FIELD 4: SUB / END CUSTOMER NAME (2 cols) */}
+  <div className="col-md-2">
+    <label className="fw-bold mb-1 text-dark">🏷️ Sub Customer</label>
+    <input
+      type="text"
+      className="form-control form-control-sm"
+      placeholder="Passenger / Client..."
+      value={subCustomerName}
+      onChange={(e) => setSubCustomerName(e.target.value)}
+    />
+    <small className="text-muted d-block mt-1">End client / Pax</small>
+  </div>
+
+          {/* FIELD 5: BOOKING DATE */}
+          <div className="col-md-2">
             <label className="fw-bold mb-1 d-block">Booking Date</label>
             <input
               type="date"

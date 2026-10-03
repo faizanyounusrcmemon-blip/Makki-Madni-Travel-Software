@@ -206,10 +206,7 @@ export default function AllReportsToday({ onNavigate }) {
     onNavigate(map[type], ref_no);
   };
 
-  const handleSumry = (type, ref_no) => {
-    if (type !== "Packages") return;
-    onNavigate("packages_summary_view", ref_no);
-  };
+
 
   /* ================= FILTERS EFFECT ================= */
   useEffect(() => {
@@ -488,49 +485,36 @@ export default function AllReportsToday({ onNavigate }) {
                     <td className="text-center text-muted">{formatDate(r.booking_date)}</td>
                     <td className="text-end fw-bold text-success px-3">PKR {fmtPKR(r.total_pkr)}</td>
 
-                    {/* STRICT COLUMN-BASED ALIGNMENT (GRID LAYOUT) */}
-                    <td className="text-center">
-                      <div 
-                        style={{ 
-                          display: "grid", 
-                          gridTemplateColumns: "75px 60px 65px", 
-                          gap: "4px", 
-                          justifyContent: "center", 
-                          alignItems: "center" 
-                        }}
-                      >
-                        {/* COLUMN 1: Summary Button or Empty Spacer */}
-                        {r.type === "Packages" ? (
-                          <button
-                            className="btn btn-sm btn-outline-warning rounded-pill px-1 py-1 fw-semibold w-100"
-                            style={{ fontSize: "11px", whiteSpace: "nowrap" }}
-                            onClick={() => handleSumry(r.type, r.ref_no)}
-                          >
-                            📊 Summary
-                          </button>
-                        ) : (
-                          <div></div>
-                        )}
+{/* STRICT COLUMN-BASED ALIGNMENT (GRID LAYOUT) */}
+<td className="text-center">
+  <div 
+    style={{ 
+      display: "grid", 
+      gridTemplateColumns: "60px 65px", 
+      gap: "4px", 
+      justifyContent: "center", 
+      alignItems: "center" 
+    }}
+  >
+    {/* COLUMN 1: View Button */}
+    <button
+      className="btn btn-sm btn-outline-primary rounded-pill px-1 py-1 fw-semibold w-100"
+      style={{ fontSize: "11px", whiteSpace: "nowrap" }}
+      onClick={() => handleView(r.type, r.ref_no)}
+    >
+      👁️ View
+    </button>
 
-                        {/* COLUMN 2: View Button */}
-                        <button
-                          className="btn btn-sm btn-outline-primary rounded-pill px-1 py-1 fw-semibold w-100"
-                          style={{ fontSize: "11px", whiteSpace: "nowrap" }}
-                          onClick={() => handleView(r.type, r.ref_no)}
-                        >
-                          👁️ View
-                        </button>
-
-                        {/* COLUMN 3: Delete Button */}
-                        <button
-                          className="btn btn-sm btn-outline-danger rounded-pill px-1 py-1 fw-semibold w-100"
-                          style={{ fontSize: "11px", whiteSpace: "nowrap" }}
-                          onClick={() => handleDelete(r.type, r.ref_no, r.customer_name, r.total_pkr)}
-                        >
-                          🗑️ Delete
-                        </button>
-                      </div>
-                    </td>
+    {/* COLUMN 2: Delete Button */}
+    <button
+      className="btn btn-sm btn-outline-danger rounded-pill px-1 py-1 fw-semibold w-100"
+      style={{ fontSize: "11px", whiteSpace: "nowrap" }}
+      onClick={() => handleDelete(r.type, r.ref_no, r.customer_name, r.total_pkr)}
+    >
+      🗑️ Delete
+    </button>
+  </div>
+</td>
                   </tr>
                 );
               })}

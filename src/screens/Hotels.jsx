@@ -69,6 +69,7 @@ export default function Hotels({ onNavigate }) {
 
   // ⚡ CUSTOMER SELECTOR STATES
   const [customerName, setCustomerName] = useState("");
+  const [subCustomerName, setSubCustomerName] = useState(""); // ⚡ ADDED SUB CUSTOMER STATE
   const [customerCode, setCustomerCode] = useState("");
   const [savedCustomers, setSavedCustomers] = useState([]);
   const [showDropdown, setShowDropdown] = useState(false);
@@ -207,6 +208,7 @@ export default function Hotels({ onNavigate }) {
       // 🔹 Load data
       setRefNo(d.ref_no);
       setCustomerName(d.customer_name);
+      setSubCustomerName(d.sub_customer_name || ""); // ⚡ Load sub_customer_name
       setCustomerCode(d.customer_code || "");
 
       if (d.customer_code) {
@@ -268,8 +270,9 @@ export default function Hotels({ onNavigate }) {
 
     const payload = {
       ref_no: refNo || null,
-      customer_code: customerCode || null, // ⚡ Added Customer Code payload
+      customer_code: customerCode || null,
       customer_name: customerName,
+      sub_customer_name: subCustomerName || null, // ⚡ Payload sub_customer_name
       agent_name: agentName,
       booking_date: bookingDate,
       hotels: rows,
@@ -299,7 +302,8 @@ export default function Hotels({ onNavigate }) {
           html: `
             <div style="text-align:left">
               <b>Ref#:</b> ${data.ref_no}<br/>
-              <b>Customer:</b> ${customerName} ${customerCode ? `(${customerCode})` : "(Walk-In)"}
+              <b>Customer:</b> ${customerName} ${customerCode ? `(${customerCode})` : "(Walk-In)"}<br/>
+              ${subCustomerName ? `<b>Sub Customer:</b> ${subCustomerName}` : ""}
             </div>
           `
         });
@@ -340,7 +344,8 @@ export default function Hotels({ onNavigate }) {
 
           <input className="form-control form-control-sm" style={{ width: "140px" }} placeholder="Search Ref" value={searchRef} onChange={(e) => setSearchRef(e.target.value)} />
           <button className="btn btn-warning btn-sm" onClick={loadHotel}>🔄 Load / Edit</button>
-{/* 📄 Export PDF (With Uplift Effect) */}
+
+          {/* 📄 Export PDF (With Uplift Effect) */}
           <button
             className="btn fw-bold text-white shadow"
             style={{
@@ -393,15 +398,15 @@ export default function Hotels({ onNavigate }) {
 
         <Header title="HOTEL QUOTATION" />
 
-        {/* ⚡ UPDATED CUSTOMER INFO WITH SEARCH AUTOCOMPLETE DROPDOWN */}
-        <div className="row g-3 mb-3">
+        {/* ⚡ SINGLE ROW FORM LAYOUT */}
+        <div className="row g-2 mb-3">
           <div className="col-md-2">
             <label className="fw-bold mb-1">Ref No</label>
             <input className="form-control form-control-sm" value={refNo} readOnly />
           </div>
 
           {/* Autocomplete Input */}
-          <div className="col-md-3" ref={dropdownRef} style={{ position: "relative" }}>
+          <div className="col-md-2" ref={dropdownRef} style={{ position: "relative" }}>
             <label className="fw-bold mb-1 text-primary">🔍 Registered Customer</label>
             <div className="input-group input-group-sm">
               <input
@@ -464,8 +469,8 @@ export default function Hotels({ onNavigate }) {
             )}
           </div>
 
-          {/* Customer Name Input (Manual/Fallback text) */}
-          <div className="col-md-3">
+          {/* Customer Name Input (Manual/Fallback text + original badges) */}
+          <div className="col-md-2">
             <label className="fw-bold mb-1">👤 Customer Name</label>
             <input
               className="form-control form-control-sm"
@@ -491,6 +496,19 @@ export default function Hotels({ onNavigate }) {
               )
             )}
           </div>
+
+  {/* FIELD 4: SUB / END CUSTOMER NAME (2 cols) */}
+  <div className="col-md-2">
+    <label className="fw-bold mb-1 text-dark">🏷️ Sub Customer</label>
+    <input
+      type="text"
+      className="form-control form-control-sm"
+      placeholder="Passenger / Client..."
+      value={subCustomerName}
+      onChange={(e) => setSubCustomerName(e.target.value)}
+    />
+    <small className="text-muted d-block mt-1">End client / Pax</small>
+  </div>
 
           <div className="col-md-2">
             <label className="fw-bold mb-1">Agent Name</label>

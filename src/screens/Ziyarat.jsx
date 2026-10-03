@@ -74,8 +74,9 @@ export default function Ziyarat({ onNavigate }) {
   const [searchRef, setSearchRef] = useState("");
   const [refNo, setRefNo] = useState("");
 
-  // ⚡ Separated Customer States
+  // ⚡ Customer & Sub Customer States
   const [customerName, setCustomerName] = useState("");
+  const [subCustomerName, setSubCustomerName] = useState("");
   const [customerCode, setCustomerCode] = useState("");
   const [savedCustomers, setSavedCustomers] = useState([]);
   const [showDropdown, setShowDropdown] = useState(false);
@@ -184,7 +185,8 @@ export default function Ziyarat({ onNavigate }) {
 
       // 3️⃣ Load Data
       setRefNo(d.ref_no);
-      setCustomerName(d.customer_name);
+      setCustomerName(d.customer_name || "");
+      setSubCustomerName(d.sub_customer_name || "");
       setCustomerCode(d.customer_code || "");
 
       // Sync customer select UI on edit load
@@ -247,8 +249,9 @@ export default function Ziyarat({ onNavigate }) {
 
     const payload = {
       ref_no: refNo || null,
-      customer_code: customerCode || null, // ⚡ Payload me customer_code bheja
+      customer_code: customerCode || null,
       customer_name: customerName,
+      sub_customer_name: subCustomerName || null,
       booking_date: bookingDate,
       rows,
       total_sar: totalSar,
@@ -277,7 +280,8 @@ export default function Ziyarat({ onNavigate }) {
           html: `
             <div style="text-align:left">
               <b>Ref#:</b> ${data.ref_no}<br/>
-              <b>Customer:</b> ${customerName} ${customerCode ? `(${customerCode})` : "(Walk-In)"}
+              <b>Customer:</b> ${customerName} ${customerCode ? `(${customerCode})` : "(Walk-In)"}<br/>
+              ${subCustomerName ? `<b>Passenger/Sub:</b> ${subCustomerName}` : ""}
             </div>
           `
         });
@@ -312,7 +316,7 @@ export default function Ziyarat({ onNavigate }) {
 
   return (
     <div style={styles.container}>
-{/* ⚡ TOP CONTROL BAR */}
+      {/* ⚡ TOP CONTROL BAR */}
       <div className="d-flex justify-content-between mb-3">
         <button className="btn btn-dark btn-sm" style={styles.button} onClick={() => onNavigate("dashboard")}>← Back</button>
         <div className="d-flex gap-2">
@@ -335,7 +339,7 @@ export default function Ziyarat({ onNavigate }) {
           />
           <button className="btn btn-warning btn-sm" style={styles.button} onClick={loadZiyarat}>🔄 Load / Edit</button>
           
-{/* 📄 Export PDF (With Uplift Effect) */}
+          {/* 📄 Export PDF */}
           <button
             className="btn fw-bold text-white shadow"
             style={{
@@ -358,7 +362,7 @@ export default function Ziyarat({ onNavigate }) {
             📄 Export PDF
           </button>
 
-          {/* 🖨️ Print (With Uplift Effect) */}
+          {/* 🖨️ Print */}
           <button
             className="btn fw-bold text-white shadow"
             style={{
@@ -387,7 +391,7 @@ export default function Ziyarat({ onNavigate }) {
       <div ref={quoteRef} style={styles.card}>
         <Header title="ZIYARAT QUOTATION" />
 
-        {/* ⚡ CUSTOMER INFO WITH SMART SEPARATION DROPDOWN */}
+        {/* ⚡ CUSTOMER INFO WITH SMART SEPARATION & SUB-CUSTOMER INPUT */}
         <div className="row g-3 mb-4">
           
           {/* FIELD 1: Ref No Display */}
@@ -401,7 +405,7 @@ export default function Ziyarat({ onNavigate }) {
           </div>
 
           {/* FIELD 2: SMART DROPDOWN FOR REGISTERED CLIENTS */}
-          <div className="col-md-4" ref={dropdownRef} style={{ position: "relative" }}>
+          <div className="col-md-3" ref={dropdownRef} style={{ position: "relative" }}>
             <label className="fw-bold mb-1 text-primary">🔍 Select Registered Customer</label>
             <div className="input-group input-group-sm">
               <input
@@ -463,16 +467,15 @@ export default function Ziyarat({ onNavigate }) {
                 )}
               </div>
             )}
-            <small className="text-muted d-block mt-1">Use ONLY for registered profiles</small>
           </div>
 
-          {/* FIELD 3: CUSTOMER NAME INPUT (AUTO-FILLED / MANUAL WRITING) */}
+          {/* FIELD 3: CUSTOMER NAME INPUT */}
           <div className="col-md-3">
             <label className="fw-bold mb-1 text-dark">👤 Customer Name</label>
             <input
               type="text"
               className="form-control form-control-sm"
-              placeholder="Enter customer name manually..."
+              placeholder="Enter customer name..."
               value={customerName}
               onChange={(e) => {
                 setCustomerName(e.target.value);
@@ -482,21 +485,23 @@ export default function Ziyarat({ onNavigate }) {
                 }
               }}
             />
-            {customerCode ? (
-              <small className="text-success d-block mt-1 fw-bold">
-                ✓ Registered Linked ({customerCode})
-              </small>
-            ) : (
-              customerName && (
-                <small className="text-warning d-block mt-1 fw-bold">
-                  ⚠ Manual Walk-In (No Code)
-                </small>
-              )
-            )}
           </div>
 
-          {/* FIELD 4: BOOKING DATE */}
-          <div className="col-md-3">
+  {/* FIELD 4: SUB / END CUSTOMER NAME (2 cols) */}
+  <div className="col-md-2">
+    <label className="fw-bold mb-1 text-dark">👥 Sub Customer</label>
+    <input
+      type="text"
+      className="form-control form-control-sm"
+      placeholder="Passenger / Client..."
+      value={subCustomerName}
+      onChange={(e) => setSubCustomerName(e.target.value)}
+    />
+    <small className="text-muted d-block mt-1">End client / Pax</small>
+  </div>
+
+          {/* FIELD 5: BOOKING DATE */}
+          <div className="col-md-2">
             <label className="fw-bold mb-1 d-block text-success">Booking Date</label>
             <input
               type="date"
@@ -510,51 +515,47 @@ export default function Ziyarat({ onNavigate }) {
           </div>
         </div>
 
-{/* Ziyarat Table */}
-<div className="mb-3">
-  <h5 style={styles.sectionHeader}>🕌 Ziyarat</h5>
-  <button className="btn btn-outline-success btn-sm mb-2" style={styles.button} onClick={addRow}>➕ Add Row</button>
-  <table style={styles.table}>
-    <thead>
-      <tr>
-        {/* Description Header Bada Kar Diya */}
-        <th style={{ ...styles.th, width: "70%" }}>Description</th>
-        {/* SAR Header Chota Kar Diya */}
-        <th style={{ ...styles.th, width: "20%", textAlign: "center" }}>SAR</th>
-        <th style={{ ...styles.th, width: "10%", textAlign: "center" }}>Action</th>
-      </tr>
-    </thead>
-    <tbody>
-      {rows.map((r, i) => (
-        <tr key={i} style={{ background: i % 2 === 0 ? "#f0fff0" : "#fff" }}>
-          {/* Description Input Normal Single-Line Input */}
-          <td style={styles.td}>
-            <input 
-              type="text" 
-              className="form-control form-control-sm" 
-              placeholder="Ziyarat description..." 
-              value={r.description} 
-              onChange={(e) => updateRow(i, "description", e.target.value)} 
-            />
-          </td>
-          {/* SAR Input Width Compact & Centered */}
-          <td style={{ ...styles.td, textAlign: "center" }}>
-            <input 
-              type="number" 
-              className="form-control form-control-sm text-center fw-bold" 
-              style={{ maxWidth: "120px", margin: "0 auto" }} 
-              value={r.sar} 
-              onChange={(e) => updateRow(i, "sar", e.target.value)} 
-            />
-          </td>
-          <td style={{ ...styles.td, textAlign: "center" }}>
-            <button className="btn btn-sm btn-danger px-2 py-0" onClick={() => removeRow(i)}>✖</button>
-          </td>
-        </tr>
-      ))}
-    </tbody>
-  </table>
-</div>
+        {/* Ziyarat Table */}
+        <div className="mb-3">
+          <h5 style={styles.sectionHeader}>🕌 Ziyarat</h5>
+          <button className="btn btn-outline-success btn-sm mb-2" style={styles.button} onClick={addRow}>➕ Add Row</button>
+          <table style={styles.table}>
+            <thead>
+              <tr>
+                <th style={{ ...styles.th, width: "70%" }}>Description</th>
+                <th style={{ ...styles.th, width: "20%", textAlign: "center" }}>SAR</th>
+                <th style={{ ...styles.th, width: "10%", textAlign: "center" }}>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((r, i) => (
+                <tr key={i} style={{ background: i % 2 === 0 ? "#f0fff0" : "#fff" }}>
+                  <td style={styles.td}>
+                    <input 
+                      type="text" 
+                      className="form-control form-control-sm" 
+                      placeholder="Ziyarat description..." 
+                      value={r.description} 
+                      onChange={(e) => updateRow(i, "description", e.target.value)} 
+                    />
+                  </td>
+                  <td style={{ ...styles.td, textAlign: "center" }}>
+                    <input 
+                      type="number" 
+                      className="form-control form-control-sm text-center fw-bold" 
+                      style={{ maxWidth: "120px", margin: "0 auto" }} 
+                      value={r.sar} 
+                      onChange={(e) => updateRow(i, "sar", e.target.value)} 
+                    />
+                  </td>
+                  <td style={{ ...styles.td, textAlign: "center" }}>
+                    <button className="btn btn-sm btn-danger px-2 py-0" onClick={() => removeRow(i)}>✖</button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
 
         {/* Summary */}
         <div className="mb-3">

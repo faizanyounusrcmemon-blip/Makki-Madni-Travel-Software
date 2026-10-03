@@ -97,6 +97,7 @@ export default function Groups({ onNavigate }) {
 
   // ⚡ CUSTOMER SEPARATION STATES
   const [customerName, setCustomerName] = useState("");
+  const [subCustomerName, setSubCustomerName] = useState(""); // ⚡ SUB CUSTOMER NAME STATE
   const [customerCode, setCustomerCode] = useState("");
   const [savedCustomers, setSavedCustomers] = useState([]);
   const [showDropdown, setShowDropdown] = useState(false);
@@ -212,6 +213,7 @@ export default function Groups({ onNavigate }) {
       const d = data.row;
       setRefNo(d.ref_no);
       setCustomerName(d.customer_name);
+      setSubCustomerName(d.sub_customer_name || ""); // ⚡ LOAD SUB CUSTOMER NAME
       setCustomerCode(d.customer_code || "");
 
       // Sync customer selection helper state
@@ -258,11 +260,12 @@ export default function Groups({ onNavigate }) {
     setSaving(true);
     Swal.fire({ width: "260px", title: "Saving...", allowOutsideClick: false, didOpen: () => Swal.showLoading() });
 
-    // 🔹 PAYLOAD UPDATED WITH CUSTOMER CODE, DATES & DURATION
+    // 🔹 PAYLOAD UPDATED WITH SUB CUSTOMER NAME
     const payload = {
       ref_no: refNo || null,
-      customer_code: customerCode || null, // ⚡ Payload update
+      customer_code: customerCode || null,
       customer_name: customerName,
+      sub_customer_name: subCustomerName || null, // ⚡ ADDED TO PAYLOAD
       booking_date: bookingDate,
       start_date: startDate || null,
       end_date: endDate || null,
@@ -289,7 +292,8 @@ export default function Groups({ onNavigate }) {
           html: `
             <div style="text-align:left">
               <b>Ref#:</b> ${data.ref_no}<br/>
-              <b>Customer:</b> ${customerName} ${customerCode ? `(${customerCode})` : "(Walk-In)"}
+              <b>Customer:</b> ${customerName} ${customerCode ? `(${customerCode})` : "(Walk-In)"}<br/>
+              ${subCustomerName ? `<b>Sub Customer:</b> ${subCustomerName}` : ""}
             </div>
           `
         });
@@ -317,7 +321,7 @@ export default function Groups({ onNavigate }) {
           </button>
           <input className="form-control form-control-sm" style={{ width: 140, borderRadius: 50 }} placeholder="Search Ref" value={searchRef} onChange={(e) => setSearchRef(e.target.value)} />
           <button className="btn btn-warning btn-sm" style={styles.button} onClick={loadGroups}>🔄 Load / Edit</button>
-{/* 📄 Export PDF (With Uplift Effect) */}
+          
           <button
             className="btn fw-bold text-white shadow"
             style={{
@@ -340,7 +344,6 @@ export default function Groups({ onNavigate }) {
             📄 Export PDF
           </button>
 
-          {/* 🖨️ Print (With Uplift Effect) */}
           <button
             className="btn fw-bold text-white shadow"
             style={{
@@ -368,7 +371,7 @@ export default function Groups({ onNavigate }) {
       <div ref={pdfRef} style={styles.group}>
         <Header title="👨‍👩‍👧‍👦 GROUPS PACKAGE QUOTATION" />
 
-        {/* ⚡ UPDATED CUSTOMER & PACKAGE INFO SECTION WITH AUTOCOMPLETE */}
+        {/* ⚡ UPDATED CUSTOMER & PACKAGE INFO SECTION WITH AUTOCOMPLETE & SUB CUSTOMER NAME */}
         <div className="row g-3 mb-4 align-items-end">
           
           {/* Field 1: Ref No */}
@@ -378,7 +381,7 @@ export default function Groups({ onNavigate }) {
           </div>
 
           {/* Field 2: Smart Search Input Dropdown */}
-          <div className="col-md-4" ref={dropdownRef} style={{ position: "relative" }}>
+          <div className="col-md-3" ref={dropdownRef} style={{ position: "relative" }}>
             <label className="fw-bold mb-1 text-success">🔍 Select Registered Customer</label>
             <div className="input-group input-group-sm">
               <input
@@ -443,7 +446,7 @@ export default function Groups({ onNavigate }) {
           </div>
 
           {/* Field 3: Customer Name input (Editable/Auto-fill) */}
-          <div className="col-md-3">
+          <div className="col-md-2">
             <label className="fw-bold mb-1">👤 Customer Name</label>
             <input 
               className="form-control form-control-sm" 
@@ -470,8 +473,21 @@ export default function Groups({ onNavigate }) {
             )}
           </div>
 
-          {/* Field 4: Booking Date */}
-          <div className="col-md-3">
+  {/* FIELD 4: SUB / END CUSTOMER NAME (2 cols) */}
+  <div className="col-md-2">
+    <label className="fw-bold mb-1 text-dark">🏷️ Sub Customer</label>
+    <input
+      type="text"
+      className="form-control form-control-sm"
+      placeholder="Passenger / Client..."
+      value={subCustomerName}
+      onChange={(e) => setSubCustomerName(e.target.value)}
+    />
+    <small className="text-muted d-block mt-1">End client / Pax</small>
+  </div>
+
+          {/* Field 5: Booking Date */}
+          <div className="col-md-2">
             <label className="fw-bold mb-1">Booking Date</label>
             <input type="date" className="form-control form-control-sm" value={bookingDate} onChange={(e) => setBookingDate(e.target.value)} />
             <small className="text-muted d-block">{showDate(bookingDate)}</small>
@@ -492,99 +508,97 @@ export default function Groups({ onNavigate }) {
             <small className="text-muted d-block">{showDate(endDate)}</small>
           </div>
 
-<div className="col-md-2">
-  <label className="fw-bold text-dark mb-1 d-block" style={{ fontSize: "12px", opacity: 0.8 }}>
-    📅 Duration
-  </label>
+          <div className="col-md-2">
+            <label className="fw-bold text-dark mb-1 d-block" style={{ fontSize: "12px", opacity: 0.8 }}>
+              📅 Duration
+            </label>
 
-  <div
-    style={{
-      minWidth: "160px",
-      padding: "12px 10px",
-      borderRadius: "12px",
-      background: "#ffffff",
-      borderTop: "4px solid #10b981",
-      borderLeft: "1px solid #e5e7eb",
-      borderRight: "1px solid #e5e7eb",
-      borderBottom: "1px solid #e5e7eb",
-      textAlign: "center",
-      boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.05)",
-    }}
-  >
-    <div style={{ fontSize: "24px", fontWeight: "900", color: "#0f172a", lineHeight: "1" }}>
-      {duration || 0}
-    </div>
-    <div
-      style={{
-        fontSize: "11px",
-        fontWeight: "800",
-        color: "#10b981",
-        textTransform: "uppercase",
-        letterSpacing: "1px",
-        marginTop: "4px",
-      }}
-    >
-      Days
-    </div>
-  </div>
-</div>
+            <div
+              style={{
+                minWidth: "160px",
+                padding: "12px 10px",
+                borderRadius: "12px",
+                background: "#ffffff",
+                borderTop: "4px solid #10b981",
+                borderLeft: "1px solid #e5e7eb",
+                borderRight: "1px solid #e5e7eb",
+                borderBottom: "1px solid #e5e7eb",
+                textAlign: "center",
+                boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.05)",
+              }}
+            >
+              <div style={{ fontSize: "24px", fontWeight: "900", color: "#0f172a", lineHeight: "1" }}>
+                {duration || 0}
+              </div>
+              <div
+                style={{
+                  fontSize: "11px",
+                  fontWeight: "800",
+                  color: "#10b981",
+                  textTransform: "uppercase",
+                  letterSpacing: "1px",
+                  marginTop: "4px",
+                }}
+              >
+                Days
+              </div>
+            </div>
+          </div>
         </div>
 
-<h5 style={styles.sectionHeader}>👨‍👩‍👧‍👦 GROUPS PACKAGE Details</h5>
-<button className="btn btn-outline-primary btn-sm mb-2" style={styles.button} onClick={addRow}>➕ Add Groups Row</button>
+        <h5 style={styles.sectionHeader}>👨‍👩‍‍👧‍👦 GROUPS PACKAGE Details</h5>
+        <button className="btn btn-outline-primary btn-sm mb-2" style={styles.button} onClick={addRow}>➕ Add Groups Row</button>
 
-<table style={styles.table}>
-  <thead>
-    <tr>
-      {/* Type column ki width 50% kar di gayi hai taaki input field thora bada ho jaye */}
-      <th style={{ ...styles.th, width: "50%", textAlign: "left" }}>Type</th>
-      <th style={{ ...styles.th, width: "12%" }}>Persons</th>
-      <th style={{ ...styles.th, width: "15%" }}>Rate (SAR)</th>
-      <th style={{ ...styles.th, width: "15%" }}>Total (SAR)</th>
-      <th style={{ ...styles.th, width: "8%" }}>Action</th>
-    </tr>
-  </thead>
-  <tbody>
-    {rows.map((r, i) => (
-      <tr key={i} style={{ background: i % 2 === 0 ? "#f0e6ff" : "#fff" }}>
-        {/* Type Input Field */}
-        <td style={styles.td}>
-          <input 
-            type="text"
-            className="form-control form-control-sm" 
-            placeholder="Package/Visa Type details..."
-            value={r.type} 
-            onChange={(e) => updateRow(i, "type", e.target.value)} 
-          />
-        </td>
-        <td style={styles.td}>
-          <input 
-            type="number" 
-            className="form-control form-control-sm text-center" 
-            value={r.persons} 
-            onChange={(e) => updateRow(i, "persons", e.target.value)} 
-          />
-        </td>
-        <td style={styles.td}>
-          <input 
-            type="number" 
-            className="form-control form-control-sm text-center" 
-            value={r.rate} 
-            onChange={(e) => updateRow(i, "rate", e.target.value)} 
-          />
-        </td>
-        <td style={{ ...styles.td, fontWeight: "bold", textAlign: "center" }}>
-          {r.total}
-        </td>
-        <td style={{ ...styles.td, textAlign: "center" }}>
-          <button className="btn btn-sm btn-danger px-2 py-0" onClick={() => removeRow(i)}>
-            ✖
-          </button>
-        </td>
-      </tr>
-    ))}
-  </tbody>
-</table>
+        <table style={styles.table}>
+          <thead>
+            <tr>
+              <th style={{ ...styles.th, width: "50%", textAlign: "left" }}>Type</th>
+              <th style={{ ...styles.th, width: "12%" }}>Persons</th>
+              <th style={{ ...styles.th, width: "15%" }}>Rate (SAR)</th>
+              <th style={{ ...styles.th, width: "15%" }}>Total (SAR)</th>
+              <th style={{ ...styles.th, width: "8%" }}>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((r, i) => (
+              <tr key={i} style={{ background: i % 2 === 0 ? "#f0e6ff" : "#fff" }}>
+                <td style={styles.td}>
+                  <input 
+                    type="text"
+                    className="form-control form-control-sm" 
+                    placeholder="Package/Visa Type details..."
+                    value={r.type} 
+                    onChange={(e) => updateRow(i, "type", e.target.value)} 
+                  />
+                </td>
+                <td style={styles.td}>
+                  <input 
+                    type="number" 
+                    className="form-control form-control-sm text-center" 
+                    value={r.persons} 
+                    onChange={(e) => updateRow(i, "persons", e.target.value)} 
+                  />
+                </td>
+                <td style={styles.td}>
+                  <input 
+                    type="number" 
+                    className="form-control form-control-sm text-center" 
+                    value={r.rate} 
+                    onChange={(e) => updateRow(i, "rate", e.target.value)} 
+                  />
+                </td>
+                <td style={{ ...styles.td, fontWeight: "bold", textAlign: "center" }}>
+                  {r.total}
+                </td>
+                <td style={{ ...styles.td, textAlign: "center" }}>
+                  <button className="btn btn-sm btn-danger px-2 py-0" onClick={() => removeRow(i)}>
+                    ✖
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
 
         <h5 style={styles.sectionHeader}>✨ Summary</h5>
         <table className="table table-sm">

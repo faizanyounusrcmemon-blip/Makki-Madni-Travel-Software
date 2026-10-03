@@ -77,6 +77,7 @@ export default function Transport({ onNavigate }) {
   // ⚡ Separated Customer States
   const [customerName, setCustomerName] = useState("");
   const [customerCode, setCustomerCode] = useState("");
+  const [subCustomerName, setSubCustomerName] = useState("");
   const [savedCustomers, setSavedCustomers] = useState([]);
   const [showDropdown, setShowDropdown] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -184,6 +185,7 @@ const updateRow = (i, field, value) => {
       // 🔹 Load data
       setRefNo(d.ref_no);
       setCustomerName(d.customer_name);
+      setSubCustomerName(d.sub_customer_name || "");
       setCustomerCode(d.customer_code || "");
 
       // Sync customer select UI on edit load
@@ -248,6 +250,7 @@ const updateRow = (i, field, value) => {
       ref_no: refNo || null,
       customer_code: customerCode || null, // ⚡ Payload me customer_code bheja
       customer_name: customerName,
+      sub_customer_name: subCustomerName,
       booking_date: bookingDate,
       rows,
       total_sar: totalSar,
@@ -377,128 +380,145 @@ const updateRow = (i, field, value) => {
       <div ref={quoteRef} style={styles.card}>
         <Header title="TRANSPORT QUOTATION" />
 
-        {/* ⚡ CUSTOMER INFO WITH SMART SEPARATION DROPDOWN */}
-        <div className="row g-3 mb-4">
-          
-          {/* FIELD 1: Ref No Display */}
-          <div className="col-md-2">
-            <label className="fw-bold mb-1 d-block">Ref No</label>
-            <input
-              className="form-control form-control-sm"
-              value={refNo}
-              readOnly
-            />
-          </div>
+{/* ⚡ CUSTOMER INFO WITH SMART SEPARATION DROPDOWN */}
+<div className="row g-3 mb-4">
+  
+  {/* FIELD 1: Ref No Display (2 cols) */}
+  <div className="col-md-2">
+    <label className="fw-bold mb-1 d-block">Ref No</label>
+    <input
+      className="form-control form-control-sm"
+      value={refNo}
+      readOnly
+    />
+  </div>
 
-          {/* FIELD 2: SMART DROPDOWN FOR REGISTERED CLIENTS */}
-          <div className="col-md-4" ref={dropdownRef} style={{ position: "relative" }}>
-            <label className="fw-bold mb-1 text-primary">🔍 Select Registered Customer</label>
-            <div className="input-group input-group-sm">
-              <input
-                className="form-control"
-                placeholder="Type code or name to search..."
-                value={searchQuery}
-                onFocus={() => setShowDropdown(true)}
-                onChange={(e) => {
-                  setSearchQuery(e.target.value);
-                  setShowDropdown(true);
-                }}
-              />
-              {searchQuery && (
-                <button 
-                  className="btn btn-outline-danger btn-sm" 
-                  type="button" 
-                  onClick={() => {
-                    setSearchQuery("");
-                    setCustomerCode("");
-                    setCustomerName("");
-                  }}
-                >
-                  ✕
-                </button>
-              )}
-            </div>
+  {/* FIELD 2: SMART DROPDOWN FOR REGISTERED CLIENTS (3 cols) */}
+  <div className="col-md-3" ref={dropdownRef} style={{ position: "relative" }}>
+    <label className="fw-bold mb-1 text-primary">🔍 Select Registered</label>
+    <div className="input-group input-group-sm">
+      <input
+        className="form-control"
+        placeholder="Search code/name..."
+        value={searchQuery}
+        onFocus={() => setShowDropdown(true)}
+        onChange={(e) => {
+          setSearchQuery(e.target.value);
+          setShowDropdown(true);
+        }}
+      />
+      {searchQuery && (
+        <button 
+          className="btn btn-outline-danger btn-sm" 
+          type="button" 
+          onClick={() => {
+            setSearchQuery("");
+            setCustomerCode("");
+            setCustomerName("");
+          }}
+        >
+          ✕
+        </button>
+      )}
+    </div>
 
-            {/* Selector Dropdown List */}
-            {showDropdown && (
-              <div 
-                className="dropdown-menu show shadow w-100 p-2" 
-                style={{ 
-                  maxHeight: "220px", 
-                  overflowY: "auto", 
-                  position: "absolute", 
-                  zIndex: 9999,
-                  background: "#fff"
-                }}
-              >
-                {filteredCustomers.length === 0 ? (
-                  <div className="dropdown-item text-muted text-center py-2">No customers found</div>
-                ) : (
-                  filteredCustomers.map((c, i) => (
-                    <button
-                      key={i}
-                      type="button"
-                      className="dropdown-item d-flex justify-content-between align-items-center py-2 border-bottom"
-                      onClick={() => {
-                        setCustomerName(c.name); 
-                        setCustomerCode(c.customer_code); 
-                        setSearchQuery(`${c.name} (${c.customer_code})`);
-                        setShowDropdown(false);
-                      }}
-                    >
-                      <span className="fw-bold text-dark">{c.name}</span>
-                      <span className="badge bg-primary text-white">{c.customer_code}</span>
-                    </button>
-                  ))
-                )}
-              </div>
-            )}
-            <small className="text-muted d-block mt-1">Use ONLY for registered profiles</small>
-          </div>
-
-          {/* FIELD 3: CUSTOMER NAME INPUT (AUTO-FILLED / MANUAL WRITING) */}
-          <div className="col-md-3">
-            <label className="fw-bold mb-1 text-dark">👤 Customer Name</label>
-            <input
-              type="text"
-              className="form-control form-control-sm"
-              placeholder="Enter customer name manually..."
-              value={customerName}
-              onChange={(e) => {
-                setCustomerName(e.target.value);
-                if (customerCode) {
-                  setCustomerCode("");
-                  setSearchQuery("");
-                }
+    {/* Selector Dropdown List */}
+    {showDropdown && (
+      <div 
+        className="dropdown-menu show shadow w-100 p-2" 
+        style={{ 
+          maxHeight: "220px", 
+          overflowY: "auto", 
+          position: "absolute", 
+          zIndex: 9999,
+          background: "#fff"
+        }}
+      >
+        {filteredCustomers.length === 0 ? (
+          <div className="dropdown-item text-muted text-center py-2">No customers found</div>
+        ) : (
+          filteredCustomers.map((c, i) => (
+            <button
+              key={i}
+              type="button"
+              className="dropdown-item d-flex justify-content-between align-items-center py-2 border-bottom"
+              onClick={() => {
+                setCustomerName(c.name); 
+                setCustomerCode(c.customer_code); 
+                setSearchQuery(`${c.name} (${c.customer_code})`);
+                setShowDropdown(false);
               }}
-            />
-            {customerCode ? (
-              <small className="text-success d-block mt-1 fw-bold">
-                ✓ Registered Linked ({customerCode})
-              </small>
-            ) : (
-              customerName && (
-                <small className="text-warning d-block mt-1 fw-bold">
-                  ⚠ Manual Walk-In (No Code)
-                </small>
-              )
-            )}
-          </div>
+            >
+              <span className="fw-bold text-dark">{c.name}</span>
+              <span className="badge bg-primary text-white">{c.customer_code}</span>
+            </button>
+          ))
+        )}
+      </div>
+    )}
+    <small className="text-muted d-block mt-1">Use for registered profiles</small>
+  </div>
 
-          {/* FIELD 4: BOOKING DATE */}
-          <div className="col-md-3">
-            <label className="fw-bold mb-1 d-block">Booking Date</label>
-            <input
-              type="date"
-              className="form-control form-control-sm"
-              value={bookingDate}
-              onChange={(e) => setBookingDate(e.target.value)}
-            />
-            <small className="text-muted d-block mt-1">
-              {showDate(bookingDate)}
-            </small>
-          </div>
-        </div>
+  {/* FIELD 3: CUSTOMER NAME INPUT (3 cols) */}
+  <div className="col-md-3">
+    <label className="fw-bold mb-1 text-dark">👤 Customer Name</label>
+    <input
+      type="text"
+      className="form-control form-control-sm"
+      placeholder="Enter customer name..."
+      value={customerName}
+      onChange={(e) => {
+        setCustomerName(e.target.value);
+        if (customerCode) {
+          setCustomerCode("");
+          setSearchQuery("");
+        }
+      }}
+    />
+    {customerCode ? (
+      <small className="text-success d-block mt-1 fw-bold">
+        ✓ Linked ({customerCode})
+      </small>
+    ) : (
+      customerName && (
+        <small className="text-warning d-block mt-1 fw-bold">
+          ⚠ Walk-In (No Code)
+        </small>
+      )
+    )}
+  </div>
+
+  {/* FIELD 4: SUB / END CUSTOMER NAME (2 cols) */}
+  <div className="col-md-2">
+    <label className="fw-bold mb-1 text-dark">🏷️ Sub Customer</label>
+    <input
+      type="text"
+      className="form-control form-control-sm"
+      placeholder="Passenger / Client..."
+      value={subCustomerName}
+      onChange={(e) => setSubCustomerName(e.target.value)}
+    />
+    <small className="text-muted d-block mt-1">End client / Pax</small>
+  </div>
+
+  {/* FIELD 5: BOOKING DATE (2 cols) */}
+  <div className="col-md-2">
+    <label className="fw-bold mb-1 d-block">Booking Date</label>
+    <input
+      type="date"
+      className="form-control form-control-sm"
+      value={bookingDate}
+      onChange={(e) => setBookingDate(e.target.value)}
+    />
+    <small className="text-muted d-block mt-1">
+      {showDate(bookingDate)}
+    </small>
+  </div>
+
+</div>
+
+
+
 
         {/* Transport Table */}
         <div className="mb-3">

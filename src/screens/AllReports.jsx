@@ -299,11 +299,6 @@ export default function AllReports({ onNavigate }) {
     onNavigate(map[type], ref_no);
   };
 
-  /* ================= SUMMARY ================= */
-  const handleSumry = (type, ref_no) => {
-    if (type !== "Packages") return;
-    onNavigate("packages_summary_view", ref_no);
-  };
 
   /* ================= FILTER ================= */
   useEffect(() => {
@@ -718,6 +713,7 @@ export default function AllReports({ onNavigate }) {
                 <th className="py-3">Type</th>
                 <th className="py-3">Ref No</th>
                 <th className="py-3">Customer Name</th>
+                <th className="py-3">Sub Customer</th>
                 <th className="py-3 text-center">Code / Status</th>
                 <th className="py-3 text-center">Booking Date</th>
                 <th className="py-3 text-end px-3">Total Amount</th>
@@ -756,15 +752,20 @@ export default function AllReports({ onNavigate }) {
                       </td>
                       <td className="fw-bold text-dark">{r.ref_no}</td>
 
-                      <td className="fw-bold">
-                        <span
-                          style={{
-                            color: isRegistered ? "#16a34a" : "#2563eb",
-                          }}
-                        >
-                          {r.customer_name || "-"}
-                        </span>
-                      </td>
+<td className="fw-bold">
+  <span style={{ color: isRegistered ? "#16a34a" : "#2563eb" }}>
+    {r.customer_name || "-"}
+  </span>
+</td>
+
+{/* 👈 Naya Cell */}
+<td className="text-muted fw-semibold">
+<span style={{ color: isRegistered ? "#c9a227" : "#0b3d91" }}>
+  {r.sub_customer_name || "-"}
+</span>
+</td>
+
+
 
                       <td className="text-center">
                         {isRegistered ? (
@@ -784,77 +785,61 @@ export default function AllReports({ onNavigate }) {
                         PKR {fmtPKR(r.total_pkr)}
                       </td>
 
-                      {/* STRICT COLUMN-BASED ALIGNMENT */}
-                      <td className="text-center">
-                        <div
-                          style={{
-                            display: "grid",
-                            gridTemplateColumns: "75px 60px 65px 70px",
-                            gap: "4px",
-                            justifyContent: "center",
-                            alignItems: "center",
-                          }}
-                        >
-                          {/* COLUMN 1: Summary Button */}
-                          {r.type === "Packages" ? (
-                            <button
-                              className="btn btn-sm btn-outline-warning rounded-pill px-1 py-1 fw-semibold w-100"
-                              style={{
-                                fontSize: "11px",
-                                whiteSpace: "nowrap",
-                              }}
-                              onClick={() => handleSumry(r.type, r.ref_no)}
-                            >
-                              📊 Summary
-                            </button>
-                          ) : (
-                            <div></div>
-                          )}
+{/* STRICT COLUMN-BASED ALIGNMENT */}
+<td className="text-center">
+  <div
+    style={{
+      display: "grid",
+      gridTemplateColumns: "60px 65px 70px",
+      gap: "4px",
+      justifyContent: "center",
+      alignItems: "center",
+    }}
+  >
+    {/* COLUMN 1: View Button */}
+    <button
+      className="btn btn-sm btn-outline-primary rounded-pill px-1 py-1 fw-semibold w-100"
+      style={{ fontSize: "11px", whiteSpace: "nowrap" }}
+      onClick={() => handleView(r.type, r.ref_no)}
+    >
+      👁️️ View
+    </button>
 
-                          {/* COLUMN 2: View Button */}
-                          <button
-                            className="btn btn-sm btn-outline-primary rounded-pill px-1 py-1 fw-semibold w-100"
-                            style={{ fontSize: "11px", whiteSpace: "nowrap" }}
-                            onClick={() => handleView(r.type, r.ref_no)}
-                          >
-                            👁️ View
-                          </button>
+    {/* COLUMN 2: Delete Button */}
+    <button
+      className="btn btn-sm btn-outline-danger rounded-pill px-1 py-1 fw-semibold w-100"
+      style={{ fontSize: "11px", whiteSpace: "nowrap" }}
+      onClick={() =>
+        handleDelete(
+          r.type,
+          r.ref_no,
+          r.customer_name,
+          r.total_pkr
+        )
+      }
+    >
+      🗑️ Delete
+    </button>
 
-                          {/* COLUMN 3: Delete Button */}
-                          <button
-                            className="btn btn-sm btn-outline-danger rounded-pill px-1 py-1 fw-semibold w-100"
-                            style={{ fontSize: "11px", whiteSpace: "nowrap" }}
-                            onClick={() =>
-                              handleDelete(
-                                r.type,
-                                r.ref_no,
-                                r.customer_name,
-                                r.total_pkr
-                              )
-                            }
-                          >
-                            🗑️ Delete
-                          </button>
-
-                          {/* COLUMN 4: Final / Unfinal Toggle Button */}
-                          {r.type === "Packages" ? (
-                            <button
-                              className={`btn btn-sm ${
-                                r.is_final ? "btn-warning" : "btn-success"
-                              } rounded-pill px-1 py-1 fw-semibold w-100`}
-                              style={{
-                                fontSize: "11px",
-                                whiteSpace: "nowrap",
-                              }}
-                              onClick={() => handleToggleFinal(r)}
-                            >
-                              {r.is_final ? "🔓 Unfinal" : "🔒 Finalize"}
-                            </button>
-                          ) : (
-                            <div></div>
-                          )}
-                        </div>
-                      </td>
+    {/* COLUMN 3: Final / Unfinal Toggle Button */}
+    {r.type === "Packages" ? (
+      <button
+        className={`btn btn-sm ${
+          r.is_final ? "btn-warning" : "btn-success"
+        } rounded-pill px-1 py-1 fw-semibold w-100`}
+        style={{
+          fontSize: "11px",
+          whiteSpace: "nowrap",
+        }}
+        onClick={() => handleToggleFinal(r)}
+      >
+        {r.is_final ? "🔓 Unfinal" : "🔒 Finalize"}
+      </button>
+    ) : (
+      <div></div>
+    )}
+  </div>
+</td>
                     </tr>
                   );
                 })}

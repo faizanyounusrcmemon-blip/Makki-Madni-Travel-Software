@@ -54,6 +54,7 @@ export default function Ticketing({ onNavigate }) {
   // ⚡ CUSTOMER SELECTOR STATES
   const [customerName, setCustomerName] = useState("");
   const [customerCode, setCustomerCode] = useState("");
+  const [subCustomerName, setSubCustomerName] = useState("");
   const [savedCustomers, setSavedCustomers] = useState([]);
   const [showDropdown, setShowDropdown] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -192,6 +193,7 @@ export default function Ticketing({ onNavigate }) {
       setRefNo(d.ref_no);
       setCustomerName(d.customer_name);
       setCustomerCode(d.customer_code || "");
+      setSubCustomerName(d.sub_customer_name || "");
 
       // Sync customer selector search state on load edit
       if (d.customer_code) {
@@ -202,7 +204,7 @@ export default function Ticketing({ onNavigate }) {
 
       setBookingDate(d.booking_date);
 
-      setFlights(d.flight_from.map((_, i) => ({
+      setFlights((d.flight_from || []).map((_, i) => ({
         from: d.flight_from[i],
         to: d.flight_to[i],
         date: d.flight_date[i],
@@ -263,8 +265,9 @@ export default function Ticketing({ onNavigate }) {
 
     const payload = {
       ref_no: refNo || null,
-      customer_code: customerCode || null, // ⚡ Payload updated with code
+      customer_code: customerCode || null,
       customer_name: customerName,
+      sub_customer_name: subCustomerName || null,
       booking_date: bookingDate,
       flights,
       adultQty,
@@ -331,7 +334,6 @@ export default function Ticketing({ onNavigate }) {
         <div className="d-flex gap-2">
           <button
             className={`btn btn-sm ${isEdit ? "btn-warning text-dark" : "btn-primary"}`}
-            style={styles.button}
             onClick={saveData}
             disabled={saving}
           >
@@ -340,7 +342,8 @@ export default function Ticketing({ onNavigate }) {
 
           <input className="form-control form-control-sm" style={{ width: 140 }} placeholder="Search Ref" value={searchRef} onChange={(e) => setSearchRef(e.target.value)} />
           <button className="btn btn-warning btn-sm" onClick={loadTicketing}>🔄 Load / Edit</button>
-{/* 📄 Export PDF (With Uplift Effect) */}
+
+          {/* 📄 Export PDF */}
           <button
             className="btn fw-bold text-white shadow"
             style={{
@@ -363,7 +366,7 @@ export default function Ticketing({ onNavigate }) {
             📄 Export PDF
           </button>
 
-          {/* 🖨️ Print (With Uplift Effect) */}
+          {/* 🖨️ Print */}
           <button
             className="btn fw-bold text-white shadow"
             style={{
@@ -393,7 +396,7 @@ export default function Ticketing({ onNavigate }) {
 
         <Header title="🎫 TICKETING QUOTATION" />
 
-        {/* ⚡ UPDATED CUSTOMER INFO WITH SEARCH AUTOCOMPLETE DROPDOWN */}
+        {/* ⚡ UPDATED CUSTOMER INFO WITH SUB CUSTOMER NAME */}
         <div className="row g-3 mb-3">
 
           <div className="col-md-2">
@@ -406,12 +409,12 @@ export default function Ticketing({ onNavigate }) {
           </div>
 
           {/* Autocomplete Input */}
-          <div className="col-md-4" ref={dropdownRef} style={{ position: "relative" }}>
-            <label className="fw-bold mb-1 text-primary">🔍 Select Registered Customer</label>
+          <div className="col-md-3" ref={dropdownRef} style={{ position: "relative" }}>
+            <label className="fw-bold mb-1 text-primary">🔍 Select Registered</label>
             <div className="input-group input-group-sm">
               <input
                 className="form-control"
-                placeholder="Search by name or code..."
+                placeholder="Search code/name..."
                 value={searchQuery}
                 onFocus={() => setShowDropdown(true)}
                 onChange={(e) => {
@@ -467,15 +470,15 @@ export default function Ticketing({ onNavigate }) {
                 )}
               </div>
             )}
-            <small className="text-muted d-block mt-1">Use ONLY for registered profiles</small>
+            <small className="text-muted d-block mt-1">Use for registered profiles</small>
           </div>
 
-          {/* Customer Name Input (Auto-filled / Manual Editing) */}
+          {/* Customer Name Input */}
           <div className="col-md-3">
             <label className="fw-bold mb-1">👤 Customer Name</label>
             <input
               className="form-control form-control-sm"
-              placeholder="Or write manually here..."
+              placeholder="Enter customer name..."
               value={customerName}
               onChange={(e) => {
                 setCustomerName(e.target.value);
@@ -487,18 +490,31 @@ export default function Ticketing({ onNavigate }) {
             />
             {customerCode ? (
               <small className="text-success d-block mt-1 fw-bold">
-                ✓ Registered Linked ({customerCode})
+                ✓ Linked ({customerCode})
               </small>
             ) : (
               customerName && (
                 <small className="text-warning d-block mt-1 fw-bold">
-                  ⚠ Manual Walk-In (No Code)
+                  ⚠ Walk-In (No Code)
                 </small>
               )
             )}
           </div>
 
-          <div className="col-md-3">
+  {/* FIELD 4: SUB / END CUSTOMER NAME (2 cols) */}
+  <div className="col-md-2">
+    <label className="fw-bold mb-1 text-dark">🏷️ Sub Customer</label>
+    <input
+      type="text"
+      className="form-control form-control-sm"
+      placeholder="Passenger / Client..."
+      value={subCustomerName}
+      onChange={(e) => setSubCustomerName(e.target.value)}
+    />
+    <small className="text-muted d-block mt-1">End client / Pax</small>
+  </div>
+
+          <div className="col-md-2">
             <label className="fw-bold mb-1">Booking Date</label>
             <input
               type="date"
