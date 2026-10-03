@@ -1,6 +1,28 @@
 import React, { useEffect, useState, useMemo } from "react";
 import Swal from "sweetalert2";
 
+/* ================= CLICK COPY HANDLER ================= */
+const handleCopyRef = (refNo) => {
+  if (!refNo || refNo === "-") return;
+
+  navigator.clipboard.writeText(refNo).then(() => {
+    // SweetAlert2 Toast alert
+    Swal.fire({
+      icon: "success",
+      title: "Copied!",
+      text: `Ref No: ${refNo} copied to clipboard`,
+      toast: true,
+      position: "top-end",
+      showConfirmButton: false,
+      timer: 1500,
+      timerProgressBar: true,
+    });
+  }).catch((err) => {
+    console.error("Copy failed: ", err);
+  });
+};
+
+
 export default function AllReportsToday({ onNavigate }) {
   const [rows, setRows] = useState([]);
   const [filtered, setFiltered] = useState([]);
@@ -460,7 +482,14 @@ export default function AllReportsToday({ onNavigate }) {
                         {typeIcon(r.type)} {r.type}
                       </span>
                     </td>
-                    <td className="fw-bold text-dark">{r.ref_no}</td>
+                    <td
+  className="fw-bold text-primary"
+  style={{ cursor: "pointer" }}
+  title="Click to copy Ref No"
+  onClick={() => handleCopyRef(r.ref_no)}
+>
+  {r.ref_no}
+</td>
                     
                     {/* CUSTOMER NAME COLORS: Walk-in = BLUE (#2563eb), Registered = GREEN (#16a34a) */}
                     <td className="fw-bold">
