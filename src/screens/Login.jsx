@@ -31,7 +31,7 @@ export default function Login({ onLogin }) {
       Swal.fire({
         width: "260px",
         icon: "warning",
-        text: "Username & Password required"
+        text: "Username & Password required",
       });
       return;
     }
@@ -74,7 +74,7 @@ export default function Login({ onLogin }) {
           width: "280px",
           icon: "error",
           title: "Login Failed",
-          text: errorText
+          text: errorText,
         });
         return;
       }
@@ -103,99 +103,167 @@ export default function Login({ onLogin }) {
             i++;
             if (i >= text.length) clearInterval(typing);
           }, 100);
-        }
+        },
       });
 
       setTimeout(() => {
         onLogin();
       }, 1500);
-
     } catch (err) {
       setLoading(false);
+
       Swal.fire({
         width: "260px",
         icon: "error",
-        text: "Server Error"
+        text: "Server Error",
       });
     }
   };
 
   return (
     <div className="airport-login-wrapper">
-      {/* Background Layer */}
+
+      {/* ================= PREMIUM BACKGROUND ================= */}
       <div className="bg-decorations">
+
+        {/* Main Airport Image */}
         <div className="hd-airport-bg"></div>
+
+        {/* Dark premium overlay */}
+        <div className="premium-overlay"></div>
+
+        {/* Blue / Gold ambient lights */}
+        <div className="ambient-light light-blue"></div>
+        <div className="ambient-light light-gold"></div>
+        <div className="ambient-light light-cyan"></div>
+
+        {/* Premium grid */}
         <div className="grid-perspective"></div>
 
-        {/* Dynamic Animations */}
+        {/* Horizon glow */}
+        <div className="horizon-glow"></div>
+
+        {/* Decorative light lines */}
+        <div className="light-line line-one"></div>
+        <div className="light-line line-two"></div>
+        <div className="light-line line-three"></div>
+
+        {/* Small floating particles */}
+        <div className="particles">
+          <span></span>
+          <span></span>
+          <span></span>
+          <span></span>
+          <span></span>
+          <span></span>
+          <span></span>
+          <span></span>
+        </div>
+
+        {/* ================= AIRPORT SCENE ================= */}
         <div className="airport-scene">
 
-          {/* 1. PARKED GATE - AIRPLANE 1 */}
+          {/* PARKED GATE 1 */}
           <div className="plane-card parked-gate1">
             <div className="card-top">
-              <img src="/images/plane.png" alt="Plane" className="mini-plane-img" />
+              <img
+                src="/images/plane.png"
+                alt="Plane"
+                className="mini-plane-img"
+              />
               <span className="plane-badge">GATE 04</span>
             </div>
+
             <div className="plane-details">
               <strong>Boeing 777-300ER</strong>
               <span>Status: Parked / Boarding</span>
             </div>
           </div>
 
-          {/* 2. PARKED GATE - AIRPLANE 2 */}
+          {/* PARKED GATE 2 */}
           <div className="plane-card parked-gate2">
             <div className="card-top">
-              <img src="/images/plane.png" alt="Plane" className="mini-plane-img" />
+              <img
+                src="/images/plane.png"
+                alt="Plane"
+                className="mini-plane-img"
+              />
               <span className="plane-badge gold">GATE 09</span>
             </div>
+
             <div className="plane-details">
               <strong>Airbus A350-900</strong>
               <span>Status: Standby / Umrah Flight</span>
             </div>
           </div>
 
-          {/* 3. TAKEOFF ANIMATED AIRPLANE */}
+          {/* TAKEOFF */}
           <div className="flying-jet jet-takeoff">
             <div className="jet-body">
-              <img src="/images/plane.png" alt="Takeoff Plane" className="real-plane-img takeoff-flip" />
+              <img
+                src="/images/plane.png"
+                alt="Takeoff Plane"
+                className="real-plane-img takeoff-flip"
+              />
               <div className="jet-trail"></div>
             </div>
+
             <div className="jet-tag">
               <strong>PA-204</strong> (Takeoff - 1,200ft ↑)
             </div>
           </div>
 
-          {/* 4. LANDING ANIMATED AIRPLANE */}
+          {/* LANDING */}
           <div className="flying-jet jet-landing">
             <div className="jet-body">
-              <img src="/images/plane.png" alt="Landing Plane" className="real-plane-img landing-flip" />
+              <img
+                src="/images/plane.png"
+                alt="Landing Plane"
+                className="real-plane-img landing-flip"
+              />
               <div className="jet-trail landing-trail"></div>
             </div>
+
             <div className="jet-tag gold-tag">
               <strong>SV-786</strong> (Landing - 80ft ↓)
             </div>
           </div>
 
-          {/* 5. CRUISING OVERHEAD AIRPLANE */}
+          {/* CRUISING */}
           <div className="flying-jet jet-cruise">
             <div className="jet-body">
-              <img src="/images/plane.png" alt="Cruising Plane" className="real-plane-img" />
+              <img
+                src="/images/plane.png"
+                alt="Cruising Plane"
+                className="real-plane-img"
+              />
             </div>
+
             <div className="jet-tag white-tag">
               <strong>EK-602</strong> (Cruising 36,000ft)
             </div>
           </div>
-
         </div>
       </div>
 
-      {/* Login Box */}
+      {/* ================= LOGIN CARD ================= */}
       <div className={`login-card ${shake ? "shake" : ""}`}>
+
         <div className="logo-badge">
-          <img src="/images/plane.png" alt="Logo" className="logo-plane-img" />
+          <img
+            src="/images/plane.png"
+            alt="Logo"
+            className="logo-plane-img"
+          />
         </div>
-        <h2 className="title">Makki Madni Travel & Tours</h2>
-        <p className="subtitle">Traveling Management System</p>
+
+        <h2 className="title">
+          Makki Madni Travel & Tours
+        </h2>
+
+        <p className="subtitle">
+          Traveling Management System
+        </p>
 
         <div className="input-group">
           <input
@@ -224,7 +292,11 @@ export default function Login({ onLogin }) {
             }}
             onKeyUp={checkCapsLock}
           />
-          <span className="eye" onClick={() => setShow(!show)}>
+
+          <span
+            className="eye"
+            onClick={() => setShow(!show)}
+          >
             {show ? "🙈" : "👁️"}
           </span>
         </div>
@@ -243,65 +315,432 @@ export default function Login({ onLogin }) {
           >
             {loading ? "Authenticating..." : "Sign In"}
           </button>
-          <button className="btn cancel-btn" onClick={cancel}>
+
+          <button
+            className="btn cancel-btn"
+            onClick={cancel}
+          >
             Clear
           </button>
         </div>
 
         <div className="footer-credits">
+          <span className="status-dot"></span>
           Live Terminal Operations & Radar Control
         </div>
       </div>
 
+      {/* ================= ALL STYLES ================= */}
       <style>{`
-        /* ================= SCALED & SCROLL-FREE STYLES ================= */
+
+        * {
+          box-sizing: border-box;
+        }
+
+        /* =========================================
+           MAIN BACKGROUND
+        ========================================= */
+
         .airport-login-wrapper {
           position: fixed;
-          top: 0;
-          left: 0;
+          inset: 0;
           width: 100vw;
           height: 100vh;
           display: flex;
           align-items: center;
           justify-content: center;
           overflow: hidden;
-          background: #010a15;
-          font-family: 'Segoe UI', Roboto, sans-serif;
-          box-sizing: border-box;
+
+          font-family:
+            "Segoe UI",
+            Roboto,
+            Arial,
+            sans-serif;
+
+          background: #020914;
+          color: white;
         }
 
         .bg-decorations {
           position: absolute;
           inset: 0;
-          pointer-events: none;
           overflow: hidden;
+          pointer-events: none;
         }
+
+        /* =========================================
+           AIRPORT IMAGE (UPDATED FOR HIGH VISIBILITY)
+        ========================================= */
 
         .hd-airport-bg {
           position: absolute;
-          inset: 0;
-          background-image: linear-gradient(to bottom, rgba(1, 10, 21, 0.8), rgba(1, 10, 21, 0.92)), 
-                            url('https://images.unsplash.com/photo-1542296332-2e4473faf563?auto=format&fit=crop&w=1920&q=80');
+          inset: -20px;
+
+          background-image:
+            url("https://images.unsplash.com/photo-1542296332-2e4473faf563?auto=format&fit=crop&w=2200&q=90");
+
           background-size: cover;
           background-position: center;
-          filter: brightness(0.65) contrast(1.1);
+
+          /* Brightness اور Saturate کو بڑھایا گیا ہے */
+          filter:
+            brightness(0.85)
+            contrast(1.05)
+            saturate(1);
+
+          transform: scale(1.04);
+
+          animation: backgroundSlowZoom 22s ease-in-out infinite alternate;
         }
+
+        @keyframes backgroundSlowZoom {
+          from {
+            transform: scale(1.04);
+          }
+
+          to {
+            transform: scale(1.10);
+          }
+        }
+
+        /* =========================================
+           PREMIUM OVERLAY (UPDATED TO BE MORE TRANSPARENT)
+        ========================================= */
+
+        .premium-overlay {
+          position: absolute;
+          inset: 0;
+
+          /* اوورلے کو ہلکا کیا گیا ہے تاکہ ایئرپورٹ کی تصویر صاف نظر آئے */
+          background:
+            linear-gradient(
+              135deg,
+              rgba(1, 8, 20, 0.45) 0%,
+              rgba(2, 18, 40, 0.35) 50%,
+              rgba(1, 9, 22, 0.55) 100%
+            );
+
+          z-index: 1;
+        }
+
+        /* =========================================
+           AMBIENT LIGHTS
+        ========================================= */
+
+        .ambient-light {
+          position: absolute;
+          border-radius: 50%;
+          filter: blur(80px);
+          z-index: 2;
+          pointer-events: none;
+        }
+
+        .light-blue {
+          width: 420px;
+          height: 420px;
+          left: -130px;
+          top: -130px;
+
+          background: rgba(0, 126, 255, 0.15);
+
+          animation: ambientBlue 9s ease-in-out infinite alternate;
+        }
+
+        .light-gold {
+          width: 360px;
+          height: 360px;
+          right: -120px;
+          bottom: -100px;
+
+          background: rgba(212, 175, 55, 0.12);
+
+          animation: ambientGold 11s ease-in-out infinite alternate;
+        }
+
+        .light-cyan {
+          width: 280px;
+          height: 280px;
+          left: 45%;
+          top: 5%;
+
+          background: rgba(0, 229, 255, 0.06);
+
+          animation: ambientCyan 8s ease-in-out infinite alternate;
+        }
+
+        @keyframes ambientBlue {
+          from {
+            transform: translate(0, 0) scale(1);
+          }
+
+          to {
+            transform: translate(100px, 70px) scale(1.25);
+          }
+        }
+
+        @keyframes ambientGold {
+          from {
+            transform: translate(0, 0);
+          }
+
+          to {
+            transform: translate(-90px, -70px) scale(1.2);
+          }
+        }
+
+        @keyframes ambientCyan {
+          from {
+            opacity: 0.35;
+            transform: scale(0.9);
+          }
+
+          to {
+            opacity: 0.8;
+            transform: scale(1.35);
+          }
+        }
+
+        /* =========================================
+           PREMIUM GRID
+        ========================================= */
 
         .grid-perspective {
           position: absolute;
           inset: 0;
-          background-image: 
-            linear-gradient(rgba(0, 210, 255, 0.08) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(0, 210, 255, 0.08) 1px, transparent 1px);
-          background-size: 40px 40px;
-          opacity: 0.3;
+
+          z-index: 3;
+
+          background-image:
+            linear-gradient(
+              rgba(67, 185, 255, 0.05) 1px,
+              transparent 1px
+            ),
+            linear-gradient(
+              90deg,
+              rgba(67, 185, 255, 0.05) 1px,
+              transparent 1px
+            );
+
+          background-size: 55px 55px;
+
+          opacity: 0.20;
+
+          transform: perspective(500px) rotateX(55deg)
+            translateY(30%);
+
+          transform-origin: bottom;
         }
 
-        /* ================= PLANE IMAGES (COMPACT SCALE) ================= */
+        /* =========================================
+           HORIZON GLOW
+        ========================================= */
+
+        .horizon-glow {
+          position: absolute;
+          left: 0;
+          right: 0;
+          bottom: 14%;
+
+          height: 2px;
+
+          background:
+            linear-gradient(
+              90deg,
+              transparent,
+              rgba(0, 210, 255, 0.0),
+              rgba(0, 210, 255, 0.60),
+              rgba(212, 175, 55, 0.60),
+              rgba(0, 210, 255, 0.0),
+              transparent
+            );
+
+          box-shadow:
+            0 0 18px rgba(0, 210, 255, 0.40),
+            0 0 40px rgba(212, 175, 55, 0.15);
+
+          opacity: 0.6;
+
+          z-index: 4;
+        }
+
+        /* =========================================
+           LIGHT STREAKS
+        ========================================= */
+
+        .light-line {
+          position: absolute;
+          height: 1px;
+
+          background:
+            linear-gradient(
+              90deg,
+              transparent,
+              rgba(0, 210, 255, 0.8),
+              transparent
+            );
+
+          opacity: 0.35;
+
+          z-index: 4;
+        }
+
+        .line-one {
+          width: 420px;
+          top: 22%;
+          left: -450px;
+
+          animation: lineMove 12s linear infinite;
+        }
+
+        .line-two {
+          width: 280px;
+          top: 67%;
+          left: -300px;
+
+          animation: lineMove 17s linear infinite;
+          animation-delay: 4s;
+        }
+
+        .line-three {
+          width: 350px;
+          top: 82%;
+          left: -380px;
+
+          animation: lineMove 20s linear infinite;
+          animation-delay: 8s;
+        }
+
+        @keyframes lineMove {
+          from {
+            transform: translateX(0);
+            opacity: 0;
+          }
+
+          10% {
+            opacity: 0.45;
+          }
+
+          80% {
+            opacity: 0.35;
+          }
+
+          to {
+            transform: translateX(150vw);
+            opacity: 0;
+          }
+        }
+
+        /* =========================================
+           FLOATING PARTICLES
+        ========================================= */
+
+        .particles {
+          position: absolute;
+          inset: 0;
+          z-index: 5;
+        }
+
+        .particles span {
+          position: absolute;
+          width: 3px;
+          height: 3px;
+
+          border-radius: 50%;
+
+          background: rgba(255, 255, 255, 0.75);
+
+          box-shadow:
+            0 0 8px rgba(0, 210, 255, 0.8);
+
+          animation:
+            particleFloat
+            var(--duration, 7s)
+            ease-in-out infinite;
+        }
+
+        .particles span:nth-child(1) {
+          left: 12%;
+          top: 22%;
+          --duration: 8s;
+        }
+
+        .particles span:nth-child(2) {
+          left: 82%;
+          top: 17%;
+          --duration: 11s;
+        }
+
+        .particles span:nth-child(3) {
+          left: 22%;
+          top: 76%;
+          --duration: 9s;
+        }
+
+        .particles span:nth-child(4) {
+          left: 73%;
+          top: 71%;
+          --duration: 12s;
+        }
+
+        .particles span:nth-child(5) {
+          left: 91%;
+          top: 44%;
+          --duration: 10s;
+        }
+
+        .particles span:nth-child(6) {
+          left: 7%;
+          top: 52%;
+          --duration: 13s;
+        }
+
+        .particles span:nth-child(7) {
+          left: 59%;
+          top: 11%;
+          --duration: 9s;
+        }
+
+        .particles span:nth-child(8) {
+          left: 42%;
+          top: 87%;
+          --duration: 11s;
+        }
+
+        @keyframes particleFloat {
+          0%,
+          100% {
+            transform: translateY(0);
+            opacity: 0.25;
+          }
+
+          50% {
+            transform: translateY(-25px);
+            opacity: 0.9;
+          }
+        }
+
+        /* =========================================
+           AIRPORT SCENE
+        ========================================= */
+
+        .airport-scene {
+          position: absolute;
+          inset: 0;
+          z-index: 6;
+        }
+
+        /* =========================================
+           PLANE IMAGE
+        ========================================= */
+
         .real-plane-img {
           width: 85px;
           height: auto;
-          filter: drop-shadow(0 0 10px rgba(0, 242, 254, 0.8));
+
+          filter:
+            drop-shadow(0 0 8px rgba(0, 242, 254, 0.85))
+            drop-shadow(0 0 18px rgba(0, 160, 255, 0.35));
+
           object-fit: contain;
         }
 
@@ -316,30 +755,50 @@ export default function Login({ onLogin }) {
         .mini-plane-img {
           width: 26px;
           height: auto;
-          filter: drop-shadow(0 0 4px #00f2fe);
+
+          filter:
+            drop-shadow(0 0 4px #00f2fe);
         }
 
         .logo-plane-img {
           width: 30px;
           height: auto;
-          filter: drop-shadow(0 0 6px #ffffff);
+
+          filter:
+            drop-shadow(0 0 6px #ffffff);
         }
 
-        /* Parked Gate Cards */
-        .airport-scene {
-          position: absolute;
-          inset: 0;
-        }
+        /* =========================================
+           GATE CARDS
+        ========================================= */
 
         .plane-card {
           position: absolute;
-          background: rgba(0, 25, 50, 0.85);
-          border: 1px solid rgba(0, 210, 255, 0.4);
-          border-radius: 10px;
-          padding: 8px 12px;
+
+          background:
+            linear-gradient(
+              135deg,
+              rgba(3, 30, 58, 0.85),
+              rgba(1, 12, 27, 0.85)
+            );
+
+          border:
+            1px solid rgba(0, 210, 255, 0.45);
+
+          border-radius: 12px;
+
+          padding: 9px 13px;
+
           color: #fff;
-          backdrop-filter: blur(8px);
-          box-shadow: 0 8px 20px rgba(0,0,0,0.6);
+
+          backdrop-filter: blur(14px);
+          -webkit-backdrop-filter: blur(14px);
+
+          box-shadow:
+            0 12px 30px rgba(0, 0, 0, 0.55),
+            inset 0 1px 0 rgba(255, 255, 255, 0.10),
+            0 0 20px rgba(0, 210, 255, 0.08);
+
           display: flex;
           flex-direction: column;
           gap: 4px;
@@ -351,180 +810,435 @@ export default function Login({ onLogin }) {
           gap: 6px;
         }
 
-        .parked-gate1 { top: 12%; left: 5%; }
-        .parked-gate2 { bottom: 12%; right: 5%; }
+        .parked-gate1 {
+          top: 12%;
+          left: 5%;
+        }
+
+        .parked-gate2 {
+          bottom: 12%;
+          right: 5%;
+        }
 
         .plane-badge {
           font-size: 10px;
           font-weight: 700;
+
           color: #00f2fe;
-          letter-spacing: 0.5px;
+
+          letter-spacing: 0.7px;
         }
-        .plane-badge.gold { color: #ffd700; }
+
+        .plane-badge.gold {
+          color: #ffd700;
+        }
 
         .plane-details strong {
           display: block;
           font-size: 12px;
         }
+
         .plane-details span {
           font-size: 10px;
-          color: rgba(255, 255, 255, 0.7);
+          color: rgba(255, 255, 255, 0.75);
         }
 
-        /* Flying Jets */
+        /* =========================================
+           FLYING PLANES
+        ========================================= */
+
         .flying-jet {
           position: absolute;
+
           display: flex;
           align-items: center;
           gap: 8px;
-          z-index: 2;
+
+          z-index: 7;
         }
 
         .jet-body {
           position: relative;
+
           display: flex;
           align-items: center;
         }
 
         .jet-trail {
           position: absolute;
-          width: 100px;
+
+          width: 120px;
           height: 2px;
-          background: linear-gradient(90deg, #00f2fe, transparent);
+
           right: 90%;
           top: 50%;
+
+          background:
+            linear-gradient(
+              90deg,
+              #00f2fe,
+              transparent
+            );
+
+          box-shadow:
+            0 0 8px rgba(0, 242, 254, 0.5);
         }
 
         .landing-trail {
-          background: linear-gradient(90deg, #ffd700, transparent);
+          background:
+            linear-gradient(
+              90deg,
+              #ffd700,
+              transparent
+            );
         }
 
         .jet-tag {
-          background: rgba(0, 20, 40, 0.9);
-          border: 1px solid #00f2fe;
+          background:
+            rgba(0, 20, 40, 0.90);
+
+          border:
+            1px solid #00f2fe;
+
           padding: 4px 10px;
+
           border-radius: 6px;
+
           color: #00f2fe;
+
           font-size: 11px;
+
           white-space: nowrap;
-          box-shadow: 0 0 10px rgba(0, 242, 254, 0.3);
+
+          box-shadow:
+            0 0 12px rgba(0, 242, 254, 0.25);
         }
 
-        .gold-tag { border-color: #ffd700; color: #ffd700; }
-        .white-tag { border-color: #ffffff; color: #ffffff; }
+        .gold-tag {
+          border-color: #ffd700;
+          color: #ffd700;
+        }
 
-        /* Animation Keyframes */
+        .white-tag {
+          border-color: #ffffff;
+          color: #ffffff;
+        }
+
+        /* =========================================
+           PLANE ANIMATIONS
+        ========================================= */
+
         .jet-takeoff {
-          animation: animTakeoff 14s ease-in-out infinite;
+          animation:
+            animTakeoff
+            14s
+            ease-in-out
+            infinite;
         }
+
         @keyframes animTakeoff {
-          0% { left: -20%; bottom: 10%; opacity: 0; }
-          15% { opacity: 1; }
-          85% { opacity: 1; }
-          100% { left: 115%; bottom: 80%; opacity: 0; }
+          0% {
+            left: -20%;
+            bottom: 10%;
+            opacity: 0;
+          }
+
+          15% {
+            opacity: 1;
+          }
+
+          85% {
+            opacity: 1;
+          }
+
+          100% {
+            left: 115%;
+            bottom: 80%;
+            opacity: 0;
+          }
         }
 
         .jet-landing {
-          animation: animLanding 16s ease-in-out infinite;
+          animation:
+            animLanding
+            16s
+            ease-in-out
+            infinite;
+
           animation-delay: 2s;
         }
+
         @keyframes animLanding {
-          0% { right: -20%; top: 10%; opacity: 0; }
-          15% { opacity: 1; }
-          75% { opacity: 1; }
-          100% { right: 115%; top: 80%; opacity: 0; }
+          0% {
+            right: -20%;
+            top: 10%;
+            opacity: 0;
+          }
+
+          15% {
+            opacity: 1;
+          }
+
+          75% {
+            opacity: 1;
+          }
+
+          100% {
+            right: 115%;
+            top: 80%;
+            opacity: 0;
+          }
         }
 
         .jet-cruise {
-          animation: animCruise 22s linear infinite;
-        }
-        @keyframes animCruise {
-          0% { left: -20%; top: 22%; opacity: 0; }
-          10% { opacity: 0.8; }
-          90% { opacity: 0.8; }
-          100% { left: 115%; top: 38%; opacity: 0; }
+          animation:
+            animCruise
+            22s
+            linear
+            infinite;
         }
 
-        /* ================= LOGIN CARD (COMPACT SIZE) ================= */
+        @keyframes animCruise {
+          0% {
+            left: -20%;
+            top: 22%;
+            opacity: 0;
+          }
+
+          10% {
+            opacity: 0.8;
+          }
+
+          90% {
+            opacity: 0.8;
+          }
+
+          100% {
+            left: 115%;
+            top: 38%;
+            opacity: 0;
+          }
+        }
+
+        /* =========================================
+           LOGIN CARD
+        ========================================= */
+
         .login-card {
           position: relative;
-          z-index: 10;
+          z-index: 20;
+
           width: 340px;
-          background: rgba(1, 16, 33, 0.88);
-          backdrop-filter: blur(16px);
-          -webkit-backdrop-filter: blur(16px);
-          border-radius: 16px;
+
+          background:
+            linear-gradient(
+              145deg,
+              rgba(5, 25, 49, 0.88),
+              rgba(1, 10, 23, 0.92)
+            );
+
+          backdrop-filter: blur(20px);
+          -webkit-backdrop-filter: blur(20px);
+
+          border-radius: 18px;
+
           padding: 26px 24px;
-          box-shadow: 
-            0 15px 45px rgba(0, 0, 0, 0.9),
-            0 0 25px rgba(0, 242, 254, 0.2),
-            inset 0 0 2px rgba(255, 255, 255, 0.3);
+
+          box-shadow:
+            0 25px 70px rgba(0, 0, 0, 0.88),
+            0 0 35px rgba(0, 180, 255, 0.13),
+            inset 0 1px 0 rgba(255, 255, 255, 0.12);
+
           text-align: center;
+
           color: white;
-          border: 1px solid rgba(0, 242, 254, 0.4);
-          transition: all 0.3s ease;
+
+          border:
+            1px solid rgba(0, 210, 255, 0.40);
+
+          transition:
+            all 0.3s ease;
+        }
+
+        .login-card::before {
+          content: "";
+
+          position: absolute;
+
+          top: 0;
+          left: 12%;
+          right: 12%;
+
+          height: 1px;
+
+          background:
+            linear-gradient(
+              90deg,
+              transparent,
+              rgba(0, 242, 254, 0.85),
+              rgba(212, 175, 55, 0.85),
+              transparent
+            );
+
+          box-shadow:
+            0 0 10px rgba(0, 242, 254, 0.5);
+        }
+
+        .login-card::after {
+          content: "";
+
+          position: absolute;
+
+          inset: 1px;
+
+          border-radius: 17px;
+
+          pointer-events: none;
+
+          background:
+            radial-gradient(
+              circle at 50% 0%,
+              rgba(0, 210, 255, 0.08),
+              transparent 42%
+            );
         }
 
         .login-card:hover {
-          border-color: rgba(0, 242, 254, 0.8);
-          box-shadow: 
-            0 20px 50px rgba(0, 0, 0, 0.95),
-            0 0 35px rgba(0, 242, 254, 0.35);
+          border-color:
+            rgba(0, 242, 254, 0.70);
+
+          box-shadow:
+            0 30px 80px rgba(0, 0, 0, 0.92),
+            0 0 45px rgba(0, 210, 255, 0.20),
+            inset 0 1px 0 rgba(255, 255, 255, 0.14);
         }
 
+        /* =========================================
+           LOGO
+        ========================================= */
+
         .logo-badge {
-          width: 48px;
-          height: 48px;
-          margin: 0 auto 10px;
-          background: linear-gradient(135deg, #00c6ff, #0072ff);
+          position: relative;
+          z-index: 2;
+
+          width: 52px;
+          height: 52px;
+
+          margin:
+            0 auto 10px;
+
+          background:
+            linear-gradient(
+              135deg,
+              #00c6ff,
+              #006eff
+            );
+
           border-radius: 50%;
+
           display: flex;
+
           align-items: center;
           justify-content: center;
-          box-shadow: 0 0 20px rgba(0, 198, 255, 0.6);
+
+          border:
+            2px solid rgba(255, 255, 255, 0.22);
+
+          box-shadow:
+            0 0 22px rgba(0, 198, 255, 0.55),
+            inset 0 0 12px rgba(255, 255, 255, 0.18);
         }
 
         .title {
+          position: relative;
+          z-index: 2;
+
           font-size: 18px;
+
           font-weight: 700;
+
           color: #ffffff;
+
           margin-bottom: 2px;
+
+          letter-spacing: 0.1px;
+
+          text-shadow:
+            0 2px 12px rgba(0, 0, 0, 0.5);
         }
 
         .subtitle {
+          position: relative;
+          z-index: 2;
+
           font-size: 11px;
+
           color: #00f2fe;
+
           margin-bottom: 22px;
+
           text-transform: uppercase;
+
           letter-spacing: 1.2px;
+
           font-weight: 600;
         }
 
+        /* =========================================
+           INPUTS
+        ========================================= */
+
         .input-group {
+          position: relative;
+          z-index: 2;
+
           margin-bottom: 14px;
         }
 
         .login-input {
           width: 100%;
+
           padding: 11px 14px;
-          border-radius: 8px;
-          border: 1px solid rgba(0, 242, 254, 0.35);
+
+          border-radius: 9px;
+
+          border:
+            1px solid rgba(0, 210, 255, 0.28);
+
           outline: none;
+
           font-size: 13px;
-          background: rgba(1, 10, 22, 0.75);
+
+          background:
+            rgba(0, 8, 20, 0.75);
+
           color: #ffffff;
+
           box-sizing: border-box;
-          transition: all 0.3s ease;
+
+          transition:
+            all 0.3s ease;
+
+          box-shadow:
+            inset 0 1px 5px rgba(0, 0, 0, 0.35);
         }
 
         .login-input::placeholder {
-          color: rgba(255, 255, 255, 0.5);
+          color:
+            rgba(255, 255, 255, 0.55);
         }
 
         .login-input:focus {
-          background: rgba(1, 15, 32, 0.95);
-          border-color: #00f2fe;
-          box-shadow: 0 0 12px rgba(0, 242, 254, 0.4);
+          background:
+            rgba(1, 15, 32, 0.92);
+
+          border-color:
+            #00f2fe;
+
+          box-shadow:
+            0 0 0 2px rgba(0, 242, 254, 0.08),
+            0 0 15px rgba(0, 242, 254, 0.25),
+            inset 0 1px 5px rgba(0, 0, 0, 0.4);
         }
 
         .password-box {
@@ -533,49 +1247,110 @@ export default function Login({ onLogin }) {
 
         .eye {
           position: absolute;
+
           right: 12px;
           top: 50%;
-          transform: translateY(-50%);
+
+          transform:
+            translateY(-50%);
+
           cursor: pointer;
+
           font-size: 14px;
+
           opacity: 0.75;
+
+          z-index: 5;
+
+          transition:
+            transform 0.2s ease,
+            opacity 0.2s ease;
+        }
+
+        .eye:hover {
+          opacity: 1;
+
+          transform:
+            translateY(-50%)
+            scale(1.12);
         }
 
         .caps-warning {
+          position: relative;
+          z-index: 2;
+
           color: #ffd700;
+
           font-size: 11px;
+
           margin-bottom: 10px;
+
           font-weight: 600;
+
           text-align: left;
         }
 
+        /* =========================================
+           BUTTONS
+        ========================================= */
+
         .btn-row {
+          position: relative;
+          z-index: 2;
+
           display: flex;
+
           gap: 10px;
+
           margin-top: 18px;
         }
 
         .btn {
           flex: 1;
+
           padding: 10px;
+
           border: none;
-          border-radius: 8px;
+
+          border-radius: 9px;
+
           font-size: 13px;
+
           cursor: pointer;
-          transition: all 0.3s ease;
+
+          transition:
+            all 0.3s ease;
+
           font-weight: 600;
         }
 
         .login-btn {
-          background: linear-gradient(135deg, #00f2fe, #4facfe);
+          background:
+            linear-gradient(
+              135deg,
+              #00f2fe,
+              #4facfe
+            );
+
           color: #001830;
-          box-shadow: 0 4px 14px rgba(0, 242, 254, 0.35);
+
+          box-shadow:
+            0 5px 16px rgba(0, 242, 254, 0.28);
         }
 
         .login-btn:hover:not(:disabled) {
-          background: linear-gradient(135deg, #38f9d7, #4facfe);
-          transform: translateY(-1px);
-          box-shadow: 0 5px 18px rgba(0, 242, 254, 0.5);
+          background:
+            linear-gradient(
+              135deg,
+              #38f9d7,
+              #4facfe
+            );
+
+          transform:
+            translateY(-2px);
+
+          box-shadow:
+            0 7px 22px rgba(0, 242, 254, 0.45);
         }
 
         .login-btn:disabled {
@@ -584,44 +1359,169 @@ export default function Login({ onLogin }) {
         }
 
         .cancel-btn {
-          background: rgba(255, 255, 255, 0.05);
+          background:
+            rgba(255, 255, 255, 0.08);
+
           color: #ffffff;
-          border: 1px solid rgba(255, 255, 255, 0.2);
+
+          border:
+            1px solid rgba(255, 255, 255, 0.22);
         }
 
         .cancel-btn:hover {
-          background: rgba(255, 255, 255, 0.15);
+          background:
+            rgba(255, 255, 255, 0.16);
+
+          border-color:
+            rgba(255, 255, 255, 0.4);
+
+          transform:
+            translateY(-1px);
         }
+
+        /* =========================================
+           FOOTER
+        ========================================= */
 
         .footer-credits {
-          margin-top: 16px;
+          position: relative;
+          z-index: 2;
+
+          margin-top: 17px;
+
           font-size: 10px;
-          color: rgba(255, 255, 255, 0.45);
+
+          color:
+            rgba(255, 255, 255, 0.60);
+
+          letter-spacing: 0.2px;
         }
 
+        .status-dot {
+          display: inline-block;
+
+          width: 6px;
+          height: 6px;
+
+          margin-right: 5px;
+
+          border-radius: 50%;
+
+          background: #39ff88;
+
+          box-shadow:
+            0 0 8px #39ff88;
+
+          animation:
+            statusPulse
+            2s
+            infinite;
+        }
+
+        @keyframes statusPulse {
+          0%,
+          100% {
+            opacity: 1;
+          }
+
+          50% {
+            opacity: 0.35;
+          }
+        }
+
+        /* =========================================
+           SHAKE
+        ========================================= */
+
         .shake {
-          animation: shake 0.4s ease;
+          animation:
+            shake
+            0.4s
+            ease;
         }
 
         @keyframes shake {
-          0% { transform: translateX(0); }
-          20% { transform: translateX(-6px); }
-          40% { transform: translateX(6px); }
-          60% { transform: translateX(-4px); }
-          80% { transform: translateX(4px); }
-          100% { transform: translateX(0); }
+          0% {
+            transform: translateX(0);
+          }
+
+          20% {
+            transform: translateX(-6px);
+          }
+
+          40% {
+            transform: translateX(6px);
+          }
+
+          60% {
+            transform: translateX(-4px);
+          }
+
+          80% {
+            transform: translateX(4px);
+          }
+
+          100% {
+            transform: translateX(0);
+          }
         }
 
+        /* =========================================
+           RESPONSIVE
+        ========================================= */
+
         @media (max-width: 768px) {
-          .parked-gate1, .parked-gate2 { display: none; }
+
+          .parked-gate1,
+          .parked-gate2 {
+            display: none;
+          }
+
+          .jet-tag {
+            display: none;
+          }
+
+          .grid-perspective {
+            opacity: 0.12;
+          }
+
+          .hd-airport-bg {
+            background-position: center;
+          }
         }
 
         @media (max-width: 480px) {
+
           .login-card {
             width: 88%;
-            padding: 22px 18px;
+
+            padding:
+              22px 18px;
+          }
+
+          .title {
+            font-size: 17px;
+          }
+
+          .subtitle {
+            font-size: 10px;
+          }
+
+          .real-plane-img {
+            width: 65px;
+          }
+
+          .light-blue {
+            width: 280px;
+            height: 280px;
+          }
+
+          .light-gold {
+            width: 240px;
+            height: 240px;
           }
         }
+
       `}</style>
     </div>
   );
