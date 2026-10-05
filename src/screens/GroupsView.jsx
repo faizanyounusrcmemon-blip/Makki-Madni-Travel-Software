@@ -1,6 +1,27 @@
 import React, { useEffect, useState, useRef } from "react";
 import usePdf from "../hooks/usePdf";
 import Header from "../components/Header";
+import Swal from "sweetalert2";
+
+/* ================= CLICK COPY HANDLER ================= */
+const handleCopyRef = (refNo) => {
+  if (!refNo || refNo === "-") return;
+
+  navigator.clipboard.writeText(refNo).then(() => {
+    Swal.fire({
+      icon: "success",
+      title: "Copied!",
+      text: `Ref No: ${refNo} copied to clipboard`,
+      toast: true,
+      position: "top-end",
+      showConfirmButton: false,
+      timer: 1500,
+      timerProgressBar: true,
+    });
+  }).catch((err) => {
+    console.error("Copy failed: ", err);
+  });
+};
 
 
 /* ================= HELPERS ================= */
@@ -93,84 +114,94 @@ export default function GroupsView({ id, onNavigate, fromPage }) {
         {/* ===== TITLE ===== */}
         <Header title="👨‍👩‍👧‍👦 GROUPS PACKAGE DETAILS" />
 
-        {/* ===== BASIC INFO ===== */}
+{/* ===== BASIC INFO ===== */}
 <div className="row g-3 mb-4">
 
-  <div className="col-md-6">
+  {/* Reference No with Copy Functionality */}
+  <div className="col-md-4">
     <div className="border rounded-4 p-3 shadow-sm h-100">
       <div className="text-muted small">Reference No</div>
-      <div className="fw-bold fs-5 text-primary">
-        {data.ref_no}
+      <div
+        className="fw-bold fs-5 text-primary"
+        style={{ cursor: "pointer" }}
+        title="Click to copy Ref No"
+        onClick={() => handleCopyRef(data.ref_no)}
+      >
+        {data.ref_no || "-"}
       </div>
     </div>
   </div>
 
-  <div className="col-md-6">
+  {/* Customer Name */}
+  <div className="col-md-4">
     <div className="border rounded-4 p-3 shadow-sm h-100">
       <div className="text-muted small">Customer</div>
       <div className="fw-bold fs-5">
-        {data.customer_name}
+        {data.customer_name || "-"}
       </div>
     </div>
   </div>
 
+  {/* Sub Customer Name */}
+  <div className="col-md-4">
+    <div className="border rounded-4 p-3 shadow-sm h-100">
+      <div className="text-muted small">Sub Customer</div>
+      <div className="fw-bold fs-5 text-secondary">
+        {data.sub_customer_name || "-"}
+      </div>
+    </div>
+  </div>
+
+  {/* Booking Date */}
   <div className="col-md-3">
     <div className="border rounded-4 p-3 shadow-sm text-center h-100">
       <div className="text-muted small">
         📅 Booking Date
       </div>
-
       <div className="fw-bold">
         {fmtDate(data.booking_date)}
       </div>
     </div>
   </div>
 
+  {/* Start Date */}
   <div className="col-md-3">
     <div className="border rounded-4 p-3 shadow-sm text-center h-100">
       <div className="text-muted small">
         🛫 Start Date
       </div>
-
       <div className="fw-bold text-success">
         {fmtDate(data.start_date)}
       </div>
     </div>
   </div>
 
+  {/* End Date */}
   <div className="col-md-3">
     <div className="border rounded-4 p-3 shadow-sm text-center h-100">
       <div className="text-muted small">
         🛬 End Date
       </div>
-
       <div className="fw-bold text-danger">
         {fmtDate(data.end_date)}
       </div>
     </div>
   </div>
 
+  {/* Duration Box */}
   <div className="col-md-3">
     <div
       className="rounded-4 p-3 text-center text-white shadow"
       style={{
-        background:
-          "linear-gradient(135deg,#059669,#10b981)"
+        background: "linear-gradient(135deg,#059669,#10b981)"
       }}
     >
       <div className="small">
         ⏳ Duration
       </div>
-
-      <div
-        style={{
-          fontSize: 28,
-          fontWeight: 700
-        }}
-      >
+      <div style={{ fontSize: 28, fontWeight: 700 }}>
         {data.duration || 0}
       </div>
-
       <div>
         Days
       </div>

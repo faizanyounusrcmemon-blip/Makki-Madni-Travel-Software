@@ -1,6 +1,27 @@
 import React, { useEffect, useState, useRef } from "react";
 import usePdf from "../hooks/usePdf";
 import Header from "../components/Header";
+import Swal from "sweetalert2";
+
+/* ================= CLICK COPY HANDLER ================= */
+const handleCopyRef = (refNo) => {
+  if (!refNo || refNo === "-") return;
+
+  navigator.clipboard.writeText(refNo).then(() => {
+    Swal.fire({
+      icon: "success",
+      title: "Copied!",
+      text: `Ref No: ${refNo} copied to clipboard`,
+      toast: true,
+      position: "top-end",
+      showConfirmButton: false,
+      timer: 1500,
+      timerProgressBar: true,
+    });
+  }).catch((err) => {
+    console.error("Copy failed: ", err);
+  });
+};
 
 /* ================= HELPERS ================= */
 const fmt = (v) => Number(v || 0).toLocaleString("en-US");
@@ -125,41 +146,55 @@ if (flightDates.length >= 2) {
         {/* ===== HEADER ===== */}
 
 
-        {/* ===== TICKETING DETAILS ===== */}
-                <Header title="🎫 TICKETING DETAILS" />
+{/* ===== TICKETING DETAILS ===== */}
+<Header title="🎫 TICKETING DETAILS" />
 
-        {/* BASIC INFO */}
+{/* 1. BASIC INFO (Ref No & Booking Date) */}
 <div className="row mb-3">
-
-  <div className="col-md-4">
-    <b>Ref No:</b> {data.ref_no}
+  <div className="col-6">
+    <b>Ref No:</b>{" "}
+    <span
+      className="fw-bold text-primary"
+      style={{ cursor: "pointer" }}
+      title="Click to copy Ref No"
+      onClick={() => handleCopyRef(data.ref_no)}
+    >
+      {data.ref_no}
+    </span>
   </div>
-
-  <div className="col-md-4">
+  <div className="col-6 text-end">
     <b>Booking Date:</b> {fmtDate(data.booking_date)}
   </div>
-
-  <div className="col-md-4">
-    <div
-      style={{
-        background:
-          "linear-gradient(135deg,#ff6f61,#ffa07a)",
-        color: "#fff",
-        padding: "8px 12px",
-        borderRadius: "12px",
-        textAlign: "center",
-        fontWeight: "700",
-        boxShadow:
-          "0 3px 8px rgba(0,0,0,0.15)",
-      }}
-    >
-      📅 {tripDays > 0
-        ? `${tripDays} Days / ${tripNights} Nights`
-        : "Duration N/A"}
-    </div>
-  </div>
-
 </div>
+
+{/* 2. CUSTOMER & SUB CUSTOMER */}
+<div className="d-flex justify-content-between mb-3">
+  <div><b>Customer Name:</b> {data.customer_name}</div>
+  <div className="text-end">
+    <b>Sub Customer:</b> {data.sub_customer_name || "-"}
+  </div>
+</div>
+
+{/* 3. DURATION BADGE */}
+<div className="mb-3">
+  <div
+    style={{
+      background: "linear-gradient(135deg,#ff6f61,#ffa07a)",
+      color: "#fff",
+      padding: "8px 12px",
+      borderRadius: "12px",
+      textAlign: "center",
+      fontWeight: "700",
+      boxShadow: "0 3px 8px rgba(0,0,0,0.15)",
+    }}
+  >
+    📅 {tripDays > 0 ? `${tripDays} Days / ${tripNights} Nights` : "Duration N/A"}
+  </div>
+</div>
+
+<hr />
+
+
 
 {/* ===== FLIGHT ROUTES ===== */}
 <h5 className="fw-bold text-primary mb-2">✈️ Flight Routes</h5>

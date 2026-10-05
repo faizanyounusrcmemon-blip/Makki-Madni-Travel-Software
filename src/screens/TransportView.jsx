@@ -1,6 +1,28 @@
 import React, { useEffect, useState, useRef } from "react";
 import usePdf from "../hooks/usePdf";
 import Header from "../components/Header";
+import Swal from "sweetalert2";
+
+/* ================= CLICK COPY HANDLER ================= */
+const handleCopyRef = (refNo) => {
+  if (!refNo || refNo === "-") return;
+
+  navigator.clipboard.writeText(refNo).then(() => {
+    Swal.fire({
+      icon: "success",
+      title: "Copied!",
+      text: `Ref No: ${refNo} copied to clipboard`,
+      toast: true,
+      position: "top-end",
+      showConfirmButton: false,
+      timer: 1500,
+      timerProgressBar: true,
+    });
+  }).catch((err) => {
+    console.error("Copy failed: ", err);
+  });
+};
+
 
 /* ================= HELPERS ================= */
 const fmt = (v) => Number(v || 0).toLocaleString("en-US");
@@ -108,18 +130,29 @@ export default function TransportView({ id, onNavigate, fromPage }) {
       >
         <Header title="🚐 TRANSPORT DETAILS" />
 
-        <div className="row mb-3">
-          <div className="col-6">
-            <b>Ref No:</b> {data.ref_no}
-          </div>
-          <div className="col-6 text-end">
-            <b>Booking Date:</b> {fmtDate(data.booking_date)}
-          </div>
-        </div>
+<div className="row mb-3">
+  <div className="col-6">
+    <b>Ref No:</b>{" "}
+    <span
+      className="fw-bold text-primary"
+      style={{ cursor: "pointer" }}
+      title="Click to copy Ref No"
+      onClick={() => handleCopyRef(data.ref_no)}
+    >
+      {data.ref_no}
+    </span>
+  </div>
+  <div className="col-6 text-end">
+    <b>Booking Date:</b> {fmtDate(data.booking_date)}
+  </div>
+</div>
 
-        <p>
-          <b>Customer Name:</b> {data.customer_name}
-        </p>
+<div className="d-flex justify-content-between mb-3">
+  <div><b>Customer Name:</b> {data.customer_name}</div>
+  <div className="text-end">
+    <b>Sub Customer:</b> {data.sub_customer_name || "-"}
+  </div>
+</div>
 
         <hr />
 

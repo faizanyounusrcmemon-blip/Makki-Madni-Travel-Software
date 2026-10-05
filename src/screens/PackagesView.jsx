@@ -1,6 +1,45 @@
 import React, { useEffect, useState, useRef } from "react";
 import usePdf from "../hooks/usePdf";
 import Header from "../components/Header";
+import Swal from "sweetalert2";
+
+/* ================= CLICK COPY HANDLER ================= */
+const handleCopyRef = (refNo) => {
+  if (!refNo || refNo === "-") return;
+
+  const showToast = () => {
+    Swal.fire({
+      icon: "success",
+      title: "Copied!",
+      text: `Ref No: ${refNo} copied to clipboard`,
+      toast: true,
+      position: "top-end",
+      showConfirmButton: false,
+      timer: 1500,
+      timerProgressBar: true,
+    });
+  };
+
+  if (navigator.clipboard && window.isSecureContext) {
+    navigator.clipboard.writeText(refNo).then(showToast).catch(() => fallbackCopy(refNo, showToast));
+  } else {
+    fallbackCopy(refNo, showToast);
+  }
+};
+
+const fallbackCopy = (text, callback) => {
+  const textArea = document.createElement("textarea");
+  textArea.value = text;
+  document.body.appendChild(textArea);
+  textArea.select();
+  try {
+    document.execCommand("copy");
+    if (callback) callback();
+  } catch (err) {
+    console.error("Fallback copy failed", err);
+  }
+  document.body.removeChild(textArea);
+};
 
 /* ================= DATE FORMAT ================= */
 const fmtDate = (d) =>
@@ -306,36 +345,60 @@ export default function PackagesView({ id, onNavigate, fromPage }) {
             <Header title="PACKAGE QUOTATION" />
 
 <div className="p-3 mb-4 rounded-4" style={{ background: "#f8fafc", border: "1px solid #e2e8f0" }}>
-              <div className="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-3">
-                <div>
-                  <span className="badge bg-primary px-3 py-2 rounded-pill fs-6 mb-2">
-                    PACKAGE — {data.ref_no}
-                  </span>
-                  <h4 className="fw-bold mb-1 text-dark">{data.customer_name}</h4>
-                  <div className="text-secondary small">
-                    📞 {data.contact_no || "N/A"} | 📅 Booking Date: {fmtDate(data.booking_date)}
-                  </div>
-                </div>
+  <div className="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-3">
+    <div>
+      <span className="badge bg-primary px-3 py-2 rounded-pill fs-6 mb-2">
+        PACKAGE —{" "}
+        <span
+          style={{ cursor: "pointer" }}
+          title="Click to copy Ref No"
+          onClick={() => handleCopyRef(data.ref_no)}
+        >
+          {data.ref_no}
+        </span>
+      </span>
+<div className="mb-2" style={{ fontSize: "14px", fontWeight: "600" }}>
+  <span style={{ color: "#6c757d", fontSize: "13px", textTransform: "uppercase", letterSpacing: "0.5px" }}>
+    Customer:{" "}
+  </span>
+  <span className="fw-bold" style={{ color: "#0d6efd", fontSize: "17px" }}>
+    {data.customer_name || "-"}
+  </span>
+</div>
 
-                {/* PDF & PRINT FRIENDLY DURATION BOX */}
-                <div 
-                  className="px-4 py-2 rounded-4 text-center shadow-sm" 
-                  style={{ 
-                    backgroundColor: "#059669", 
-                    color: "#ffffff",
-                    WebkitPrintColorAdjust: "exact",
-                    printColorAdjust: "exact" 
-                  }}
-                >
-                  <div style={{ fontSize: "11px", textTransform: "uppercase", letterSpacing: "1px", color: "#ffffff", opacity: 0.9 }}>
-                    Duration
-                  </div>
-                  <div style={{ fontSize: "18px", fontWeight: "800", color: "#ffffff" }}>
-                    📅 {packageDays} Days / 🌙 {packageNights} Nights
-                  </div>
-                </div>
-              </div>
-            </div>
+<div style={{ fontSize: "14px", fontWeight: "600" }}>
+  <span style={{ color: "#6c757d", fontSize: "12px", textTransform: "uppercase", letterSpacing: "0.5px" }}>
+    Sub Customer:{" "}
+  </span>
+  <span className="fw-bold" style={{ color: "#0d9488", fontSize: "15px" }}>
+    {data.sub_customer_name || "-"}
+  </span>
+</div>
+
+      <div className="text-secondary small">
+        📞 {data.contact_no || "N/A"} | 📅 Booking Date: {fmtDate(data.booking_date)}
+      </div>
+    </div>
+
+    {/* PDF & PRINT FRIENDLY DURATION BOX */}
+    <div 
+      className="px-4 py-2 rounded-4 text-center shadow-sm" 
+      style={{ 
+        backgroundColor: "#059669", 
+        color: "#ffffff",
+        WebkitPrintColorAdjust: "exact",
+        printColorAdjust: "exact" 
+      }}
+    >
+      <div style={{ fontSize: "11px", textTransform: "uppercase", letterSpacing: "1px", color: "#ffffff", opacity: 0.9 }}>
+        Duration
+      </div>
+      <div style={{ fontSize: "18px", fontWeight: "800", color: "#ffffff" }}>
+        📅 {packageDays} Days / 🌙 {packageNights} Nights
+      </div>
+    </div>
+  </div>
+</div>
 
             {/* Flights */}
             <div className="mb-4">
@@ -484,16 +547,27 @@ export default function PackagesView({ id, onNavigate, fromPage }) {
           <div className="bg-white p-4 rounded-4 shadow-lg" style={{ maxWidth: "800px", margin: "auto", fontFamily: "Arial, sans-serif" }}>
             <Header title="PACKAGE QUOTATION" />
 
-            <div className="mb-3">
-              <h4 className="fw-bold">PACKAGE — {data.ref_no}</h4>
-              <p className="mb-1"><b>Customer:</b> {data.customer_name}</p>
-              <p className="mb-1"><b>Contact No:</b> {data.contact_no || "-"}</p>
-              <p className="mb-1"><b>Booking Date:</b> {fmtDate(data.booking_date)}</p>
-              <div className="border rounded-3 p-3 mt-2 shadow-sm" style={{ background: "linear-gradient(135deg,#f8f9fa,#e9f7ef)", borderLeft: "5px solid #198754" }}>
-                <div style={{ fontSize: "12px", color: "#6c757d", textTransform: "uppercase", fontWeight: "600" }}>Package Duration</div>
-                <div style={{ fontSize: "22px", fontWeight: "800", color: "#198754" }}>📅 {packageDays} Days / 🌙 {packageNights} Nights</div>
-              </div>
-            </div>
+<div className="mb-3">
+  <h4 className="fw-bold">
+    PACKAGE —{" "}
+    <span
+      className="text-primary"
+      style={{ cursor: "pointer" }}
+      title="Click to copy Ref No"
+      onClick={() => handleCopyRef(data.ref_no)}
+    >
+      {data.ref_no}
+    </span>
+  </h4>
+  <p className="mb-1"><b>Customer:</b> {data.customer_name}</p>
+  <p className="mb-1"><b>Sub Customer:</b> {data.sub_customer_name || "-"}</p>
+  <p className="mb-1"><b>Contact No:</b> {data.contact_no || "-"}</p>
+  <p className="mb-1"><b>Booking Date:</b> {fmtDate(data.booking_date)}</p>
+  <div className="border rounded-3 p-3 mt-2 shadow-sm" style={{ background: "linear-gradient(135deg,#f8f9fa,#e9f7ef)", borderLeft: "5px solid #198754" }}>
+    <div style={{ fontSize: "12px", color: "#6c757d", textTransform: "uppercase", fontWeight: "600" }}>Package Duration</div>
+    <div style={{ fontSize: "22px", fontWeight: "800", color: "#198754" }}>📅 {packageDays} Days / 🌙 {packageNights} Nights</div>
+  </div>
+</div>
 
             <hr />
 
