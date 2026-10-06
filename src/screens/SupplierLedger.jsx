@@ -78,6 +78,12 @@ const showRefDetails = (row) => {
           <span style="color:#198754; font-weight:bold; font-size:14px;">${row.customer_name || "N/A"}</span>
         </div>
 
+        <!-- ✨ SUB CUSTOMER ADDED HERE -->
+        <div style="margin-bottom:10px;">
+          <b style="color:#52647a; font-size:11px;">SUB CUSTOMER:</b><br/>
+          <span style="color:#0d6efd; font-weight:bold; font-size:13px;">${row.sub_customer_name || row.sub_customer || "-"}</span>
+        </div>
+
         <div>
           <b style="color:#52647a; font-size:11px;">SALE DATE:</b><br/>
           <span style="font-weight:bold; color:#212529;">${formatDate(displayDate)}</span>
@@ -243,8 +249,8 @@ const mapped = (d.ledger || []).map((row) => {
     credit,
     balance,
     ref_no: row.ref_no || "-",
-    // ✨ Customer name yahan ensure karein:
-    customer_name: row.customer_name || row.passenger_name || row.pax_name || "-"
+    customer_name: row.customer_name || row.passenger_name || row.pax_name || "-",
+    sub_customer_name: row.sub_customer_name || row.sub_customer || "-"
   };
 });
 
