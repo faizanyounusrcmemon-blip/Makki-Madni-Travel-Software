@@ -107,13 +107,14 @@ export default function HotelVoucher3in1({ onNavigate }) {
       const row = isPkg ? d : d.row;
       const rawHotels = row.hotels;
 
-      setData({
-        ref_no: row.ref_no,
-        customer_name: row.customer_name,
-        agent_name: row.agent_name || "",
-        booking_date: row.booking_date,
-        hotels: (rawHotels || []).map(normalizeHotel),
-      });
+setData({
+  ref_no: row.ref_no,
+  customer_name: row.customer_name,
+  sub_customer_name: row.sub_customer_name || "",
+  agent_name: row.agent_name || "",
+  booking_date: row.booking_date,
+  hotels: (rawHotels || []).map(normalizeHotel),
+});
 
       Swal.fire({
         width: "280px",
@@ -199,77 +200,176 @@ export default function HotelVoucher3in1({ onNavigate }) {
   return (
     <div className="container py-3">
       {/* TOP BAR */}
-      <div className="d-flex gap-2 mb-3 flex-wrap top-buttons">
-        <button
-          className="btn btn-dark btn-sm"
-          onClick={() => onNavigate("dashboard")}
-        >
-          ← Back
-        </button>
+<div className="d-flex gap-2 mb-3 flex-wrap align-items-center">
+  <button
+    className="btn btn-dark btn-sm fw-bold"
+    onClick={() => onNavigate("dashboard")}
+  >
+    ← Back
+  </button>
 
-        <input
-          className="form-control form-control-sm w-25"
-          placeholder="PKG-00001 / HOT-00001"
-          value={ref}
-          onChange={(e) => setRef(e.target.value)}
-        />
+  <input
+    className="form-control form-control-sm w-25 fw-bold"
+    placeholder="PKG-00001 / HOT-00001"
+    value={ref}
+    onChange={(e) => setRef(e.target.value)}
+  />
 
-        <button className="btn btn-primary btn-sm" onClick={loadVoucher}>
-          Load Voucher
-        </button>
+  <button className="btn btn-primary btn-sm fw-bold" onClick={loadVoucher}>
+    Load Voucher
+  </button>
 
-        {data && (
-          <>
-            <button className="btn btn-success btn-sm" onClick={exportPDF}>
-              📄 Download PDF
-            </button>
+  {data && (
+    <>
+      <button
+        className="btn btn-success btn-sm fw-bold"
+        onClick={exportPDF}
+      >
+        📄 Download PDF
+      </button>
 
-            <button
-              className="btn btn-secondary btn-sm"
-              onClick={async () => {
-                try {
-                  if (!voucherRef.current || !data) {
-                    return Swal.fire({
-                      width: "300px",
-                      icon: "warning",
-                      text: "No voucher data found",
-                    });
-                  }
+      <button
+        className="btn btn-secondary btn-sm fw-bold"
+        onClick={async () => {
+          if (!voucherRef.current || !data) return;
 
-                  Swal.fire({
-                    width: "260px",
-                    title: "Preparing Print...",
-                    allowOutsideClick: false,
-                    didOpen: () => Swal.showLoading(),
+          Swal.fire({
+            title: "Preparing Print Layout...",
+            text: "Please wait a moment.",
+            allowOutsideClick: false,
+            didOpen: () => {
+              Swal.showLoading();
+            },
+          });
+
+          try {
+            const pdf = new jsPDF("p", "mm", "a4");
+            const pageWidth = 210;
+            const pageHeight = 297;
+            const margin = 10;
+            const usableWidth = pageWidth - margin * 2;
+            let y = margin;
+
+            const addCanvas = async (el) => {
+              if (!el) return;
+
+              const canvas = await html2canvas(el, {
+                scale: 3,
+                useCORS: true,
+                backgroundColor: "#ffffff",
+                ignoreElements: (el) => el.tagName === "CANVAS",
+                onclone: (doc) => {
+                  doc.querySelectorAll("*").forEach((el) => {
+                    const bg = el.style.backgroundImage;
+                    if (bg && bg.includes("gradient")) {
+                      el.style.backgroundImage = "none";
+                    }
                   });
+                },
+              });
 
-                  const pdf = await generatePdfInstance();
-                  Swal.close();
+              const img = canvas.toDataURL("image/png");
+              const height =
+                (canvas.height * usableWidth) / canvas.width * 0.95;
 
-                  window.open(pdf.output("bloburl"), "_blank");
+              if (y + height > pageHeight - margin) {
+                pdf.addPage();
+                y = margin;
+              }
 
-                  Swal.fire({
-                    width: "280px",
-                    icon: "success",
-                    text: "Print Preview Opened 😎",
-                    timer: 1200,
-                    showConfirmButton: false,
-                  });
-                } catch (err) {
-                  Swal.close();
-                  Swal.fire({
-                    width: "300px",
-                    icon: "error",
-                    text: "Print Failed",
-                  });
-                }
-              }}
-            >
-              🖨️ Print
-            </button>
-          </>
-        )}
+              pdf.addImage(img, "PNG", margin, y, usableWidth, height);
+              y += height + 4;
+            };
+
+            await addCanvas(
+              voucherRef.current.querySelector(".pdf-header")
+            );
+
+            await addCanvas(
+              voucherRef.current.querySelector(".pdf-ref-row")
+            );
+
+            await addCanvas(
+              voucherRef.current.querySelector(".pdf-names-row")
+            );
+
+            const hotels =
+              voucherRef.current.querySelectorAll(".pdf-hotel-block");
+
+            for (let h of hotels) {
+              const canvasBlock = await html2canvas(h, {
+                scale: 3,
+                useCORS: true,
+              });
+
+              const imgBlock = canvasBlock.toDataURL("image/png");
+
+              const heightBlock =
+                (canvasBlock.height * usableWidth) /
+                canvasBlock.width *
+                0.95;
+
+              if (y + heightBlock > pageHeight - margin) {
+                pdf.addPage();
+                y = margin;
+              }
+
+              pdf.addImage(
+                imgBlock,
+                "PNG",
+                margin,
+                y,
+                usableWidth,
+                heightBlock
+              );
+
+              y += heightBlock + 4;
+            }
+
+            await addCanvas(
+              voucherRef.current.querySelector(".pdf-timing")
+            );
+
+            await addCanvas(
+              voucherRef.current.querySelector(".pdf-footer")
+            );
+
+            window.open(pdf.output("bloburl"), "_blank");
+            Swal.close();
+          } catch (err) {
+            Swal.fire({
+              icon: "error",
+              title: "Print Failed",
+              text: "Could not generate print view.",
+              confirmButtonColor: "#dc3545",
+            });
+          }
+        }}
+      >
+        🖨️ Print
+      </button>
+
+      {/* SUB CUSTOMER NAME - RIGHT SIDE */}
+      <div
+        className="ms-auto fw-bold"
+        style={{
+          color: "#0b3d91",
+          fontSize: "14px",
+          whiteSpace: "nowrap",
+          padding: "6px 12px",
+          border: "1px solid #d4af37",
+          borderRadius: "6px",
+          background: "#fffdf5",
+        }}
+      >
+        SUB CUSTOMER:{" "}
+        <span style={{ color: "#b8860b" }}>
+          {data.sub_customer_name || "N/A"}
+        </span>
       </div>
+    </>
+  )}
+</div>
 
       {/* ================= VOUCHER ================= */}
       {data && (
