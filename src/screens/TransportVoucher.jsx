@@ -70,7 +70,10 @@ export default function TransportVoucher({ onNavigate }) {
         }
 
         const transportRows = d.row.transport || [];
-        setData(d.row);
+        setData({
+          ...d.row,
+          sub_customer_name: d.row.sub_customer_name || d.row.sub_customer || "",
+        });
         setRows(transportRows);
 
         const initialPickupDates = {};
@@ -97,7 +100,10 @@ export default function TransportVoucher({ onNavigate }) {
         }
 
         const transportRows = d.row.rows || [];
-        setData(d.row);
+        setData({
+          ...d.row,
+          sub_customer_name: d.row.sub_customer_name || d.row.sub_customer || "",
+        });
         setRows(transportRows);
 
         const initialPickupDates = {};
@@ -246,114 +252,123 @@ export default function TransportVoucher({ onNavigate }) {
 
   return (
     <div className="container py-3">
-{/* TOP BAR */}
-<div className="d-flex align-items-center gap-2 mb-3 flex-wrap top-buttons">
-  <button
-    className="btn btn-secondary btn-sm"
-    onClick={() => onNavigate("dashboard")}
-  >
-    ⬅ Back
-  </button>
+      {/* TOP BAR */}
+      <div className="d-flex align-items-center gap-2 mb-3 flex-wrap top-buttons">
+        <button
+          className="btn btn-secondary btn-sm"
+          onClick={() => onNavigate("dashboard")}
+        >
+          ⬅ Back
+        </button>
 
-  <input
-    className="form-control form-control-sm w-25"
-    placeholder="PKG- / TRN- Ref"
-    value={ref}
-    onChange={(e) => setRef(e.target.value)}
-  />
+        <input
+          className="form-control form-control-sm w-25"
+          placeholder="PKG- / TRN- Ref"
+          value={ref}
+          onChange={(e) => setRef(e.target.value)}
+        />
 
-  <button className="btn btn-primary btn-sm" onClick={loadVoucher}>
-    Load Voucher
-  </button>
+        <button className="btn btn-primary btn-sm" onClick={loadVoucher}>
+          Load Voucher
+        </button>
 
-  {data && (
-    <>
-      <button className="btn btn-success btn-sm" onClick={exportPDF}>
-        📄 Download PDF
-      </button>
+        {data && (
+          <>
+            <button className="btn btn-success btn-sm" onClick={exportPDF}>
+              📄 Download PDF
+            </button>
 
-      <button
-        className="btn btn-secondary btn-sm"
-        onClick={async () => {
-          try {
-            if (!voucherRef.current || !data) {
-              return Swal.fire({
-                width: "300px",
-                icon: "warning",
-                text: "No voucher data found",
-              });
-            }
+            <button
+              className="btn btn-secondary btn-sm"
+              onClick={async () => {
+                try {
+                  if (!voucherRef.current || !data) {
+                    return Swal.fire({
+                      width: "300px",
+                      icon: "warning",
+                      text: "No voucher data found",
+                    });
+                  }
 
-            Swal.fire({
-              width: "260px",
-              title: "Preparing Print...",
-              allowOutsideClick: false,
-              didOpen: () => Swal.showLoading(),
-            });
+                  Swal.fire({
+                    width: "260px",
+                    title: "Preparing Print...",
+                    allowOutsideClick: false,
+                    didOpen: () => Swal.showLoading(),
+                  });
 
-            const canvas = await generateCanvas();
-            const imgData = canvas.toDataURL("image/png");
+                  const canvas = await generateCanvas();
+                  const imgData = canvas.toDataURL("image/png");
 
-            const pdf = new jsPDF("p", "mm", "a4");
+                  const pdf = new jsPDF("p", "mm", "a4");
 
-            const pageWidth = pdf.internal.pageSize.getWidth();
-            const pageHeight = pdf.internal.pageSize.getHeight();
+                  const pageWidth = pdf.internal.pageSize.getWidth();
+                  const pageHeight = pdf.internal.pageSize.getHeight();
 
-            const imgWidth = pageWidth;
-            let imgHeight = (canvas.height * imgWidth) / canvas.width;
+                  const imgWidth = pageWidth;
+                  let imgHeight = (canvas.height * imgWidth) / canvas.width;
 
-            if (imgHeight > pageHeight) {
-              const scale = pageHeight / imgHeight;
-              pdf.addImage(
-                imgData,
-                "PNG",
-                0,
-                0,
-                imgWidth * scale,
-                pageHeight
-              );
-            } else {
-              pdf.addImage(imgData, "PNG", 0, 0, imgWidth, imgHeight);
-            }
+                  if (imgHeight > pageHeight) {
+                    const scale = pageHeight / imgHeight;
+                    pdf.addImage(
+                      imgData,
+                      "PNG",
+                      0,
+                      0,
+                      imgWidth * scale,
+                      pageHeight
+                    );
+                  } else {
+                    pdf.addImage(imgData, "PNG", 0, 0, imgWidth, imgHeight);
+                  }
 
-            Swal.close();
+                  Swal.close();
 
-            window.open(pdf.output("bloburl"), "_blank");
+                  window.open(pdf.output("bloburl"), "_blank");
 
-            Swal.fire({
-              width: "280px",
-              icon: "success",
-              text: "Print Preview Opened 😎",
-              timer: 1200,
-              showConfirmButton: false,
-            });
-          } catch (err) {
-            Swal.close();
-            Swal.fire({
-              width: "300px",
-              icon: "error",
-              text: "Print Failed",
-            });
-          }
-        }}
-      >
-        🖨️ Print
-      </button>
+                  Swal.fire({
+                    width: "280px",
+                    icon: "success",
+                    text: "Print Preview Opened 😎",
+                    timer: 1200,
+                    showConfirmButton: false,
+                  });
+                } catch (err) {
+                  Swal.close();
+                  Swal.fire({
+                    width: "300px",
+                    icon: "error",
+                    text: "Print Failed",
+                  });
+                }
+              }}
+            >
+              🖨️ Print
+            </button>
 
-      {/* ✨ Sub Customer - Print Button ke bilkul barabar (Same Line) */}
-      <div className="d-flex align-items-center bg-white text-dark px-2 py-1 rounded border shadow-sm">
-        <span className="fw-bold text-secondary me-1" style={{ fontSize: "11px" }}>
-          SUB CUSTOMER:
-        </span>
-        <span className="fw-bold text-primary" style={{ fontSize: "12px" }}>
-          {data.sub_customer_name || data.sub_customer || "-"}
-        </span>
+            {/* SUB CUSTOMER NAME */}
+            <div
+              className="ms-auto fw-bold"
+              style={{
+                color: "#0b3d91",
+                fontSize: "13px",
+                whiteSpace: "nowrap",
+                padding: "4px 10px",
+                border: "1px solid #d4af37",
+                borderRadius: "6px",
+                background: "#fffdf5",
+              }}
+            >
+              SUB CUSTOMER:{" "}
+              <span style={{ color: "#b8860b" }}>
+                {data.sub_customer_name || data.sub_customer || "N/A"}
+              </span>
+            </div>
+          </>
+        )}
       </div>
-    </>
-  )}
-</div>
 
-
+      {/* VOUCHER CARD */}
       {data && (
         <div
           ref={voucherRef}
@@ -584,7 +599,7 @@ export default function TransportVoucher({ onNavigate }) {
             <b>اہم ہدایات:</b>
             <br />
             براہِ کرم ڈرائیور اور گاڑی کی تفصیلات وقت پر کنفرم کریں۔ کسی بھی
-            مسئلے کی صورت میں  فوری رابطہ کریں۔
+            مسئلے کی صورت میں فوری رابطہ کریں۔
           </div>
         </div>
       )}
