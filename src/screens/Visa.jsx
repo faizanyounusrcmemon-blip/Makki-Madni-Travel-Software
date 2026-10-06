@@ -264,21 +264,24 @@ export default function Visa({ onNavigate }) {
       const data = await res.json();
       Swal.close();
 
-      if (data.success) {
-        await Swal.fire({
-          width: "320px",
-          icon: "success",
-          title: "Saved Successfully",
-          html: `
-            <div style="text-align:left">
-              <b>Ref#:</b> ${data.ref_no}<br/>
-              <b>Customer:</b> ${customerName} ${customerCode ? `(${customerCode})` : "(Walk-In)"}<br/>
-              ${subCustomerName ? `<b>Sub Customer:</b> ${subCustomerName}` : ''}
-            </div>
-          `
-        });
-        onNavigate("dashboard");
-      } else {
+if (data.success) {
+  await Swal.fire({
+    width: "340px", 
+    icon: "success", 
+    title: "Saved Successfully",
+    html: `
+      <div style="text-align:left; font-size:14px; line-height: 1.6;">
+        <span style="color: #0d6efd; font-weight: bold;">Ref#:</span> 
+        <span style="color: #dc3545; font-weight: bold; background: #ffe6e6; padding: 2px 6px; border-radius: 4px;">
+          ${data.ref_no}
+        </span><br/>
+        <b>Customer:</b> ${customerName} ${customerCode ? `(${customerCode})` : "(Walk-In)"}<br/>
+        ${subCustomerName ? `<b>Sub Customer:</b> ${subCustomerName}` : ''}
+      </div>
+    `
+  });
+  onNavigate("dashboard");
+} else {
         Swal.fire({
           width: "300px",
           icon: "error",

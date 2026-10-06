@@ -294,21 +294,24 @@ export default function Hotels({ onNavigate }) {
       const data = await res.json();
       Swal.close();
 
-      if (data.success) {
-        await Swal.fire({
-          width: "320px",
-          icon: "success",
-          title: "Saved Successfully",
-          html: `
-            <div style="text-align:left">
-              <b>Ref#:</b> ${data.ref_no}<br/>
-              <b>Customer:</b> ${customerName} ${customerCode ? `(${customerCode})` : "(Walk-In)"}<br/>
-              ${subCustomerName ? `<b>Sub Customer:</b> ${subCustomerName}` : ""}
-            </div>
-          `
-        });
-        onNavigate("dashboard");
-      } else {
+if (data.success) {
+  await Swal.fire({
+    width: "340px", 
+    icon: "success", 
+    title: "Saved Successfully",
+    html: `
+      <div style="text-align:left; font-size:14px; line-height: 1.6;">
+        <span style="color: #0d6efd; font-weight: bold;">Ref#:</span> 
+        <span style="color: #dc3545; font-weight: bold; background: #ffe6e6; padding: 2px 6px; border-radius: 4px;">
+          ${data.ref_no}
+        </span><br/>
+        <b>Customer:</b> ${customerName} ${customerCode ? `(${customerCode})` : "(Walk-In)"}<br/>
+        ${subCustomerName ? `<b>Sub Customer:</b> ${subCustomerName}` : ''}
+      </div>
+    `
+  });
+  onNavigate("dashboard");
+} else {
         Swal.fire({
           width: "300px",
           icon: "error",
@@ -398,108 +401,114 @@ export default function Hotels({ onNavigate }) {
 
         <Header title="HOTEL QUOTATION" />
 
-        {/* ⚡ SINGLE ROW FORM LAYOUT */}
-        <div className="row g-2 mb-3">
-          <div className="col-md-2">
-            <label className="fw-bold mb-1">Ref No</label>
-            <input className="form-control form-control-sm" value={refNo} readOnly />
-          </div>
+{/* ⚡ SINGLE ROW FORM LAYOUT */}
+<div className="row g-2 mb-3 align-items-start">
+  {/* FIELD 1: Ref No (Chota size: col-md-1 ya col-lg-1) */}
+  <div className="col-md-1 col-lg-1">
+    <label className="fw-bold mb-1 text-nowrap" style={{ fontSize: "12px" }}>Ref No</label>
+    <input 
+      className="form-control form-control-sm text-center px-1 fw-bold" 
+      value={refNo} 
+      readOnly 
+      placeholder="Auto"
+    />
+  </div>
 
-          {/* Autocomplete Input */}
-          <div className="col-md-2" ref={dropdownRef} style={{ position: "relative" }}>
-            <label className="fw-bold mb-1 text-primary">🔍 Registered Customer</label>
-            <div className="input-group input-group-sm">
-              <input
-                className="form-control"
-                placeholder="Search registered..."
-                value={searchQuery}
-                onFocus={() => setShowDropdown(true)}
-                onChange={(e) => {
-                  setSearchQuery(e.target.value);
-                  setShowDropdown(true);
-                }}
-              />
-              {searchQuery && (
-                <button 
-                  className="btn btn-outline-danger btn-sm" 
-                  type="button" 
-                  onClick={() => {
-                    setSearchQuery("");
-                    setCustomerCode("");
-                    setCustomerName("");
-                  }}
-                >
-                  ✕
-                </button>
-              )}
-            </div>
+  {/* FIELD 2: Registered Customer (Zyada space: col-md-3) */}
+  <div className="col-md-3 col-lg-3" ref={dropdownRef} style={{ position: "relative" }}>
+    <label className="fw-bold mb-1 text-primary" style={{ fontSize: "12px" }}>🔍 Registered Customer</label>
+    <div className="input-group input-group-sm">
+      <input
+        className="form-control form-control-sm"
+        placeholder="Search registered..."
+        value={searchQuery}
+        onFocus={() => setShowDropdown(true)}
+        onChange={(e) => {
+          setSearchQuery(e.target.value);
+          setShowDropdown(true);
+        }}
+      />
+      {searchQuery && (
+        <button 
+          className="btn btn-outline-danger btn-sm" 
+          type="button" 
+          onClick={() => {
+            setSearchQuery("");
+            setCustomerCode("");
+            setCustomerName("");
+          }}
+        >
+          ✕
+        </button>
+      )}
+    </div>
 
-            {showDropdown && (
-              <div 
-                className="dropdown-menu show shadow w-100 p-2" 
-                style={{ 
-                  maxHeight: "200px", 
-                  overflowY: "auto", 
-                  position: "absolute", 
-                  zIndex: 9999,
-                  background: "#fff"
-                }}
-              >
-                {filteredCustomers.length === 0 ? (
-                  <div className="dropdown-item text-muted text-center py-2">No customers found</div>
-                ) : (
-                  filteredCustomers.map((c, i) => (
-                    <button
-                      key={i}
-                      type="button"
-                      className="dropdown-item d-flex justify-content-between align-items-center py-2 border-bottom"
-                      onClick={() => {
-                        setCustomerName(c.name); 
-                        setCustomerCode(c.customer_code); 
-                        setSearchQuery(`${c.name} (${c.customer_code})`);
-                        setShowDropdown(false);
-                      }}
-                    >
-                      <span className="fw-bold text-dark">{c.name}</span>
-                      <span className="badge bg-danger text-white">{c.customer_code}</span>
-                    </button>
-                  ))
-                )}
-              </div>
-            )}
-          </div>
-
-          {/* Customer Name Input (Manual/Fallback text + original badges) */}
-          <div className="col-md-2">
-            <label className="fw-bold mb-1">👤 Customer Name</label>
-            <input
-              className="form-control form-control-sm"
-              placeholder="Or write manually here..."
-              value={customerName}
-              onChange={(e) => {
-                setCustomerName(e.target.value);
-                if (customerCode) {
-                  setCustomerCode("");
-                  setSearchQuery("");
-                }
+    {showDropdown && (
+      <div 
+        className="dropdown-menu show shadow w-100 p-2" 
+        style={{ 
+          maxHeight: "200px", 
+          overflowY: "auto", 
+          position: "absolute", 
+          zIndex: 9999,
+          background: "#fff"
+        }}
+      >
+        {filteredCustomers.length === 0 ? (
+          <div className="dropdown-item text-muted text-center py-2">No customers found</div>
+        ) : (
+          filteredCustomers.map((c, i) => (
+            <button
+              key={i}
+              type="button"
+              className="dropdown-item d-flex justify-content-between align-items-center py-2 border-bottom"
+              onClick={() => {
+                setCustomerName(c.name); 
+                setCustomerCode(c.customer_code); 
+                setSearchQuery(`${c.name} (${c.customer_code})`);
+                setShowDropdown(false);
               }}
-            />
-            {customerCode ? (
-              <small className="text-success d-block mt-1 fw-bold">
-                ✓ Linked ({customerCode})
-              </small>
-            ) : (
-              customerName && (
-                <small className="text-warning d-block mt-1 fw-bold">
-                  Manual Walk-In
-                </small>
-              )
-            )}
-          </div>
+            >
+              <span className="fw-bold text-dark">{c.name}</span>
+              <span className="badge bg-danger text-white">{c.customer_code}</span>
+            </button>
+          ))
+        )}
+      </div>
+    )}
+  </div>
 
-  {/* FIELD 4: SUB / END CUSTOMER NAME (2 cols) */}
-  <div className="col-md-2">
-    <label className="fw-bold mb-1 text-dark">🏷️ Sub Customer</label>
+  {/* FIELD 3: Customer Name (col-md-2) */}
+  <div className="col-md-2 col-lg-2">
+    <label className="fw-bold mb-1" style={{ fontSize: "12px" }}>👤 Customer Name</label>
+    <input
+      className="form-control form-control-sm"
+      placeholder="Or write manually..."
+      value={customerName}
+      onChange={(e) => {
+        setCustomerName(e.target.value);
+        if (customerCode) {
+          setCustomerCode("");
+          setSearchQuery("");
+        }
+      }}
+    />
+    {customerCode ? (
+      <small className="text-success d-block mt-1 fw-bold" style={{ fontSize: "10px" }}>
+        ✓ Linked ({customerCode})
+      </small>
+    ) : (
+      customerName && (
+        <small className="text-warning d-block mt-1 fw-bold" style={{ fontSize: "10px" }}>
+          Manual Walk-In
+        </small>
+      )
+    )}
+  </div>
+
+  {/* FIELD 4: Sub Customer (col-md-2) */}
+  <div className="col-md-2 col-lg-2">
+    <label className="fw-bold mb-1 text-dark" style={{ fontSize: "12px" }}>🏷️ Sub Customer</label>
     <input
       type="text"
       className="form-control form-control-sm"
@@ -507,30 +516,31 @@ export default function Hotels({ onNavigate }) {
       value={subCustomerName}
       onChange={(e) => setSubCustomerName(e.target.value)}
     />
-    <small className="text-muted d-block mt-1">End client / Pax</small>
   </div>
 
-          <div className="col-md-2">
-            <label className="fw-bold mb-1">Agent Name</label>
-            <input 
-              className="form-control form-control-sm" 
-              value={agentName} 
-              onChange={(e) => setAgentName(e.target.value)} 
-              placeholder="Agent name" 
-            />
-          </div>
+  {/* FIELD 5: Agent Name (col-md-2) */}
+  <div className="col-md-2 col-lg-2">
+    <label className="fw-bold mb-1" style={{ fontSize: "12px" }}>Agent Name</label>
+    <input 
+      className="form-control form-control-sm" 
+      value={agentName} 
+      onChange={(e) => setAgentName(e.target.value)} 
+      placeholder="Agent name" 
+    />
+  </div>
 
-          <div className="col-md-2">
-            <label className="fw-bold mb-1">Booking Date</label>
-            <input 
-              type="date" 
-              className="form-control form-control-sm" 
-              value={bookingDate} 
-              onChange={(e) => setBookingDate(e.target.value)} 
-            />
-            <small className="text-muted">{showDate(bookingDate)}</small>
-          </div>
-        </div>
+  {/* FIELD 6: Booking Date (col-md-2) */}
+  <div className="col-md-2 col-lg-2">
+    <label className="fw-bold mb-1" style={{ fontSize: "12px" }}>Booking Date</label>
+    <input 
+      type="date" 
+      className="form-control form-control-sm" 
+      value={bookingDate} 
+      onChange={(e) => setBookingDate(e.target.value)} 
+    />
+    <small className="text-muted d-block" style={{ fontSize: "10px" }}>{showDate(bookingDate)}</small>
+  </div>
+</div>
 
         {/* Hotels Table */}
         <h6 style={styles.sectionHeader}>Hotels</h6>
