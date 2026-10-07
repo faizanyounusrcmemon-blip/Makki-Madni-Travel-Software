@@ -273,7 +273,7 @@ export default function RegisteredCustomerLedger({ onNavigate }) {
   /* =========================
      FETCH SALE DETAIL MODAL
   ========================== */
-  const handleSuccessResponse = (data, ledgerVal, originalId, currentType) => {
+const handleSuccessResponse = (data, ledgerVal, originalId, currentType) => {
     if (data.success && data.row) {
       const row = data.row;
 
@@ -282,6 +282,14 @@ export default function RegisteredCustomerLedger({ onNavigate }) {
         if (Array.isArray(v)) return v;
         try { return JSON.parse(v); } catch { return []; }
       };
+
+      // Ensure Sub Customer Name Fallback
+      row.sub_customer_name =
+        row.sub_customer_name ||
+        row.sub_customer ||
+        row.sub_customer_detail ||
+        data.sub_customer_name ||
+        "";
 
       if (currentType === "TICKETING" || String(row.ref_no || "").includes("TIC")) {
         row.flight_from = safeParse(row.flight_from);
@@ -309,6 +317,7 @@ export default function RegisteredCustomerLedger({ onNavigate }) {
       setDetailData({
         ref_no: originalId || "N/A",
         customer_name: customerName,
+        sub_customer_name: "",
         booking_date: getTodayInputDate(),
         description: "",
         total_pkr: ledgerVal,
@@ -1332,401 +1341,423 @@ export default function RegisteredCustomerLedger({ onNavigate }) {
           </div>
         </div>
 
-        {/* DETAIL MODAL */}
-        {detailModalOpen && (
-          <div
-            className="modal show d-block animate__animated animate__fadeIn"
-            tabIndex="-1"
-            style={{ backgroundColor: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)", zIndex: 1055 }}
-          >
-            <div className="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
-              <div className="modal-content rounded-4 border-0 shadow-lg">
-                <div className="modal-header text-white bg-dark border-0 rounded-top-4">
-                  <h5 className="modal-title fw-bold">
-                    📄 {detailType === "CARD" ? "INVOICE" : detailType} DETAILS
-                  </h5>
-                  <button
-                    type="button"
-                    className="btn-close btn-close-white"
-                    onClick={() => setDetailModalOpen(false)}
-                  ></button>
+{/* DETAIL MODAL */}
+{detailModalOpen && (
+  <div
+    className="modal show d-block animate__animated animate__fadeIn"
+    tabIndex="-1"
+    style={{ backgroundColor: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)", zIndex: 1055 }}
+  >
+    <div className="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+      <div className="modal-content rounded-4 border-0 shadow-lg">
+        <div className="modal-header text-white bg-dark border-0 rounded-top-4">
+          <h5 className="modal-title fw-bold">
+            📄 {detailType === "CARD" ? "INVOICE" : detailType} DETAILS
+          </h5>
+          <button
+            type="button"
+            className="btn-close btn-close-white"
+            onClick={() => setDetailModalOpen(false)}
+          ></button>
+        </div>
+
+        <div className="modal-body bg-light p-4">
+          {detailLoading ? (
+            <div className="text-center py-5">
+              <div className="spinner-border text-primary" role="status"></div>
+              <p className="mt-2 text-muted fw-bold">Fetching details, please wait...</p>
+            </div>
+          ) : detailData ? (
+            <div>
+              <div className="row g-3 mb-4">
+
+                <div className="col-md-4">
+                  <div className="bg-white border rounded-4 p-3 shadow-sm h-100">
+                    <span className="text-muted small d-block">Reference No</span>
+                    <strong className="fs-5 text-primary">{detailData.ref_no || detailData.id}</strong>
+                  </div>
                 </div>
 
-                <div className="modal-body bg-light p-4">
-                  {detailLoading ? (
-                    <div className="text-center py-5">
-                      <div className="spinner-border text-primary" role="status"></div>
-                      <p className="mt-2 text-muted fw-bold">Fetching details, please wait...</p>
+                <div className="col-md-4">
+                  <div className="bg-white border rounded-4 p-3 shadow-sm h-100">
+                    <span className="text-muted small d-block">Customer Name</span>
+                    <strong className="fs-6 text-dark">{detailData.customer_name || customerName}</strong>
+                  </div>
+                </div>
+
+                <div className="col-md-4">
+                  <div className="bg-white border rounded-4 p-3 shadow-sm h-100">
+                    <span className="text-muted small d-block">Sub Customer / Passenger</span>
+                    <strong className="fs-6 text-success">
+                      {detailData.sub_customer_name || "-"}
+                    </strong>
+                  </div>
+                </div>
+
+                <div className="col-md-6">
+                  <div className="bg-white border rounded-4 p-3 shadow-sm text-center">
+                    <span className="text-muted small d-block">📅 Booking Date</span>
+                    <strong className="text-dark">
+                      {getRowDate({ date: detailData.booking_date || detailData.created_at })}
+                    </strong>
+                  </div>
+                </div>
+
+                <div className="col-md-6">
+                  <div
+                    style={{
+                      background: "linear-gradient(135deg,#ff6f61,#ffa07a)",
+                      color: "#fff",
+                      padding: "12px",
+                      borderRadius: "12px",
+                      textAlign: "center",
+                      fontWeight: "700",
+                      boxShadow: "0 3px 8px rgba(0,0,0,0.1)"
+                    }}
+                  >
+                    📅 {detailType === "TICKETING" ? getTripDurationText(detailData.flight_date) : "Standard Duration"}
+                  </div>
+                </div>
+              </div>
+
+              <hr />
+
+              {detailType === "TICKETING" && (
+                <div className="mb-4">
+                  <h5 className="fw-bold text-primary mb-3">✈️ Flight Routes</h5>
+                  {(!detailData.flight_from || detailData.flight_from.length === 0) ? (
+                    <p className="text-muted">No routes added</p>
+                  ) : (
+                    detailData.flight_from.map((f, idx) => (
+                      <div key={idx} className="border rounded-3 p-3 mb-2 bg-white shadow-sm">
+                        <div className="fw-bold fs-6 text-dark d-flex justify-content-between">
+                          <span>{f} → {detailData.flight_to?.[idx] || "N/A"}</span>
+                          {detailData.airline?.[idx] && (
+                            <span className="fw-bold text-success">
+                              ✈️ {detailData.airline[idx]}
+                            </span>
+                          )}
+                        </div>
+                        <div className="mt-2">
+                          <span className="badge bg-primary" style={{ fontSize: "12px", padding: "6px 10px" }}>
+                            📅 {getRowDate({ date: detailData.flight_date?.[idx] })}
+                          </span>
+                        </div>
+                      </div>
+                    ))
+                  )}
+
+                  <hr />
+
+                  <h5 className="fw-bold text-primary mb-3">👥 Passengers Breakdown</h5>
+                  <div className="bg-white border rounded-4 p-3 shadow-sm">
+                    <div className="row text-center">
+                      <div className="col-4 border-end">
+                        <span className="text-muted small d-block">Adult</span>
+                        <strong>{detailData.adult_qty || 0} × {fmtAmt(detailData.adult_rate || detailData.rate || 0)}</strong>
+                      </div>
+                      <div className="col-4 border-end">
+                        <span className="text-muted small d-block">Child</span>
+                        <strong>{detailData.child_qty || 0} × {fmtAmt(detailData.child_rate || 0)}</strong>
+                      </div>
+                      <div className="col-4">
+                        <span className="text-muted small d-block">Infant</span>
+                        <strong>{detailData.infant_qty || 0} × {fmtAmt(detailData.infant_rate || 0)}</strong>
+                      </div>
                     </div>
-                  ) : detailData ? (
-                    <div>
-                      <div className="row g-3 mb-4">
-                        <div className="col-md-6">
-                          <div className="bg-white border rounded-4 p-3 shadow-sm h-100">
-                            <span className="text-muted small d-block">Reference No</span>
-                            <strong className="fs-5 text-primary">{detailData.ref_no || detailData.id}</strong>
-                          </div>
-                        </div>
+                  </div>
+                </div>
+              )}
 
-                        <div className="col-md-6">
-                          <div className="bg-white border rounded-4 p-3 shadow-sm h-100">
-                            <span className="text-muted small d-block">Customer Name</span>
-                            <strong className="fs-5 text-dark">{detailData.customer_name || customerName}</strong>
-                          </div>
+              {detailType === "HOTEL" && (
+                <div className="mb-4">
+                  <h5 className="fw-bold text-primary mb-3">🏨 Hotel Details</h5>
+                  {(!Array.isArray(detailData.hotels) || detailData.hotels.length === 0) ? (
+                    <p className="text-muted">No hotel details available</p>
+                  ) : (
+                    detailData.hotels.map((h, idx) => (
+                      <div key={idx} className="border rounded-3 p-3 mb-2 bg-white shadow-sm">
+                        <div className="fw-bold mb-1 text-dark">
+                          {idx + 1}. 🛏️ {h.hotel}
                         </div>
-
-                        <div className="col-md-6">
-                          <div className="bg-white border rounded-4 p-3 shadow-sm text-center">
-                            <span className="text-muted small d-block">📅 Booking Date</span>
-                            <strong className="text-dark">
-                              {getRowDate({ date: detailData.booking_date || detailData.created_at })}
-                            </strong>
+                        <div className="row small">
+                          <div className="col-6"><b>📍 Location:</b> {h.location}</div>
+                          <div className="col-6"><b>Type:</b> {h.type}</div>
+                          <div className="col-6">
+                            <b>Check-in:</b> <span className="text-primary fw-bold">{getRowDate({ date: h.checkIn })}</span>
                           </div>
-                        </div>
-
-                        <div className="col-md-6">
-                          <div
-                            style={{
-                              background: "linear-gradient(135deg,#ff6f61,#ffa07a)",
-                              color: "#fff",
-                              padding: "12px",
-                              borderRadius: "12px",
-                              textAlign: "center",
-                              fontWeight: "700",
-                              boxShadow: "0 3px 8px rgba(0,0,0,0.1)"
-                            }}
-                          >
-                            📅 {detailType === "TICKETING" ? getTripDurationText(detailData.flight_date) : "Standard Duration"}
+                          <div className="col-6">
+                            <b>Check-out:</b> <span className="text-danger fw-bold">{getRowDate({ date: h.checkOut })}</span>
                           </div>
+                          <div className="col-6"><b>Nights:</b> {h.nights}</div>
+                          <div className="col-6"><b>Rooms:</b> {h.rooms}</div>
+                          <div className="col-6"><b>Rate (SAR):</b> {fmtAmt(h.rate)}</div>
+                          <div className="col-6"><b>Total (SAR):</b> {fmtAmt(h.total)}</div>
                         </div>
                       </div>
+                    ))
+                  )}
+                </div>
+              )}
 
-                      <hr />
+              {detailType === "PACKAGE" && (() => {
+                const flightDates = Array.isArray(detailData.flights)
+                  ? detailData.flights.map((f) => f.date).filter(Boolean).sort()
+                  : [];
 
-                      {detailType === "TICKETING" && (
-                        <div className="mb-4">
-                          <h5 className="fw-bold text-primary mb-3">✈️ Flight Routes</h5>
-                          {(!detailData.flight_from || detailData.flight_from.length === 0) ? (
-                            <p className="text-muted">No routes added</p>
-                          ) : (
-                            detailData.flight_from.map((f, idx) => (
-                              <div key={idx} className="border rounded-3 p-3 mb-2 bg-white shadow-sm">
-                                <div className="fw-bold fs-6 text-dark d-flex justify-content-between">
-                                  <span>{f} → {detailData.flight_to?.[idx] || "N/A"}</span>
-                                  {detailData.airline?.[idx] && (
-                                    <span className="fw-bold text-success">
-                                      ✈️ {detailData.airline[idx]}
-                                    </span>
-                                  )}
-                                </div>
-                                <div className="mt-2">
-                                  <span className="badge bg-primary" style={{ fontSize: "12px", padding: "6px 10px" }}>
-                                    📅 {getRowDate({ date: detailData.flight_date?.[idx] })}
-                                  </span>
-                                </div>
-                              </div>
-                            ))
-                          )}
+                let packageDays = 0;
+                let packageNights = 0;
 
-                          <hr />
+                if (flightDates.length >= 2) {
+                  const startDate = new Date(flightDates[0]);
+                  const endDate = new Date(flightDates[flightDates.length - 1]);
+                  const diff = (endDate - startDate) / (1000 * 60 * 60 * 24);
+                  packageDays = diff + 1;
+                  packageNights = diff;
+                }
 
-                          <h5 className="fw-bold text-primary mb-3">👥 Passengers Breakdown</h5>
-                          <div className="bg-white border rounded-4 p-3 shadow-sm">
-                            <div className="row text-center">
-                              <div className="col-4 border-end">
-                                <span className="text-muted small d-block">Adult</span>
-                                <strong>{detailData.adult_qty || 0} × {fmtAmt(detailData.adult_rate || detailData.rate || 0)}</strong>
-                              </div>
-                              <div className="col-4 border-end">
-                                <span className="text-muted small d-block">Child</span>
-                                <strong>{detailData.child_qty || 0} × {fmtAmt(detailData.child_rate || 0)}</strong>
-                              </div>
-                              <div className="col-4">
-                                <span className="text-muted small d-block">Infant</span>
-                                <strong>{detailData.infant_qty || 0} × {fmtAmt(detailData.infant_rate || 0)}</strong>
-                              </div>
-                            </div>
+                const adultCount = Number(detailData.adult_count || 0);
+                const childCount = Number(detailData.child_count || 0);
+                const infantCount = Number(detailData.infant_count || 0);
+
+                const rate = {
+                  flight: Number(detailData.flight_sar_rate || 0),
+                  hotels: Number(detailData.hotel_sar_rate || 0),
+                  visa: Number(detailData.visa_sar_rate || 0),
+                  transport: Number(detailData.transport_sar_rate || 0),
+                  ziyarat: Number(detailData.ziyarat_sar_rate || 0),
+                };
+
+                const adultFlightPKR = adultCount * Number(detailData.adult_rate || 0) * rate.flight;
+                const childFlightPKR = childCount * Number(detailData.child_rate || 0) * rate.flight;
+                const infantFlightPKR = infantCount * Number(detailData.infant_rate || 0) * rate.flight;
+
+                const visaPersons = (detailData.visa || []).reduce((sum, v) => sum + Number(v.persons || 0), 0);
+                const visaPKR = Number(detailData.visa_sar_total || 0) * rate.visa;
+                const visaPerPerson = visaPersons > 0 ? visaPKR / visaPersons : 0;
+
+                const hotelsPKR = Number(detailData.hotel_sar_total || 0) * rate.hotels;
+                const transportPKR = Number(detailData.transport_sar_total || 0) * rate.transport;
+                const ziyaratPKR = Number(detailData.ziyarat_sar_total || 0) * rate.ziyarat;
+
+                const sharedPKR = hotelsPKR + transportPKR + ziyaratPKR;
+                const sharedPerAdult = adultCount > 0 ? sharedPKR / adultCount : 0;
+
+                const adultPerPerson = Math.round(
+                  adultCount > 0 ? adultFlightPKR / adultCount + visaPerPerson + sharedPerAdult : 0
+                );
+
+                const childPerPerson = Math.round(
+                  childCount > 0 ? childFlightPKR / childCount + visaPerPerson : 0
+                );
+
+                const infantPerPerson = Math.round(
+                  infantCount > 0 ? infantFlightPKR / infantCount + visaPerPerson : 0
+                );
+
+                return (
+                  <div className="mb-4 text-start">
+                    <div
+                      className="border rounded-3 p-3 mb-4 shadow-sm"
+                      style={{
+                        background: "linear-gradient(135deg,#f8f9fa,#e9f7ef)",
+                        borderLeft: "5px solid #198754",
+                      }}
+                    >
+                      <div className="text-uppercase fw-bold text-muted small">Package Duration</div>
+                      <div className="fs-4 fw-bold text-success mt-1">
+                        📅 {packageDays} Days / 🌙 {packageNights} Nights
+                      </div>
+                    </div>
+
+                    <h5 className="fw-bold text-primary mb-2">✈️ Flight</h5>
+                    <div className="border p-3 rounded-3 bg-white mb-2 shadow-sm">
+                      {Array.isArray(detailData.flights) && detailData.flights.length > 0 ? (
+                        detailData.flights.map((f, i) => (
+                          <div key={i} className="mb-1 text-dark">
+                            {getRowDate({ date: f.date })} — <span className="fw-bold">{f.from}</span> → <span className="fw-bold">{f.to}</span> {f.airline && <b>({f.airline})</b>}
                           </div>
-                        </div>
+                        ))
+                      ) : (
+                        <p className="text-muted mb-0">No flights</p>
                       )}
+                    </div>
+                    <div className="small text-muted bg-white p-2 rounded border mb-3">
+                      Adults: {detailData.adult_count || 0} × {fmtAmt(detailData.adult_rate || 0)} | Child: {detailData.child_count || 0} × {fmtAmt(detailData.child_rate || 0)} | Infant: {detailData.infant_count || 0} × {fmtAmt(detailData.infant_rate || 0)} <br />
+                      <b>Flight SAR:</b> {fmtAmt(detailData.flight_sar_total || 0)} | <b>Flight PKR:</b> {fmtAmt(detailData.flight_pkr_total || 0)}
+                    </div>
 
-                      {detailType === "HOTEL" && (
-                        <div className="mb-4">
-                          <h5 className="fw-bold text-primary mb-3">🏨 Hotel Details</h5>
-                          {(!Array.isArray(detailData.hotels) || detailData.hotels.length === 0) ? (
-                            <p className="text-muted">No hotel details available</p>
-                          ) : (
-                            detailData.hotels.map((h, idx) => (
-                              <div key={idx} className="border rounded-3 p-3 mb-2 bg-white shadow-sm">
-                                <div className="fw-bold mb-1 text-dark">
-                                  {idx + 1}. 🛏️ {h.hotel}
-                                </div>
-                                <div className="row small">
-                                  <div className="col-6"><b>📍 Location:</b> {h.location}</div>
-                                  <div className="col-6"><b>Type:</b> {h.type}</div>
-                                  <div className="col-6">
-                                    <b>Check-in:</b> <span className="text-primary fw-bold">{getRowDate({ date: h.checkIn })}</span>
-                                  </div>
-                                  <div className="col-6">
-                                    <b>Check-out:</b> <span className="text-danger fw-bold">{getRowDate({ date: h.checkOut })}</span>
-                                  </div>
-                                  <div className="col-6"><b>Nights:</b> {h.nights}</div>
-                                  <div className="col-6"><b>Rooms:</b> {h.rooms}</div>
-                                  <div className="col-6"><b>Rate (SAR):</b> {fmtAmt(h.rate)}</div>
-                                  <div className="col-6"><b>Total (SAR):</b> {fmtAmt(h.total)}</div>
-                                </div>
-                              </div>
-                            ))
-                          )}
+                    <h5 className="fw-bold text-success mb-2">🏨 Hotels</h5>
+                    {Array.isArray(detailData.hotels) && detailData.hotels.length > 0 ? (
+                      detailData.hotels.map((h, i) => (
+                        <div key={i} className="border p-3 rounded-3 bg-white mb-2 shadow-sm">
+                          <b>🛏️ {h.hotel}</b> — 📍 {h.location}<br />
+                          Check In: <span className="text-primary fw-bold">{getRowDate({ date: h.checkIn })}</span> → Check Out: <span className="text-danger fw-bold">{getRowDate({ date: h.checkOut })}</span><br />
+                          <span className="small text-muted">Nights: {h.nights}, Rooms: {h.rooms}, Type: {h.type} | Rate: {fmtAmt(h.rate)} SAR — Total: {fmtAmt(h.total)} SAR</span>
                         </div>
-                      )}
+                      ))
+                    ) : (
+                      <p className="text-muted">No hotels</p>
+                    )}
+                    <div className="small text-muted bg-white p-2 rounded border mb-3">
+                      <b>Hotel SAR:</b> {fmtAmt(detailData.hotel_sar_total || 0)} | <b>Hotel PKR:</b> {fmtAmt(detailData.hotel_pkr_total || 0)}
+                    </div>
 
-                      {detailType === "PACKAGE" && (() => {
-                        const flightDates = Array.isArray(detailData.flights)
-                          ? detailData.flights.map((f) => f.date).filter(Boolean).sort()
-                          : [];
+                    <h5 className="fw-bold text-warning mb-2">🛂 Visa</h5>
+                    {Array.isArray(detailData.visa) && detailData.visa.length > 0 ? (
+                      detailData.visa.map((v, i) => (
+                        <div key={i} className="border p-2 rounded bg-white mb-1 shadow-sm d-flex justify-content-between">
+                          <span>{v.type || v.title || "Visa"} — {v.persons || v.qty || 1} Persons</span>
+                          <span>× {fmtAmt(v.rate || 0)} = {fmtAmt(v.total || 0)} SAR</span>
+                        </div>
+                      ))
+                    ) : (
+                      <p className="text-muted">No visa</p>
+                    )}
+                    <div className="small text-muted bg-white p-2 rounded border mb-3">
+                      <b>Visa SAR:</b> {fmtAmt(detailData.visa_sar_total || 0)} | <b>Visa PKR:</b> {fmtAmt(detailData.visa_pkr_total || 0)}
+                    </div>
 
-                        let packageDays = 0;
-                        let packageNights = 0;
-
-                        if (flightDates.length >= 2) {
-                          const startDate = new Date(flightDates[0]);
-                          const endDate = new Date(flightDates[flightDates.length - 1]);
-                          const diff = (endDate - startDate) / (1000 * 60 * 60 * 24);
-                          packageDays = diff + 1;
-                          packageNights = diff;
-                        }
-
-                        const adultCount = Number(detailData.adult_count || 0);
-                        const childCount = Number(detailData.child_count || 0);
-                        const infantCount = Number(detailData.infant_count || 0);
-
-                        const rate = {
-                          flight: Number(detailData.flight_sar_rate || 0),
-                          hotels: Number(detailData.hotel_sar_rate || 0),
-                          visa: Number(detailData.visa_sar_rate || 0),
-                          transport: Number(detailData.transport_sar_rate || 0),
-                          ziyarat: Number(detailData.ziyarat_sar_rate || 0),
-                        };
-
-                        const adultFlightPKR = adultCount * Number(detailData.adult_rate || 0) * rate.flight;
-                        const childFlightPKR = childCount * Number(detailData.child_rate || 0) * rate.flight;
-                        const infantFlightPKR = infantCount * Number(detailData.infant_rate || 0) * rate.flight;
-
-                        const visaPersons = (detailData.visa || []).reduce((sum, v) => sum + Number(v.persons || 0), 0);
-                        const visaPKR = Number(detailData.visa_sar_total || 0) * rate.visa;
-                        const visaPerPerson = visaPersons > 0 ? visaPKR / visaPersons : 0;
-
-                        const hotelsPKR = Number(detailData.hotel_sar_total || 0) * rate.hotels;
-                        const transportPKR = Number(detailData.transport_sar_total || 0) * rate.transport;
-                        const ziyaratPKR = Number(detailData.ziyarat_sar_total || 0) * rate.ziyarat;
-
-                        const sharedPKR = hotelsPKR + transportPKR + ziyaratPKR;
-                        const sharedPerAdult = adultCount > 0 ? sharedPKR / adultCount : 0;
-
-                        const adultPerPerson = Math.round(
-                          adultCount > 0 ? adultFlightPKR / adultCount + visaPerPerson + sharedPerAdult : 0
-                        );
-
-                        const childPerPerson = Math.round(
-                          childCount > 0 ? childFlightPKR / childCount + visaPerPerson : 0
-                        );
-
-                        const infantPerPerson = Math.round(
-                          infantCount > 0 ? infantFlightPKR / infantCount + visaPerPerson : 0
-                        );
-
-                        return (
-                          <div className="mb-4 text-start">
-                            <div
-                              className="border rounded-3 p-3 mb-4 shadow-sm"
-                              style={{
-                                background: "linear-gradient(135deg,#f8f9fa,#e9f7ef)",
-                                borderLeft: "5px solid #198754",
-                              }}
-                            >
-                              <div className="text-uppercase fw-bold text-muted small">Package Duration</div>
-                              <div className="fs-4 fw-bold text-success mt-1">
-                                📅 {packageDays} Days / 🌙 {packageNights} Nights
-                              </div>
-                            </div>
-
-                            <h5 className="fw-bold text-primary mb-2">✈️ Flight</h5>
-                            <div className="border p-3 rounded-3 bg-white mb-2 shadow-sm">
-                              {Array.isArray(detailData.flights) && detailData.flights.length > 0 ? (
-                                detailData.flights.map((f, i) => (
-                                  <div key={i} className="mb-1 text-dark">
-                                    {getRowDate({ date: f.date })} — <span className="fw-bold">{f.from}</span> → <span className="fw-bold">{f.to}</span> {f.airline && <b>({f.airline})</b>}
-                                  </div>
-                                ))
-                              ) : (
-                                <p className="text-muted mb-0">No flights</p>
-                              )}
-                            </div>
-                            <div className="small text-muted bg-white p-2 rounded border mb-3">
-                              Adults: {detailData.adult_count || 0} × {fmtAmt(detailData.adult_rate || 0)} | Child: {detailData.child_count || 0} × {fmtAmt(detailData.child_rate || 0)} | Infant: {detailData.infant_count || 0} × {fmtAmt(detailData.infant_rate || 0)} <br />
-                              <b>Flight SAR:</b> {fmtAmt(detailData.flight_sar_total || 0)} | <b>Flight PKR:</b> {fmtAmt(detailData.flight_pkr_total || 0)}
-                            </div>
-
-                            <h5 className="fw-bold text-success mb-2">🏨 Hotels</h5>
-                            {Array.isArray(detailData.hotels) && detailData.hotels.length > 0 ? (
-                              detailData.hotels.map((h, i) => (
-                                <div key={i} className="border p-3 rounded-3 bg-white mb-2 shadow-sm">
-                                  <b>🛏️ {h.hotel}</b> — 📍 {h.location}<br />
-                                  Check In: <span className="text-primary fw-bold">{getRowDate({ date: h.checkIn })}</span> → Check Out: <span className="text-danger fw-bold">{getRowDate({ date: h.checkOut })}</span><br />
-                                  <span className="small text-muted">Nights: {h.nights}, Rooms: {h.rooms}, Type: {h.type} | Rate: {fmtAmt(h.rate)} SAR — Total: {fmtAmt(h.total)} SAR</span>
-                                </div>
-                              ))
-                            ) : (
-                              <p className="text-muted">No hotels</p>
+                    <h5 className="fw-bold text-danger mb-2">🚐 Transport</h5>
+                    {Array.isArray(detailData.transport) && detailData.transport.length > 0 ? (
+                      detailData.transport.map((t, i) => (
+                        <div key={i} className="border p-2 rounded bg-white mb-1 shadow-sm d-flex justify-content-between align-items-center">
+                          <div>
+                            <strong>{t.text || t.sector || t.route || t.vehicle || "Transport Service"}</strong>
+                            {(t.travel_date || t.date) && (
+                              <span className="badge bg-info text-dark ms-2">
+                                📅 {getRowDate({ date: t.travel_date || t.date })}
+                              </span>
                             )}
-                            <div className="small text-muted bg-white p-2 rounded border mb-3">
-                              <b>Hotel SAR:</b> {fmtAmt(detailData.hotel_sar_total || 0)} | <b>Hotel PKR:</b> {fmtAmt(detailData.hotel_pkr_total || 0)}
-                            </div>
-
-                            <h5 className="fw-bold text-warning mb-2">🛂 Visa</h5>
-                            {Array.isArray(detailData.visa) && detailData.visa.length > 0 ? (
-                              detailData.visa.map((v, i) => (
-                                <div key={i} className="border p-2 rounded bg-white mb-1 shadow-sm d-flex justify-content-between">
-                                  <span>{v.type || v.title || "Visa"} — {v.persons || v.qty || 1} Persons</span>
-                                  <span>× {fmtAmt(v.rate || 0)} = {fmtAmt(v.total || 0)} SAR</span>
-                                </div>
-                              ))
-                            ) : (
-                              <p className="text-muted">No visa</p>
-                            )}
-                            <div className="small text-muted bg-white p-2 rounded border mb-3">
-                              <b>Visa SAR:</b> {fmtAmt(detailData.visa_sar_total || 0)} | <b>Visa PKR:</b> {fmtAmt(detailData.visa_pkr_total || 0)}
-                            </div>
-
-                            <h5 className="fw-bold text-danger mb-2">🚐 Transport</h5>
-                            {Array.isArray(detailData.transport) && detailData.transport.length > 0 ? (
-                              detailData.transport.map((t, i) => (
-                                <div key={i} className="border p-2 rounded bg-white mb-1 shadow-sm d-flex justify-content-between">
-                                  <span>{t.text || t.sector || t.route || t.vehicle || "Transport Service"}</span>
-                                  <span>{fmtAmt(t.amount || t.total || 0)} SAR</span>
-                                </div>
-                              ))
-                            ) : (
-                              <p className="text-muted">No transport</p>
-                            )}
-                            <div className="small text-muted bg-white p-2 rounded border mb-3">
-                              <b>Transport SAR:</b> {fmtAmt(detailData.transport_sar_total || 0)} | <b>Transport PKR:</b> {fmtAmt(detailData.transport_pkr_total || 0)}
-                            </div>
-
-                            <h5 className="fw-bold mb-2" style={{ color: "#6f42c1" }}>🕌 Ziyarat</h5>
-                            {Array.isArray(detailData.ziyarat) && detailData.ziyarat.length > 0 ? (
-                              detailData.ziyarat.map((z, i) => (
-                                <div key={i} className="border p-2 rounded bg-white mb-1 shadow-sm d-flex justify-content-between">
-                                  <span>{z.text || z.route || z.description || z.city || "Ziyarat Tour"}</span>
-                                  <span>{fmtAmt(z.amount || z.total || 0)} SAR</span>
-                                </div>
-                              ))
-                            ) : (
-                              <p className="text-muted">No ziyarat</p>
-                            )}
-                            <div className="small text-muted bg-white p-2 rounded border mb-3">
-                              <b>Ziyarat SAR:</b> {fmtAmt(detailData.ziyarat_sar_total || 0)} | <b>Ziyarat PKR:</b> {fmtAmt(detailData.ziyarat_pkr_total || 0)}
-                            </div>
-
-                            <div className="border rounded-3 p-3 bg-white shadow-sm mt-3">
-                              <h6 className="fw-bold mb-3 text-dark">👥 Per Person Cost</h6>
-
-                              <div className="d-flex justify-content-between border-bottom py-2">
-                                <span><b>Adults ({adultCount})</b></span>
-                                <span className="fw-bold text-success fs-6">{fmtAmt(adultPerPerson)} PKR</span>
-                              </div>
-
-                              <div className="d-flex justify-content-between border-bottom py-2">
-                                <span><b>Children ({childCount})</b></span>
-                                <span className="fw-bold text-success fs-6">{fmtAmt(childPerPerson)} PKR</span>
-                              </div>
-
-                              <div className="d-flex justify-content-between py-2">
-                                <span><b>Infants ({infantCount})</b></span>
-                                <span className="fw-bold text-success fs-6">{fmtAmt(infantPerPerson)} PKR</span>
-                              </div>
-                            </div>
                           </div>
-                        );
-                      })()}
+                          <span className="fw-bold text-dark">{fmtAmt(t.amount || t.total || 0)} SAR</span>
+                        </div>
+                      ))
+                    ) : (
+                      <p className="text-muted">No transport</p>
+                    )}
+                    <div className="small text-muted bg-white p-2 rounded border mb-3">
+                      <b>Transport SAR:</b> {fmtAmt(detailData.transport_sar_total || 0)} | <b>Transport PKR:</b> {fmtAmt(detailData.transport_pkr_total || 0)}
+                    </div>
 
-                      {["VISA", "ZIYARAT", "TRANSPORT", "CARD", "GROUPS"].includes(detailType) && (
-                        <div className="mb-4">
-                          <h5 className="fw-bold text-primary mb-3">Entries Details</h5>
-                          {(!detailData.rows || detailData.rows.length === 0) ? (
-                            <div className="p-3 text-center border rounded bg-white text-muted">
-                              {detailData.description || "No detail rows found for this invoice entry."}
-                            </div>
-                          ) : (
-                            <div className="bg-white rounded-3 shadow-sm p-2 border">
-                              {detailData.rows.map((r, idx) => (
-                                <div key={idx} className="d-flex justify-content-between border-bottom py-2 px-3 align-items-center">
-                                  <div>
-                                    <strong className="text-dark">{r.type || r.description || r.text || r.route || "Item"}</strong>
-                                    {r.persons && <span className="badge bg-secondary ms-2">{r.persons} Persons</span>}
-                                  </div>
-                                  <span className="fw-bold text-success font-monospace fs-6">
-                                    {fmtAmt(r.total || r.sar || r.pkr || 0)}
-                                  </span>
-                                </div>
-                              ))}
-                            </div>
-                          )}
+                    <h5 className="fw-bold mb-2" style={{ color: "#6f42c1" }}>🕌 Ziyarat</h5>
+                    {Array.isArray(detailData.ziyarat) && detailData.ziyarat.length > 0 ? (
+                      detailData.ziyarat.map((z, i) => (
+                        <div key={i} className="border p-2 rounded bg-white mb-1 shadow-sm d-flex justify-content-between">
+                          <span>{z.text || z.route || z.description || z.city || "Ziyarat Tour"}</span>
+                          <span>{fmtAmt(z.amount || z.total || 0)} SAR</span>
                         </div>
-                      )}
+                      ))
+                    ) : (
+                      <p className="text-muted">No ziyarat</p>
+                    )}
+                    <div className="small text-muted bg-white p-2 rounded border mb-3">
+                      <b>Ziyarat SAR:</b> {fmtAmt(detailData.ziyarat_sar_total || 0)} | <b>Ziyarat PKR:</b> {fmtAmt(detailData.ziyarat_pkr_total || 0)}
+                    </div>
 
-                      <hr />
+                    <div className="border rounded-3 p-3 bg-white shadow-sm mt-3">
+                      <h6 className="fw-bold mb-3 text-dark">👥 Per Person Cost</h6>
 
-                      <div className="row g-3 bg-white p-3 rounded-4 shadow-sm border mb-4">
-                        <div className="col-4 text-center border-end">
-                          <span className="text-muted small">Total SAR</span>
-                          <h5 className="fw-bold text-dark font-monospace fs-5">
-                            {fmtAmt(getModalTotalSar())}
-                          </h5>
-                        </div>
-                        <div className="col-4 text-center border-end">
-                          <span className="text-muted small">PKR Rate</span>
-                          <h5 className="fw-bold text-dark font-monospace fs-5">
-                            {fmtAmt(getModalPkrRate())}
-                          </h5>
-                        </div>
-                        <div className="col-4 text-center">
-                          <span className="text-muted small">Grand Total (PKR)</span>
-                          <h5 className="fw-bold text-success font-monospace fs-5">
-                            PKR {fmtAmt(getModalTotalPkr())}
-                          </h5>
-                        </div>
+                      <div className="d-flex justify-content-between border-bottom py-2">
+                        <span><b>Adults ({adultCount})</b></span>
+                        <span className="fw-bold text-success fs-6">{fmtAmt(adultPerPerson)} PKR</span>
                       </div>
 
-                      <div className="d-flex justify-content-between align-items-center bg-dark text-white p-3 rounded-3 shadow-sm">
-                        <span className="fw-bold">TOTAL AMOUNT (PKR):</span>
-                        <h4 className="mb-0 fw-bold font-monospace fs-4">
-                          PKR {fmtAmt(getModalTotalPkr())}
-                        </h4>
+                      <div className="d-flex justify-content-between border-bottom py-2">
+                        <span><b>Children ({childCount})</b></span>
+                        <span className="fw-bold text-success fs-6">{fmtAmt(childPerPerson)} PKR</span>
                       </div>
+
+                      <div className="d-flex justify-content-between py-2">
+                        <span><b>Infants ({infantCount})</b></span>
+                        <span className="fw-bold text-success fs-6">{fmtAmt(infantPerPerson)} PKR</span>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
+
+              {["VISA", "ZIYARAT", "TRANSPORT", "CARD", "GROUPS"].includes(detailType) && (
+                <div className="mb-4">
+                  <h5 className="fw-bold text-primary mb-3">Entries Details</h5>
+                  {(!detailData.rows || detailData.rows.length === 0) ? (
+                    <div className="p-3 text-center border rounded bg-white text-muted">
+                      {detailData.description || "No detail rows found for this invoice entry."}
                     </div>
                   ) : (
-                    <div className="text-center py-5">
-                      <p className="text-danger fw-bold">Failed to load detailed transaction records.</p>
+                    <div className="bg-white rounded-3 shadow-sm p-2 border">
+                      {detailData.rows.map((r, idx) => (
+                        <div key={idx} className="d-flex justify-content-between border-bottom py-2 px-3 align-items-center">
+                          <div>
+                            <strong className="text-dark">{r.type || r.description || r.text || r.route || "Item"}</strong>
+                            {r.persons && <span className="badge bg-secondary ms-2">{r.persons} Persons</span>}
+                            {(r.travel_date || r.date) && (
+                              <span className="badge bg-info text-dark ms-2">
+                                📅 {getRowDate({ date: r.travel_date || r.date })}
+                              </span>
+                            )}
+                          </div>
+                          <span className="fw-bold text-success font-monospace fs-6">
+                            {fmtAmt(r.total || r.sar || r.pkr || 0)}
+                          </span>
+                        </div>
+                      ))}
                     </div>
                   )}
                 </div>
+              )}
 
-                <div className="modal-footer bg-light border-0 rounded-bottom-4">
-                  <button
-                    type="button"
-                    className="btn btn-secondary px-4 fw-bold"
-                    onClick={() => setDetailModalOpen(false)}
-                  >
-                    Close
-                  </button>
+              <hr />
+
+              <div className="row g-3 bg-white p-3 rounded-4 shadow-sm border mb-4">
+                <div className="col-4 text-center border-end">
+                  <span className="text-muted small">Total SAR</span>
+                  <h5 className="fw-bold text-dark font-monospace fs-5">
+                    {fmtAmt(getModalTotalSar())}
+                  </h5>
+                </div>
+                <div className="col-4 text-center border-end">
+                  <span className="text-muted small">PKR Rate</span>
+                  <h5 className="fw-bold text-dark font-monospace fs-5">
+                    {fmtAmt(getModalPkrRate())}
+                  </h5>
+                </div>
+                <div className="col-4 text-center">
+                  <span className="text-muted small">Grand Total (PKR)</span>
+                  <h5 className="fw-bold text-success font-monospace fs-5">
+                    PKR {fmtAmt(getModalTotalPkr())}
+                  </h5>
                 </div>
               </div>
+
+              <div className="d-flex justify-content-between align-items-center bg-dark text-white p-3 rounded-3 shadow-sm">
+                <span className="fw-bold">TOTAL AMOUNT (PKR):</span>
+                <h4 className="mb-0 fw-bold font-monospace fs-4">
+                  PKR {fmtAmt(getModalTotalPkr())}
+                </h4>
+              </div>
             </div>
-          </div>
-        )}
+          ) : (
+            <div className="text-center py-5">
+              <p className="text-danger fw-bold">Failed to load detailed transaction records.</p>
+            </div>
+          )}
+        </div>
+
+        <div className="modal-footer bg-light border-0 rounded-bottom-4">
+          <button
+            type="button"
+            className="btn btn-secondary px-4 fw-bold"
+            onClick={() => setDetailModalOpen(false)}
+          >
+            Close
+          </button>
+        </div>
       </div>
+    </div>
+  </div>
+)}
+     </div>
     </div>
   );
 }
