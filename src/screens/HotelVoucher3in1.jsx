@@ -133,34 +133,77 @@ export default function HotelVoucher3in1({ onNavigate }) {
     }
   };
 
-  /* ================= PDF GENERATOR (FIT SINGLE PAGE) ================= */
+  /* ================= PDF GENERATOR (3 HOTELS PER PAGE) ================= */
   const generatePdfInstance = async () => {
-    const canvas = await html2canvas(voucherRef.current, {
-      scale: 2.5,
-      useCORS: true,
-      backgroundColor: "#ffffff",
-      ignoreElements: (el) => el.tagName === "CANVAS",
-      onclone: (doc) => {
-        doc.querySelectorAll("*").forEach((el) => {
-          const bg = el.style.backgroundImage;
-          if (bg && bg.includes("gradient")) {
-            el.style.backgroundImage = "none";
-          }
-        });
-      },
-    });
+    if (!voucherRef.current || !data) return null;
 
-    const imgData = canvas.toDataURL("image/jpeg", 0.95);
     const pdf = new jsPDF("p", "mm", "a4");
+    const pageWidth = 210;
+    const margin = 8;
+    const usableWidth = pageWidth - margin * 2;
 
-    const pdfWidth = 210;
-    const pdfHeight = 297;
+    const renderElementToImage = async (el) => {
+      if (!el) return null;
+      const canvas = await html2canvas(el, {
+        scale: 2.5,
+        useCORS: true,
+        backgroundColor: "#ffffff",
+        onclone: (clonedDoc) => {
+          // Convert input elements to span text for accurate canvas rendering
+          const inputs = clonedDoc.querySelectorAll("input");
+          inputs.forEach((input) => {
+            const span = clonedDoc.createElement("span");
+            span.innerText = input.value || "";
+            span.className = input.className;
+            span.style.cssText = window.getComputedStyle(input).cssText;
+            span.style.display = "inline-block";
+            if (input.parentNode) {
+              input.parentNode.replaceChild(span, input);
+            }
+          });
+        },
+      });
+      return {
+        img: canvas.toDataURL("image/png"),
+        height: (canvas.height * usableWidth) / canvas.width,
+      };
+    };
 
-    // Calculate height to maintain aspect ratio without adding extra pages
-    const imgHeight = (canvas.height * pdfWidth) / canvas.width;
-    const finalHeight = imgHeight > pdfHeight ? pdfHeight : imgHeight;
+    const header = await renderElementToImage(voucherRef.current.querySelector(".pdf-header"));
+    const refRow = await renderElementToImage(voucherRef.current.querySelector(".pdf-ref-row"));
+    const namesRow = await renderElementToImage(voucherRef.current.querySelector(".pdf-names-row"));
+    const timing = await renderElementToImage(voucherRef.current.querySelector(".pdf-timing"));
+    const footer = await renderElementToImage(voucherRef.current.querySelector(".pdf-footer"));
 
-    pdf.addImage(imgData, "JPEG", 0, 0, pdfWidth, finalHeight);
+    const hotelElements = Array.from(voucherRef.current.querySelectorAll(".pdf-hotel-block"));
+    const hotelBlocks = [];
+    for (let h of hotelElements) {
+      hotelBlocks.push(await renderElementToImage(h));
+    }
+
+    // Process exactly 3 hotels per page
+    for (let i = 0; i < hotelBlocks.length; i += 3) {
+      if (i > 0) pdf.addPage();
+      let y = margin;
+
+      // Add Header & Details on each page
+      if (header) { pdf.addImage(header.img, "PNG", margin, y, usableWidth, header.height); y += header.height + 2; }
+      if (refRow) { pdf.addImage(refRow.img, "PNG", margin, y, usableWidth, refRow.height); y += refRow.height + 2; }
+      if (namesRow) { pdf.addImage(namesRow.img, "PNG", margin, y, usableWidth, namesRow.height); y += namesRow.height + 2; }
+
+      // Add Hotel 1, 2, and 3 for the current page
+      for (let k = 0; k < 3; k++) {
+        if (hotelBlocks[i + k]) {
+          pdf.addImage(hotelBlocks[i + k].img, "PNG", margin, y, usableWidth, hotelBlocks[i + k].height);
+          y += hotelBlocks[i + k].height + 2;
+        }
+      }
+
+      // Add Timing & Footer at the bottom of the page
+      if (timing) { pdf.addImage(timing.img, "PNG", margin, y, usableWidth, timing.height); y += timing.height + 2; }
+      if (footer) { pdf.addImage(footer.img, "PNG", margin, y, usableWidth, footer.height); }
+    }
+
     return pdf;
   };
 
@@ -183,14 +226,15 @@ export default function HotelVoucher3in1({ onNavigate }) {
       });
 
       const pdf = await generatePdfInstance();
-      pdf.save(`Hotel-Voucher-${data.ref_no}.pdf`);
-
-      Swal.close();
-      Swal.fire({
-        width: "280px",
-        icon: "success",
-        text: "PDF Downloaded Successfully 😎",
-      });
+      if (pdf) {
+        pdf.save(`Hotel-Voucher-${data.ref_no}.pdf`);
+        Swal.close();
+        Swal.fire({
+          width: "280px",
+          icon: "success",
+          text: "PDF Downloaded Successfully 😎",
+        });
+      }
     } catch (err) {
       Swal.close();
       Swal.fire({
@@ -201,7 +245,7 @@ export default function HotelVoucher3in1({ onNavigate }) {
     }
   };
 
-  /* ================= PRINT SINGLE PAGE ================= */
+  /* ================= DIRECT PRINT (NO POPUP BLOCK) ================= */
   const handlePrint = async () => {
     if (!voucherRef.current || !data) return;
 
@@ -214,8 +258,29 @@ export default function HotelVoucher3in1({ onNavigate }) {
 
     try {
       const pdf = await generatePdfInstance();
-      window.open(pdf.output("bloburl"), "_blank");
-      Swal.close();
+      if (pdf) {
+        const blobUrl = pdf.output("bloburl");
+        
+        // Create hidden iframe for direct printing
+        const printIframe = document.createElement("iframe");
+        printIframe.style.position = "fixed";
+        printIframe.style.right = "0";
+        printIframe.style.bottom = "0";
+        printIframe.style.width = "0";
+        printIframe.style.height = "0";
+        printIframe.style.border = "0";
+        printIframe.src = blobUrl;
+
+        document.body.appendChild(printIframe);
+
+        printIframe.onload = () => {
+          Swal.close();
+          setTimeout(() => {
+            printIframe.contentWindow.focus();
+            printIframe.contentWindow.print();
+          }, 300);
+        };
+      }
     } catch (err) {
       Swal.fire({
         icon: "error",
@@ -289,11 +354,9 @@ export default function HotelVoucher3in1({ onNavigate }) {
       {/* ================= VOUCHER CONTAINER ================= */}
       {data && (
         <div
-          id="print-area"
           ref={voucherRef}
           style={{
-            width: "794px",
-            height: "1120px", // Fixed 1-page A4 aspect ratio height
+            maxWidth: "800px",
             margin: "0 auto",
             background: "#fff",
             border: "2px solid #0d6efd",
@@ -301,237 +364,201 @@ export default function HotelVoucher3in1({ onNavigate }) {
             padding: "12px 16px",
             fontSize: "11px",
             boxSizing: "border-box",
-            display: "flex",
-            flexDirection: "column",
-            justifyContent: "space-between",
           }}
         >
-          <div>
-            {/* HEADER */}
+          {/* HEADER */}
+          <div className="pdf-header mb-1">
             <Header title="HOTEL VOUCHER" />
-
-            {/* INFO */}
-            <div className="row mb-1 pdf-ref-row fs-6">
-              <div className="col fw-bold" style={{ fontSize: "13px" }}>
-                <b>Ref No:</b> {data.ref_no}
-              </div>
-              <div className="col text-end pdf-date-row fw-bold" style={{ fontSize: "13px" }}>
-                <b>Date:</b> {showDate(data.booking_date)}
-              </div>
-            </div>
-
-            {/* CUSTOMER & AGENT ROW */}
-            <div className="row mb-2 pdf-names-row">
-              <div className="col">
-                <label className="fw-bold mb-0" style={{ fontSize: "11px" }}>Customer Name</label>
-                <input
-                  type="text"
-                  className="form-control form-control-sm fw-bold"
-                  style={{ padding: "2px 6px", fontSize: "11px", height: "26px" }}
-                  value={data.customer_name || ""}
-                  onChange={(e) =>
-                    setData({ ...data, customer_name: e.target.value })
-                  }
-                  placeholder="Enter Customer Name"
-                />
-              </div>
-              <div className="col">
-                <label className="fw-bold mb-0" style={{ fontSize: "11px" }}>Agent Name</label>
-                <input
-                  type="text"
-                  className="form-control form-control-sm fw-bold"
-                  style={{ padding: "2px 6px", fontSize: "11px", height: "26px" }}
-                  value={data.agent_name}
-                  onChange={(e) =>
-                    setData({ ...data, agent_name: e.target.value })
-                  }
-                  placeholder="Enter Agent Name"
-                />
-              </div>
-            </div>
-
-            {/* HOTELS LIST */}
-            {data.hotels.map((h, i) => (
-              <div
-                key={i}
-                className="pdf-hotel-block mb-2 p-2 bg-light rounded border fw-bold"
-                style={{
-                  fontSize: "11px",
-                  lineHeight: "1.25",
-                }}
-              >
-                {/* BLUE HEADER */}
-                <h6
-                  className="bg-primary text-white rounded mb-1 d-flex align-items-center fw-bold"
-                  style={{
-                    padding: "3px 8px",
-                    fontSize: "12px",
-                    margin: 0,
-                  }}
-                >
-                  {i + 1} 🏨 Hotel Details
-                </h6>
-
-                {/* HOTEL NAME & CONFIRM NO */}
-                <div
-                  className="mb-1 px-2 py-1 rounded fw-bold d-flex align-items-center justify-content-between"
-                  style={{
-                    backgroundColor: "#1a2530",
-                    color: "#ffc107",
-                    fontSize: "12px",
-                  }}
-                >
-                  <div className="d-flex align-items-center me-2">
-                    🏨 Hotel: &nbsp;<span className="text-uppercase fw-bold">{h.hotel}</span>
-                  </div>
-
-                  <div className="d-flex align-items-center" style={{ minWidth: "200px" }}>
-                    <span className="text-white me-1 text-nowrap" style={{ fontSize: "10px" }}>
-                      CONFIRM NO:
-                    </span>
-                    <input
-                      className="form-control form-control-sm fw-bold text-uppercase"
-                      style={{
-                        padding: "1px 4px",
-                        fontSize: "10px",
-                        height: "22px",
-                        color: "#000",
-                        backgroundColor: "#fff",
-                        border: "1px solid #ffc107"
-                      }}
-                      placeholder="Enter Confirm No"
-                      value={h.confirmNo}
-                      onChange={(e) =>
-                        handleHotelChange(i, "confirmNo", e.target.value)
-                      }
-                    />
-                  </div>
-                </div>
-
-                <div className="mb-1 fw-bold">
-                  <b>📍 Address:</b> {h.location}
-                </div>
-
-                <div className="row my-1 fw-bold">
-                  <div className="col">
-                    <b>🚪 Room:</b> {h.room}
-                  </div>
-                  <div className="col">
-                    <b>🛏️ Room Type:</b> {h.room_type}
-                  </div>
-                </div>
-
-                <div className="row my-1 align-items-center fw-bold">
-                  <div
-                    className="col bg-warning text-dark fw-bold rounded me-1 p-1 text-center"
-                    style={{ fontSize: "10px" }}
-                  >
-                    Check-In: {showDate(h.checkIn)}
-                  </div>
-                  <div
-                    className="col bg-success text-white fw-bold rounded me-1 p-1 text-center"
-                    style={{ fontSize: "10px" }}
-                  >
-                    Check-Out: {showDate(h.checkOut)}
-                  </div>
-                  <div className="col fw-bold ps-2" style={{ fontSize: "11px" }}>
-                    Nights: {h.nights}
-                  </div>
-                </div>
-
-                <div className="row mt-1">
-                  <div className="col">
-                    <label className="fw-bold mb-0" style={{ fontSize: "10px" }}>CONTACT 1</label>
-                    <input
-                      className="form-control form-control-sm fw-bold"
-                      style={{
-                        padding: "1px 4px",
-                        fontSize: "10px",
-                        height: "24px",
-                      }}
-                      placeholder="Enter Contact 1"
-                      value={h.contact1}
-                      onChange={(e) =>
-                        handleHotelChange(i, "contact1", e.target.value)
-                      }
-                    />
-                  </div>
-                  <div className="col">
-                    <label className="fw-bold mb-0" style={{ fontSize: "10px" }}>CONTACT 2</label>
-                    <input
-                      className="form-control form-control-sm fw-bold"
-                      style={{
-                        padding: "1px 4px",
-                        fontSize: "10px",
-                        height: "24px",
-                      }}
-                      placeholder="Enter Contact 2"
-                      value={h.contact2}
-                      onChange={(e) =>
-                        handleHotelChange(i, "contact2", e.target.value)
-                      }
-                    />
-                  </div>
-                </div>
-              </div>
-            ))}
           </div>
 
-          <div>
-            {/* CHECK IN / OUT TIME */}
+          {/* INFO */}
+          <div className="row mb-1 pdf-ref-row fs-6">
+            <div className="col fw-bold" style={{ fontSize: "12px" }}>
+              <b>Ref No:</b> {data.ref_no}
+            </div>
+            <div className="col text-end pdf-date-row fw-bold" style={{ fontSize: "12px" }}>
+              <b>Date:</b> {showDate(data.booking_date)}
+            </div>
+          </div>
+
+          {/* CUSTOMER & AGENT ROW */}
+          <div className="row mb-2 pdf-names-row">
+            <div className="col">
+              <label className="fw-bold mb-0" style={{ fontSize: "11px" }}>Customer Name</label>
+              <input
+                type="text"
+                className="form-control form-control-sm fw-bold"
+                style={{ padding: "2px 6px", fontSize: "11px", height: "26px" }}
+                value={data.customer_name || ""}
+                onChange={(e) =>
+                  setData({ ...data, customer_name: e.target.value })
+                }
+                placeholder="Enter Customer Name"
+              />
+            </div>
+            <div className="col">
+              <label className="fw-bold mb-0" style={{ fontSize: "11px" }}>Agent Name</label>
+              <input
+                type="text"
+                className="form-control form-control-sm fw-bold"
+                style={{ padding: "2px 6px", fontSize: "11px", height: "26px" }}
+                value={data.agent_name}
+                onChange={(e) =>
+                  setData({ ...data, agent_name: e.target.value })
+                }
+                placeholder="Enter Agent Name"
+              />
+            </div>
+          </div>
+
+          {/* HOTELS LIST */}
+          {data.hotels.map((h, i) => (
             <div
-              className="mt-1 p-1 text-center fw-bold pdf-timing"
+              key={i}
+              className="pdf-hotel-block mb-2 p-2 bg-light rounded border fw-bold"
               style={{
-                background: "#e7f1ff",
-                border: "1px dashed #0d6efd",
-                borderRadius: "6px",
-                color: "#0d6efd",
-                fontSize: "10px",
+                fontSize: "11px",
+                lineHeight: "1.25",
               }}
             >
-              ⏰ CHECK IN TIME: 04:00 PM &nbsp; | &nbsp; CHECK OUT TIME: 02:00 PM
-            </div>
+              {/* BLUE HEADER */}
+              <h6
+                className="bg-primary text-white rounded mb-1 d-flex align-items-center fw-bold"
+                style={{
+                  padding: "3px 8px",
+                  fontSize: "12px",
+                  margin: 0,
+                }}
+              >
+                {i + 1} 🏨 Hotel Details
+              </h6>
 
-            {/* FOOTER */}
-            <div
-              className="text-center mt-1 pdf-footer fw-bold"
-              style={{ color: "#555", fontSize: "9px" }}
-            >
-              Please check your hotel details carefully. <br />
-              This voucher is valid only for the mentioned booking.
+              {/* HOTEL NAME & CONFIRM NO */}
+              <div
+                className="mb-1 px-2 py-1 rounded fw-bold d-flex align-items-center justify-content-between"
+                style={{
+                  backgroundColor: "#1a2530",
+                  color: "#ffc107",
+                  fontSize: "12px",
+                }}
+              >
+                <div className="d-flex align-items-center me-2">
+                  🏨 Hotel: &nbsp;<span className="text-uppercase fw-bold">{h.hotel}</span>
+                </div>
+
+                <div className="d-flex align-items-center" style={{ minWidth: "200px" }}>
+                  <span className="text-white me-1 text-nowrap" style={{ fontSize: "10px" }}>
+                    CONFIRM NO:
+                  </span>
+                  <input
+                    className="form-control form-control-sm fw-bold text-uppercase"
+                    style={{
+                      padding: "1px 4px",
+                      fontSize: "10px",
+                      height: "22px",
+                      color: "#000",
+                      backgroundColor: "#fff",
+                      border: "1px solid #ffc107"
+                    }}
+                    placeholder="Enter Confirm No"
+                    value={h.confirmNo}
+                    onChange={(e) =>
+                      handleHotelChange(i, "confirmNo", e.target.value)
+                    }
+                  />
+                </div>
+              </div>
+
+              <div className="mb-1 fw-bold">
+                <b>📍 Address:</b> {h.location}
+              </div>
+
+              <div className="row my-1 fw-bold">
+                <div className="col">
+                  <b>🚪 Room:</b> {h.room}
+                </div>
+                <div className="col">
+                  <b>🛏️ Room Type:</b> {h.room_type}
+                </div>
+              </div>
+
+              <div className="row my-1 align-items-center fw-bold">
+                <div
+                  className="col bg-warning text-dark fw-bold rounded me-1 p-1 text-center"
+                  style={{ fontSize: "10px" }}
+                >
+                  Check-In: {showDate(h.checkIn)}
+                </div>
+                <div
+                  className="col bg-success text-white fw-bold rounded me-1 p-1 text-center"
+                  style={{ fontSize: "10px" }}
+                >
+                  Check-Out: {showDate(h.checkOut)}
+                </div>
+                <div className="col fw-bold ps-2" style={{ fontSize: "11px" }}>
+                  Nights: {h.nights}
+                </div>
+              </div>
+
+              <div className="row mt-1">
+                <div className="col">
+                  <label className="fw-bold mb-0" style={{ fontSize: "10px" }}>CONTACT 1</label>
+                  <input
+                    className="form-control form-control-sm fw-bold"
+                    style={{
+                      padding: "1px 4px",
+                      fontSize: "10px",
+                      height: "24px",
+                    }}
+                    placeholder="Enter Contact 1"
+                    value={h.contact1}
+                    onChange={(e) =>
+                      handleHotelChange(i, "contact1", e.target.value)
+                    }
+                  />
+                </div>
+                <div className="col">
+                  <label className="fw-bold mb-0" style={{ fontSize: "10px" }}>CONTACT 2</label>
+                  <input
+                    className="form-control form-control-sm fw-bold"
+                    style={{
+                      padding: "1px 4px",
+                      fontSize: "10px",
+                      height: "24px",
+                    }}
+                    placeholder="Enter Contact 2"
+                    value={h.contact2}
+                    onChange={(e) =>
+                      handleHotelChange(i, "contact2", e.target.value)
+                    }
+                  />
+                </div>
+              </div>
             </div>
+          ))}
+
+          {/* CHECK IN / OUT TIME */}
+          <div
+            className="mt-1 p-1 text-center fw-bold pdf-timing"
+            style={{
+              background: "#e7f1ff",
+              border: "1px dashed #0d6efd",
+              borderRadius: "6px",
+              color: "#0d6efd",
+              fontSize: "10px",
+            }}
+          >
+            ⏰ CHECK IN TIME: 04:00 PM &nbsp; | &nbsp; CHECK OUT TIME: 02:00 PM
           </div>
 
-          <style>{`
-            @media print {
-              html, body {
-                height: 100%;
-                margin: 0 !important;
-                padding: 0 !important;
-                overflow: hidden;
-              }
-              body * {
-                visibility: hidden;
-              }
-              #print-area, #print-area * {
-                visibility: visible;
-              }
-              #print-area {
-                position: absolute;
-                left: 0;
-                top: 0;
-                width: 100% !important;
-                height: 100vh !important;
-                padding: 10px !important;
-                margin: 0 !important;
-                box-sizing: border-box !important;
-              }
-              @page {
-                size: A4 portrait;
-                margin: 0;
-              }
-            }
-          `}</style>
+          {/* FOOTER */}
+          <div
+            className="text-center mt-1 pdf-footer fw-bold"
+            style={{ color: "#555", fontSize: "9px" }}
+          >
+            Please check your hotel details carefully. <br />
+            This voucher is valid only for the mentioned booking.
+          </div>
         </div>
       )}
     </div>
