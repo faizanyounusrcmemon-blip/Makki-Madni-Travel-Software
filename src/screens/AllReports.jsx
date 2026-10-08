@@ -6,7 +6,6 @@ const handleCopyRef = (refNo) => {
   if (!refNo || refNo === "-") return;
 
   navigator.clipboard.writeText(refNo).then(() => {
-    // SweetAlert2 Toast alert
     Swal.fire({
       icon: "success",
       title: "Copied!",
@@ -22,8 +21,6 @@ const handleCopyRef = (refNo) => {
   });
 };
 
-
-
 export default function AllReports({ onNavigate }) {
   const [rows, setRows] = useState([]);
   const [filtered, setFiltered] = useState([]);
@@ -32,6 +29,7 @@ export default function AllReports({ onNavigate }) {
   const [toDate, setToDate] = useState("");
   const [typeFilter, setTypeFilter] = useState("");
   const [custTypeFilter, setCustTypeFilter] = useState("");
+  const [showPendingFinalOnly, setShowPendingFinalOnly] = useState(false);
   const [currentAuthorityDays, setCurrentAuthorityDays] = useState("-");
 
   const [loading, setLoading] = useState(false);
@@ -108,6 +106,7 @@ export default function AllReports({ onNavigate }) {
     setToDate("");
     setTypeFilter("");
     setCustTypeFilter("");
+    setShowPendingFinalOnly(false);
   };
 
   /* ================= LOADER ================= */
@@ -322,7 +321,6 @@ export default function AllReports({ onNavigate }) {
     onNavigate(map[type], ref_no);
   };
 
-
   /* ================= FILTER ================= */
   useEffect(() => {
     let temp = [...rows];
@@ -355,9 +353,13 @@ export default function AllReports({ onNavigate }) {
       });
     }
 
+    if (showPendingFinalOnly) {
+      temp = temp.filter((r) => r.type === "Packages" && !r.is_final);
+    }
+
     setFiltered(temp);
     setCurrentPage(1);
-  }, [search, fromDate, toDate, typeFilter, custTypeFilter, rows]);
+  }, [search, fromDate, toDate, typeFilter, custTypeFilter, showPendingFinalOnly, rows]);
 
   /* ================= PAGINATION ================= */
   const totalPages = Math.ceil(filtered.length / rowsPerPage);
@@ -685,7 +687,7 @@ export default function AllReports({ onNavigate }) {
         </div>
 
         <div className="d-flex justify-content-between align-items-center flex-wrap gap-2 pt-2 border-top">
-          <div className="d-flex gap-2">
+          <div className="d-flex gap-2 flex-wrap align-items-center">
             <button
               className="btn btn-sm btn-light border fw-semibold rounded-pill px-3"
               style={{ fontSize: "12px" }}
@@ -707,7 +709,20 @@ export default function AllReports({ onNavigate }) {
             >
               🗓️ This Month
             </button>
+            
+            <button
+              className={`btn btn-sm fw-bold rounded-pill px-3 ${
+                showPendingFinalOnly
+                  ? "btn-warning text-dark shadow-sm"
+                  : "btn-outline-warning text-dark border"
+              }`}
+              style={{ fontSize: "12px" }}
+              onClick={() => setShowPendingFinalOnly(!showPendingFinalOnly)}
+            >
+              ⏳ {showPendingFinalOnly ? "Showing Unfinalized" : "Pending Finalize"}
+            </button>
           </div>
+
           <button
             className="btn btn-sm btn-link text-danger text-decoration-none fw-semibold"
             style={{ fontSize: "12px" }}
@@ -730,17 +745,17 @@ export default function AllReports({ onNavigate }) {
           >
             <thead className="table-light text-secondary">
               <tr>
-                <th className="py-3 px-3 text-center" style={{ width: "50px" }}>
+                <th className="py-3 px-2 text-center" style={{ width: "45px" }}>
                   SR#
                 </th>
-                <th className="py-3">Type</th>
-                <th className="py-3">Ref No</th>
-                <th className="py-3">Customer Name</th>
-                <th className="py-3">Sub Customer</th>
-                <th className="py-3 text-center">Code / Status</th>
-                <th className="py-3 text-center">Booking Date</th>
-                <th className="py-3 text-end px-3">Total Amount</th>
-                <th className="py-3 text-center" style={{ width: "290px" }}>
+                <th className="py-3 px-2" style={{ whiteSpace: "nowrap" }}>Type</th>
+                <th className="py-3 px-2" style={{ whiteSpace: "nowrap" }}>Ref No</th>
+                <th className="py-3 px-2" style={{ whiteSpace: "nowrap" }}>Customer Name</th>
+                <th className="py-3 px-2" style={{ whiteSpace: "nowrap" }}>Sub Customer</th>
+                <th className="py-3 px-2 text-center" style={{ whiteSpace: "nowrap" }}>Code / Status</th>
+                <th className="py-3 px-2 text-center" style={{ whiteSpace: "nowrap" }}>Booking Date</th>
+                <th className="py-3 px-2 text-end" style={{ whiteSpace: "nowrap" }}>Total Amount</th>
+                <th className="py-3 px-2 text-center" style={{ width: "210px", minWidth: "210px", whiteSpace: "nowrap" }}>
                   Actions
                 </th>
               </tr>
@@ -749,7 +764,7 @@ export default function AllReports({ onNavigate }) {
             <tbody>
               {loading && (
                 <tr>
-                  <td colSpan={8} className="text-center py-5 text-muted">
+                  <td colSpan={9} className="text-center py-5 text-muted">
                     <div
                       className="spinner-border spinner-border-sm text-primary me-2"
                       role="status"
@@ -765,39 +780,36 @@ export default function AllReports({ onNavigate }) {
                     r.customer_code && r.customer_code.trim() !== "";
                   return (
                     <tr key={i} className="align-middle">
-                      <td className="text-center text-muted fw-bold">
+                      <td className="text-center text-muted fw-bold px-2">
                         {i + 1 + indexOfFirst}
                       </td>
-                      <td>
+                      <td className="px-2">
                         <span className="badge bg-light text-dark border px-2 py-1 rounded-3">
                           {typeIcon(r.type)} {r.type}
                         </span>
                       </td>
                       <td
-  className="fw-bold text-primary"
-  style={{ cursor: "pointer" }}
-  title="Click to copy Ref No"
-  onClick={() => handleCopyRef(r.ref_no)}
->
-  {r.ref_no}
-</td>
+                        className="fw-bold text-primary px-2"
+                        style={{ cursor: "pointer", whiteSpace: "nowrap" }}
+                        title="Click to copy Ref No"
+                        onClick={() => handleCopyRef(r.ref_no)}
+                      >
+                        {r.ref_no}
+                      </td>
 
-<td className="fw-bold">
-  <span style={{ color: isRegistered ? "#16a34a" : "#2563eb" }}>
-    {r.customer_name || "-"}
-  </span>
-</td>
+                      <td className="fw-bold px-2" style={{ whiteSpace: "nowrap" }}>
+                        <span style={{ color: isRegistered ? "#16a34a" : "#2563eb" }}>
+                          {r.customer_name || "-"}
+                        </span>
+                      </td>
 
-{/* 👈 Naya Cell */}
-<td className="text-muted fw-semibold">
-<span style={{ color: isRegistered ? "#c9a227" : "#0b3d91" }}>
-  {r.sub_customer_name || "-"}
-</span>
-</td>
+                      <td className="text-muted fw-semibold px-2" style={{ whiteSpace: "nowrap" }}>
+                        <span style={{ color: isRegistered ? "#c9a227" : "#0b3d91" }}>
+                          {r.sub_customer_name || "-"}
+                        </span>
+                      </td>
 
-
-
-                      <td className="text-center">
+                      <td className="text-center px-2" style={{ whiteSpace: "nowrap" }}>
                         {isRegistered ? (
                           <span className="badge bg-success-subtle text-success border border-success-subtle px-2 py-1 rounded-pill">
                             👤 {r.customer_code}
@@ -808,79 +820,68 @@ export default function AllReports({ onNavigate }) {
                           </span>
                         )}
                       </td>
-                      <td className="text-center text-muted">
+                      <td className="text-center text-muted px-2" style={{ whiteSpace: "nowrap" }}>
                         {formatDate(r.booking_date)}
                       </td>
-                      <td className="text-end fw-bold text-success px-3">
+                      <td className="text-end fw-bold text-success px-2" style={{ whiteSpace: "nowrap" }}>
                         PKR {fmtPKR(r.total_pkr)}
                       </td>
 
-{/* STRICT COLUMN-BASED ALIGNMENT */}
-<td className="text-center">
-  <div
-    style={{
-      display: "grid",
-      gridTemplateColumns: "60px 65px 70px",
-      gap: "4px",
-      justifyContent: "center",
-      alignItems: "center",
-    }}
-  >
-    {/* COLUMN 1: View Button */}
-    <button
-      className="btn btn-sm btn-outline-primary rounded-pill px-1 py-1 fw-semibold w-100"
-      style={{ fontSize: "11px", whiteSpace: "nowrap" }}
-      onClick={() => handleView(r.type, r.ref_no)}
-    >
-      👁️️ View
-    </button>
+                      {/* ACTIONS COLUMN */}
+                      <td className="text-center px-1 py-2" style={{ width: "210px", minWidth: "210px" }}>
+                        <div
+                          style={{
+                            display: "grid",
+                            gridTemplateColumns: "58px 62px 72px",
+                            gap: "4px",
+                            justifyContent: "center",
+                            alignItems: "center",
+                          }}
+                        >
+                          {/* COLUMN 1: View Button */}
+                          <button
+                            className="btn btn-sm btn-outline-primary rounded-pill px-1 py-1 fw-semibold w-100"
+                            style={{ fontSize: "11px", whiteSpace: "nowrap" }}
+                            onClick={() => handleView(r.type, r.ref_no)}
+                          >
+                            👁 View
+                          </button>
 
-    {/* COLUMN 2: Delete Button */}
-    <button
-      className="btn btn-sm btn-outline-danger rounded-pill px-1 py-1 fw-semibold w-100"
-      style={{ fontSize: "11px", whiteSpace: "nowrap" }}
-      onClick={() =>
-        handleDelete(
-          r.type,
-          r.ref_no,
-          r.customer_name,
-          r.total_pkr
-        )
-      }
-    >
-      🗑️ Delete
-    </button>
+                          {/* COLUMN 2: Delete Button */}
+                          <button
+                            className="btn btn-sm btn-outline-danger rounded-pill px-1 py-1 fw-semibold w-100"
+                            style={{ fontSize: "11px", whiteSpace: "nowrap" }}
+                            onClick={() =>
+                              handleDelete(
+                                r.type,
+                                r.ref_no,
+                                r.customer_name,
+                                r.total_pkr
+                              )
+                            }
+                          >
+                            🗑️ Delete
+                          </button>
 
-    {/* COLUMN 3: Final / Unfinal Toggle Button */}
-    {r.type === "Packages" ? (
-      <button
-        className={`btn btn-sm ${
-          r.is_final ? "btn-warning" : "btn-success"
-        } rounded-pill px-1 py-1 fw-semibold w-100`}
-        style={{
-          fontSize: "11px",
-          whiteSpace: "nowrap",
-        }}
-        onClick={() => handleToggleFinal(r)}
-      >
-        {r.is_final ? "🔓 Unfinal" : "🔒 Finalize"}
-      </button>
-    ) : (
-      <div></div>
-    )}
-  </div>
-</td>
+                          {/* COLUMN 3: Final / Unfinal Toggle Button */}
+                          {r.type === "Packages" ? (
+                            <button
+                              className={`btn btn-sm ${
+                                r.is_final ? "btn-warning" : "btn-success"
+                              } rounded-pill px-1 py-1 fw-semibold w-100`}
+                              style={{ fontSize: "11px", whiteSpace: "nowrap" }}
+                              onClick={() => handleToggleFinal(r)}
+                            >
+                              {r.is_final ? "🔓 Unfinal" : "🔒 Finalize"}
+                            </button>
+                          ) : (
+                            <div></div>
+                          )}
+                        </div>
+                      </td>
                     </tr>
                   );
                 })}
-
-              {!loading && filtered.length === 0 && (
-                <tr>
-                  <td colSpan={8} className="text-center py-5 text-muted">
-                    No matching records found.
-                  </td>
-                </tr>
-              )}
             </tbody>
           </table>
         </div>
