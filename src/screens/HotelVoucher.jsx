@@ -94,14 +94,14 @@ export default function HotelVoucher({ onNavigate }) {
       const row = isPkg ? d : d.row;
       const rawHotels = row.hotels;
 
-setData({
-  ref_no: row.ref_no,
-  customer_name: row.customer_name,
-  sub_customer_name: row.sub_customer_name || "",
-  agent_name: row.agent_name || "",
-  booking_date: row.booking_date,
-  hotels: (rawHotels || []).map(normalizeHotel),
-});
+      setData({
+        ref_no: row.ref_no,
+        customer_name: row.customer_name || "",
+        sub_customer_name: row.sub_customer_name || "",
+        agent_name: row.agent_name || "",
+        booking_date: row.booking_date,
+        hotels: (rawHotels || []).map(normalizeHotel),
+      });
 
       Swal.close();
     } catch (e) {
@@ -114,92 +114,132 @@ setData({
     }
   };
 
-  /* ================= PDF EXPORT ================= */
+  /* ================= PDF GENERATOR HELPER ================= */
+  const generatePDFBlob = async () => {
+    if (!voucherRef.current) return null;
+
+    const pdf = new jsPDF("p", "mm", "a4");
+    const pageWidth = 210;
+    const pageHeight = 297;
+    const margin = 10;
+    const usableWidth = pageWidth - margin * 2;
+    let y = margin;
+
+    const canvas = await html2canvas(voucherRef.current, {
+      scale: 2,
+      useCORS: true,
+      logging: false,
+      backgroundColor: "#ffffff",
+      onclone: (clonedDoc) => {
+        // Convert all input field values into text for reliable rendering
+        const inputs = clonedDoc.querySelectorAll("input");
+        inputs.forEach((input) => {
+          const span = clonedDoc.createElement("span");
+          span.innerText = input.value || "";
+          span.className = input.className;
+          span.style.cssText = window.getComputedStyle(input).cssText;
+          span.style.display = "inline-block";
+          if (input.parentNode) {
+            input.parentNode.replaceChild(span, input);
+          }
+        });
+      },
+    });
+
+    const imgData = canvas.toDataURL("image/jpeg", 0.95);
+    const imgHeight = (canvas.height * usableWidth) / canvas.width;
+
+    let heightLeft = imgHeight;
+    let position = margin;
+
+    pdf.addImage(imgData, "JPEG", margin, position, usableWidth, imgHeight);
+    heightLeft -= (pageHeight - margin * 2);
+
+    while (heightLeft > 0) {
+      position = heightLeft - imgHeight + margin;
+      pdf.addPage();
+      pdf.addImage(imgData, "JPEG", margin, position, usableWidth, imgHeight);
+      heightLeft -= (pageHeight - margin * 2);
+    }
+
+    return pdf;
+  };
+
+  /* ================= DOWNLOAD PDF ================= */
   const exportPDF = async () => {
     if (!voucherRef.current || !data) return;
 
     Swal.fire({
       title: "Generating PDF...",
-      text: "Please wait while your PDF is being compiled.",
+      text: "Please wait...",
       allowOutsideClick: false,
-      didOpen: () => {
-        Swal.showLoading();
-      },
+      didOpen: () => Swal.showLoading(),
     });
 
     try {
-      const pdf = new jsPDF("p", "mm", "a4");
-      const pageWidth = 210;
-      const pageHeight = 297;
-      const margin = 10;
-      const usableWidth = pageWidth - margin * 2;
-      let y = margin;
-
-      const addCanvas = async (el) => {
-        if (!el) return;
-        const canvas = await html2canvas(el, {
-          scale: 3,
-          useCORS: true,
-          backgroundColor: "#ffffff",
-          ignoreElements: (el) => el.tagName === "CANVAS",
-          onclone: (doc) => {
-            doc.querySelectorAll("*").forEach((el) => {
-              const bg = el.style.backgroundImage;
-              if (bg && bg.includes("gradient")) {
-                el.style.backgroundImage = "none";
-              }
-            });
-          },
+      const pdf = await generatePDFBlob();
+      if (pdf) {
+        pdf.save(`Hotel-Voucher-${data.ref_no}.pdf`);
+        Swal.fire({
+          icon: "success",
+          title: "Downloaded!",
+          timer: 1500,
+          showConfirmButton: false,
         });
-
-        const img = canvas.toDataURL("image/png");
-        const height = (canvas.height * usableWidth) / canvas.width * 0.95;
-
-        if (y + height > pageHeight - margin) {
-          pdf.addPage();
-          y = margin;
-        }
-
-        pdf.addImage(img, "PNG", margin, y, usableWidth, height);
-        y += height + 4;
-      };
-
-      await addCanvas(voucherRef.current.querySelector(".pdf-header"));
-      await addCanvas(voucherRef.current.querySelector(".pdf-ref-row"));
-      await addCanvas(voucherRef.current.querySelector(".pdf-names-row"));
-
-      const hotels = voucherRef.current.querySelectorAll(".pdf-hotel-block");
-      for (let h of hotels) {
-        const canvasBlock = await html2canvas(h, { scale: 3, useCORS: true });
-        const imgBlock = canvasBlock.toDataURL("image/png");
-        const heightBlock = (canvasBlock.height * usableWidth) / canvasBlock.width * 0.95;
-
-        if (y + heightBlock > pageHeight - margin) {
-          pdf.addPage();
-          y = margin;
-        }
-
-        pdf.addImage(imgBlock, "PNG", margin, y, usableWidth, heightBlock);
-        y += heightBlock + 4;
       }
-
-      await addCanvas(voucherRef.current.querySelector(".pdf-timing"));
-      await addCanvas(voucherRef.current.querySelector(".pdf-footer"));
-
-      pdf.save(`Hotel-Voucher-${data.ref_no}.pdf`);
-
-      Swal.fire({
-        icon: "success",
-        title: "Downloaded!",
-        text: "Your PDF has been downloaded successfully.",
-        timer: 2000,
-        showConfirmButton: false,
-      });
     } catch (err) {
+      console.error(err);
       Swal.fire({
         icon: "error",
         title: "Error",
-        text: "Something went wrong while generating the PDF.",
+        text: "Could not generate PDF.",
+        confirmButtonColor: "#dc3545",
+      });
+    }
+  };
+
+  /* ================= DIRECT PRINT ================= */
+  const handlePrint = async () => {
+    if (!voucherRef.current || !data) return;
+
+    Swal.fire({
+      title: "Preparing Print...",
+      text: "Opening Print Window...",
+      allowOutsideClick: false,
+      didOpen: () => Swal.showLoading(),
+    });
+
+    try {
+      const pdf = await generatePDFBlob();
+      if (pdf) {
+        const blobUrl = pdf.output("bloburl");
+        
+        // Hidden iframe print technique (prevents popup block)
+        const printIframe = document.createElement("iframe");
+        printIframe.style.position = "fixed";
+        printIframe.style.right = "0";
+        printIframe.style.bottom = "0";
+        printIframe.style.width = "0";
+        printIframe.style.height = "0";
+        printIframe.style.border = "0";
+        printIframe.src = blobUrl;
+
+        document.body.appendChild(printIframe);
+
+        printIframe.onload = () => {
+          Swal.close();
+          setTimeout(() => {
+            printIframe.contentWindow.focus();
+            printIframe.contentWindow.print();
+          }, 300);
+        };
+      }
+    } catch (err) {
+      console.error(err);
+      Swal.fire({
+        icon: "error",
+        title: "Print Failed",
+        text: "Could not open print preview.",
         confirmButtonColor: "#dc3545",
       });
     }
@@ -214,201 +254,65 @@ setData({
   return (
     <div className="container py-3">
       {/* TOP BAR */}
-<div className="d-flex gap-2 mb-3 flex-wrap align-items-center">
-  <button
-    className="btn btn-dark btn-sm fw-bold"
-    onClick={() => onNavigate("dashboard")}
-  >
-    ← Back
-  </button>
+      <div className="d-flex gap-2 mb-3 flex-wrap align-items-center">
+        <button
+          className="btn btn-dark btn-sm fw-bold"
+          onClick={() => onNavigate("dashboard")}
+        >
+          ← Back
+        </button>
 
-  <input
-    className="form-control form-control-sm w-25 fw-bold"
-    placeholder="PKG-00001 / HOT-00001"
-    value={ref}
-    onChange={(e) => setRef(e.target.value)}
-  />
+        <input
+          className="form-control form-control-sm w-25 fw-bold"
+          placeholder="PKG-00001 / HOT-00001"
+          value={ref}
+          onChange={(e) => setRef(e.target.value)}
+        />
 
-  <button
-    className="btn btn-primary btn-sm fw-bold"
-    onClick={loadVoucher}
-  >
-    Load Voucher
-  </button>
+        <button
+          className="btn btn-primary btn-sm fw-bold"
+          onClick={loadVoucher}
+        >
+          Load Voucher
+        </button>
 
-  {data && (
-    <>
-      <button
-        className="btn btn-success btn-sm fw-bold"
-        onClick={exportPDF}
-      >
-        📄 Download PDF
-      </button>
+        {data && (
+          <>
+            <button
+              className="btn btn-success btn-sm fw-bold"
+              onClick={exportPDF}
+            >
+              📄 Download PDF
+            </button>
 
-      <button
-        className="btn btn-secondary btn-sm fw-bold"
-        onClick={async () => {
-          if (!voucherRef.current || !data) return;
+            <button
+              className="btn btn-secondary btn-sm fw-bold"
+              onClick={handlePrint}
+            >
+              🖨️ Print
+            </button>
 
-          Swal.fire({
-            title: "Preparing Print Layout...",
-            text: "Please wait a moment.",
-            allowOutsideClick: false,
-            didOpen: () => {
-              Swal.showLoading();
-            },
-          });
-
-          try {
-            const pdf = new jsPDF("p", "mm", "a4");
-            const pageWidth = 210;
-            const pageHeight = 297;
-            const margin = 10;
-            const usableWidth = pageWidth - margin * 2;
-            let y = margin;
-
-            const addCanvas = async (el) => {
-              if (!el) return;
-
-              const canvas = await html2canvas(el, {
-                scale: 3,
-                useCORS: true,
-                backgroundColor: "#ffffff",
-                ignoreElements: (el) => el.tagName === "CANVAS",
-                onclone: (doc) => {
-                  doc.querySelectorAll("*").forEach((el) => {
-                    const bg = el.style.backgroundImage;
-
-                    if (bg && bg.includes("gradient")) {
-                      el.style.backgroundImage = "none";
-                    }
-                  });
-                },
-              });
-
-              const img = canvas.toDataURL("image/png");
-
-              const height =
-                (canvas.height * usableWidth) /
-                canvas.width *
-                0.95;
-
-              if (y + height > pageHeight - margin) {
-                pdf.addPage();
-                y = margin;
-              }
-
-              pdf.addImage(
-                img,
-                "PNG",
-                margin,
-                y,
-                usableWidth,
-                height
-              );
-
-              y += height + 4;
-            };
-
-            await addCanvas(
-              voucherRef.current.querySelector(".pdf-header")
-            );
-
-            await addCanvas(
-              voucherRef.current.querySelector(".pdf-ref-row")
-            );
-
-            await addCanvas(
-              voucherRef.current.querySelector(".pdf-names-row")
-            );
-
-            const hotels =
-              voucherRef.current.querySelectorAll(
-                ".pdf-hotel-block"
-              );
-
-            for (let h of hotels) {
-              const canvasBlock = await html2canvas(h, {
-                scale: 3,
-                useCORS: true,
-              });
-
-              const imgBlock =
-                canvasBlock.toDataURL("image/png");
-
-              const heightBlock =
-                (canvasBlock.height * usableWidth) /
-                canvasBlock.width *
-                0.95;
-
-              if (
-                y + heightBlock >
-                pageHeight - margin
-              ) {
-                pdf.addPage();
-                y = margin;
-              }
-
-              pdf.addImage(
-                imgBlock,
-                "PNG",
-                margin,
-                y,
-                usableWidth,
-                heightBlock
-              );
-
-              y += heightBlock + 4;
-            }
-
-            await addCanvas(
-              voucherRef.current.querySelector(".pdf-timing")
-            );
-
-            await addCanvas(
-              voucherRef.current.querySelector(".pdf-footer")
-            );
-
-            window.open(
-              pdf.output("bloburl"),
-              "_blank"
-            );
-
-            Swal.close();
-          } catch (err) {
-            Swal.fire({
-              icon: "error",
-              title: "Print Failed",
-              text: "Could not generate print view.",
-              confirmButtonColor: "#dc3545",
-            });
-          }
-        }}
-      >
-        🖨️ Print
-      </button>
-
-      {/* SUB CUSTOMER NAME - RIGHT SIDE */}
-      <div
-        className="ms-auto fw-bold"
-        style={{
-          color: "#0b3d91",
-          fontSize: "14px",
-          whiteSpace: "nowrap",
-          padding: "6px 12px",
-          border: "1px solid #d4af37",
-          borderRadius: "6px",
-          background: "#fffdf5",
-        }}
-      >
-        SUB CUSTOMER:{" "}
-        <span style={{ color: "#b8860b" }}>
-          {data.sub_customer_name || "N/A"}
-        </span>
+            {/* SUB CUSTOMER NAME */}
+            <div
+              className="ms-auto fw-bold"
+              style={{
+                color: "#0b3d91",
+                fontSize: "14px",
+                whiteSpace: "nowrap",
+                padding: "6px 12px",
+                border: "1px solid #d4af37",
+                borderRadius: "6px",
+                background: "#fffdf5",
+              }}
+            >
+              SUB CUSTOMER:{" "}
+              <span style={{ color: "#b8860b" }}>
+                {data.sub_customer_name || "N/A"}
+              </span>
+            </div>
+          </>
+        )}
       </div>
-    </>
-  )}
-</div>
 
       {/* ================= VOUCHER ================= */}
       {data && (
@@ -484,7 +388,6 @@ setData({
                 {i + 1} 🏨 Hotel Details
               </h6>
 
-              {/* HOTEL NAME ROW WITH CONFIRM NO ON THE RIGHT */}
               <div
                 className="mb-2 px-2 py-2 rounded fw-bold d-flex align-items-center justify-content-between"
                 style={{
