@@ -114,61 +114,84 @@ export default function HotelVoucher({ onNavigate }) {
     }
   };
 
-  /* ================= PDF GENERATOR HELPER ================= */
-  const generatePDFBlob = async () => {
-    if (!voucherRef.current) return null;
+  /* ================= PDF EXPORT (2 HOTELS PER PAGE) ================= */
+  const generatePDF = async () => {
+    if (!voucherRef.current || !data) return null;
 
     const pdf = new jsPDF("p", "mm", "a4");
     const pageWidth = 210;
-    const pageHeight = 297;
     const margin = 10;
     const usableWidth = pageWidth - margin * 2;
-    let y = margin;
 
-    const canvas = await html2canvas(voucherRef.current, {
-      scale: 2,
-      useCORS: true,
-      logging: false,
-      backgroundColor: "#ffffff",
-      onclone: (clonedDoc) => {
-        // Convert all input field values into text for reliable rendering
-        const inputs = clonedDoc.querySelectorAll("input");
-        inputs.forEach((input) => {
-          const span = clonedDoc.createElement("span");
-          span.innerText = input.value || "";
-          span.className = input.className;
-          span.style.cssText = window.getComputedStyle(input).cssText;
-          span.style.display = "inline-block";
-          if (input.parentNode) {
-            input.parentNode.replaceChild(span, input);
-          }
-        });
-      },
-    });
+    const renderElementToImage = async (el) => {
+      if (!el) return null;
+      const canvas = await html2canvas(el, {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: "#ffffff",
+        onclone: (clonedDoc) => {
+          const inputs = clonedDoc.querySelectorAll("input");
+          inputs.forEach((input) => {
+            const span = clonedDoc.createElement("span");
+            span.innerText = input.value || "";
+            span.className = input.className;
+            span.style.cssText = window.getComputedStyle(input).cssText;
+            span.style.display = "inline-block";
+            if (input.parentNode) {
+              input.parentNode.replaceChild(span, input);
+            }
+          });
+        },
+      });
+      return {
+        img: canvas.toDataURL("image/png"),
+        height: (canvas.height * usableWidth) / canvas.width,
+      };
+    };
 
-    const imgData = canvas.toDataURL("image/jpeg", 0.95);
-    const imgHeight = (canvas.height * usableWidth) / canvas.width;
+    const header = await renderElementToImage(voucherRef.current.querySelector(".pdf-header"));
+    const refRow = await renderElementToImage(voucherRef.current.querySelector(".pdf-ref-row"));
+    const namesRow = await renderElementToImage(voucherRef.current.querySelector(".pdf-names-row"));
+    const timing = await renderElementToImage(voucherRef.current.querySelector(".pdf-timing"));
+    const footer = await renderElementToImage(voucherRef.current.querySelector(".pdf-footer"));
 
-    let heightLeft = imgHeight;
-    let position = margin;
+    const hotelElements = Array.from(voucherRef.current.querySelectorAll(".pdf-hotel-block"));
+    const hotelBlocks = [];
+    for (let h of hotelElements) {
+      hotelBlocks.push(await renderElementToImage(h));
+    }
 
-    pdf.addImage(imgData, "JPEG", margin, position, usableWidth, imgHeight);
-    heightLeft -= (pageHeight - margin * 2);
+    // Process 2 hotels per page
+    for (let i = 0; i < hotelBlocks.length; i += 2) {
+      if (i > 0) pdf.addPage();
+      let y = margin;
 
-    while (heightLeft > 0) {
-      position = heightLeft - imgHeight + margin;
-      pdf.addPage();
-      pdf.addImage(imgData, "JPEG", margin, position, usableWidth, imgHeight);
-      heightLeft -= (pageHeight - margin * 2);
+      // Add Header & Info on every page
+      if (header) { pdf.addImage(header.img, "PNG", margin, y, usableWidth, header.height); y += header.height + 2; }
+      if (refRow) { pdf.addImage(refRow.img, "PNG", margin, y, usableWidth, refRow.height); y += refRow.height + 2; }
+      if (namesRow) { pdf.addImage(namesRow.img, "PNG", margin, y, usableWidth, namesRow.height); y += namesRow.height + 3; }
+
+      // Add Hotel 1
+      if (hotelBlocks[i]) {
+        pdf.addImage(hotelBlocks[i].img, "PNG", margin, y, usableWidth, hotelBlocks[i].height);
+        y += hotelBlocks[i].height + 3;
+      }
+
+      // Add Hotel 2 (if exists for this page)
+      if (hotelBlocks[i + 1]) {
+        pdf.addImage(hotelBlocks[i + 1].img, "PNG", margin, y, usableWidth, hotelBlocks[i + 1].height);
+        y += hotelBlocks[i + 1].height + 3;
+      }
+
+      // Add Timing & Footer on page bottom
+      if (timing) { pdf.addImage(timing.img, "PNG", margin, y, usableWidth, timing.height); y += timing.height + 2; }
+      if (footer) { pdf.addImage(footer.img, "PNG", margin, y, usableWidth, footer.height); }
     }
 
     return pdf;
   };
 
-  /* ================= DOWNLOAD PDF ================= */
   const exportPDF = async () => {
-    if (!voucherRef.current || !data) return;
-
     Swal.fire({
       title: "Generating PDF...",
       text: "Please wait...",
@@ -177,7 +200,7 @@ export default function HotelVoucher({ onNavigate }) {
     });
 
     try {
-      const pdf = await generatePDFBlob();
+      const pdf = await generatePDF();
       if (pdf) {
         pdf.save(`Hotel-Voucher-${data.ref_no}.pdf`);
         Swal.fire({
@@ -188,33 +211,27 @@ export default function HotelVoucher({ onNavigate }) {
         });
       }
     } catch (err) {
-      console.error(err);
       Swal.fire({
         icon: "error",
         title: "Error",
-        text: "Could not generate PDF.",
+        text: "Failed to generate PDF.",
         confirmButtonColor: "#dc3545",
       });
     }
   };
 
-  /* ================= DIRECT PRINT ================= */
   const handlePrint = async () => {
-    if (!voucherRef.current || !data) return;
-
     Swal.fire({
       title: "Preparing Print...",
-      text: "Opening Print Window...",
+      text: "Please wait...",
       allowOutsideClick: false,
       didOpen: () => Swal.showLoading(),
     });
 
     try {
-      const pdf = await generatePDFBlob();
+      const pdf = await generatePDF();
       if (pdf) {
         const blobUrl = pdf.output("bloburl");
-        
-        // Hidden iframe print technique (prevents popup block)
         const printIframe = document.createElement("iframe");
         printIframe.style.position = "fixed";
         printIframe.style.right = "0";
@@ -235,7 +252,6 @@ export default function HotelVoucher({ onNavigate }) {
         };
       }
     } catch (err) {
-      console.error(err);
       Swal.fire({
         icon: "error",
         title: "Print Failed",
