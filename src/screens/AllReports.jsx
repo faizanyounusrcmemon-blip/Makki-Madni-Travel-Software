@@ -788,14 +788,26 @@ export default function AllReports({ onNavigate }) {
                           {typeIcon(r.type)} {r.type}
                         </span>
                       </td>
-                      <td
-                        className="fw-bold text-primary px-2"
-                        style={{ cursor: "pointer", whiteSpace: "nowrap" }}
-                        title="Click to copy Ref No"
-                        onClick={() => handleCopyRef(r.ref_no)}
-                      >
-                        {r.ref_no}
-                      </td>
+{/* OPTION 1: TEAL / CYAN BADGE */}
+<td className="px-2" style={{ whiteSpace: "nowrap" }}>
+  <span
+    onClick={() => handleCopyRef(r.ref_no)}
+    title="Click to copy Ref No"
+    style={{
+      cursor: "pointer",
+      color: "#0d9488",
+      backgroundColor: "#ccfbf1",
+      border: "1px solid #99f6e4",
+      padding: "3px 8px",
+      borderRadius: "6px",
+      fontWeight: "700",
+      fontSize: "12px",
+      display: "inline-block"
+    }}
+  >
+    {r.ref_no}
+  </span>
+</td>
 
                       <td className="fw-bold px-2" style={{ whiteSpace: "nowrap" }}>
                         <span style={{ color: isRegistered ? "#16a34a" : "#2563eb" }}>

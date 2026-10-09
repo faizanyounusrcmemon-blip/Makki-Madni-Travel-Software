@@ -1,6 +1,26 @@
 import React, { useEffect, useState, useMemo } from "react";
 import Swal from "sweetalert2";
 
+/* ================= CLICK COPY HANDLER ================= */
+const handleCopyRef = (refNo) => {
+  if (!refNo || refNo === "-") return;
+
+  navigator.clipboard.writeText(refNo).then(() => {
+    Swal.fire({
+      icon: "success",
+      title: "Copied!",
+      text: `Ref No: ${refNo} copied to clipboard`,
+      toast: true,
+      position: "top-end",
+      showConfirmButton: false,
+      timer: 1500,
+      timerProgressBar: true,
+    });
+  }).catch((err) => {
+    console.error("Copy failed: ", err);
+  });
+};
+
 export default function PurchaseList({ onNavigate }) {
   const [rows, setRows] = useState([]);
   const [from, setFrom] = useState("");
@@ -84,7 +104,7 @@ export default function PurchaseList({ onNavigate }) {
             <span>🗑️</span> Delete Purchase Record
           </div>
           <div style="background:#f8fafc; padding:12px; border-radius:12px; border:1px solid #e2e8f0; margin-bottom:12px;">
-            <div><b>Ref No:</b> <span style="color:#2563eb; font-weight:600;">${refNo}</span></div>
+            <div><b>Ref No:</b> <span style="background: linear-gradient(135deg, #2563eb, #7c3aed); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-weight:800;">${refNo}</span></div>
             <div><b>Customer:</b> ${customer_name || "-"}</div>
             <div><b>Sale:</b> <span style="color:#059669; font-weight:700;">PKR ${sale_pkr}</span></div>
             <div><b>Purchase:</b> <span style="color:#dc2626; font-weight:700;">PKR ${purchase_pkr}</span></div>
@@ -395,7 +415,28 @@ export default function PurchaseList({ onNavigate }) {
                 return (
                   <tr key={i} className="align-middle">
                     <td className="text-center text-muted fw-bold">{i + 1 + indexOfFirst}</td>
-                    <td className="fw-bold text-dark">{r.ref_no}</td>
+                    
+
+{/* REF NO WITH CLICK TO COPY & STYLISH BADGE */}
+<td className="px-2" style={{ whiteSpace: "nowrap" }}>
+  <span
+    onClick={() => handleCopyRef(r.ref_no)}
+    title="Click to copy Ref No"
+    style={{
+      cursor: "pointer",
+      color: "#4f46e5",
+      backgroundColor: "#eef2ff",
+      border: "1px solid #c7d2fe",
+      padding: "3px 8px",
+      borderRadius: "6px",
+      fontWeight: "700",
+      fontSize: "12px",
+      display: "inline-block"
+    }}
+  >
+    {r.ref_no}
+  </span>
+</td>
                     
                     {/* CUSTOMER NAME COLORS: Walk-in = BLUE (#2563eb), Registered = GREEN (#16a34a) */}
                     <td className="fw-bold">
