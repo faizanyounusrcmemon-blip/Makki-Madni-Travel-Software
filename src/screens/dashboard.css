@@ -1,14 +1,16 @@
-/* Fixed Desktop Width to allow mobile browsers to scale naturally */
+/* Fixed 1200px width ko hata kar responsive/fluid width banayein */
 html, body, #root {
-  min-width: 1200px !important;
-  width: 1200px !important;
-  margin: 0 auto;
-  overflow-x: auto !important;
+  min-width: 100% !important;
+  width: 100% !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  overflow-x: hidden !important;
 }
 
 .dashboard-container {
-  min-width: 1200px !important;
-  width: 1200px !important;
+  min-width: 100% !important;
+  width: 100% !important;
+  max-width: 100vw !important;
   box-sizing: border-box;
 }
 
