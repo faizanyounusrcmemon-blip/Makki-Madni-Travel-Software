@@ -50,6 +50,7 @@ export default function ManageUsers({ onNavigate }) {
         "bank_ledger",
         "expense_ledger",
         "balance_sheet",
+        "customer_sale_detail_ledger",
         "cash_ledger",
       ],
     },

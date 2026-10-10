@@ -1,9 +1,6 @@
 import React, { useEffect, useState, useRef } from "react";
-import jsPDF from "jspdf";
-import autoTable from "jspdf-autotable";
-import * as XLSX from "xlsx";
+import useReportExport from "../hooks/useReportExport";
 
-/* ================= HELPERS ================= */
 const fmt = (n) => Number(n || 0).toLocaleString("en-US");
 
 const formatDate = (d) => {
@@ -15,18 +12,15 @@ const formatDate = (d) => {
   });
 };
 
-/* ================= SMART SEARCHABLE CUSTOMER DROPDOWN ================= */
 function SmartCustomerSelect({ customers, selectedCustomer, onSelect }) {
   const [isOpen, setIsOpen] = useState(false);
   const [search, setSearch] = useState("");
   const dropdownRef = useRef(null);
 
-  // Filter list on typing
   const filteredList = customers.filter((c) =>
     (c.name || "").toLowerCase().includes(search.toLowerCase())
   );
 
-  // Get selected display text
   const selectedText = selectedCustomer === "ALL" 
     ? "ALL" 
     : customers.find(c => c.code === selectedCustomer)?.name || selectedCustomer;
@@ -80,39 +74,28 @@ function SmartCustomerSelect({ customers, selectedCustomer, onSelect }) {
           >
             ALL
           </div>
-          {filteredList.length > 0 ? (
-            filteredList.map((c, i) => (
-              <div
-                key={i}
-                className={`p-2 rounded text-truncate mb-1 ${
-                  selectedCustomer === c.code ? "bg-primary text-white fw-bold" : "text-dark"
-                }`}
-                style={{
-                  cursor: "pointer",
-                  fontSize: "12px",
-                  backgroundColor: selectedCustomer === c.code ? undefined : "#f8f9fa",
-                }}
-                onClick={() => {
-                  onSelect(c.code); // 🔹 Send customer code instead of name
-                  setIsOpen(false);
-                  setSearch("");
-                }}
-              >
-                {c.name}
-              </div>
-            ))
-          ) : (
-            <div className="text-muted p-2 text-center" style={{ fontSize: "11px" }}>
-              No active customer found
+          {filteredList.map((c, i) => (
+            <div
+              key={i}
+              className={`p-2 rounded text-truncate mb-1 ${
+                selectedCustomer === c.code ? "bg-primary text-white fw-bold" : "text-dark"
+              }`}
+              style={{ cursor: "pointer", fontSize: "12px" }}
+              onClick={() => {
+                onSelect(c.code);
+                setIsOpen(false);
+                setSearch("");
+              }}
+            >
+              {c.name}
             </div>
-          )}
+          ))}
         </div>
       )}
     </div>
   );
 }
 
-/* ================= MAIN REPORT COMPONENT ================= */
 export default function CustomerSaleDetailReport({ onNavigate }) {
   const [rows, setRows] = useState([]);
   const [customers, setCustomers] = useState([]);
@@ -123,13 +106,12 @@ export default function CustomerSaleDetailReport({ onNavigate }) {
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(false);
 
-  /* ================= LOAD REPORT ================= */
+  const { exportPDF, exportExcel } = useReportExport();
+
   const loadReport = async () => {
     try {
       setLoading(true);
-      const res = await fetch(
-        `${import.meta.env.VITE_BACKEND_URL}/api/reports/customer-sale`
-      );
+      const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/reports/customer-sale`);
       const data = await res.json();
       if (data.success) {
         setRows(data.rows || []);
@@ -149,36 +131,16 @@ export default function CustomerSaleDetailReport({ onNavigate }) {
     loadReport();
   }, []);
 
-/* ================= FILTER & SORT LOGIC ================= */
   const filtered = rows
     .filter((r) => {
-      // 🔹 HIDE ZERO SALES (Skip rows where Sale SAR/PKR is 0)
-      if (Number(r.sale_sar || 0) <= 0 && Number(r.sale_pkr || 0) <= 0) {
-        return false;
-      }
+      if (Number(r.sale_sar || 0) <= 0 && Number(r.sale_pkr || 0) <= 0) return false;
+      if (customer !== "ALL" && r.customer_code !== customer) return false;
+      if (itemType !== "ALL" && !r.item?.toLowerCase().includes(itemType.toLowerCase())) return false;
 
-// 1. Customer Smart Dropdown Filter (By Customer Code)
-if (customer !== "ALL") {
-  // r.customer_code se strict filter hoga
-  if (r.customer_code !== customer) {
-    return false;
-  }
-}
-
-      // 2. Category Filter
-      if (
-        itemType !== "ALL" &&
-        !r.item?.toLowerCase().includes(itemType.toLowerCase())
-      ) {
-        return false;
-      }
-
-      // 3. Date Range Filter
       const d = r.booking_date ? new Date(r.booking_date) : null;
       if (from && d && d < new Date(from)) return false;
       if (to && d && d > new Date(to)) return false;
 
-      // 4. Live Search Box
       if (search) {
         const s = search.toLowerCase();
         return (
@@ -187,14 +149,10 @@ if (customer !== "ALL") {
           r.customer_name?.toLowerCase().includes(s)
         );
       }
-
       return true;
     })
-    .sort((a, b) => new Date(a.booking_date) - new Date(b.booking_date)); 
+    .sort((a, b) => new Date(a.booking_date) - new Date(b.booking_date));
 
-
-
-  /* ================= TOTALS ================= */
   const totals = filtered.reduce(
     (a, b) => {
       a.sale_pkr += Number(b.sale_pkr || 0);
@@ -204,156 +162,77 @@ if (customer !== "ALL") {
     { sale_pkr: 0, sale_sar: 0 }
   );
 
-  /* ================= EXCEL EXPORT ================= */
-  const exportExcel = () => {
-    const dataRows = filtered.map((r) => ({
-      Date: formatDate(r.booking_date),
-      Customer: r.customer_name,
-      "Ref No": r.ref_no,
-      Item: r.item,
-      "Sale SAR": Number(r.sale_sar || 0),
-      "Sale Rate": Number(r.sale_rate || 0),
-      "Sale PKR": Number(r.sale_pkr || 0),
-    }));
-
-    dataRows.push({
-      Date: "TOTALS",
-      Customer: "",
-      "Ref No": "",
-      Item: "",
-      "Sale SAR": totals.sale_sar,
-      "Sale Rate": "",
-      "Sale PKR": totals.sale_pkr,
+  const handleExportExcel = () => {
+    exportExcel({
+      code: customer,
+      name: customer === "ALL" ? "All Customers" : customers.find(c => c.code === customer)?.name || customer,
+      fromDate: from,
+      toDate: to,
+      ledgerData: filtered,
+      title: "Customer Sale Detail Report",
+      filePrefix: "Customer_Sale_Detail_Report",
+      reportType: "customer_sale",
+      totals
     });
-
-    const worksheet = XLSX.utils.json_to_sheet(dataRows);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Customer Sale Detail");
-    XLSX.writeFile(workbook, "customer-sale-detail-report.xlsx");
   };
 
-  /* ================= PDF EXPORT ================= */
-  const exportPDF = () => {
-    const doc = new jsPDF("l", "mm", "a4");
-    const pageWidth = doc.internal.pageSize.getWidth();
-
-    doc.setFontSize(16);
-    doc.setTextColor(0, 51, 102);
-    doc.text("🛒 Customer Sale Detail Report", pageWidth / 2, 14, {
-      align: "center",
+  const handleExportPDF = () => {
+    exportPDF({
+      code: customer,
+      name: customer === "ALL" ? "All Customers" : customers.find(c => c.code === customer)?.name || customer,
+      fromDate: from,
+      toDate: to,
+      ledgerData: filtered,
+      title: "Customer Sale Detail Report",
+      filePrefix: "Customer_Sale_Detail_Report",
+      reportType: "customer_sale",
+      totals
     });
-
-    const head = [
-      [
-        "Date",
-        "Customer",
-        "Ref",
-        "Item",
-        "Sale SAR",
-        "Sale Rate",
-        "Sale PKR",
-      ],
-    ];
-
-    const body = filtered.map((r) => [
-      formatDate(r.booking_date),
-      r.customer_name,
-      r.ref_no,
-      r.item,
-      fmt(r.sale_sar),
-      fmt(r.sale_rate),
-      fmt(r.sale_pkr),
-    ]);
-
-    autoTable(doc, {
-      head,
-      body,
-      startY: 20,
-      theme: "grid",
-      headStyles: {
-        fillColor: [13, 110, 253],
-        textColor: 255,
-        halign: "center",
-      },
-      bodyStyles: { halign: "center" },
-      alternateRowStyles: { fillColor: [245, 245, 245] },
-      didDrawPage: (data) => {
-        const finalY = data.cursor.y + 5;
-        const totalsText = `Total Sale SAR: ${fmt(totals.sale_sar)} | Total Sale PKR: ${fmt(totals.sale_pkr)}`;
-        doc.setFontSize(10);
-        doc.setTextColor(0, 0, 0);
-        doc.text(totalsText, pageWidth - 10, finalY, { align: "right" });
-      },
-      margin: { top: 20 },
-    });
-
-    doc.save("customer-sale-detail-report.pdf");
   };
 
   return (
-    <div
-      className="container-fluid p-3"
-      style={{ fontSize: 12, minHeight: "100vh" }}
-    >
+    <div className="container-fluid p-3 csdl-premium" style={{ fontSize: 12, minHeight: "100vh", background: "linear-gradient(135deg,#f4f7fc 0%,#eef2f8 55%,#fff8e8 100%)" }}>
+      <style>{`
+        .csdl-premium{color:#17243b;font-family:Inter,Segoe UI,Arial,sans-serif}
+        .csdl-premium .card{border:1px solid #e0e7f1!important;border-radius:18px!important;box-shadow:0 8px 25px rgba(20,43,79,.09)!important;overflow:visible}
+        .csdl-premium .card-body{border-radius:18px}
+        .csdl-premium .csdl-header{background:linear-gradient(115deg,#071b3a 0%,#123f78 58%,#c99a35 140%)!important;border:1px solid rgba(218,177,83,.8)}
+        .csdl-premium .csdl-title{font-size:clamp(16px,2vw,23px);font-weight:900;letter-spacing:.25px;color:#fff}
+        .csdl-premium .btn{font-weight:750;border-radius:10px!important}
+        .csdl-premium .csdl-filter-card{background:linear-gradient(135deg,#fff 0%,#f4f7fc 100%)!important;border-top:3px solid #d4a83f!important}
+        .csdl-premium label{font-size:11px;text-transform:uppercase;color:#27466e;font-weight:850!important}
+        .csdl-premium .form-control,.csdl-premium .form-select{min-height:36px;border:1px solid #cbd6e5;border-radius:10px;font-weight:600;color:#172b49}
+        .csdl-premium .csdl-table-wrap{max-height:65vh;overflow:auto;border-radius:0 0 16px 16px}
+        .csdl-premium table{font-size:12px;white-space:nowrap}
+        .csdl-premium table thead th{background:linear-gradient(180deg,#173e70,#0c2548)!important;color:#fff!important;padding:12px 10px;font-size:10px;text-transform:uppercase}
+        .csdl-premium table tbody td{padding:9px 10px;border-color:#e1e8f1}
+        .csdl-premium table tbody tr:nth-child(even){background:#f2f6fc}
+        .csdl-premium table tbody tr:hover{background:#fff5d9!important}
+      `}</style>
+
       {/* HEADER */}
       <div className="card shadow-sm mb-3 border-0">
-        <div
-          className="card-body py-3 d-flex justify-content-between align-items-center"
-          style={{
-            background: "linear-gradient(90deg, #0d6efd, #0dcaf0)",
-            color: "white",
-            borderRadius: "10px",
-            fontWeight: "bold",
-          }}
-        >
-          🛒 Customer Sale Detail Report
+        <div className="card-body py-3 d-flex justify-content-between align-items-center csdl-header" style={{ borderRadius: "16px" }}>
+          <span className="csdl-title">🛒 CUSTOMER SALE DETAIL REPORT</span>
           <div className="d-flex gap-2">
-            <button
-              className="btn btn-light btn-sm rounded-pill"
-              onClick={() => onNavigate("dashboard")}
-            >
-              ⬅ Back
-            </button>
-            <button
-              className="btn btn-success btn-sm rounded-pill"
-              onClick={exportExcel}
-            >
-              Export Excel 📊
-            </button>
-            <button
-              className="btn btn-danger btn-sm rounded-pill"
-              onClick={exportPDF}
-            >
-              Export PDF 📄
-            </button>
+            <button className="btn btn-light btn-sm rounded-pill" onClick={() => onNavigate("dashboard")}>⬅ Back</button>
+            <button className="btn btn-success btn-sm rounded-pill" onClick={handleExportExcel}>Export Excel 📊</button>
+            <button className="btn btn-danger btn-sm rounded-pill" onClick={handleExportPDF}>Export PDF 📄</button>
           </div>
         </div>
       </div>
 
       {/* FILTERS */}
-      <div
-        className="card shadow-sm mb-3 border-0"
-        style={{ background: "#eef2f3", borderRadius: "10px" }}
-      >
+      <div className="card shadow-sm mb-3 border-0 csdl-filter-card" style={{ borderRadius: "10px" }}>
         <div className="card-body py-3">
           <div className="row g-2 align-items-end">
-            {/* SMART SEARCH CUSTOMER DROPDOWN */}
             <div className="col-md-3">
-              <label className="fw-bold mb-1">Customer (Smart Search)</label>
-              <SmartCustomerSelect
-                customers={customers}
-                selectedCustomer={customer}
-                onSelect={(val) => setCustomer(val)}
-              />
+              <label className="fw-bold mb-1">Customer Selection</label>
+              <SmartCustomerSelect customers={customers} selectedCustomer={customer} onSelect={(val) => setCustomer(val)} />
             </div>
-
             <div className="col-md-2">
               <label className="fw-bold mb-1">Category</label>
-              <select
-                className="form-select form-select-sm"
-                value={itemType}
-                onChange={(e) => setItemType(e.target.value)}
-              >
+              <select className="form-select form-select-sm" value={itemType} onChange={(e) => setItemType(e.target.value)}>
                 <option value="ALL">All Items</option>
                 <option value="Ticket">Ticket</option>
                 <option value="Hotel">Hotel</option>
@@ -361,51 +240,23 @@ if (customer !== "ALL") {
                 <option value="Card">Card</option>
                 <option value="Transport">Transport</option>
                 <option value="Ziyarat">Ziyarat</option>
-                <option value="Groups">Groups</option>
               </select>
             </div>
-
             <div className="col-md-2">
               <label className="fw-bold mb-1">From Date</label>
-              <input
-                type="date"
-                className="form-control form-control-sm"
-                value={from}
-                onChange={(e) => setFrom(e.target.value)}
-              />
+              <input type="date" className="form-control form-control-sm" value={from} onChange={(e) => setFrom(e.target.value)} />
             </div>
-
             <div className="col-md-2">
               <label className="fw-bold mb-1">To Date</label>
-              <input
-                type="date"
-                className="form-control form-control-sm"
-                value={to}
-                onChange={(e) => setTo(e.target.value)}
-              />
+              <input type="date" className="form-control form-control-sm" value={to} onChange={(e) => setTo(e.target.value)} />
             </div>
-
             <div className="col-md-2">
               <label className="fw-bold mb-1">Global Search</label>
-              <input
-                type="text"
-                placeholder="Walk-in, Ref, Item..."
-                className="form-control form-control-sm"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-              />
+              <input type="text" placeholder="Walk-in, Ref..." className="form-control form-control-sm" value={search} onChange={(e) => setSearch(e.target.value)} />
             </div>
-
             <div className="col-md-1 d-grid">
-              <button
-                className="btn btn-primary btn-sm rounded-pill"
-                onClick={loadReport}
-              >
-                {loading ? (
-                  <span className="spinner-border spinner-border-sm"></span>
-                ) : (
-                  "Load"
-                )}
+              <button className="btn btn-primary btn-sm rounded-pill" onClick={loadReport}>
+                {loading ? <span className="spinner-border spinner-border-sm"></span> : "Load"}
               </button>
             </div>
           </div>
@@ -413,75 +264,42 @@ if (customer !== "ALL") {
       </div>
 
       {/* TABLE DISPLAY */}
-      <div
-        className="card shadow-sm rounded"
-        style={{ overflow: "auto", maxHeight: "70vh" }}
-      >
-        <div className="card-body py-2 p-0">
-          {/* HEADER TOTALS BLOCK */}
-          <div
-            className="p-2 text-end fw-bold d-flex flex-wrap gap-3 justify-content-end align-items-center"
-            style={{ fontSize: 13, background: "#ffffff" }}
-          >
-            <span className="text-primary">
-              Total Sale SAR: {fmt(totals.sale_sar)}
-            </span>
-            <span className="text-primary me-2">
-              Total Sale PKR: {fmt(totals.sale_pkr)}
-            </span>
+      <div className="card shadow-sm rounded" style={{ overflow: "hidden", borderTop: "3px solid #123f78" }}>
+        <div className="p-3 text-end fw-bold d-flex flex-wrap gap-3 justify-content-between align-items-center bg-white border-bottom">
+          <div style={{fontWeight:900,color:"#12345d",fontSize:14}}>📋 Records View ({filtered.length})</div>
+          <div className="d-flex gap-3" style={{ fontSize: 13 }}>
+            <span className="text-primary">Total Sale SAR: {fmt(totals.sale_sar)}</span>
+            <span className="text-dark">Total Sale PKR: {fmt(totals.sale_pkr)}</span>
           </div>
-
+        </div>
+        <div className="csdl-table-wrap">
           <table className="table table-sm table-bordered text-center align-middle m-0">
-            {/* STICKY HEADER */}
-            <thead
-              style={{
-                position: "sticky",
-                top: 0,
-                zIndex: 5,
-                background: "#0d6efd",
-                color: "#fff",
-              }}
-            >
+            <thead>
               <tr>
-                <th style={{ background: "#0d6efd", color: "#fff" }}>Date</th>
-                <th style={{ background: "#0d6efd", color: "#fff" }}>Customer</th>
-                <th style={{ background: "#0d6efd", color: "#fff" }}>Ref</th>
-                <th style={{ background: "#0d6efd", color: "#fff" }}>Item</th>
-                <th style={{ background: "#0d6efd", color: "#fff" }}>Sale SAR</th>
-                <th style={{ background: "#0d6efd", color: "#fff" }}>Sale Rate</th>
-                <th style={{ background: "#0d6efd", color: "#fff" }}>Sale PKR</th>
+                <th>Date</th>
+                <th>Customer</th>
+                <th>Ref</th>
+                <th>Item</th>
+                <th>Sale SAR</th>
+                <th>Sale Rate</th>
+                <th>Sale PKR</th>
               </tr>
             </thead>
             <tbody>
               {filtered.map((r, i) => (
-                <tr
-                  key={i}
-                  style={{
-                    background: i % 2 === 0 ? "#e7f1ff" : "#ffffff",
-                  }}
-                >
+                <tr key={i}>
                   <td>{formatDate(r.booking_date)}</td>
-                  <td className="fw-bold">{r.customer_name}</td>
-                  <td>{r.ref_no}</td>
+                  <td className="fw-bold text-primary">{r.customer_name}</td>
+                  <td><span className="badge bg-light text-dark border">{r.ref_no}</span></td>
                   <td className="text-start">{r.item}</td>
-                  <td className="text-end fw-semibold text-primary">
-                    {fmt(r.sale_sar)}
-                  </td>
+                  <td className="text-end fw-semibold text-primary">{fmt(r.sale_sar)}</td>
                   <td className="text-end">{fmt(r.sale_rate)}</td>
                   <td className="text-end fw-bold">{fmt(r.sale_pkr)}</td>
                 </tr>
               ))}
+              {!filtered.length && <tr><td colSpan="7" className="py-4 text-muted">No records found.</td></tr>}
             </tbody>
-
-            {/* STICKY FOOTER SUMMARY */}
-            <tfoot
-              className="table-dark fw-bold"
-              style={{
-                position: "sticky",
-                bottom: 0,
-                zIndex: 5,
-              }}
-            >
+            <tfoot className="table-dark fw-bold" style={{ position: "sticky", bottom: 0, zIndex: 5 }}>
               <tr>
                 <td colSpan="4">TOTALS</td>
                 <td className="text-end text-info">{fmt(totals.sale_sar)}</td>
