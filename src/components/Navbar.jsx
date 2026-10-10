@@ -95,11 +95,15 @@ export default function Navbar({ onNavigate }) {
             SALES DROPDOWN
         =============================== */}
         <div className="nav-item">
+
+
+
           <span className="nav-title" onClick={() => toggleMain("sales")}>
             Sales ▾
           </span>
           {open === "sales" && (
             <div className="menu-box">
+
               {can("packages") && <a onClick={() => go("packages")}>📦 Packages</a>}
               {can("ticketing") && <a onClick={() => go("ticketing")}>🎫 Ticketing</a>}
               {can("transport") && <a onClick={() => go("transport")}>🚐 Transport</a>}
@@ -143,6 +147,7 @@ export default function Navbar({ onNavigate }) {
               {can("bank_ledger") && <a onClick={() => go("bankLedger")}>🏦 Bank Ledger</a>}
               {can("cash_ledger") && <a onClick={() => go("cashLedger")}>💵 Cash Ledger</a>}
               {can("expense_ledger") && <a onClick={() => go("expenseLedger")}>💸 Expense Ledger</a>}
+              {can("customer_sale_detail_ledger") && <a onClick={() => go("customerSaleDetailLedger")}>📦👤 Customer Sale Detail Ledger</a>}
               {can("balance_sheet") && <a onClick={() => go("balanceSheet")}>📊 Balance Sheet</a>}
             </div>
           )}
@@ -175,6 +180,7 @@ export default function Navbar({ onNavigate }) {
           </span>
           {open === "reports" && (
             <div className="menu-box">
+
               
               {/* Category 1: Financial & Profit */}
               <div 
