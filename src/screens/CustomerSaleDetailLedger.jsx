@@ -19,16 +19,23 @@ function SmartCustomerSelect({ customers, selectedCustomer, onSelect }) {
   const [search, setSearch] = useState("");
   const dropdownRef = useRef(null);
 
-  const filteredList = customers.filter((c) =>
-    (c.name || "").toLowerCase().includes(search.toLowerCase())
-  );
+  // 🔹 Customer Code ki بنیاد par Sort aur Filter karna
+  const filteredList = [...customers]
+    .sort((a, b) => (a.code || "").localeCompare(b.code || "", undefined, { numeric: true }))
+    .filter((c) =>
+      (c.name || "").toLowerCase().includes(search.toLowerCase()) ||
+      (c.code || "").toLowerCase().includes(search.toLowerCase())
+    );
 
   const selectedText =
     selectedCustomer === "ALL"
       ? "ALL"
       : selectedCustomer === "WALKIN"
       ? "🚶 WALKIN CUSTOMER"
-      : customers.find((c) => c.code === selectedCustomer)?.name || selectedCustomer;
+      : (() => {
+          const found = customers.find((c) => c.code === selectedCustomer);
+          return found ? `${found.name} (${found.code})` : selectedCustomer;
+        })();
 
   useEffect(() => {
     const handleClickOutside = (e) => {
@@ -61,7 +68,7 @@ function SmartCustomerSelect({ customers, selectedCustomer, onSelect }) {
           <input
             type="text"
             className="form-control form-control-sm mb-2"
-            placeholder="🔍 Type customer name..."
+            placeholder="🔍 Type customer name or code..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             autoFocus
@@ -97,7 +104,7 @@ function SmartCustomerSelect({ customers, selectedCustomer, onSelect }) {
           {filteredList.map((c, i) => (
             <div
               key={i}
-              className={`p-2 rounded text-truncate mb-1 ${
+              className={`p-2 rounded text-truncate mb-1 d-flex justify-content-between align-items-center ${
                 selectedCustomer === c.code ? "bg-primary text-white fw-bold" : "text-dark"
               }`}
               style={{ cursor: "pointer", fontSize: "12px" }}
@@ -107,7 +114,10 @@ function SmartCustomerSelect({ customers, selectedCustomer, onSelect }) {
                 setSearch("");
               }}
             >
-              {c.name}
+              <span>{c.name}</span>
+              <span className={`badge ${selectedCustomer === c.code ? "bg-light text-dark" : "bg-secondary"}`} style={{ fontSize: "10px" }}>
+                {c.code}
+              </span>
             </div>
           ))}
         </div>
@@ -155,9 +165,11 @@ export default function CustomerSaleDetailLedger({ onNavigate }) {
     loadReport();
   }, [customer, from, to]);
 
-  const filteredUnprocessed = rows.filter((r) => {
-    if (itemType !== "ALL" && !r.item?.toLowerCase().includes(itemType.toLowerCase())) {
-      return false;
+const filteredUnprocessed = rows.filter((r) => {
+    // Agar koi specific category selected hai (ALL nahi hai), to PAYMENT entries ko filter out kar dein
+    if (itemType !== "ALL") {
+      if (r.type === "PAYMENT") return false;
+      if (!r.item?.toLowerCase().includes(itemType.toLowerCase())) return false;
     }
     if (search) {
       const s = search.toLowerCase();
@@ -175,7 +187,6 @@ export default function CustomerSaleDetailLedger({ onNavigate }) {
     const sale = Math.round(Number(r.sale_pkr || 0));
     const paid = Math.round(Number(r.payment_pkr || 0));
     
-    // Running balance logic: Sale increases balance, Payment decreases balance
     runningBal += (sale - paid);
 
     return {
@@ -198,7 +209,7 @@ export default function CustomerSaleDetailLedger({ onNavigate }) {
     { sale_pkr: 0, sale_sar: 0, payment_pkr: 0 }
   );
 
-const handleExportExcel = () => {
+  const handleExportExcel = () => {
     exportExcel({
       code: customer,
       name: customer === "ALL" ? "All Customers" : customers.find(c => c.code === customer)?.name || customer,
@@ -212,7 +223,7 @@ const handleExportExcel = () => {
         sale_sar: totals.sale_sar, 
         sale_pkr: totals.sale_pkr, 
         payment_pkr: totals.payment_pkr, 
-        running_balance: runningBal // 🔹 yahan runningBalance se runningBal kar diya hai
+        running_balance: runningBal 
       }
     });
   };
@@ -231,7 +242,7 @@ const handleExportExcel = () => {
         sale_sar: totals.sale_sar, 
         sale_pkr: totals.sale_pkr, 
         payment_pkr: totals.payment_pkr, 
-        running_balance: runningBal // 🔹 yahan runningBalance se runningBal kar diya hai
+        running_balance: runningBal 
       }
     });
   };
