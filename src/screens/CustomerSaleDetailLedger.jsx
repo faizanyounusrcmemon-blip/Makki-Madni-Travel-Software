@@ -14,12 +14,34 @@ const formatDate = (d) => {
   });
 };
 
+// 🔹 Har item type ke liye alag font color aur weight
+const getItemStyle = (itemStr = "", type = "") => {
+  const item = (itemStr || "").toLowerCase();
+
+  // 1. Opening Balance (Dark Golden / Brown color)
+  if (item.includes("opening balance")) {
+    return { color: "#b78103", fontWeight: "bold" };
+  }
+
+  // 2. Payments (Green color)
+  if (item.includes("payment") || type === "PAYMENT") {
+    return { color: "#15803d", fontWeight: "bold" };
+  }
+
+  // 3. Adjustments (Red / Maroon color)
+  if (item.includes("adjustment")) {
+    return { color: "#dc3545", fontWeight: "bold" };
+  }
+
+  // 4. Sabhi Sale / Transport / Ticket / Visa items ke liye Blue font color
+  return { color: "#0284c7", fontWeight: "600" };
+};
+
 function SmartCustomerSelect({ customers, selectedCustomer, onSelect }) {
   const [isOpen, setIsOpen] = useState(false);
   const [search, setSearch] = useState("");
   const dropdownRef = useRef(null);
 
-  // 🔹 Customer Code ki بنیاد par Sort aur Filter karna
   const filteredList = [...customers]
     .sort((a, b) => (a.code || "").localeCompare(b.code || "", undefined, { numeric: true }))
     .filter((c) =>
@@ -73,8 +95,10 @@ function SmartCustomerSelect({ customers, selectedCustomer, onSelect }) {
             onChange={(e) => setSearch(e.target.value)}
             autoFocus
           />
+
+          {/* ALL option */}
           <div
-            className={`p-2 rounded text-truncate mb-1 ${
+            className={`p-2 rounded text-truncate mb-1 cust-select-item ${
               selectedCustomer === "ALL" ? "bg-primary text-white fw-bold" : "text-dark"
             }`}
             style={{ cursor: "pointer", fontSize: "12px" }}
@@ -87,11 +111,12 @@ function SmartCustomerSelect({ customers, selectedCustomer, onSelect }) {
             ALL
           </div>
 
+          {/* WALKIN CUSTOMER option */}
           <div
-            className={`p-2 rounded text-truncate mb-1 ${
+            className={`p-2 rounded text-truncate mb-1 cust-select-item ${
               selectedCustomer === "WALKIN" ? "bg-primary text-white fw-bold" : "text-dark"
             }`}
-            style={{ cursor: "pointer", fontSize: "12px", backgroundColor: "#fff3cd" }}
+            style={{ cursor: "pointer", fontSize: "12px", backgroundColor: selectedCustomer === "WALKIN" ? undefined : "#fff8e7" }}
             onClick={() => {
               onSelect("WALKIN");
               setIsOpen(false);
@@ -101,10 +126,11 @@ function SmartCustomerSelect({ customers, selectedCustomer, onSelect }) {
             🚶 WALKIN CUSTOMER
           </div>
 
+          {/* Customers List */}
           {filteredList.map((c, i) => (
             <div
               key={i}
-              className={`p-2 rounded text-truncate mb-1 d-flex justify-content-between align-items-center ${
+              className={`p-2 rounded text-truncate mb-1 d-flex justify-content-between align-items-center cust-select-item ${
                 selectedCustomer === c.code ? "bg-primary text-white fw-bold" : "text-dark"
               }`}
               style={{ cursor: "pointer", fontSize: "12px" }}
@@ -165,8 +191,7 @@ export default function CustomerSaleDetailLedger({ onNavigate }) {
     loadReport();
   }, [customer, from, to]);
 
-const filteredUnprocessed = rows.filter((r) => {
-    // Agar koi specific category selected hai (ALL nahi hai), to PAYMENT entries ko filter out kar dein
+  const filteredUnprocessed = rows.filter((r) => {
     if (itemType !== "ALL") {
       if (r.type === "PAYMENT") return false;
       if (!r.item?.toLowerCase().includes(itemType.toLowerCase())) return false;
@@ -209,15 +234,19 @@ const filteredUnprocessed = rows.filter((r) => {
     { sale_pkr: 0, sale_sar: 0, payment_pkr: 0 }
   );
 
-  const handleExportExcel = () => {
+const handleExportExcel = () => {
+    const selectedCust = customers.find(c => c.code === customer);
+    // Sirf Name rakhein taaki hook code dobara attach na kare
+    const custOnlyName = customer === "ALL" ? "All_Customers" : customer === "WALKIN" ? "Walkin_Customer" : selectedCust ? selectedCust.name : customer;
+
     exportExcel({
       code: customer,
-      name: customer === "ALL" ? "All Customers" : customers.find(c => c.code === customer)?.name || customer,
+      name: customer === "ALL" ? "All Customers" : customer === "WALKIN" ? "WALKIN CUSTOMER" : selectedCust ? `${selectedCust.name} (${selectedCust.code})` : customer,
       fromDate: from,
       toDate: to,
       ledgerData: filtered,
       title: "Customer Sale & Payment Detail Ledger",
-      filePrefix: "Customer_Sale_Detail_Ledger",
+      filePrefix: `Customer_Sale_Detail_Ledger_${custOnlyName.replace(/[^a-zA-Z0-9_-]/g, "_")}`,
       reportType: "customer_sale_ledger",
       totals: { 
         sale_sar: totals.sale_sar, 
@@ -229,14 +258,18 @@ const filteredUnprocessed = rows.filter((r) => {
   };
 
   const handleExportPDF = () => {
+    const selectedCust = customers.find(c => c.code === customer);
+    // Sirf Name rakhein taaki hook code dobara attach na kare
+    const custOnlyName = customer === "ALL" ? "All_Customers" : customer === "WALKIN" ? "Walkin_Customer" : selectedCust ? selectedCust.name : customer;
+
     exportPDF({
       code: customer,
-      name: customer === "ALL" ? "All Customers" : customers.find(c => c.code === customer)?.name || customer,
+      name: customer === "ALL" ? "All Customers" : customer === "WALKIN" ? "WALKIN CUSTOMER" : selectedCust ? `${selectedCust.name} (${selectedCust.code})` : customer,
       fromDate: from,
       toDate: to,
       ledgerData: filtered,
       title: "Customer Sale & Payment Detail Ledger",
-      filePrefix: "Customer_Sale_Detail_Ledger",
+      filePrefix: `Customer_Sale_Detail_Ledger_${custOnlyName.replace(/[^a-zA-Z0-9_-]/g, "_")}`,
       reportType: "customer_sale_ledger",
       totals: { 
         sale_sar: totals.sale_sar, 
@@ -276,6 +309,19 @@ const filteredUnprocessed = rows.filter((r) => {
         .csdl-premium table tfoot td{padding:12px 10px;background:#102746!important;color:#fff!important}
         .csdl-premium .csdl-customer{font-weight:800;color:#173e70}
         .csdl-premium .csdl-ref{display:inline-block;background:#e7eef9;color:#173e70;border:1px solid #cfdbed;padding:4px 7px;border-radius:7px;font-weight:800}
+
+        /* 🔹 Customer Dropdown Item Hover Highlight Effect */
+        .cust-select-item {
+          transition: background-color 0.15s ease, color 0.15s ease;
+        }
+        .cust-select-item:hover {
+          background-color: #0d6efd !important;
+          color: #ffffff !important;
+        }
+        .cust-select-item:hover .badge {
+          background-color: #ffffff !important;
+          color: #0d6efd !important;
+        }
       `}</style>
       
       {/* HEADER */}
@@ -356,19 +402,26 @@ const filteredUnprocessed = rows.filter((r) => {
               </tr>
             </thead>
             <tbody>
-              {filtered.map((r, i) => (
-                <tr key={`${r.ref_no || "row"}-${i}`}>
-                  <td>{formatDate(r.date || r.booking_date)}</td>
-                  <td className="csdl-customer">{r.customer_name}</td>
-                  <td><span className="csdl-ref">{r.ref_no}</span></td>
-                  <td className="text-start">{r.item}</td>
-                  <td className="text-end text-primary">{fmt(r.sale_sar)}</td>
-                  <td className="text-end text-muted">{Number(r.sale_rate || 0) % 1 !== 0 ? Number(r.sale_rate).toFixed(2) : fmt(r.sale_rate)}</td>
-                  <td className="text-end fw-bold text-dark">{fmt(r.sale_pkr)}</td>
-                  <td className="text-end fw-bold text-success">{fmt(r.payment_pkr)}</td>
-                  <td className="text-end fw-bold text-danger">{fmt(r.running_balance)}</td>
-                </tr>
-              ))}
+              {filtered.map((r, i) => {
+                const itemStyle = getItemStyle(r.item, r.type);
+                return (
+                  <tr key={`${r.ref_no || "row"}-${i}`}>
+                    <td>{formatDate(r.date || r.booking_date)}</td>
+                    <td className="csdl-customer">{r.customer_name}</td>
+                    <td><span className="csdl-ref">{r.ref_no}</span></td>
+                    <td className="text-start">
+                      <span style={{ color: itemStyle.color, fontWeight: itemStyle.fontWeight }}>
+                        {r.item}
+                      </span>
+                    </td>
+                    <td className="text-end text-primary">{fmt(r.sale_sar)}</td>
+                    <td className="text-end text-muted">{Number(r.sale_rate || 0) % 1 !== 0 ? Number(r.sale_rate).toFixed(2) : fmt(r.sale_rate)}</td>
+                    <td className="text-end fw-bold text-dark">{fmt(r.sale_pkr)}</td>
+                    <td className="text-end fw-bold text-success">{fmt(r.payment_pkr)}</td>
+                    <td className="text-end fw-bold text-danger">{fmt(r.running_balance)}</td>
+                  </tr>
+                );
+              })}
               {!filtered.length && <tr><td colSpan="9" className="csdl-empty py-4 text-muted">{loading ? "Loading records..." : "No records found."}</td></tr>}
             </tbody>
             <tfoot className="table-dark fw-bold" style={{ position: "sticky", bottom: 0, zIndex: 5 }}>
