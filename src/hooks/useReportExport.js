@@ -1,5 +1,4 @@
 import jsPDF from "jspdf";
-import autoTable from "jspdf-autotable";
 import * as XLSX from "xlsx";
 import Swal from "sweetalert2";
 
@@ -19,6 +18,18 @@ const formatDate = (d) => {
 
 const fmtAmt = (v) =>
   v === null || v === undefined || v === "" ? "0" : Number(v).toLocaleString("en-US");
+
+// Emojis aur Special Symbols ko Clean Text mein convert karne ke liye
+const sanitizeText = (str) => {
+  if (!str) return "-";
+  return String(str)
+    .replace(/💵|💰/g, "[PAYMENT] ")
+    .replace(/⚙️/g, "[ADJUSTMENT] ")
+    .replace(/🔑/g, "[OPENING] ")
+    .replace(/🚶/g, "")
+    .replace(/[^\x00-\x7F]/g, "") // Baaki non-ASCII symbols ko hatane ke liye
+    .trim();
+};
 
 export default function useReportExport() {
 
@@ -52,9 +63,10 @@ export default function useReportExport() {
 
     setTimeout(() => {
       try {
+        // Landscape Mode A4 Landscape = 297mm Total Width
         const doc = new jsPDF("l", "mm", "a4");
         const printDate = formatDate(new Date());
-        const pageWidth = doc.internal.pageSize.getWidth();
+        const pageWidth = 297; 
 
         const renderHeader = () => {
           doc.setFillColor(13, 71, 161);
@@ -75,7 +87,7 @@ export default function useReportExport() {
           doc.setTextColor(40, 40, 40);
           doc.setFont("helvetica", "bold");
           doc.setFontSize(9);
-          doc.text(`SELECTION / NAME: ${String(name || "ALL").toUpperCase()}`, 14, 40);
+          doc.text(`SELECTION / NAME: ${sanitizeText(name || "ALL").toUpperCase()}`, 14, 40);
           doc.text(`CODE: ${code || "-"}`, 14, 48);
 
           doc.setFont("helvetica", "normal");
@@ -87,80 +99,199 @@ export default function useReportExport() {
           doc.text(`Printed On: ${printDate}`, pageWidth - 70, 48);
         };
 
-        renderHeader();
-        let head = [];
-        let body = [];
-
+        // Teeno Reports ke liye alag-alag coordinates mapping (Total Width Within 287mm)
+        let columns = [];
         if (reportType === "customer_sale_ledger") {
-          head = [["Date", "Customer", "Ref No", "Item Details", "Sale SAR", "Rate", "Sale PKR", "Paid PKR", "Balance"]];
-          body = ledgerData.map((r) => [
-            formatDate(r.date),
-            r.customer_name,
-            r.ref_no,
-            r.item,
-            fmtAmt(r.sale_sar),
-            Number(r.sale_rate || 0) % 1 !== 0 ? Number(r.sale_rate).toFixed(2) : fmtAmt(r.sale_rate),
-            fmtAmt(r.sale_pkr),
-            fmtAmt(r.payment_pkr),
-            fmtAmt(r.running_balance),
-          ]);
+          columns = [
+            { header: "Date", x: 12, width: 22, align: "left" },
+            { header: "Customer", x: 35, width: 45, align: "left" },
+            { header: "Ref No", x: 81, width: 24, align: "left" },
+            { header: "Item Details", x: 106, width: 72, align: "left" },
+            { header: "Sale SAR", x: 179, width: 20, align: "right" },
+            { header: "Rate", x: 200, width: 15, align: "right" },
+            { header: "Sale PKR", x: 216, width: 22, align: "right" },
+            { header: "Paid PKR", x: 239, width: 22, align: "right" },
+            { header: "Running Balance", x: 262, width: 24, align: "right" },
+          ];
         } else if (reportType === "customer_sale") {
-          head = [["Date", "Customer", "Ref", "Item", "Sale SAR", "Sale Rate", "Sale PKR"]];
-          body = ledgerData.map((r) => [
-            formatDate(r.booking_date),
-            r.customer_name,
-            r.ref_no,
-            r.item,
-            fmtAmt(r.sale_sar),
-            fmtAmt(r.sale_rate),
-            fmtAmt(r.sale_pkr),
-          ]);
+          columns = [
+            { header: "Date", x: 12, width: 26, align: "left" },
+            { header: "Customer", x: 40, width: 75, align: "left" },
+            { header: "Ref", x: 117, width: 32, align: "left" },
+            { header: "Item", x: 151, width: 84, align: "left" },
+            { header: "Sale SAR", x: 237, width: 18, align: "right" },
+            { header: "Rate", x: 257, width: 14, align: "right" },
+            { header: "Sale PKR", x: 273, width: 14, align: "right" },
+          ];
         } else if (reportType === "supplier_purchase") {
-          head = [[
-            "Date", "Supplier", "Ref", "Item",
-            ...(showSale ? ["Sale SAR", "Sale Rate", "Sale PKR"] : []),
-            "Purchase SAR", "Purchase Rate", "Purchase PKR",
-            ...(showProfit ? ["Profit"] : [])
-          ]];
-          body = ledgerData.map((r) => [
-            formatDate(r.booking_date),
-            r.supplier_name,
-            r.ref_no,
-            r.item,
-            ...(showSale ? [fmtAmt(r.sale_sar), fmtAmt(r.sale_rate), fmtAmt(r.sale_pkr)] : []),
-            fmtAmt(r.purchase_sar),
-            fmtAmt(r.purchase_rate),
-            fmtAmt(r.purchase_pkr),
-            ...(showProfit ? [fmtAmt(r.profit)] : [])
-          ]);
+          // Dynamic columns agar showSale ya showProfit on hon
+          const baseCols = [
+            { header: "Date", x: 12, width: 22, align: "left" },
+            { header: "Supplier", x: 35, width: showSale ? 45 : 65, align: "left" },
+            { header: "Ref", x: showSale ? 81 : 101, width: 25, align: "left" },
+            { header: "Item", x: showSale ? 107 : 127, width: showSale ? 50 : 70, align: "left" },
+          ];
+          if (showSale) {
+            baseCols.push(
+              { header: "Sale SAR", x: 158, width: 18, align: "right" },
+              { header: "Rate", x: 178, width: 14, align: "right" },
+              { header: "Sale PKR", x: 194, width: 20, align: "right" }
+            );
+          }
+          baseCols.push(
+            { header: "Purch SAR", x: showSale ? 216 : 200, width: 18, align: "right" },
+            { header: "Rate", x: showSale ? 236 : 220, width: 14, align: "right" },
+            { header: "Purch PKR", x: showSale ? 252 : 236, width: 20, align: "right" }
+          );
+          if (showProfit) {
+            baseCols.push({ header: "Profit", x: showSale ? 274 : 258, width: 14, align: "right" });
+          }
+          columns = baseCols;
         }
 
-        autoTable(doc, {
-          head,
-          body,
-          startY: 58,
-          theme: "grid",
-          headStyles: { fillColor: [13, 110, 253], textColor: 255, halign: "center" },
-          bodyStyles: { halign: "center", fontSize: 8 },
-          alternateRowStyles: { fillColor: [245, 245, 245] },
-          didDrawPage: (data) => {
-            const finalY = data.cursor.y + 5;
-            let totalsText = "";
-            if (reportType === "customer_sale_ledger") {
-              totalsText = `Total Sale: PKR ${fmtAmt(totals.sale_pkr)} | Total Paid: PKR ${fmtAmt(totals.payment_pkr)} | Current Balance: PKR ${fmtAmt(totals.running_balance)}`;
-            } else if (reportType === "customer_sale") {
-              totalsText = `Total Sale SAR: ${fmtAmt(totals.sale_sar)} | Total Sale PKR: ${fmtAmt(totals.sale_pkr)}`;
-            } else if (reportType === "supplier_purchase") {
-              if (showSale) totalsText += `Sale SAR: ${fmtAmt(totals.sale_sar)} | Sale PKR: ${fmtAmt(totals.sale_pkr)}   `;
-              totalsText += `Purchase SAR: ${fmtAmt(totals.purchase_sar)} | Purchase PKR: ${fmtAmt(totals.purchase_pkr)}`;
-              if (showProfit) totalsText += `   | Profit: ${fmtAmt(totals.profit)}`;
+        const renderTableHeader = (startY) => {
+          doc.setFillColor(33, 37, 41);
+          doc.rect(10, startY, pageWidth - 20, 8, "F");
+          doc.setTextColor(255, 255, 255);
+          doc.setFont("helvetica", "bold");
+          doc.setFontSize(8);
+
+          columns.forEach((col) => {
+            if (col.align === "right") {
+              doc.text(col.header, col.x + col.width, startY + 5.5, { align: "right" });
+            } else {
+              doc.text(col.header, col.x, startY + 5.5);
             }
-            doc.setFontSize(9);
-            doc.setTextColor(0, 0, 0);
-            doc.text(totalsText, pageWidth - 10, finalY, { align: "right" });
-          },
-          margin: { top: 58, bottom: 15 },
+          });
+        };
+
+        renderHeader();
+        let y = 60;
+        renderTableHeader(y);
+        y += 8;
+
+        doc.setFont("helvetica", "normal");
+        doc.setTextColor(30, 30, 30);
+
+        ledgerData.forEach((r) => {
+          let dateStr = "";
+          let nameField = "";
+          let refNo = "";
+          let itemDesc = "";
+          let v1 = "", v2 = "", v3 = "", v4 = "", v5 = "", v6 = "", v7 = "";
+
+          if (reportType === "customer_sale_ledger") {
+            dateStr = formatDate(r.date);
+            nameField = sanitizeText(r.customer_name);
+            refNo = sanitizeText(r.ref_no);
+            itemDesc = sanitizeText(r.item);
+            v1 = fmtAmt(r.sale_sar);
+            v2 = Number(r.sale_rate || 0) % 1 !== 0 ? Number(r.sale_rate).toFixed(2) : fmtAmt(r.sale_rate);
+            v3 = fmtAmt(r.sale_pkr);
+            v4 = fmtAmt(r.payment_pkr);
+            v5 = fmtAmt(r.running_balance);
+          } else if (reportType === "customer_sale") {
+            dateStr = formatDate(r.booking_date);
+            nameField = sanitizeText(r.customer_name);
+            refNo = sanitizeText(r.ref_no);
+            itemDesc = sanitizeText(r.item);
+            v1 = fmtAmt(r.sale_sar);
+            v2 = fmtAmt(r.sale_rate);
+            v3 = fmtAmt(r.sale_pkr);
+          } else if (reportType === "supplier_purchase") {
+            dateStr = formatDate(r.booking_date);
+            nameField = sanitizeText(r.supplier_name);
+            refNo = sanitizeText(r.ref_no);
+            itemDesc = sanitizeText(r.item);
+            v1 = fmtAmt(r.sale_sar);
+            v2 = fmtAmt(r.sale_rate);
+            v3 = fmtAmt(r.sale_pkr);
+            v4 = fmtAmt(r.purchase_sar);
+            v5 = fmtAmt(r.purchase_rate);
+            v6 = fmtAmt(r.purchase_pkr);
+            v7 = fmtAmt(r.profit);
+          }
+
+          const descLines = doc.splitTextToSize(String(itemDesc), columns[3].width);
+          const nameLines = doc.splitTextToSize(String(nameField), columns[1].width);
+
+          const maxLines = Math.max(descLines.length, nameLines.length);
+          const rowHeight = Math.max(7, maxLines * 4 + 2);
+
+          if (y + rowHeight > 185) {
+            doc.addPage();
+            renderHeader();
+            y = 60;
+            renderTableHeader(y);
+            y += 8;
+            doc.setFont("helvetica", "normal");
+            doc.setTextColor(30, 30, 30);
+          }
+
+          doc.setFontSize(7.5);
+          doc.text(dateStr, columns[0].x, y + 4.5);
+          doc.text(nameLines, columns[1].x, y + 4.5);
+          doc.text(refNo, columns[2].x, y + 4.5);
+          doc.text(descLines, columns[3].x, y + 4.5);
+
+          if (reportType === "customer_sale_ledger") {
+            doc.text(v1, columns[4].x + columns[4].width, y + 4.5, { align: "right" });
+            doc.text(v2, columns[5].x + columns[5].width, y + 4.5, { align: "right" });
+            doc.text(v3, columns[6].x + columns[6].width, y + 4.5, { align: "right" });
+            doc.text(v4, columns[7].x + columns[7].width, y + 4.5, { align: "right" });
+            doc.setFont("helvetica", "bold");
+            doc.text(v5, columns[8].x + columns[8].width, y + 4.5, { align: "right" });
+            doc.setFont("helvetica", "normal");
+          } else if (reportType === "customer_sale") {
+            doc.text(v1, columns[4].x + columns[4].width, y + 4.5, { align: "right" });
+            doc.text(v2, columns[5].x + columns[5].width, y + 4.5, { align: "right" });
+            doc.setFont("helvetica", "bold");
+            doc.text(v3, columns[6].x + columns[6].width, y + 4.5, { align: "right" });
+            doc.setFont("helvetica", "normal");
+          } else if (reportType === "supplier_purchase") {
+            let colIdx = 4;
+            if (showSale) {
+              doc.text(v1, columns[colIdx].x + columns[colIdx].width, y + 4.5, { align: "right" }); colIdx++;
+              doc.text(v2, columns[colIdx].x + columns[colIdx].width, y + 4.5, { align: "right" }); colIdx++;
+              doc.text(v3, columns[colIdx].x + columns[colIdx].width, y + 4.5, { align: "right" }); colIdx++;
+            }
+            doc.text(v4, columns[colIdx].x + columns[colIdx].width, y + 4.5, { align: "right" }); colIdx++;
+            doc.text(v5, columns[colIdx].x + columns[colIdx].width, y + 4.5, { align: "right" }); colIdx++;
+            doc.setFont("helvetica", "bold");
+            doc.text(v6, columns[colIdx].x + columns[colIdx].width, y + 4.5, { align: "right" }); colIdx++;
+            if (showProfit) {
+              doc.text(v7, columns[colIdx].x + columns[colIdx].width, y + 4.5, { align: "right" });
+            }
+            doc.setFont("helvetica", "normal");
+          }
+
+          doc.setDrawColor(235, 235, 235);
+          doc.line(10, y + rowHeight - 0.5, pageWidth - 10, y + rowHeight - 0.5);
+
+          y += rowHeight;
         });
+
+        // Totals Footer Box
+        let totalsText = "";
+        if (reportType === "customer_sale_ledger") {
+          totalsText = `Total Sale: PKR ${fmtAmt(totals.sale_pkr)}  |  Total Paid: PKR ${fmtAmt(totals.payment_pkr)}  |  Net Balance: PKR ${fmtAmt(totals.running_balance)}`;
+        } else if (reportType === "customer_sale") {
+          totalsText = `Total Sale SAR: ${fmtAmt(totals.sale_sar)}  |  Total Sale PKR: ${fmtAmt(totals.sale_pkr)}`;
+        } else if (reportType === "supplier_purchase") {
+          if (showSale) totalsText += `Sale PKR: ${fmtAmt(totals.sale_pkr)}  |  `;
+          totalsText += `Purchase PKR: ${fmtAmt(totals.purchase_pkr)}`;
+          if (showProfit) totalsText += `  |  Profit: ${fmtAmt(totals.profit)}`;
+        }
+
+        if (totalsText && y < 185) {
+          y += 3;
+          doc.setFillColor(240, 244, 248);
+          doc.rect(10, y, pageWidth - 20, 7, "F");
+          doc.setFont("helvetica", "bold");
+          doc.setFontSize(8);
+          doc.setTextColor(15, 35, 65);
+          doc.text(totalsText, pageWidth - 14, y + 5, { align: "right" });
+        }
 
         const totalPages = doc.internal.getNumberOfPages();
         for (let i = 1; i <= totalPages; i++) {
@@ -168,9 +299,9 @@ export default function useReportExport() {
           doc.setFontSize(8);
           doc.setTextColor(120, 120, 120);
           doc.text(
-            `Page ${i} of ${totalPages}${companyName ? ` — ${companyName}` : ""}`,
+            `Page ${i} of ${totalPages}${companyName ? ` - ${companyName}` : ""}`,
             pageWidth / 2,
-            290,
+            202,
             { align: "center" }
           );
         }
@@ -227,9 +358,9 @@ export default function useReportExport() {
         ledgerData.forEach((r) => {
           excelRows.push([
             formatDate(r.date),
-            r.customer_name,
-            r.ref_no,
-            r.item,
+            sanitizeText(r.customer_name),
+            sanitizeText(r.ref_no),
+            sanitizeText(r.item),
             Number(r.sale_sar || 0),
             Number(r.sale_rate || 0),
             Number(r.sale_pkr || 0),
@@ -243,9 +374,9 @@ export default function useReportExport() {
         ledgerData.forEach((r) => {
           excelRows.push([
             formatDate(r.booking_date),
-            r.customer_name,
-            r.ref_no,
-            r.item,
+            sanitizeText(r.customer_name),
+            sanitizeText(r.ref_no),
+            sanitizeText(r.item),
             Number(r.sale_sar || 0),
             Number(r.sale_rate || 0),
             Number(r.sale_pkr || 0),
@@ -260,7 +391,7 @@ export default function useReportExport() {
         excelRows.push(headerRow);
 
         ledgerData.forEach((r) => {
-          const rowArr = [formatDate(r.booking_date), r.supplier_name, r.ref_no, r.item];
+          const rowArr = [formatDate(r.booking_date), sanitizeText(r.supplier_name), sanitizeText(r.ref_no), sanitizeText(r.item)];
           if (showSale) rowArr.push(Number(r.sale_sar || 0), Number(r.sale_rate || 0), Number(r.sale_pkr || 0));
           rowArr.push(Number(r.purchase_sar || 0), Number(r.purchase_rate || 0), Number(r.purchase_pkr || 0));
           if (showProfit) rowArr.push(Number(r.profit || 0));
