@@ -63,12 +63,12 @@ export default function PurchaseDetail({ refNo, onNavigate }) {
         });
       }
 
-    Swal.fire({
-      width: "260px",
-      title: "Generating PDF...",
-      allowOutsideClick: false,
-      didOpen: () => Swal.showLoading()
-    });
+      Swal.fire({
+        width: "260px",
+        title: "Generating PDF...",
+        allowOutsideClick: false,
+        didOpen: () => Swal.showLoading()
+      });
 
       const canvas = await html2canvas(boxRef.current, {
         scale: 2,
@@ -77,7 +77,6 @@ export default function PurchaseDetail({ refNo, onNavigate }) {
       });
 
       const imgData = canvas.toDataURL("image/png");
-
       const pdf = new jsPDF("l", "mm", "a4");
 
       const pageWidth = pdf.internal.pageSize.getWidth();
@@ -100,36 +99,30 @@ export default function PurchaseDetail({ refNo, onNavigate }) {
       }
 
       pdf.save(`${rows[0]?.ref_no || refNo}-purchase-detail.pdf`);
+      Swal.close();
 
-    Swal.close();
-
-    Swal.fire({
-      width: "280px",
-      icon: "success",
-      text: "PDF Downloaded Successfully 😎",
-      timer: 1500,
-      showConfirmButton: true
-    });
-
-  } catch (err) {
-    Swal.close();
-
-    Swal.fire({
-      width: "300px",
-      icon: "error",
-      text: "PDF Generation Failed"
-    });
-  }
-};
+      Swal.fire({
+        width: "280px",
+        icon: "success",
+        text: "PDF Downloaded Successfully 😎",
+        timer: 1500,
+        showConfirmButton: true
+      });
+    } catch (err) {
+      Swal.close();
+      Swal.fire({
+        width: "300px",
+        icon: "error",
+        text: "PDF Generation Failed"
+      });
+    }
+  };
 
   /* ================= PRINT ================= */
   const printPDF = async () => {
     try {
       if (!boxRef.current || !rows.length) {
-        return Swal.fire({
-          icon: "warning",
-          text: "No data found",
-        });
+        return Swal.fire({ icon: "warning", text: "No data found" });
       }
 
       Swal.fire({
@@ -151,7 +144,6 @@ export default function PurchaseDetail({ refNo, onNavigate }) {
       const pageHeight = (canvas.height * pageWidth) / canvas.width;
 
       pdf.addImage(img, "JPEG", 0, 0, pageWidth, pageHeight);
-
       Swal.close();
 
       const blobUrl = pdf.output("bloburl");
@@ -163,13 +155,6 @@ export default function PurchaseDetail({ refNo, onNavigate }) {
           w.print();
         };
       }
-
-      Swal.fire({
-        icon: "success",
-        text: "Print Ready 😎",
-        timer: 1200,
-        showConfirmButton: false,
-      });
     } catch (err) {
       Swal.close();
       Swal.fire("Error", "Print Failed", "error");
@@ -203,7 +188,6 @@ export default function PurchaseDetail({ refNo, onNavigate }) {
         </button>
 
         <div className="d-flex align-items-center gap-3 px-3 py-2 rounded shadow-sm bg-white">
-
           <div className="form-check">
             <input
               type="checkbox"
@@ -267,27 +251,29 @@ export default function PurchaseDetail({ refNo, onNavigate }) {
 
         {/* TABLE */}
         <div className="table-responsive">
-          <table className="table table-bordered align-middle">
+          <table className="table table-bordered align-middle" style={{ fontSize: "13px" }}>
 
             <thead className="text-white bg-primary">
               <tr className="text-center">
                 <th rowSpan="2">Item</th>
                 <th rowSpan="2">Supplier</th>
 
-                {showSale && <th colSpan="3">Sale</th>}
-                <th colSpan="3">Purchase</th>
+                {showSale && <th colSpan="4">Sale</th>}
+                <th colSpan="4">Purchase</th>
                 {showProfit && <th rowSpan="2">Profit</th>}
               </tr>
 
               <tr className="text-center">
                 {showSale && (
                   <>
+                    <th>Per Unit</th>
                     <th>SAR</th>
                     <th>Rate</th>
                     <th>PKR</th>
                   </>
                 )}
 
+                <th>Per Unit</th>
                 <th>SAR</th>
                 <th>Rate</th>
                 <th>PKR</th>
@@ -302,12 +288,14 @@ export default function PurchaseDetail({ refNo, onNavigate }) {
 
                   {showSale && (
                     <>
+                      <td className="text-end">{fmt(r.sale_per_unit)}</td>
                       <td className="text-end">{fmt(r.sale_sar)}</td>
                       <td className="text-end">{fmt(r.sale_rate)}</td>
                       <td className="text-end">{fmt(r.sale_pkr)}</td>
                     </>
                   )}
 
+                  <td className="text-end">{fmt(r.purchase_per_unit)}</td>
                   <td className="text-end">{fmt(r.purchase_sar)}</td>
                   <td className="text-end">{fmt(r.purchase_rate)}</td>
                   <td className="text-end">{fmt(r.purchase_pkr)}</td>
@@ -334,12 +322,14 @@ export default function PurchaseDetail({ refNo, onNavigate }) {
 
                 {showSale && (
                   <>
+                    <td></td>
                     <td className="text-end">{fmt(totals.sale_sar)}</td>
                     <td></td>
                     <td className="text-end">{fmt(totals.sale_pkr)}</td>
                   </>
                 )}
 
+                <td></td>
                 <td className="text-end">{fmt(totals.purchase_sar)}</td>
                 <td></td>
                 <td className="text-end">{fmt(totals.purchase_pkr)}</td>

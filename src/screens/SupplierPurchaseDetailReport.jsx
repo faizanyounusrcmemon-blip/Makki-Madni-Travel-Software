@@ -1,7 +1,10 @@
 import React, { useEffect, useState, useRef } from "react";
 import useReportExport from "../hooks/useReportExport";
 
-const fmt = (n) => Number(n || 0).toLocaleString("en-US");
+const fmt = (n) => Number(n || 0).toLocaleString("en-US", { maximumFractionDigits: 2 });
+
+/* ⭐ ROUNDED FORMATTER FOR PER-UNIT */
+const fmtRound = (n) => Math.round(Number(n || 0)).toLocaleString("en-US");
 
 const formatDate = (d) => {
   if (!d) return "";
@@ -10,6 +13,36 @@ const formatDate = (d) => {
     month: "short",
     year: "numeric",
   });
+};
+
+/* 🧮 FRONTEND CALCULATION FALLBACK */
+const getPerUnitValues = (row) => {
+  const itemStr = row.item || "";
+  let qty = 1;
+
+  const roomMatch = itemStr.match(/(\d+)\s*Room/i);
+  const nightMatch = itemStr.match(/(\d+)\s*Night/i);
+
+  if (roomMatch || nightMatch) {
+    const rooms = roomMatch ? Number(roomMatch[1]) || 1 : 1;
+    const nights = nightMatch ? Number(nightMatch[1]) || 1 : 1;
+    qty = rooms * nights;
+  } else {
+    const personMatch = itemStr.match(/(\d+)\s*Person/i);
+    if (personMatch) {
+      qty = Number(personMatch[1]) || 1;
+    }
+  }
+
+  if (qty <= 0) qty = 1;
+
+  const saleSar = Number(row.sale_sar) || 0;
+  const purchSar = Number(row.purchase_sar) || 0;
+
+  const salePerUnit = row.sale_per_unit !== undefined ? Number(row.sale_per_unit) : saleSar / qty;
+  const purchPerUnit = row.purchase_per_unit !== undefined ? Number(row.purchase_per_unit) : purchSar / qty;
+
+  return { salePerUnit, purchPerUnit };
 };
 
 function SmartSupplierSelect({ suppliers, selectedSupplier, onSelect }) {
@@ -53,7 +86,7 @@ function SmartSupplierSelect({ suppliers, selectedSupplier, onSelect }) {
           <input
             type="text"
             className="form-control form-control-sm mb-2"
-            placeholder="🔍 Search supplier..."
+            placeholder="Search supplier..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             autoFocus
@@ -174,13 +207,18 @@ export default function SupplierPurchasedetailreport({ onNavigate }) {
     { sale_pkr: 0, sale_sar: 0, purchase_pkr: 0, purchase_sar: 0, profit: 0 }
   );
 
-  const handleExportExcel = () => {
+const handleExportExcel = () => {
+    const enrichedData = filtered.map(r => {
+      const { salePerUnit, purchPerUnit } = getPerUnitValues(r);
+      return { ...r, sale_per_unit: Math.round(salePerUnit), purch_per_unit: Math.round(purchPerUnit) };
+    });
+
     exportExcel({
       code: supplier,
       name: supplier === "ALL" ? "All Suppliers" : supplier,
       fromDate: from,
       toDate: to,
-      ledgerData: filtered,
+      ledgerData: enrichedData,
       title: "Supplier Purchase Detail Report",
       filePrefix: "Supplier_Purchase_Detail_Report",
       reportType: "supplier_purchase",
@@ -191,12 +229,17 @@ export default function SupplierPurchasedetailreport({ onNavigate }) {
   };
 
   const handleExportPDF = () => {
+    const enrichedData = filtered.map(r => {
+      const { salePerUnit, purchPerUnit } = getPerUnitValues(r);
+      return { ...r, sale_per_unit: Math.round(salePerUnit), purch_per_unit: Math.round(purchPerUnit) };
+    });
+
     exportPDF({
       code: supplier,
       name: supplier === "ALL" ? "All Suppliers" : supplier,
       fromDate: from,
       toDate: to,
-      ledgerData: filtered,
+      ledgerData: enrichedData,
       title: "Supplier Purchase Detail Report",
       filePrefix: "Supplier_Purchase_Detail_Report",
       reportType: "supplier_purchase",
@@ -218,9 +261,21 @@ export default function SupplierPurchasedetailreport({ onNavigate }) {
         .csdl-premium .csdl-filter-card{background:linear-gradient(135deg,#fff 0%,#f4f7fc 100%)!important;border-top:3px solid #d4a83f!important}
         .csdl-premium label{font-size:11px;text-transform:uppercase;color:#27466e;font-weight:850!important}
         .csdl-premium .form-control,.csdl-premium .form-select{min-height:36px;border:1px solid #cbd6e5;border-radius:10px;font-weight:600;color:#172b49}
+        
+        /* ⭐ TABLE WRAPPER & FREEZING HEADERS */
         .csdl-premium .csdl-table-wrap{max-height:65vh;overflow:auto;border-radius:0 0 16px 16px}
-        .csdl-premium table{font-size:12px;white-space:nowrap}
-        .csdl-premium table thead th{background:linear-gradient(180deg,#173e70,#0c2548)!important;color:#fff!important;padding:12px 10px;font-size:10px;text-transform:uppercase}
+        .csdl-premium table{font-size:12px;white-space:nowrap;border-collapse:separate;border-spacing:0}
+        .csdl-premium table thead th{
+          position: sticky;
+          top: 0;
+          z-index: 10;
+          background: linear-gradient(180deg,#173e70,#0c2548)!important;
+          color:#fff!important;
+          padding:12px 10px;
+          font-size:10px;
+          text-transform:uppercase;
+          box-shadow: inset 0 -1px 0 #e2e8f0;
+        }
         .csdl-premium table tbody td{padding:9px 10px;border-color:#e1e8f1}
         .csdl-premium table tbody tr:nth-child(even){background:#f2f6fc}
         .csdl-premium table tbody tr:hover{background:#fff5d9!important}
@@ -231,7 +286,7 @@ export default function SupplierPurchasedetailreport({ onNavigate }) {
         <div className="card-body py-3 d-flex justify-content-between align-items-center csdl-header" style={{ borderRadius: "16px" }}>
           <span className="csdl-title">📦 SUPPLIER PURCHASE DETAIL REPORT</span>
           <div className="d-flex gap-2">
-            <button className="btn btn-light btn-sm rounded-pill" onClick={() => onNavigate("dashboard")}>⬅ Back</button>
+            <button className="btn btn-light btn-sm rounded-pill" onClick={() => onNavigate("dashboard")}>← Back</button>
             <button className="btn btn-success btn-sm rounded-pill" onClick={handleExportExcel}>Export Excel 📊</button>
             <button className="btn btn-danger btn-sm rounded-pill" onClick={handleExportPDF}>Export PDF 📄</button>
           </div>
@@ -293,7 +348,7 @@ export default function SupplierPurchasedetailreport({ onNavigate }) {
       {/* TABLE DISPLAY */}
       <div className="card shadow-sm rounded" style={{ overflow: "hidden", borderTop: "3px solid #123f78" }}>
         <div className="p-3 text-end fw-bold d-flex flex-wrap gap-3 justify-content-between align-items-center bg-white border-bottom">
-          <div style={{fontWeight:900,color:"#12345d",fontSize:14}}>📋 Records View ({filtered.length})</div>
+          <div style={{fontWeight:900,color:"#12345d",fontSize:14}}>📊 Records View ({filtered.length})</div>
           <div className="d-flex gap-3 flex-wrap" style={{ fontSize: 13 }}>
             {showSale && <span className="text-primary">Sale PKR: {fmt(totals.sale_pkr)}</span>}
             <span className="text-danger">Purchase PKR: {fmt(totals.purchase_pkr)}</span>
@@ -310,11 +365,13 @@ export default function SupplierPurchasedetailreport({ onNavigate }) {
                 <th>Item</th>
                 {showSale && (
                   <>
+                    <th style={{ backgroundColor: "#0284c7" }}>Sale/Unit</th>
                     <th>Sale SAR</th>
                     <th>Sale Rate</th>
                     <th>Sale PKR</th>
                   </>
                 )}
+                <th style={{ backgroundColor: "#be123c" }}>Pur./Unit</th>
                 <th>Purchase SAR</th>
                 <th>Purchase Rate</th>
                 <th>Purchase PKR</th>
@@ -322,41 +379,58 @@ export default function SupplierPurchasedetailreport({ onNavigate }) {
               </tr>
             </thead>
             <tbody>
-              {filtered.map((r, i) => (
-                <tr key={i}>
-                  <td>{formatDate(r.booking_date)}</td>
-                  <td className="fw-bold text-dark">{r.supplier_name}</td>
-                  <td><span className="badge bg-light text-dark border">{r.ref_no}</span></td>
-                  <td className="text-start">{r.item}</td>
-                  {showSale && (
-                    <>
-                      <td className="text-end text-primary">{fmt(r.sale_sar)}</td>
-                      <td className="text-end">{fmt(r.sale_rate)}</td>
-                      <td className="text-end">{fmt(r.sale_pkr)}</td>
-                    </>
-                  )}
-                  <td className="text-end text-danger">{fmt(r.purchase_sar)}</td>
-                  <td className="text-end">{fmt(r.purchase_rate)}</td>
-                  <td className="text-end fw-bold">{fmt(r.purchase_pkr)}</td>
-                  {showProfit && <td className={`text-end fw-bold ${r.profit >= 0 ? "text-success" : "text-danger"}`}>{fmt(r.profit)}</td>}
-                </tr>
-              ))}
-              {!filtered.length && <tr><td colSpan={10} className="py-4 text-muted">No records found.</td></tr>}
+              {filtered.map((r, i) => {
+                const { salePerUnit, purchPerUnit } = getPerUnitValues(r);
+
+                return (
+                  <tr key={i}>
+                    <td>{formatDate(r.booking_date)}</td>
+                    <td className="fw-bold text-dark">{r.supplier_name}</td>
+                    <td><span className="badge bg-light text-dark border">{r.ref_no}</span></td>
+                    <td className="text-start">{r.item}</td>
+                    {showSale && (
+                      <>
+                        {/* ⭐ fmtRound use kiya hai taake per unit round figures me aaye */}
+                        <td className="text-end fw-bold text-info" style={{ backgroundColor: "#f0f9ff" }}>{fmtRound(salePerUnit)}</td>
+                        <td className="text-end text-primary">{fmt(r.sale_sar)}</td>
+                        <td className="text-end">{fmt(r.sale_rate)}</td>
+                        <td className="text-end">{fmt(r.sale_pkr)}</td>
+                      </>
+                    )}
+                    <td className="text-end fw-bold text-danger" style={{ backgroundColor: "#fff1f2" }}>{fmtRound(purchPerUnit)}</td>
+                    <td className="text-end text-danger">{fmt(r.purchase_sar)}</td>
+                    <td className="text-end">{fmt(r.purchase_rate)}</td>
+                    <td className="text-end fw-bold">{fmt(r.purchase_pkr)}</td>
+                    {showProfit && (
+                      <td className={`text-end fw-bold ${Number(r.profit) >= 0 ? "text-success" : "text-danger"}`}>
+                        {Number(r.profit) < 0 ? `-${fmt(Math.abs(r.profit))}` : fmt(r.profit)}
+                      </td>
+                    )}
+                  </tr>
+                );
+              })}
+              {!filtered.length && <tr><td colSpan={showSale ? (showProfit ? 12 : 11) : (showProfit ? 9 : 8)} className="py-4 text-muted">No records found.</td></tr>}
             </tbody>
             <tfoot className="table-dark fw-bold" style={{ position: "sticky", bottom: 0, zIndex: 5 }}>
               <tr>
                 <td colSpan="4">TOTALS</td>
                 {showSale && (
                   <>
+                    <td></td>
                     <td className="text-end text-info">{fmt(totals.sale_sar)}</td>
                     <td></td>
                     <td className="text-end">{fmt(totals.sale_pkr)}</td>
                   </>
                 )}
+                <td></td>
                 <td className="text-end text-warning">{fmt(totals.purchase_sar)}</td>
                 <td></td>
                 <td className="text-end">{fmt(totals.purchase_pkr)}</td>
-                {showProfit && <td className="text-end">{fmt(totals.profit)}</td>}
+                {showProfit && (
+                  <td className="text-end">
+                    {Number(totals.profit) < 0 ? `-${fmt(Math.abs(totals.profit))}` : fmt(totals.profit)}
+                  </td>
+                )}
               </tr>
             </tfoot>
           </table>

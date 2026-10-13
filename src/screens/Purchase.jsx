@@ -23,7 +23,7 @@ const fmt = (v) =>
     ? Number(v).toLocaleString("en-US", { maximumFractionDigits: 2 })
     : "0";
 
-/* 🎨 CUSTOM SELECT STYLES (ENHANCED FOR WIDER SUPPLIER DROP DOWN) */
+/* 🎨 CUSTOM SELECT STYLES */
 const customSelectStyles = {
   control: (base, state) => ({
     ...base,
@@ -35,19 +35,10 @@ const customSelectStyles = {
     boxShadow: state.isFocused ? "0 0 0 3px rgba(79, 70, 229, 0.15)" : "none",
     background: "#ffffff",
     transition: "all 0.2s ease",
-    "&:hover": {
-      border: "1px solid #6366f1",
-    },
+    "&:hover": { border: "1px solid #6366f1" },
   }),
-  valueContainer: (base) => ({
-    ...base,
-    padding: "0 8px",
-  }),
-  input: (base) => ({
-    ...base,
-    margin: 0,
-    padding: 0,
-  }),
+  valueContainer: (base) => ({ ...base, padding: "0 8px" }),
+  input: (base) => ({ ...base, margin: 0, padding: 0 }),
   singleValue: (base) => ({
     ...base,
     color: "#0f172a",
@@ -57,9 +48,7 @@ const customSelectStyles = {
     overflow: "hidden",
     textOverflow: "ellipsis",
   }),
-  indicatorSeparator: () => ({
-    display: "none",
-  }),
+  indicatorSeparator: () => ({ display: "none" }),
   dropdownIndicator: (base, state) => ({
     ...base,
     color: state.isFocused ? "#4f46e5" : "#64748b",
@@ -78,16 +67,8 @@ const customSelectStyles = {
     fontWeight: state.isSelected ? "800" : "700",
     padding: "8px 12px",
     cursor: "pointer",
-    background: state.isSelected
-      ? "#4f46e5"
-      : state.isFocused
-      ? "#e0e7ff"
-      : "#ffffff",
-    color: state.isSelected
-      ? "#ffffff"
-      : state.isFocused
-      ? "#1e40af"
-      : "#1d4ed8",
+    background: state.isSelected ? "#4f46e5" : state.isFocused ? "#e0e7ff" : "#ffffff",
+    color: state.isSelected ? "#ffffff" : state.isFocused ? "#1e40af" : "#1d4ed8",
   }),
 };
 
@@ -113,8 +94,6 @@ export default function Purchase({ onNavigate }) {
   const [customerName, setCustomerName] = useState("");
   const [pendingSearch, setPendingSearch] = useState("");
 
-  const inputRefs = useRef([]);
-
   /* ================= LOAD SUPPLIERS ================= */
   useEffect(() => {
     fetch(`${import.meta.env.VITE_BACKEND_URL}/api/supplier/list`)
@@ -125,9 +104,7 @@ export default function Purchase({ onNavigate }) {
   /* ================= LOAD PENDING ================= */
   const loadPending = async () => {
     try {
-      const r = await fetch(
-        `${import.meta.env.VITE_BACKEND_URL}/api/purchase/pending`
-      );
+      const r = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/purchase/pending`);
       const d = await r.json();
       if (d.success) setPending(d.rows || []);
     } catch (err) {
@@ -150,31 +127,21 @@ export default function Purchase({ onNavigate }) {
   /* ================= LOAD PACKAGE ================= */
   const loadPackage = async (r = refNo) => {
     if (!r) {
-      return Swal.fire({
-        width: "320px",
-        icon: "warning",
-        text: "Please enter Ref No",
-      });
+      return Swal.fire({ width: "320px", icon: "warning", text: "Please enter Ref No" });
     }
 
     setRefNo(r);
     setLoading(true);
 
     try {
-      const res = await fetch(
-        `${import.meta.env.VITE_BACKEND_URL}/api/purchase/load/${r}`
-      );
+      const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/purchase/load/${r}`);
       const data = await res.json();
       setLoading(false);
 
       if (!data.success) {
         setRows([]);
         setCustomerName("");
-        return Swal.fire({
-          width: "320px",
-          icon: "error",
-          text: data.error || "Record not found",
-        });
+        return Swal.fire({ width: "320px", icon: "error", text: data.error || "Record not found" });
       }
 
       setIsEdit(data.is_edit === true);
@@ -183,16 +150,15 @@ export default function Purchase({ onNavigate }) {
         (data.rows || []).map((x) => ({
           item: x.item,
           item_label: x.item_label,
+          unit_qty: Number(x.unit_qty) || 1,
+          sale_per_unit: parseNumber(x.sale_per_unit),
           sale_sar: parseNumber(x.sale_sar),
           sale_rate: parseNumber(x.sale_rate),
           sale_pkr: parseNumber(x.sale_pkr),
 
-          purchase_sar: x.purchase_sar
-            ? formatInput(String(x.purchase_sar))
-            : "",
-          purchase_rate: x.purchase_rate
-            ? formatInput(String(x.purchase_rate))
-            : "",
+          purchase_per_unit: x.purchase_per_unit ? formatInput(String(x.purchase_per_unit)) : "",
+          purchase_sar: x.purchase_sar ? formatInput(String(x.purchase_sar)) : "",
+          purchase_rate: x.purchase_rate ? formatInput(String(x.purchase_rate)) : "",
           purchase_pkr: parseNumber(x.purchase_pkr),
 
           profit: parseNumber(x.profit),
@@ -206,8 +172,6 @@ export default function Purchase({ onNavigate }) {
         data.customer_name ||
         data.customer ||
         data.rows?.[0]?.customer_name ||
-        data.rows?.[0]?.cust_name ||
-        data.rows?.[0]?.client_name ||
         pendingMap[r] ||
         "N/A";
 
@@ -226,11 +190,7 @@ export default function Purchase({ onNavigate }) {
       });
     } catch (err) {
       setLoading(false);
-      Swal.fire({
-        width: "320px",
-        icon: "error",
-        text: "Network Connection Error",
-      });
+      Swal.fire({ width: "320px", icon: "error", text: "Network Connection Error" });
     }
   };
 
@@ -242,12 +202,30 @@ export default function Purchase({ onNavigate }) {
     setIsEdit(false);
   };
 
-  /* ================= UPDATE ROW ================= */
+/* ================= UPDATE ROW (WITH PER UNIT <-> TOTAL AUTO CALCULATION) ================= */
   const updateRow = (i, field, value) => {
     const copy = [...rows];
     const r = copy[i];
+    const qty = Number(r.unit_qty) || 1;
 
-    if (field === "supplier_code") {
+    if (field === "purchase_per_unit") {
+      r.purchase_per_unit = formatInput(value);
+      const perUnit = parseNumber(r.purchase_per_unit);
+      r.purchase_sar = perUnit > 0 ? String(perUnit * qty) : "";
+    } else if (field === "purchase_sar") {
+      r.purchase_sar = formatInput(value);
+      const totalSar = parseNumber(r.purchase_sar);
+      
+      if (totalSar > 0) {
+        const calculatedPerUnit = totalSar / qty;
+        // 🔹 Agar exact integer ho to direct string, warna 2 decimals round karke extra zeroes trim karein
+        r.purchase_per_unit = Number.isInteger(calculatedPerUnit)
+          ? String(calculatedPerUnit)
+          : String(parseFloat(calculatedPerUnit.toFixed(2)));
+      } else {
+        r.purchase_per_unit = "";
+      }
+    } else if (field === "supplier_code") {
       r.supplier_code = value;
       const s = suppliers.find((x) => x.supplier_code === value);
       r.supplier_name = s ? s.supplier_name : "";
@@ -269,6 +247,7 @@ export default function Purchase({ onNavigate }) {
   const copySaleToPurchase = (i) => {
     const copy = [...rows];
     const r = copy[i];
+    r.purchase_per_unit = String(r.sale_per_unit || "");
     r.purchase_sar = String(r.sale_sar || "");
     r.purchase_rate = String(r.sale_rate || "");
     const sar = parseNumber(r.purchase_sar);
@@ -281,11 +260,7 @@ export default function Purchase({ onNavigate }) {
   /* ================= SAVE ================= */
   const savePurchase = async () => {
     if (!rows.length) {
-      return Swal.fire({
-        width: "320px",
-        icon: "warning",
-        text: "No data rows available to save",
-      });
+      return Swal.fire({ width: "320px", icon: "warning", text: "No data rows available to save" });
     }
 
     const cleanRows = rows
@@ -297,16 +272,13 @@ export default function Purchase({ onNavigate }) {
       )
       .map((r) => ({
         ...r,
+        purchase_per_unit: parseNumber(r.purchase_per_unit),
         purchase_sar: parseNumber(r.purchase_sar),
         purchase_rate: parseNumber(r.purchase_rate),
       }));
 
     if (!cleanRows.length) {
-      return Swal.fire({
-        width: "320px",
-        icon: "warning",
-        text: "No valid rows found to save",
-      });
+      return Swal.fire({ width: "320px", icon: "warning", text: "No valid rows found to save" });
     }
 
     Swal.fire({
@@ -317,14 +289,11 @@ export default function Purchase({ onNavigate }) {
     });
 
     try {
-      const res = await fetch(
-        `${import.meta.env.VITE_BACKEND_URL}/api/purchase/save`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ ref_no: refNo, items: cleanRows }),
-        }
-      );
+      const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/purchase/save`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ref_no: refNo, items: cleanRows }),
+      });
 
       const data = await res.json();
       Swal.close();
@@ -333,28 +302,18 @@ export default function Purchase({ onNavigate }) {
         await Swal.fire({
           width: "320px",
           icon: "success",
-          text: isEdit
-            ? "Purchase Record Updated Successfully"
-            : "Purchase Record Saved Successfully",
+          text: isEdit ? "Purchase Record Updated Successfully" : "Purchase Record Saved Successfully",
         });
 
         handleCancel();
         loadPending();
         onNavigate("purchase");
       } else {
-        Swal.fire({
-          width: "320px",
-          icon: "error",
-          text: data.error || "Failed to save record",
-        });
+        Swal.fire({ width: "320px", icon: "error", text: data.error || "Failed to save record" });
       }
     } catch (err) {
       Swal.close();
-      Swal.fire({
-        width: "320px",
-        icon: "error",
-        text: "Network Connection Error",
-      });
+      Swal.fire({ width: "320px", icon: "error", text: "Network Connection Error" });
     }
   };
 
@@ -411,20 +370,8 @@ export default function Purchase({ onNavigate }) {
       );
   }, [rows]);
 
-  /* ================= KEYBOARD NAVIGATION HANDLERS ================= */
-  const focusNextElement = (displayIdx, fieldIdx) => {
-    const el = inputRefs.current[displayIdx]?.[fieldIdx];
-    if (el) {
-      if (typeof el.focus === "function") {
-        el.focus();
-      }
-    }
-  };
-
   return (
     <div style={{ backgroundColor: "#f1f5f9", minHeight: "100vh", fontFamily: "'Inter', system-ui, sans-serif" }} className="p-3">
-      
-      {/* Dynamic Lift-up animation CSS */}
       <style>{`
         .lift-hover {
           transition: transform 0.2s ease, box-shadow 0.2s ease;
@@ -436,15 +383,8 @@ export default function Purchase({ onNavigate }) {
         }
       `}</style>
 
-      {/* 🚀 BANNER HEADER */}
-      <div 
-        className="card border-0 shadow-sm mb-3 overflow-hidden" 
-        style={{ 
-          background: "linear-gradient(135deg, #0f172a 0%, #1e293b 100%)", 
-          borderRadius: "14px",
-          color: "#ffffff" 
-        }}
-      >
+      {/* BANNER HEADER */}
+      <div className="card border-0 shadow-sm mb-3 overflow-hidden" style={{ background: "linear-gradient(135deg, #0f172a 0%, #1e293b 100%)", borderRadius: "14px", color: "#ffffff" }}>
         <div className="card-body p-3.5 d-flex flex-wrap align-items-center justify-content-between gap-2">
           <div className="d-flex align-items-center gap-3">
             <div className="p-2.5 rounded-3" style={{ background: "rgba(255, 255, 255, 0.12)" }}>
@@ -465,17 +405,13 @@ export default function Purchase({ onNavigate }) {
             </div>
           </div>
 
-          <button 
-            className="btn btn-outline-light btn-sm rounded-pill px-3 py-1.5 fw-bold lift-hover"
-            style={{ fontSize: "12px", borderColor: "rgba(255,255,255,0.3)" }}
-            onClick={() => onNavigate("dashboard")}
-          >
+          <button className="btn btn-outline-light btn-sm rounded-pill px-3 py-1.5 fw-bold lift-hover" style={{ fontSize: "12px", borderColor: "rgba(255,255,255,0.3)" }} onClick={() => onNavigate("dashboard")}>
             ← Dashboard
           </button>
         </div>
       </div>
 
-      {/* 💳 SUMMARY CARDS */}
+      {/* SUMMARY CARDS */}
       <div className="row g-2 mb-3">
         <div className="col-md-4">
           <div className="card border-0 shadow-sm p-3 rounded-3 bg-white">
@@ -520,10 +456,9 @@ export default function Purchase({ onNavigate }) {
         </div>
       </div>
 
-      {/* 🧩 MAIN LAYOUT */}
+      {/* MAIN LAYOUT */}
       <div className="row g-3">
-        
-        {/* ⏳ PENDING QUEUE SIDEBAR */}
+        {/* PENDING QUEUE SIDEBAR */}
         <div className="col-lg-2 col-md-3">
           <div className="card border-0 shadow-sm rounded-3 overflow-hidden bg-white">
             <div className="card-header bg-white py-3 px-2.5 d-flex justify-content-between align-items-center border-bottom">
@@ -568,11 +503,7 @@ export default function Purchase({ onNavigate }) {
                         </span>
                         <span 
                           className="badge rounded-pill fw-bold px-2 py-0.5"
-                          style={{ 
-                            fontSize: "10px",
-                            backgroundColor: p.purchase_status === "PENDING" ? "#be123c" : "#b45309",
-                            color: "#ffffff"
-                          }}
+                          style={{ fontSize: "10px", backgroundColor: p.purchase_status === "PENDING" ? "#be123c" : "#b45309", color: "#ffffff" }}
                         >
                           {p.purchase_status}
                         </span>
@@ -597,9 +528,8 @@ export default function Purchase({ onNavigate }) {
           </div>
         </div>
 
-        {/* 📝 RIGHT FORM TABLE */}
+        {/* RIGHT FORM TABLE */}
         <div className="col-lg-10 col-md-9">
-          
           {isPartial && rows.length > 0 && (
             <div className="alert border-0 rounded-3 p-2.5 px-3 mb-2 d-flex align-items-center gap-2 shadow-2xs" style={{ background: "#fffbebe6", borderLeft: "4px solid #f59e0b", color: "#b45309", fontSize: "12px" }}>
               <span className="fs-6">⚠️</span>
@@ -633,27 +563,16 @@ export default function Purchase({ onNavigate }) {
                 </div>
               </div>
 
-              {/* 🎯 CUSTOMER NAME -> CANCEL BUTTON -> SAVE/UPDATE BUTTON SEQUENCE */}
               <div className="col-md-7 d-flex align-items-center justify-content-md-end gap-2">
-                {/* 1. CUSTOMER NAME BADGE */}
                 {customerName && (
                   <div 
                     className="px-3 py-1.5 rounded-2 fw-extrabold text-truncate border shadow-2xs d-flex align-items-center gap-1.5 lift-hover" 
-                    style={{ 
-                      fontSize: "13px", 
-                      maxWidth: "250px",
-                      backgroundColor: "#ecfdf5", 
-                      color: "#047857",
-                      borderColor: "#a7f3d0",
-                      fontWeight: "800",
-                      height: "36px"
-                    }}
+                    style={{ fontSize: "13px", maxWidth: "250px", backgroundColor: "#ecfdf5", color: "#047857", borderColor: "#a7f3d0", fontWeight: "800", height: "36px" }}
                   >
                     <span>👤</span> {customerName}
                   </div>
                 )}
                 
-                {/* 2. CANCEL BUTTON */}
                 {(rows.length > 0 || refNo) && (
                   <button
                     className="btn btn-secondary rounded-2 px-3 fw-bold shadow-2xs lift-hover"
@@ -664,7 +583,6 @@ export default function Purchase({ onNavigate }) {
                   </button>
                 )}
 
-                {/* 3. SAVE / UPDATE BUTTON */}
                 {rows.length > 0 && (
                   <button
                     className="btn rounded-2 px-4 fw-bold shadow-2xs text-white lift-hover"
@@ -678,194 +596,106 @@ export default function Purchase({ onNavigate }) {
             </div>
           </div>
 
-          {/* 📊 FORM DATA TABLE (DESKTOP & MOBILE RESPONSIVE) */}
+          {/* DESKTOP TABLE */}
           <div className="d-none d-md-block card border-0 shadow-sm rounded-3 overflow-hidden bg-white">
             <div className="w-100 overflow-auto">
-              <table className="table align-middle mb-0" style={{ fontSize: "13px", minWidth: "900px", tableLayout: "fixed" }}>
+              <table className="table align-middle mb-0" style={{ fontSize: "12.5px", minWidth: "1100px", tableLayout: "fixed" }}>
                 <thead style={{ background: "#f8fafc", color: "#1e293b", borderBottom: "2px solid #e2e8f0" }}>
                   <tr>
-                    <th className="py-2.5 px-3 fw-extrabold" style={{ width: "22%", fontWeight: "800" }}>Description</th>
-                    <th className="py-2.5 text-end fw-extrabold px-1" style={{ width: "6%", fontWeight: "800" }}>SAR</th>
-                    <th className="py-2.5 text-end fw-extrabold px-1" style={{ width: "6%", fontWeight: "800" }}>Rate</th>
-                    <th className="py-2.5 text-end fw-extrabold px-1" style={{ width: "9%", fontWeight: "800" }}>Sale PKR</th>
-                    <th className="py-2.5 text-center fw-extrabold px-1" style={{ width: "8%", fontWeight: "800" }}>Pur. SAR</th>
-                    <th className="py-2.5 text-center fw-extrabold px-1" style={{ width: "8%", fontWeight: "800" }}>Pur. Rate</th>
-                    <th className="py-2.5 text-end fw-extrabold px-1" style={{ width: "9%", fontWeight: "800" }}>Pur. PKR</th>
-                    <th className="py-2.5 text-end fw-extrabold px-1" style={{ width: "9%", fontWeight: "800" }}>Margin</th>
-                    <th className="py-2.5 fw-extrabold px-2" style={{ width: "23%", fontWeight: "800" }}>Supplier</th>
+                    <th className="py-2.5 px-2" style={{ width: "18%" }}>Description</th>
+                    <th className="py-2.5 text-end px-1" style={{ width: "6%" }}>Sale/Unit</th>
+                    <th className="py-2.5 text-end px-1" style={{ width: "6%" }}>Sale SAR</th>
+                    <th className="py-2.5 text-end px-1" style={{ width: "5%" }}>Rate</th>
+                    <th className="py-2.5 text-end px-1" style={{ width: "8%" }}>Sale PKR</th>
+                    <th className="py-2.5 text-center px-1" style={{ width: "8%" }}>Pur. Per Unit</th>
+                    <th className="py-2.5 text-center px-1" style={{ width: "8%" }}>Pur. SAR</th>
+                    <th className="py-2.5 text-center px-1" style={{ width: "6%" }}>Pur. Rate</th>
+                    <th className="py-2.5 text-end px-1" style={{ width: "8%" }}>Pur. PKR</th>
+                    <th className="py-2.5 text-end px-1" style={{ width: "8%" }}>Margin</th>
+                    <th className="py-2.5 px-2" style={{ width: "19%" }}>Supplier</th>
                   </tr>
                 </thead>
-
                 <tbody>
-                  {visibleRows.length === 0 && (
+                  {visibleRows.length === 0 ? (
                     <tr>
-                      <td colSpan={9} className="text-center py-5 text-muted">
+                      <td colSpan={11} className="text-center py-5 text-muted">
                         <span className="fs-3">📦</span>
                         <p className="mt-2 text-slate-500 mb-0 fw-bold" style={{ fontSize: "13px" }}>No purchase entry loaded.</p>
                       </td>
                     </tr>
-                  )}
+                  ) : (
+                    visibleRows.map((r) => {
+                      const badge = itemCategoryBadge(r.item_label || r.item);
+                      const isIncomplete = !parseNumber(r.purchase_sar) || !parseNumber(r.purchase_rate) || !r.supplier_code;
+                      const rowBg = isIncomplete ? "#fff1f2" : "#ffffff";
+                      const borderLeftColor = isIncomplete ? "#f43f5e" : "transparent";
 
-                  {visibleRows.map((r, displayIdx) => {
-                    const badge = itemCategoryBadge(r.item_label || r.item);
-                    
-                    const isIncomplete =
-                      !parseNumber(r.purchase_sar) ||
-                      !parseNumber(r.purchase_rate) ||
-                      !r.supplier_code;
-
-                    const rowBg = isIncomplete ? "#fef2f2" : "#ffffff";
-
-                    return (
-                      <tr
-                        key={r.originalIndex}
-                        style={{
-                          backgroundColor: rowBg,
-                          borderBottom: "1px solid #e2e8f0"
-                        }}
-                      >
-                        <td className="px-3 py-2.5" style={{ backgroundColor: rowBg }}>
-                          <div className="d-flex align-items-center gap-1.5">
-                            <span 
-                              className="badge rounded-2 p-1.5 text-wrap text-start lh-sm fw-bold"
-                              style={{ 
-                                background: badge.bg, 
-                                color: badge.color, 
-                                fontSize: "12px",
-                                wordBreak: "break-word"
-                              }}
-                            >
+                      return (
+                        <tr 
+                          key={r.originalIndex} 
+                          style={{ 
+                            backgroundColor: rowBg, 
+                            borderBottom: "1px solid #e2e8f0",
+                            borderLeft: `4px solid ${borderLeftColor}`,
+                            transition: "background-color 0.2s ease"
+                          }}
+                        >
+                          <td className="px-2 py-2">
+                            <span className="badge rounded-2 p-1 text-wrap text-start fw-bold" style={{ background: badge.bg, color: badge.color, fontSize: "11px" }}>
                               {badge.icon} {r.item_label || r.item}
                             </span>
-                            <button 
-                              className="btn btn-sm text-muted border-0 p-0 fs-6 lift-hover" 
-                              title="Copy Sale to Purchase"
-                              onClick={() => copySaleToPurchase(r.originalIndex)}
-                            >
-                              📋
-                            </button>
-                          </div>
-                        </td>
+                            <button className="btn btn-sm text-muted border-0 p-0 ms-1" title="Copy Sale to Purchase" onClick={() => copySaleToPurchase(r.originalIndex)}>📋</button>
+                          </td>
 
-                        <td className="text-end fw-bold px-1" style={{ backgroundColor: rowBg, color: "#475569", fontSize: "12.5px" }}>
-                          {fmt(r.sale_sar)}
-                        </td>
-                        <td className="text-end fw-bold px-1" style={{ backgroundColor: rowBg, color: "#475569", fontSize: "12.5px" }}>
-                          {fmt(r.sale_rate)}
-                        </td>
-                        <td className="text-end fw-extrabold px-1" style={{ color: "#047857", backgroundColor: rowBg, fontWeight: "800", fontSize: "13px" }}>
-                          {fmt(r.sale_pkr)}
-                        </td>
+                          <td className="text-end fw-bold px-1">{fmt(r.sale_per_unit)}</td>
+                          <td className="text-end fw-bold px-1">{fmt(r.sale_sar)}</td>
+                          <td className="text-end px-1">{fmt(r.sale_rate)}</td>
+                          <td className="text-end fw-extrabold px-1 text-success">{fmt(r.sale_pkr)}</td>
 
-                        <td className="px-1" style={{ backgroundColor: rowBg }}>
-                          <input
-                            ref={(el) => {
-                              if (!inputRefs.current[displayIdx]) inputRefs.current[displayIdx] = [];
-                              inputRefs.current[displayIdx][0] = el;
-                            }}
-                            type="text"
-                            className="form-control text-center shadow-none p-1 fw-extrabold"
-                            style={{ 
-                              borderRadius: "6px", 
-                              fontSize: "12.5px",
-                              height: "34px",
-                              fontWeight: "800",
-                              color: "#0f172a",
-                              borderColor: isIncomplete ? "#fca5a5" : "#cbd5e1",
-                              background: "#ffffff"
-                            }}
-                            value={r.purchase_sar}
-                            placeholder="0"
-                            onChange={(e) =>
-                              updateRow(
-                                r.originalIndex,
-                                "purchase_sar",
-                                e.target.value
-                              )
-                            }
-                            onKeyDown={(e) => {
-                              if (e.key === "Enter") {
-                                e.preventDefault();
-                                focusNextElement(displayIdx, 1);
-                              }
-                            }}
-                          />
-                        </td>
+                          {/* PURCHASE PER UNIT INPUT */}
+                          <td className="px-1">
+                            <input
+                              type="text"
+                              className="form-control text-center p-1 fw-bold"
+                              style={{ fontSize: "12px", height: "32px", borderColor: !r.purchase_per_unit ? "#fda4af" : "#cbd5e1" }}
+                              value={r.purchase_per_unit}
+                              placeholder="Per Unit"
+                              onChange={(e) => updateRow(r.originalIndex, "purchase_per_unit", e.target.value)}
+                            />
+                          </td>
 
-                        <td className="px-1" style={{ backgroundColor: rowBg }}>
-                          <input
-                            ref={(el) => {
-                              if (!inputRefs.current[displayIdx]) inputRefs.current[displayIdx] = [];
-                              inputRefs.current[displayIdx][1] = el;
-                            }}
-                            type="text"
-                            className="form-control text-center shadow-none p-1 fw-extrabold"
-                            style={{ 
-                              borderRadius: "6px", 
-                              fontSize: "12.5px",
-                              height: "34px",
-                              fontWeight: "800",
-                              color: "#0f172a",
-                              borderColor: isIncomplete ? "#fca5a5" : "#cbd5e1",
-                              background: "#ffffff"
-                            }}
-                            value={r.purchase_rate}
-                            placeholder="0"
-                            onChange={(e) =>
-                              updateRow(
-                                r.originalIndex,
-                                "purchase_rate",
-                                e.target.value
-                              )
-                            }
-                            onKeyDown={(e) => {
-                              if (e.key === "Enter") {
-                                e.preventDefault();
-                                focusNextElement(displayIdx, 2);
-                              }
-                            }}
-                          />
-                        </td>
+                          {/* PURCHASE TOTAL SAR INPUT */}
+                          <td className="px-1">
+                            <input
+                              type="text"
+                              className="form-control text-center p-1 fw-bold"
+                              style={{ fontSize: "12px", height: "32px", borderColor: !r.purchase_sar ? "#fda4af" : "#cbd5e1" }}
+                              value={r.purchase_sar}
+                              placeholder="Total SAR"
+                              onChange={(e) => updateRow(r.originalIndex, "purchase_sar", e.target.value)}
+                            />
+                          </td>
 
-                        <td className="text-end fw-extrabold px-1" style={{ color: "#3730a3", backgroundColor: rowBg, fontWeight: "800", fontSize: "13px" }}>
-                          {fmt(r.purchase_pkr)}
-                        </td>
+                          {/* PURCHASE RATE INPUT */}
+                          <td className="px-1">
+                            <input
+                              type="text"
+                              className="form-control text-center p-1 fw-bold"
+                              style={{ fontSize: "12px", height: "32px", borderColor: !r.purchase_rate ? "#fda4af" : "#cbd5e1" }}
+                              value={r.purchase_rate}
+                              placeholder="Rate"
+                              onChange={(e) => updateRow(r.originalIndex, "purchase_rate", e.target.value)}
+                            />
+                          </td>
 
-                        <td className="text-end fw-extrabold px-1" style={{ backgroundColor: rowBg, color: r.profit >= 0 ? "#15803d" : "#be123c", fontWeight: "800", fontSize: "13px" }}>
-                          {fmt(r.profit)}
-                        </td>
-
-                        <td className="px-2" style={{ backgroundColor: rowBg }}>
-                          <div
-                            onKeyDown={(e) => {
-                              if (e.key === "Enter") {
-                                if (displayIdx + 1 < visibleRows.length) {
-                                  setTimeout(() => {
-                                    focusNextElement(displayIdx + 1, 0);
-                                  }, 50);
-                                }
-                              }
-                            }}
-                          >
+                          <td className="text-end fw-extrabold px-1 text-primary">{fmt(r.purchase_pkr)}</td>
+                          <td className="text-end fw-extrabold px-1" style={{ color: r.profit >= 0 ? "#15803d" : "#be123c" }}>{fmt(r.profit)}</td>
+                          <td className="px-2">
                             <Select
-                              ref={(el) => {
-                                if (!inputRefs.current[displayIdx]) inputRefs.current[displayIdx] = [];
-                                inputRefs.current[displayIdx][2] = el;
-                              }}
                               options={supplierOptions}
-                              value={
-                                supplierOptions.find(
-                                  (opt) => opt.value === r.supplier_code
-                                ) || null
-                              }
-                              onChange={(selected) =>
-                                updateRow(
-                                  r.originalIndex,
-                                  "supplier_code",
-                                  selected ? selected.value : ""
-                                )
-                              }
-                              placeholder="Select Supplier..."
+                              value={supplierOptions.find((opt) => opt.value === r.supplier_code) || null}
+                              onChange={(selected) => updateRow(r.originalIndex, "supplier_code", selected ? selected.value : "")}
+                              placeholder="Supplier..."
                               isClearable
                               isSearchable
                               menuPortalTarget={document.body}
@@ -873,23 +703,23 @@ export default function Purchase({ onNavigate }) {
                                 ...customSelectStyles,
                                 control: (base, state) => ({
                                   ...customSelectStyles.control(base, state),
-                                  borderColor: isIncomplete && !r.supplier_code ? "#fca5a5" : base.borderColor,
+                                  minHeight: "32px",
+                                  height: "32px",
+                                  borderColor: !r.supplier_code ? "#fda4af" : "#94a3b8",
                                 }),
-                                menuPortal: (base) => ({ ...base, zIndex: 9999 }),
                               }}
                             />
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
+                          </td>
+                        </tr>
+                      );
+                    })
+                  )}
                 </tbody>
-
                 {rows.length > 0 && (
                   <tfoot style={{ background: "#f8fafc", borderTop: "2px solid #cbd5e1" }}>
                     <tr>
                       <td className="px-3 py-3 fw-extrabold" style={{ fontWeight: "800", fontSize: "13.5px" }}>Summary Total</td>
-                      <td colSpan={2}></td>
+                      <td colSpan={3}></td>
                       <td className="text-end fw-extrabold px-1" style={{ color: "#047857", fontWeight: "800", fontSize: "13.5px" }}>
                         {fmt(totals.salePkr)}
                       </td>
@@ -900,7 +730,7 @@ export default function Purchase({ onNavigate }) {
                       <td className="text-end fw-extrabold px-1" style={{ color: totals.profit >= 0 ? "#15803d" : "#be123c", fontWeight: "800", fontSize: "13.5px" }}>
                         {fmt(totals.profit)}
                       </td>
-                      <td></td>
+                      <td colSpan={2}></td>
                     </tr>
                   </tfoot>
                 )}
@@ -917,33 +747,21 @@ export default function Purchase({ onNavigate }) {
               </div>
             ) : (
               <div className="d-flex flex-column gap-3">
-                {visibleRows.map((r, displayIdx) => {
+                {visibleRows.map((r) => {
                   const badge = itemCategoryBadge(r.item_label || r.item);
-                  const isIncomplete =
-                    !parseNumber(r.purchase_sar) ||
-                    !parseNumber(r.purchase_rate) ||
-                    !r.supplier_code;
+                  const isIncomplete = !parseNumber(r.purchase_sar) || !parseNumber(r.purchase_rate) || !r.supplier_code;
 
                   return (
                     <div 
                       key={r.originalIndex}
                       className="card border shadow-sm p-3 rounded-3"
-                      style={{ 
-                        borderColor: isIncomplete ? "#fca5a5" : "#e2e8f0", 
-                        backgroundColor: isIncomplete ? "#fef2f2" : "#ffffff" 
-                      }}
+                      style={{ borderColor: isIncomplete ? "#fca5a5" : "#e2e8f0", backgroundColor: isIncomplete ? "#fef2f2" : "#ffffff" }}
                     >
                       <div className="d-flex align-items-center justify-content-between mb-2 pb-2 border-bottom">
-                        <span 
-                          className="badge rounded-2 p-1.5 text-wrap text-start lh-sm fw-bold"
-                          style={{ background: badge.bg, color: badge.color, fontSize: "12px" }}
-                        >
+                        <span className="badge rounded-2 p-1.5 text-wrap text-start lh-sm fw-bold" style={{ background: badge.bg, color: badge.color, fontSize: "12px" }}>
                           {badge.icon} {r.item_label || r.item}
                         </span>
-                        <button 
-                          className="btn btn-sm btn-outline-secondary border-0 p-1 lift-hover"
-                          onClick={() => copySaleToPurchase(r.originalIndex)}
-                        >
+                        <button className="btn btn-sm btn-outline-secondary border-0 p-1 lift-hover" onClick={() => copySaleToPurchase(r.originalIndex)}>
                           📋 Copy
                         </button>
                       </div>
@@ -965,37 +783,39 @@ export default function Purchase({ onNavigate }) {
 
                       <div className="row g-2 mb-2">
                         <div className="col-6">
+                          <label className="form-label fw-bold mb-1" style={{ fontSize: "11px" }}>Pur. Per Unit</label>
+                          <input
+                            type="text"
+                            className="form-control text-center shadow-none p-1 fw-extrabold"
+                            style={{ borderRadius: "6px", fontSize: "12px", height: "36px" }}
+                            value={r.purchase_per_unit}
+                            placeholder="Per Unit"
+                            onChange={(e) => updateRow(r.originalIndex, "purchase_per_unit", e.target.value)}
+                          />
+                        </div>
+                        <div className="col-6">
                           <label className="form-label fw-bold mb-1" style={{ fontSize: "11px" }}>Pur. SAR</label>
                           <input
                             type="text"
                             className="form-control text-center shadow-none p-1 fw-extrabold"
-                            style={{ 
-                              borderRadius: "6px", 
-                              fontSize: "12px", 
-                              height: "36px", 
-                              borderColor: isIncomplete && !parseNumber(r.purchase_sar) ? "#fca5a5" : "#cbd5e1" 
-                            }}
+                            style={{ borderRadius: "6px", fontSize: "12px", height: "36px" }}
                             value={r.purchase_sar}
-                            placeholder="0"
+                            placeholder="Total SAR"
                             onChange={(e) => updateRow(r.originalIndex, "purchase_sar", e.target.value)}
                           />
                         </div>
-                        <div className="col-6">
-                          <label className="form-label fw-bold mb-1" style={{ fontSize: "11px" }}>Pur. Rate</label>
-                          <input
-                            type="text"
-                            className="form-control text-center shadow-none p-1 fw-extrabold"
-                            style={{ 
-                              borderRadius: "6px", 
-                              fontSize: "12px", 
-                              height: "36px", 
-                              borderColor: isIncomplete && !parseNumber(r.purchase_rate) ? "#fca5a5" : "#cbd5e1" 
-                            }}
-                            value={r.purchase_rate}
-                            placeholder="0"
-                            onChange={(e) => updateRow(r.originalIndex, "purchase_rate", e.target.value)}
-                          />
-                        </div>
+                      </div>
+
+                      <div className="mb-2">
+                        <label className="form-label fw-bold mb-1" style={{ fontSize: "11px" }}>Pur. Rate</label>
+                        <input
+                          type="text"
+                          className="form-control text-center shadow-none p-1 fw-extrabold"
+                          style={{ borderRadius: "6px", fontSize: "12px", height: "36px" }}
+                          value={r.purchase_rate}
+                          placeholder="Rate"
+                          onChange={(e) => updateRow(r.originalIndex, "purchase_rate", e.target.value)}
+                        />
                       </div>
 
                       <div className="mb-2">
@@ -1010,10 +830,6 @@ export default function Purchase({ onNavigate }) {
                           menuPortalTarget={document.body}
                           styles={{
                             ...customSelectStyles,
-                            control: (base, state) => ({
-                              ...customSelectStyles.control(base, state),
-                              borderColor: isIncomplete && !r.supplier_code ? "#fca5a5" : base.borderColor,
-                            }),
                             menuPortal: (base) => ({ ...base, zIndex: 9999 }),
                           }}
                         />
@@ -1026,28 +842,9 @@ export default function Purchase({ onNavigate }) {
                     </div>
                   );
                 })}
-
-                {rows.length > 0 && (
-                  <div className="card border-0 shadow-sm p-3 rounded-3" style={{ background: "#f8fafc", border: "1px solid #cbd5e1" }}>
-                    <div className="fw-bold mb-2 text-slate-700" style={{ fontSize: "13px" }}>Summary Total</div>
-                    <div className="d-flex justify-content-between mb-1" style={{ fontSize: "12px" }}>
-                      <span>Total Sale PKR:</span>
-                      <strong className="text-success">{fmt(totals.salePkr)}</strong>
-                    </div>
-                    <div className="d-flex justify-content-between mb-1" style={{ fontSize: "12px" }}>
-                      <span>Total Pur. PKR:</span>
-                      <strong style={{ color: "#3730a3" }}>{fmt(totals.purchasePkr)}</strong>
-                    </div>
-                    <div className="d-flex justify-content-between pt-1 border-top" style={{ fontSize: "12px" }}>
-                      <span>Total Margin:</span>
-                      <strong style={{ color: totals.profit >= 0 ? "#15803d" : "#be123c" }}>{fmt(totals.profit)}</strong>
-                    </div>
-                  </div>
-                )}
               </div>
             )}
           </div>
-
         </div>
       </div>
     </div>

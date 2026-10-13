@@ -234,9 +234,8 @@ export default function CustomerSaleDetailLedger({ onNavigate }) {
     { sale_pkr: 0, sale_sar: 0, payment_pkr: 0 }
   );
 
-const handleExportExcel = () => {
+  const handleExportExcel = () => {
     const selectedCust = customers.find(c => c.code === customer);
-    // Sirf Name rakhein taaki hook code dobara attach na kare
     const custOnlyName = customer === "ALL" ? "All_Customers" : customer === "WALKIN" ? "Walkin_Customer" : selectedCust ? selectedCust.name : customer;
 
     exportExcel({
@@ -259,7 +258,6 @@ const handleExportExcel = () => {
 
   const handleExportPDF = () => {
     const selectedCust = customers.find(c => c.code === customer);
-    // Sirf Name rakhein taaki hook code dobara attach na kare
     const custOnlyName = customer === "ALL" ? "All_Customers" : customer === "WALKIN" ? "Walkin_Customer" : selectedCust ? selectedCust.name : customer;
 
     exportPDF({
@@ -300,9 +298,22 @@ const handleExportExcel = () => {
         .csdl-premium .csdl-stat-value{font-size:clamp(16px,2vw,22px);font-weight:900;color:#12345d;overflow-wrap:anywhere}
         .csdl-premium .csdl-stat.gold .csdl-stat-value{color:#a87812}.csdl-premium .csdl-stat.green .csdl-stat-value{color:#13804a}.csdl-premium .csdl-stat.red .csdl-stat-value{color:#c13742}
         .csdl-premium .csdl-table-card{overflow:hidden!important;border-top:3px solid #123f78!important}
+        
+        /* ⭐ TABLE FREEZE HEADERS & PRESERVED BORDER LINES */
         .csdl-premium .csdl-table-wrap{max-height:62vh;overflow:auto;border-radius:0 0 16px 16px}
-        .csdl-premium table{font-size:12px;white-space:nowrap}
-        .csdl-premium table thead th{background:linear-gradient(180deg,#173e70,#0c2548)!important;color:#fff!important;padding:12px 10px;font-size:10px;text-transform:uppercase;letter-spacing:.45px}
+        .csdl-premium table{font-size:12px;white-space:nowrap;border-collapse:separate;border-spacing:0}
+        .csdl-premium table thead th{
+          position: sticky;
+          top: 0;
+          z-index: 10;
+          background: linear-gradient(180deg,#173e70,#0c2548)!important;
+          color:#fff!important;
+          padding:12px 10px;
+          font-size:10px;
+          text-transform:uppercase;
+          letter-spacing:.45px;
+          box-shadow: inset 0 -1px 0 #e2e8f0;
+        }
         .csdl-premium table tbody td{padding:9px 10px;border-color:#e1e8f1}
         .csdl-premium table tbody tr:nth-child(even){background:#f2f6fc}
         .csdl-premium table tbody tr:hover{background:#fff5d9!important}

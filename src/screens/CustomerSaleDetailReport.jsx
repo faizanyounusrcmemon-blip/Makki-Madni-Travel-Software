@@ -56,7 +56,7 @@ function SmartCustomerSelect({ customers, selectedCustomer, onSelect }) {
           <input
             type="text"
             className="form-control form-control-sm mb-2"
-            placeholder="🔍 Type customer name..."
+            placeholder="Type customer name..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             autoFocus
@@ -202,9 +202,21 @@ export default function CustomerSaleDetailReport({ onNavigate }) {
         .csdl-premium .csdl-filter-card{background:linear-gradient(135deg,#fff 0%,#f4f7fc 100%)!important;border-top:3px solid #d4a83f!important}
         .csdl-premium label{font-size:11px;text-transform:uppercase;color:#27466e;font-weight:850!important}
         .csdl-premium .form-control,.csdl-premium .form-select{min-height:36px;border:1px solid #cbd6e5;border-radius:10px;font-weight:600;color:#172b49}
+        
+        /* ⭐ TABLE FREEZE HEADERS & STICKY WRAPPER */
         .csdl-premium .csdl-table-wrap{max-height:65vh;overflow:auto;border-radius:0 0 16px 16px}
-        .csdl-premium table{font-size:12px;white-space:nowrap}
-        .csdl-premium table thead th{background:linear-gradient(180deg,#173e70,#0c2548)!important;color:#fff!important;padding:12px 10px;font-size:10px;text-transform:uppercase}
+        .csdl-premium table{font-size:12px;white-space:nowrap;border-collapse:separate;border-spacing:0}
+        .csdl-premium table thead th{
+          position: sticky;
+          top: 0;
+          z-index: 10;
+          background: linear-gradient(180deg,#173e70,#0c2548)!important;
+          color:#fff!important;
+          padding:12px 10px;
+          font-size:10px;
+          text-transform:uppercase;
+          box-shadow: inset 0 -1px 0 #e2e8f0;
+        }
         .csdl-premium table tbody td{padding:9px 10px;border-color:#e1e8f1}
         .csdl-premium table tbody tr:nth-child(even){background:#f2f6fc}
         .csdl-premium table tbody tr:hover{background:#fff5d9!important}
@@ -213,9 +225,9 @@ export default function CustomerSaleDetailReport({ onNavigate }) {
       {/* HEADER */}
       <div className="card shadow-sm mb-3 border-0">
         <div className="card-body py-3 d-flex justify-content-between align-items-center csdl-header" style={{ borderRadius: "16px" }}>
-          <span className="csdl-title">🛒 CUSTOMER SALE DETAIL REPORT</span>
+          <span className="csdl-title">📦 CUSTOMER SALE DETAIL REPORT</span>
           <div className="d-flex gap-2">
-            <button className="btn btn-light btn-sm rounded-pill" onClick={() => onNavigate("dashboard")}>⬅ Back</button>
+            <button className="btn btn-light btn-sm rounded-pill" onClick={() => onNavigate("dashboard")}>← Back</button>
             <button className="btn btn-success btn-sm rounded-pill" onClick={handleExportExcel}>Export Excel 📊</button>
             <button className="btn btn-danger btn-sm rounded-pill" onClick={handleExportPDF}>Export PDF 📄</button>
           </div>
@@ -266,7 +278,7 @@ export default function CustomerSaleDetailReport({ onNavigate }) {
       {/* TABLE DISPLAY */}
       <div className="card shadow-sm rounded" style={{ overflow: "hidden", borderTop: "3px solid #123f78" }}>
         <div className="p-3 text-end fw-bold d-flex flex-wrap gap-3 justify-content-between align-items-center bg-white border-bottom">
-          <div style={{fontWeight:900,color:"#12345d",fontSize:14}}>📋 Records View ({filtered.length})</div>
+          <div style={{fontWeight:900,color:"#12345d",fontSize:14}}>📊 Records View ({filtered.length})</div>
           <div className="d-flex gap-3" style={{ fontSize: 13 }}>
             <span className="text-primary">Total Sale SAR: {fmt(totals.sale_sar)}</span>
             <span className="text-dark">Total Sale PKR: {fmt(totals.sale_pkr)}</span>
