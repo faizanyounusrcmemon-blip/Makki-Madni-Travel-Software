@@ -19,15 +19,10 @@ const formatDate = (d) => {
 const fmtAmt = (v) =>
   v === null || v === undefined || v === "" ? "0" : Number(v).toLocaleString("en-US");
 
-// Emojis aur Special Symbols ko Clean Text mein convert karne ke liye
 const sanitizeText = (str) => {
   if (!str) return "-";
   return String(str)
-    .replace(/💵|💰/g, "[PAYMENT] ")
-    .replace(/⚙️/g, "[ADJUSTMENT] ")
-    .replace(/🔑/g, "[OPENING] ")
-    .replace(/🚶/g, "")
-    .replace(/[^\x00-\x7F]/g, "") // Baaki non-ASCII symbols ko hatane ke liye
+    .replace(/[^x00-x7F]/g, "")
     .trim();
 };
 
@@ -63,7 +58,6 @@ export default function useReportExport() {
 
     setTimeout(() => {
       try {
-        // Landscape Mode A4 Landscape = 297mm Total Width
         const doc = new jsPDF("l", "mm", "a4");
         const printDate = formatDate(new Date());
         const pageWidth = 297; 
@@ -99,7 +93,6 @@ export default function useReportExport() {
           doc.text(`Printed On: ${printDate}`, pageWidth - 70, 48);
         };
 
-        // Teeno Reports ke liye alag-alag coordinates mapping (Total Width Within 287mm)
         let columns = [];
         if (reportType === "customer_sale_ledger") {
           columns = [
@@ -124,27 +117,28 @@ export default function useReportExport() {
             { header: "Sale PKR", x: 273, width: 14, align: "right" },
           ];
         } else if (reportType === "supplier_purchase") {
-          // Dynamic columns agar showSale ya showProfit on hon
           const baseCols = [
-            { header: "Date", x: 12, width: 22, align: "left" },
-            { header: "Supplier", x: 35, width: showSale ? 45 : 65, align: "left" },
-            { header: "Ref", x: showSale ? 81 : 101, width: 25, align: "left" },
-            { header: "Item", x: showSale ? 107 : 127, width: showSale ? 50 : 70, align: "left" },
+            { header: "Date", x: 10, width: 20, align: "left" },
+            { header: "Supplier", x: 30, width: showSale ? 38 : 52, align: "left" },
+            { header: "Ref", x: showSale ? 68 : 82, width: 20, align: "left" },
+            { header: "Item", x: showSale ? 88 : 102, width: showSale ? 38 : 52, align: "left" },
           ];
           if (showSale) {
             baseCols.push(
-              { header: "Sale SAR", x: 158, width: 18, align: "right" },
-              { header: "Rate", x: 178, width: 14, align: "right" },
-              { header: "Sale PKR", x: 194, width: 20, align: "right" }
+              { header: "Sale/U", x: 126, width: 16, align: "right" },
+              { header: "Sale SAR", x: 142, width: 16, align: "right" },
+              { header: "Rate", x: 158, width: 13, align: "right" },
+              { header: "Sale PKR", x: 171, width: 18, align: "right" }
             );
           }
           baseCols.push(
-            { header: "Purch SAR", x: showSale ? 216 : 200, width: 18, align: "right" },
-            { header: "Rate", x: showSale ? 236 : 220, width: 14, align: "right" },
-            { header: "Purch PKR", x: showSale ? 252 : 236, width: 20, align: "right" }
+            { header: "Pur/U", x: showSale ? 189 : 154, width: 16, align: "right" },
+            { header: "Purch SAR", x: showSale ? 205 : 170, width: 16, align: "right" },
+            { header: "Rate", x: showSale ? 221 : 186, width: 13, align: "right" },
+            { header: "Purch PKR", x: showSale ? 234 : 199, width: 18, align: "right" }
           );
           if (showProfit) {
-            baseCols.push({ header: "Profit", x: showSale ? 274 : 258, width: 14, align: "right" });
+            baseCols.push({ header: "Profit", x: showSale ? 252 : 217, width: 15, align: "right" });
           }
           columns = baseCols;
         }
@@ -154,7 +148,7 @@ export default function useReportExport() {
           doc.rect(10, startY, pageWidth - 20, 8, "F");
           doc.setTextColor(255, 255, 255);
           doc.setFont("helvetica", "bold");
-          doc.setFontSize(8);
+          doc.setFontSize(7.5);
 
           columns.forEach((col) => {
             if (col.align === "right") {
@@ -178,7 +172,7 @@ export default function useReportExport() {
           let nameField = "";
           let refNo = "";
           let itemDesc = "";
-          let v1 = "", v2 = "", v3 = "", v4 = "", v5 = "", v6 = "", v7 = "";
+          let v1 = "", v2 = "", v3 = "", v4 = "", v5 = "", v6 = "", v7 = "", v8 = "", v9 = "";
 
           if (reportType === "customer_sale_ledger") {
             dateStr = formatDate(r.date);
@@ -203,13 +197,15 @@ export default function useReportExport() {
             nameField = sanitizeText(r.supplier_name);
             refNo = sanitizeText(r.ref_no);
             itemDesc = sanitizeText(r.item);
-            v1 = fmtAmt(r.sale_sar);
-            v2 = fmtAmt(r.sale_rate);
-            v3 = fmtAmt(r.sale_pkr);
-            v4 = fmtAmt(r.purchase_sar);
-            v5 = fmtAmt(r.purchase_rate);
-            v6 = fmtAmt(r.purchase_pkr);
-            v7 = fmtAmt(r.profit);
+            v1 = fmtAmt(r.sale_per_unit);
+            v2 = fmtAmt(r.sale_sar);
+            v3 = fmtAmt(r.sale_rate);
+            v4 = fmtAmt(r.sale_pkr);
+            v5 = fmtAmt(r.purch_per_unit);
+            v6 = fmtAmt(r.purchase_sar);
+            v7 = fmtAmt(r.purchase_rate);
+            v8 = fmtAmt(r.purchase_pkr);
+            v9 = fmtAmt(r.profit);
           }
 
           const descLines = doc.splitTextToSize(String(itemDesc), columns[3].width);
@@ -254,13 +250,15 @@ export default function useReportExport() {
               doc.text(v1, columns[colIdx].x + columns[colIdx].width, y + 4.5, { align: "right" }); colIdx++;
               doc.text(v2, columns[colIdx].x + columns[colIdx].width, y + 4.5, { align: "right" }); colIdx++;
               doc.text(v3, columns[colIdx].x + columns[colIdx].width, y + 4.5, { align: "right" }); colIdx++;
+              doc.text(v4, columns[colIdx].x + columns[colIdx].width, y + 4.5, { align: "right" }); colIdx++;
             }
-            doc.text(v4, columns[colIdx].x + columns[colIdx].width, y + 4.5, { align: "right" }); colIdx++;
             doc.text(v5, columns[colIdx].x + columns[colIdx].width, y + 4.5, { align: "right" }); colIdx++;
-            doc.setFont("helvetica", "bold");
             doc.text(v6, columns[colIdx].x + columns[colIdx].width, y + 4.5, { align: "right" }); colIdx++;
+            doc.text(v7, columns[colIdx].x + columns[colIdx].width, y + 4.5, { align: "right" }); colIdx++;
+            doc.setFont("helvetica", "bold");
+            doc.text(v8, columns[colIdx].x + columns[colIdx].width, y + 4.5, { align: "right" }); colIdx++;
             if (showProfit) {
-              doc.text(v7, columns[colIdx].x + columns[colIdx].width, y + 4.5, { align: "right" });
+              doc.text(v9, columns[colIdx].x + columns[colIdx].width, y + 4.5, { align: "right" });
             }
             doc.setFont("helvetica", "normal");
           }
@@ -385,22 +383,22 @@ export default function useReportExport() {
         excelRows.push(["TOTALS", "", "", "", totals.sale_sar, "", totals.sale_pkr]);
       } else if (reportType === "supplier_purchase") {
         const headerRow = ["Date", "Supplier", "Ref No", "Item"];
-        if (showSale) headerRow.push("Sale SAR", "Sale Rate", "Sale PKR");
-        headerRow.push("Purchase SAR", "Purchase Rate", "Purchase PKR");
+        if (showSale) headerRow.push("Sale Per Unit", "Sale SAR", "Sale Rate", "Sale PKR");
+        headerRow.push("Purchase Per Unit", "Purchase SAR", "Purchase Rate", "Purchase PKR");
         if (showProfit) headerRow.push("Profit");
         excelRows.push(headerRow);
 
         ledgerData.forEach((r) => {
           const rowArr = [formatDate(r.booking_date), sanitizeText(r.supplier_name), sanitizeText(r.ref_no), sanitizeText(r.item)];
-          if (showSale) rowArr.push(Number(r.sale_sar || 0), Number(r.sale_rate || 0), Number(r.sale_pkr || 0));
-          rowArr.push(Number(r.purchase_sar || 0), Number(r.purchase_rate || 0), Number(r.purchase_pkr || 0));
+          if (showSale) rowArr.push(Number(r.sale_per_unit || 0), Number(r.sale_sar || 0), Number(r.sale_rate || 0), Number(r.sale_pkr || 0));
+          rowArr.push(Number(r.purch_per_unit || 0), Number(r.purchase_sar || 0), Number(r.purchase_rate || 0), Number(r.purchase_pkr || 0));
           if (showProfit) rowArr.push(Number(r.profit || 0));
           excelRows.push(rowArr);
         });
 
         const totalRow = ["TOTALS", "", "", ""];
-        if (showSale) totalRow.push(totals.sale_sar, "", totals.sale_pkr);
-        totalRow.push(totals.purchase_sar, "", totals.purchase_pkr);
+        if (showSale) totalRow.push("", totals.sale_sar, "", totals.sale_pkr);
+        totalRow.push("", totals.purchase_sar, "", totals.purchase_pkr);
         if (showProfit) totalRow.push(totals.profit);
         excelRows.push(totalRow);
       }
