@@ -2,6 +2,7 @@ import React, { useEffect, useState, useRef } from "react";
 import useReportExport from "../hooks/useReportExport";
 
 const fmt = (n) => Number(n || 0).toLocaleString("en-US");
+const fmtRound = (n) => Math.round(Number(n || 0)).toLocaleString("en-US");
 
 const formatDate = (d) => {
   if (!d) return "";
@@ -203,7 +204,6 @@ export default function CustomerSaleDetailReport({ onNavigate }) {
         .csdl-premium label{font-size:11px;text-transform:uppercase;color:#27466e;font-weight:850!important}
         .csdl-premium .form-control,.csdl-premium .form-select{min-height:36px;border:1px solid #cbd6e5;border-radius:10px;font-weight:600;color:#172b49}
         
-        /* ⭐ TABLE FREEZE HEADERS & STICKY WRAPPER */
         .csdl-premium .csdl-table-wrap{max-height:65vh;overflow:auto;border-radius:0 0 16px 16px}
         .csdl-premium table{font-size:12px;white-space:nowrap;border-collapse:separate;border-spacing:0}
         .csdl-premium table thead th{
@@ -292,6 +292,7 @@ export default function CustomerSaleDetailReport({ onNavigate }) {
                 <th>Customer</th>
                 <th>Ref</th>
                 <th>Item</th>
+                <th style={{ backgroundColor: "#0284c7" }}>Sale/Unit</th>
                 <th>Sale SAR</th>
                 <th>Sale Rate</th>
                 <th>Sale PKR</th>
@@ -304,16 +305,18 @@ export default function CustomerSaleDetailReport({ onNavigate }) {
                   <td className="fw-bold text-primary">{r.customer_name}</td>
                   <td><span className="badge bg-light text-dark border">{r.ref_no}</span></td>
                   <td className="text-start">{r.item}</td>
+                  <td className="text-end fw-bold text-info" style={{ backgroundColor: "#f0f9ff" }}>{fmtRound(r.sale_per_unit)}</td>
                   <td className="text-end fw-semibold text-primary">{fmt(r.sale_sar)}</td>
                   <td className="text-end">{fmt(r.sale_rate)}</td>
                   <td className="text-end fw-bold">{fmt(r.sale_pkr)}</td>
                 </tr>
               ))}
-              {!filtered.length && <tr><td colSpan="7" className="py-4 text-muted">No records found.</td></tr>}
+              {!filtered.length && <tr><td colSpan="8" className="py-4 text-muted">No records found.</td></tr>}
             </tbody>
             <tfoot className="table-dark fw-bold" style={{ position: "sticky", bottom: 0, zIndex: 5 }}>
               <tr>
                 <td colSpan="4">TOTALS</td>
+                <td></td>
                 <td className="text-end text-info">{fmt(totals.sale_sar)}</td>
                 <td></td>
                 <td className="text-end text-warning">{fmt(totals.sale_pkr)}</td>
