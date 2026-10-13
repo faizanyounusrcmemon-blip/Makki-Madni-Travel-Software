@@ -108,13 +108,14 @@ export default function useReportExport() {
           ];
         } else if (reportType === "customer_sale") {
           columns = [
-            { header: "Date", x: 12, width: 26, align: "left" },
-            { header: "Customer", x: 40, width: 75, align: "left" },
-            { header: "Ref", x: 117, width: 32, align: "left" },
-            { header: "Item", x: 151, width: 84, align: "left" },
-            { header: "Sale SAR", x: 237, width: 18, align: "right" },
-            { header: "Rate", x: 257, width: 14, align: "right" },
-            { header: "Sale PKR", x: 273, width: 14, align: "right" },
+            { header: "Date", x: 12, width: 20, align: "left" },
+            { header: "Customer", x: 33, width: 50, align: "left" },
+            { header: "Ref", x: 84, width: 22, align: "left" },
+            { header: "Item", x: 107, width: 70, align: "left" },
+            { header: "Sale/U", x: 178, width: 16, align: "right" },
+            { header: "Sale SAR", x: 195, width: 18, align: "right" },
+            { header: "Rate", x: 214, width: 14, align: "right" },
+            { header: "Sale PKR", x: 229, width: 20, align: "right" },
           ];
         } else if (reportType === "supplier_purchase") {
           const baseCols = [
@@ -189,9 +190,10 @@ export default function useReportExport() {
             nameField = sanitizeText(r.customer_name);
             refNo = sanitizeText(r.ref_no);
             itemDesc = sanitizeText(r.item);
-            v1 = fmtAmt(r.sale_sar);
-            v2 = fmtAmt(r.sale_rate);
-            v3 = fmtAmt(r.sale_pkr);
+            v1 = fmtAmt(r.sale_per_unit);
+            v2 = fmtAmt(r.sale_sar);
+            v3 = fmtAmt(r.sale_rate);
+            v4 = fmtAmt(r.sale_pkr);
           } else if (reportType === "supplier_purchase") {
             dateStr = formatDate(r.booking_date);
             nameField = sanitizeText(r.supplier_name);
@@ -241,8 +243,9 @@ export default function useReportExport() {
           } else if (reportType === "customer_sale") {
             doc.text(v1, columns[4].x + columns[4].width, y + 4.5, { align: "right" });
             doc.text(v2, columns[5].x + columns[5].width, y + 4.5, { align: "right" });
-            doc.setFont("helvetica", "bold");
             doc.text(v3, columns[6].x + columns[6].width, y + 4.5, { align: "right" });
+            doc.setFont("helvetica", "bold");
+            doc.text(v4, columns[7].x + columns[7].width, y + 4.5, { align: "right" });
             doc.setFont("helvetica", "normal");
           } else if (reportType === "supplier_purchase") {
             let colIdx = 4;
@@ -368,19 +371,20 @@ export default function useReportExport() {
         });
         excelRows.push(["TOTALS", "", "", "", totals.sale_sar, "", totals.sale_pkr, totals.payment_pkr, totals.running_balance]);
       } else if (reportType === "customer_sale") {
-        excelRows.push(["Date", "Customer", "Ref No", "Item", "Sale SAR", "Sale Rate", "Sale PKR"]);
+        excelRows.push(["Date", "Customer", "Ref No", "Item", "Sale Per Unit", "Sale SAR", "Sale Rate", "Sale PKR"]);
         ledgerData.forEach((r) => {
           excelRows.push([
             formatDate(r.booking_date),
             sanitizeText(r.customer_name),
             sanitizeText(r.ref_no),
             sanitizeText(r.item),
+            Number(r.sale_per_unit || 0),
             Number(r.sale_sar || 0),
             Number(r.sale_rate || 0),
             Number(r.sale_pkr || 0),
           ]);
         });
-        excelRows.push(["TOTALS", "", "", "", totals.sale_sar, "", totals.sale_pkr]);
+        excelRows.push(["TOTALS", "", "", "", "", totals.sale_sar, "", totals.sale_pkr]);
       } else if (reportType === "supplier_purchase") {
         const headerRow = ["Date", "Supplier", "Ref No", "Item"];
         if (showSale) headerRow.push("Sale Per Unit", "Sale SAR", "Sale Rate", "Sale PKR");
