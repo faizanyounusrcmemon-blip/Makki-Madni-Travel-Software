@@ -165,6 +165,7 @@ export default function Navbar({ onNavigate }) {
               {can("hotel_voucher") && <a onClick={() => go("hotelVoucher")}>🏨 Hotel Voucher</a>}
               {can("hotel_voucher3in1") && <a onClick={() => go("hotelVoucher3in1")}>🏨 3.Hotel IN 1 PAGE</a>}
               {can("transport_voucher") && <a onClick={() => go("transportVoucher")}>🚐 Transport Voucher</a>}
+              {can("ziyarat_voucher") && <a onClick={() => go("ziyaratVoucher")}>🕌 Ziyarat Voucher</a>}
               {can("customiz_transport_voucher") && <a onClick={() => go("customizTransportVoucher")}>🚐 Customiz Transport Voucher</a>}
               {can("customiz_hotel_voucher") && <a onClick={() => go("customizHotelVoucher")}>🏨 Customiz Hotel Voucher</a>}
             </div>
