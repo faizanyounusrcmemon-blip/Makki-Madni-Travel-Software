@@ -65,6 +65,7 @@ import UpcomingTravelReport from "./screens/UpcomingTravelReport";
 
 
 // VOUCHERS
+import ZiyaratVoucher from "./screens/ZiyaratVoucher";
 import HotelVoucher from "./screens/HotelVoucher";
 import HotelVoucher3in1 from "./screens/HotelVoucher3in1";
 import TransportVoucher from "./screens/TransportVoucher";
@@ -210,6 +211,9 @@ export default function App() {
       {page === "restore" && <Restore onNavigate={navigate} />}
 
       {/* ================= VOUCHERS ================= */}
+      {page === "ziyaratVoucher" && (
+        <ZiyaratVoucher onNavigate={navigate} />
+      )}
       {page === "hotelVoucher" && (
         <HotelVoucher onNavigate={navigate} />
       )}
