@@ -6,17 +6,12 @@ import Header from "../components/Header";
 const showDate = (val) => {
   if (!val) return "";
   const d = new Date(val);
-
   const day = String(d.getDate()).padStart(2, "0");
-  const mon = d.toLocaleString("en-US", {
-    month: "short",
-  });
+  const mon = d.toLocaleString("en-US", { month: "short" });
   const year = d.getFullYear();
-
   return `${day}/${mon}/${year}`;
 };
 
-// VIP Ziyarat CSS Inline Styles (Green Theme)
 const styles = {
   container: {
     minHeight: "100vh",
@@ -25,7 +20,7 @@ const styles = {
     fontFamily: "'Cairo', sans-serif",
   },
   card: {
-    maxWidth: 1000,
+    maxWidth: 1100,
     margin: "0 auto",
     background: "linear-gradient(to bottom, #ffffff, #fffef5)",
     borderRadius: 20,
@@ -59,8 +54,8 @@ const styles = {
   td: {
     padding: "8px",
     borderBottom: "1px solid #ddd",
+    verticalAlign: "top",
   },
-
   summaryInput: {
     fontWeight: "bold",
     fontSize: "1.1rem",
@@ -70,11 +65,8 @@ const styles = {
 };
 
 export default function Ziyarat({ onNavigate }) {
-  // ⚡ Load / Edit Ref States
   const [searchRef, setSearchRef] = useState("");
   const [refNo, setRefNo] = useState("");
-
-  // ⚡ Customer & Sub Customer States
   const [customerName, setCustomerName] = useState("");
   const [subCustomerName, setSubCustomerName] = useState("");
   const [customerCode, setCustomerCode] = useState("");
@@ -100,7 +92,6 @@ export default function Ziyarat({ onNavigate }) {
     orientation: "p",
   });
 
-  // Fetch registered customers list
   useEffect(() => {
     const fetchCustomers = async () => {
       try {
@@ -116,7 +107,6 @@ export default function Ziyarat({ onNavigate }) {
     fetchCustomers();
   }, []);
 
-  // Click-outside dropdown close hook
   useEffect(() => {
     function handleClickOutside(event) {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
@@ -127,18 +117,39 @@ export default function Ziyarat({ onNavigate }) {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const addRow = () => setRows([...rows, { description: "", sar: 0 }]);
-  const updateRow = (i, field, value) => {
-    const copy = [...rows];
-    copy[i][field] = field === "description" ? value : Number(value) || 0;
-    setRows(copy);
-  };
+  const addRow = () => setRows([...rows, { travel_date: "", description: "", vehicle: "", persons: 0, rate: 0, total: 0 }]);
+  
+const updateRow = (i, field, value) => {
+  const copy = [...rows];
+  
+  if (field === "description" || field === "travel_date" || field === "vehicle") {
+    copy[i][field] = value;
+  } else {
+    copy[i][field] = Number(value) || 0;
+  }
+
+  const persons = Number(copy[i].persons) || 0;
+  const rate = Number(copy[i].rate) || 0;
+  let total = Number(copy[i].total) || 0;
+
+  if (field === "rate" || field === "persons") {
+    copy[i].total = persons * rate;
+  } else if (field === "total") {
+    if (persons > 0) {
+      copy[i].rate = Number((total / persons).toFixed(2));
+    } else {
+      copy[i].rate = 0;
+    }
+  }
+  
+  setRows(copy);
+};
+
   const removeRow = (i) => setRows(rows.filter((_, x) => x !== i));
 
-  const totalSar = rows.reduce((s, r) => s + (Number(r.sar) || 0), 0);
+  const totalSar = rows.reduce((s, r) => s + (Number(r.total) || 0), 0);
   const totalPkr = totalSar * pkrRate;
 
-  // Filter dropdown data
   const filteredCustomers = savedCustomers.filter(c => {
     const q = searchQuery.toLowerCase();
     return (
@@ -149,29 +160,18 @@ export default function Ziyarat({ onNavigate }) {
 
   const loadZiyarat = async () => {
     if (!searchRef) {
-      return Swal.fire({
-        width: "280px",
-        icon: "warning",
-        text: "Ref No likho"
-      });
+      return Swal.fire({ width: "280px", icon: "warning", text: "Ref No likho" });
     }
 
     try {
-      // 1️⃣ Fetch Ziyarat
       const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/ziyarat/get/${searchRef}`);
       const data = await res.json();
 
       if (!data.success) {
-        return Swal.fire({
-          width: "280px",
-          icon: "error",
-          text: "Record not found"
-        });
+        return Swal.fire({ width: "280px", icon: "error", text: "Record not found" });
       }
 
       const d = data.row;
-
-      // 2️⃣ Purchase Check
       const purchaseRes = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/purchase/check/${d.ref_no}`);
       const purchaseData = await purchaseRes.json();
 
@@ -183,13 +183,11 @@ export default function Ziyarat({ onNavigate }) {
         });
       }
 
-      // 3️⃣ Load Data
       setRefNo(d.ref_no);
       setCustomerName(d.customer_name || "");
       setSubCustomerName(d.sub_customer_name || "");
       setCustomerCode(d.customer_code || "");
 
-      // Sync customer select UI on edit load
       if (d.customer_code) {
         setSearchQuery(`${d.customer_name} (${d.customer_code})`);
       } else {
@@ -201,18 +199,9 @@ export default function Ziyarat({ onNavigate }) {
       setPkrRate(d.pkr_rate || 0);
       setIsEdit(true);
 
-      Swal.fire({
-        width: "260px",
-        icon: "success",
-        text: "Ziyarat Edit Mode Loaded"
-      });
-
+      Swal.fire({ width: "260px", icon: "success", text: "Ziyarat Edit Mode Loaded" });
     } catch (err) {
-      Swal.fire({
-        width: "300px",
-        icon: "error",
-        text: "Load failed"
-      });
+      Swal.fire({ width: "300px", icon: "error", text: "Load failed" });
     }
   };
 
@@ -239,13 +228,7 @@ export default function Ziyarat({ onNavigate }) {
     if (!confirm.isConfirmed) return;
 
     setSaving(true);
-
-    Swal.fire({
-      width: "260px",
-      title: "Saving...",
-      allowOutsideClick: false,
-      didOpen: () => Swal.showLoading()
-    });
+    Swal.fire({ width: "260px", title: "Saving...", allowOutsideClick: false, didOpen: () => Swal.showLoading() });
 
     const payload = {
       ref_no: refNo || null,
@@ -272,46 +255,29 @@ export default function Ziyarat({ onNavigate }) {
       const data = await res.json();
       Swal.close();
 
-if (data.success) {
-  await Swal.fire({
-    width: "340px", 
-    icon: "success", 
-    title: "Saved Successfully",
-    html: `
-      <div style="text-align:left; font-size:14px; line-height: 1.6;">
-        <span style="color: #0d6efd; font-weight: bold;">Ref#:</span> 
-        <span style="color: #dc3545; font-weight: bold; background: #ffe6e6; padding: 2px 6px; border-radius: 4px;">
-          ${data.ref_no}
-        </span><br/>
-        <b>Customer:</b> ${customerName} ${customerCode ? `(${customerCode})` : "(Walk-In)"}<br/>
-        ${subCustomerName ? `<b>Sub Customer:</b> ${subCustomerName}` : ''}
-      </div>
-    `
-  });
-  onNavigate("dashboard");
-} else {
-        if (data.error?.includes("Purchase entries exist")) {
-          Swal.fire({
-            width: "300px",
-            icon: "error",
-            text: "❌ Edit blocked! Purchase entries already exist."
-          });
-        } else {
-          Swal.fire({
-            width: "300px",
-            icon: "error",
-            text: data.error || "Save failed"
-          });
-        }
+      if (data.success) {
+        await Swal.fire({
+          width: "340px", 
+          icon: "success", 
+          title: "Saved Successfully",
+          html: `
+            <div style="text-align:left; font-size:14px; line-height: 1.6;">
+              <span style="color: #0d6efd; font-weight: bold;">Ref#:</span> 
+              <span style="color: #dc3545; font-weight: bold; background: #ffe6e6; padding: 2px 6px; border-radius: 4px;">
+                ${data.ref_no}
+              </span><br/>
+              <b>Customer:</b> ${customerName} ${customerCode ? `(${customerCode})` : "(Walk-In)"}<br/>
+              ${subCustomerName ? `<b>Sub Customer:</b> ${subCustomerName}` : ''}
+            </div>
+          `
+        });
+        onNavigate("dashboard");
+      } else {
+        Swal.fire({ width: "300px", icon: "error", text: data.error || "Save failed" });
       }
-
     } catch (err) {
       Swal.close();
-      Swal.fire({
-        width: "300px",
-        icon: "error",
-        text: "❌ Something went wrong while saving."
-      });
+      Swal.fire({ width: "300px", icon: "error", text: "❌ Something went wrong while saving." });
     }
 
     setSaving(false);
@@ -319,20 +285,17 @@ if (data.success) {
 
   return (
     <div style={styles.container}>
-      {/* ⚡ TOP CONTROL BAR */}
       <div className="d-flex justify-content-between mb-3">
-        <button className="btn btn-dark btn-sm" style={styles.button} onClick={() => onNavigate("dashboard")}>← Back</button>
+        <button className="btn btn-dark btn-sm" onClick={() => onNavigate("dashboard")}>← Back</button>
         <div className="d-flex gap-2">
           <button
             className={`btn btn-sm ${isEdit ? "btn-warning text-dark" : "btn-primary"}`}
-            style={styles.button}
             onClick={saveData}
             disabled={saving}
           >
             {saving ? "Saving..." : isEdit ? "✏ Update Save" : "💾 Save"}
           </button>
           
-          {/* ⚡ REF NO INPUT */}
           <input 
             className="form-control form-control-sm" 
             style={{ width: 140, borderRadius: 50 }} 
@@ -340,74 +303,22 @@ if (data.success) {
             value={searchRef} 
             onChange={(e) => setSearchRef(e.target.value)}
           />
-          <button className="btn btn-warning btn-sm" style={styles.button} onClick={loadZiyarat}>🔄 Load / Edit</button>
+          <button className="btn btn-warning btn-sm" onClick={loadZiyarat}>🔄 Load / Edit</button>
           
-          {/* 📄 Export PDF */}
-          <button
-            className="btn fw-bold text-white shadow"
-            style={{
-              background: "linear-gradient(135deg,#28a745,#20c997)",
-              border: "none",
-              borderRadius: "12px",
-              padding: "8px 18px",
-              transition: "transform 0.2s ease, box-shadow 0.2s ease",
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.transform = "translateY(-2px) scale(1.03)";
-              e.currentTarget.style.boxShadow = "0 6px 15px rgba(40, 167, 69, 0.4)";
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.transform = "translateY(0) scale(1)";
-              e.currentTarget.style.boxShadow = "0 4px 10px rgba(0,0,0,0.15)";
-            }}
-            onClick={exportPDF}
-          >
-            📄 Export PDF
-          </button>
-
-          {/* 🖨️ Print */}
-          <button
-            className="btn fw-bold text-white shadow"
-            style={{
-              background: "linear-gradient(135deg,#6c757d,#343a40)",
-              border: "none",
-              borderRadius: "12px",
-              padding: "8px 18px",
-              transition: "transform 0.2s ease, box-shadow 0.2s ease",
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.transform = "translateY(-2px) scale(1.03)";
-              e.currentTarget.style.boxShadow = "0 6px 15px rgba(108, 117, 125, 0.4)";
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.transform = "translateY(0) scale(1)";
-              e.currentTarget.style.boxShadow = "0 4px 10px rgba(0,0,0,0.15)";
-            }}
-            onClick={printPDF}
-          >
-            🖨️ Print
-          </button>
+          <button className="btn fw-bold text-white shadow" style={{ background: "linear-gradient(135deg,#28a745,#20c997)", border: "none", borderRadius: "12px", padding: "8px 18px" }} onClick={exportPDF}>📄 Export PDF</button>
+          <button className="btn fw-bold text-white shadow" style={{ background: "linear-gradient(135deg,#6c757d,#343a40)", border: "none", borderRadius: "12px", padding: "8px 18px" }} onClick={printPDF}>🖨️ Print</button>
         </div>
       </div>
 
-      {/* Ziyarat Card */}
       <div ref={quoteRef} style={styles.card}>
         <Header title="ZIYARAT QUOTATION" />
 
-        {/* ⚡ CUSTOMER INFO WITH SMART SEPARATION & SUB-CUSTOMER INPUT */}
         <div className="row g-3 mb-4">
-          
-          {/* FIELD 1: Ref No Display */}
           <div className="col-md-2">
             <label className="fw-bold mb-1 d-block text-success">Ref No</label>
-            <input
-              className="form-control form-control-sm"
-              value={refNo}
-              readOnly
-            />
+            <input className="form-control form-control-sm" value={refNo} readOnly />
           </div>
 
-          {/* FIELD 2: SMART DROPDOWN FOR REGISTERED CLIENTS */}
           <div className="col-md-3" ref={dropdownRef} style={{ position: "relative" }}>
             <label className="fw-bold mb-1 text-primary">🔍 Select Registered Customer</label>
             <div className="input-group input-group-sm">
@@ -422,32 +333,12 @@ if (data.success) {
                 }}
               />
               {searchQuery && (
-                <button 
-                  className="btn btn-outline-danger btn-sm" 
-                  type="button" 
-                  onClick={() => {
-                    setSearchQuery("");
-                    setCustomerCode("");
-                    setCustomerName("");
-                  }}
-                >
-                  ✕
-                </button>
+                <button className="btn btn-outline-danger btn-sm" type="button" onClick={() => { setSearchQuery(""); setCustomerCode(""); setCustomerName(""); }}>✕</button>
               )}
             </div>
 
-            {/* Selector Dropdown List */}
             {showDropdown && (
-              <div 
-                className="dropdown-menu show shadow w-100 p-2" 
-                style={{ 
-                  maxHeight: "220px", 
-                  overflowY: "auto", 
-                  position: "absolute", 
-                  zIndex: 9999,
-                  background: "#fff"
-                }}
-              >
+              <div className="dropdown-menu show shadow w-100 p-2" style={{ maxHeight: "220px", overflowY: "auto", position: "absolute", zIndex: 9999, background: "#fff" }}>
                 {filteredCustomers.length === 0 ? (
                   <div className="dropdown-item text-muted text-center py-2">No customers found</div>
                 ) : (
@@ -472,7 +363,6 @@ if (data.success) {
             )}
           </div>
 
-          {/* FIELD 3: CUSTOMER NAME INPUT */}
           <div className="col-md-3">
             <label className="fw-bold mb-1 text-dark">👤 Customer Name</label>
             <input
@@ -482,28 +372,22 @@ if (data.success) {
               value={customerName}
               onChange={(e) => {
                 setCustomerName(e.target.value);
-                if (customerCode) {
-                  setCustomerCode("");
-                  setSearchQuery("");
-                }
+                if (customerCode) { setCustomerCode(""); setSearchQuery(""); }
               }}
             />
           </div>
 
-  {/* FIELD 4: SUB / END CUSTOMER NAME (2 cols) */}
-  <div className="col-md-2">
-    <label className="fw-bold mb-1 text-dark">👥 Sub Customer</label>
-    <input
-      type="text"
-      className="form-control form-control-sm"
-      placeholder="Passenger / Client..."
-      value={subCustomerName}
-      onChange={(e) => setSubCustomerName(e.target.value)}
-    />
-    <small className="text-muted d-block mt-1">End client / Pax</small>
-  </div>
+          <div className="col-md-2">
+            <label className="fw-bold mb-1 text-dark">👥 Sub Customer</label>
+            <input
+              type="text"
+              className="form-control form-control-sm"
+              placeholder="Passenger / Client..."
+              value={subCustomerName}
+              onChange={(e) => setSubCustomerName(e.target.value)}
+            />
+          </div>
 
-          {/* FIELD 5: BOOKING DATE */}
           <div className="col-md-2">
             <label className="fw-bold mb-1 d-block text-success">Booking Date</label>
             <input
@@ -512,46 +396,87 @@ if (data.success) {
               value={bookingDate}
               onChange={(e) => setBookingDate(e.target.value)}
             />
-            <small className="text-muted d-block mt-1">
-              {showDate(bookingDate)}
-            </small>
+            <small className="text-muted d-block mt-1">{showDate(bookingDate)}</small>
           </div>
         </div>
 
-        {/* Ziyarat Table */}
         <div className="mb-3">
           <h5 style={styles.sectionHeader}>🕌 Ziyarat</h5>
-          <button className="btn btn-outline-success btn-sm mb-2" style={styles.button} onClick={addRow}>➕ Add Row</button>
+          <button className="btn btn-outline-success btn-sm mb-2" onClick={addRow}>➕ Add Row</button>
           <table style={styles.table}>
-            <thead>
+<thead>
               <tr>
-                <th style={{ ...styles.th, width: "70%" }}>Description</th>
-                <th style={{ ...styles.th, width: "20%", textAlign: "center" }}>SAR</th>
-                <th style={{ ...styles.th, width: "10%", textAlign: "center" }}>Action</th>
+                <th style={{ ...styles.th, width: "150px" }}>Travel Date</th>
+                <th style={{ ...styles.th, width: "auto" }}>Description</th>
+                <th style={{ ...styles.th, width: "140px" }}>Vehicle / Details</th>
+                <th style={{ ...styles.th, width: "90px" }}>Persons</th>
+                <th style={{ ...styles.th, width: "110px" }}>Rate (SAR)</th>
+                <th style={{ ...styles.th, width: "110px" }}>Total (SAR)</th>
+                <th style={{ ...styles.th, width: "70px", textAlign: "center" }}>Action</th>
               </tr>
             </thead>
             <tbody>
               {rows.map((r, i) => (
                 <tr key={i} style={{ background: i % 2 === 0 ? "#f0fff0" : "#fff" }}>
                   <td style={styles.td}>
+                    <input
+                      type="date"
+                      className="form-control form-control-sm mb-1"
+                      value={r.travel_date || ""}
+                      onChange={(e) => updateRow(i, "travel_date", e.target.value)}
+                    />
+                    <small className="text-muted d-block fw-bold" style={{ fontSize: "0.8rem" }}>{showDate(r.travel_date)}</small>
+                  </td>
+
+                  <td style={styles.td}>
                     <input 
                       type="text" 
                       className="form-control form-control-sm" 
-                      placeholder="Ziyarat description..." 
+                      placeholder="Description..." 
                       value={r.description} 
                       onChange={(e) => updateRow(i, "description", e.target.value)} 
                     />
                   </td>
-                  <td style={{ ...styles.td, textAlign: "center" }}>
+
+                  {/* Naya Extra Input Field */}
+                  <td style={styles.td}>
                     <input 
-                      type="number" 
-                      className="form-control form-control-sm text-center fw-bold" 
-                      style={{ maxWidth: "120px", margin: "0 auto" }} 
-                      value={r.sar} 
-                      onChange={(e) => updateRow(i, "sar", e.target.value)} 
+                      type="text" 
+                      className="form-control form-control-sm" 
+                      placeholder="Vehicle / Extra..." 
+                      value={r.vehicle || ""} 
+                      onChange={(e) => updateRow(i, "vehicle", e.target.value)} 
                     />
                   </td>
-                  <td style={{ ...styles.td, textAlign: "center" }}>
+
+                  <td style={styles.td}>
+                    <input
+                      type="number"
+                      className="form-control form-control-sm text-center"
+                      value={r.persons}
+                      onChange={(e) => updateRow(i, "persons", e.target.value)}
+                    />
+                  </td>
+
+                  <td style={styles.td}>
+                    <input
+                      type="number"
+                      className="form-control form-control-sm text-end"
+                      value={r.rate}
+                      onChange={(e) => updateRow(i, "rate", e.target.value)}
+                    />
+                  </td>
+
+                  <td style={styles.td}>
+                    <input
+                      type="number"
+                      className="form-control form-control-sm text-end"
+                      value={r.total}
+                      onChange={(e) => updateRow(i, "total", e.target.value)}
+                    />
+                  </td>
+
+                  <td style={{ ...styles.td, textAlign: "center", verticalAlign: "middle" }}>
                     <button className="btn btn-sm btn-danger px-2 py-0" onClick={() => removeRow(i)}>✖</button>
                   </td>
                 </tr>
@@ -560,7 +485,6 @@ if (data.success) {
           </table>
         </div>
 
-        {/* Summary */}
         <div className="mb-3">
           <h5 style={styles.sectionHeader}>✨ Summary</h5>
           <div className="row g-3">

@@ -77,12 +77,17 @@ export default function TransportVoucher({ onNavigate }) {
         setRows(transportRows);
 
         const initialPickupDates = {};
+        const initialVehicles = {};
         transportRows.forEach((row, idx) => {
           if (row.travel_date || row.date) {
             initialPickupDates[idx] = row.travel_date || row.date;
           }
+          if (row.vehicle || row.vehicle_type) {
+            initialVehicles[idx] = row.vehicle || row.vehicle_type;
+          }
         });
         setPickupDates(initialPickupDates);
+        setVehicles(initialVehicles);
 
       } else if (upperRef.startsWith("TRN-")) {
         r = await fetch(
@@ -107,12 +112,17 @@ export default function TransportVoucher({ onNavigate }) {
         setRows(transportRows);
 
         const initialPickupDates = {};
+        const initialVehicles = {};
         transportRows.forEach((row, idx) => {
           if (row.travel_date || row.date) {
             initialPickupDates[idx] = row.travel_date || row.date;
           }
+          if (row.vehicle || row.vehicle_type) {
+            initialVehicles[idx] = row.vehicle || row.vehicle_type;
+          }
         });
         setPickupDates(initialPickupDates);
+        setVehicles(initialVehicles);
 
       } else {
         Swal.close();

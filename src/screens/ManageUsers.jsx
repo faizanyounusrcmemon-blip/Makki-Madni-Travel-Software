@@ -63,6 +63,7 @@ export default function ManageUsers({ onNavigate }) {
         "hotel_voucher",
         "hotel_voucher3in1",
         "transport_voucher",
+        "ziyarat_voucher",
         "customiz_transport_voucher",
         "customiz_hotel_voucher",
       ],
