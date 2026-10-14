@@ -23,7 +23,6 @@ const handleCopyRef = (refNo) => {
   });
 };
 
-
 /* ================= HELPERS ================= */
 const fmt = (v) => Number(v || 0).toLocaleString("en-US");
 
@@ -130,29 +129,29 @@ export default function TransportView({ id, onNavigate, fromPage }) {
       >
         <Header title="🚐 TRANSPORT DETAILS" />
 
-<div className="row mb-3">
-  <div className="col-6">
-    <b>Ref No:</b>{" "}
-    <span
-      className="fw-bold text-primary"
-      style={{ cursor: "pointer" }}
-      title="Click to copy Ref No"
-      onClick={() => handleCopyRef(data.ref_no)}
-    >
-      {data.ref_no}
-    </span>
-  </div>
-  <div className="col-6 text-end">
-    <b>Booking Date:</b> {fmtDate(data.booking_date)}
-  </div>
-</div>
+        <div className="row mb-3">
+          <div className="col-6">
+            <b>Ref No:</b>{" "}
+            <span
+              className="fw-bold text-primary"
+              style={{ cursor: "pointer" }}
+              title="Click to copy Ref No"
+              onClick={() => handleCopyRef(data.ref_no)}
+            >
+              {data.ref_no}
+            </span>
+          </div>
+          <div className="col-6 text-end">
+            <b>Booking Date:</b> {fmtDate(data.booking_date)}
+          </div>
+        </div>
 
-<div className="d-flex justify-content-between mb-3">
-  <div><b>Customer Name:</b> {data.customer_name}</div>
-  <div className="text-end">
-    <b>Sub Customer:</b> {data.sub_customer_name || "-"}
-  </div>
-</div>
+        <div className="d-flex justify-content-between mb-3">
+          <div><b>Customer Name:</b> {data.customer_name}</div>
+          <div className="text-end">
+            <b>Sub Customer:</b> {data.sub_customer_name || "-"}
+          </div>
+        </div>
 
         <hr />
 
@@ -162,32 +161,42 @@ export default function TransportView({ id, onNavigate, fromPage }) {
           <p className="text-muted">No transport rows</p>
         )}
 
-        {/* ⚡ Transport Entries Table */}
+        {/* Transport Entries Table */}
         <table className="table table-bordered align-middle mt-2">
           <thead className="table-light">
             <tr>
-              <th style={{ width: "140px" }}>Travel Date</th>
-              <th>Description</th>
-              <th className="text-end" style={{ width: "120px" }}>
-                SAR
-              </th>
+              <th style={{ width: "120px" }}>Travel Date</th>
+              <th>Description / Vehicle</th>
+              <th className="text-center" style={{ width: "90px" }}>Persons</th>
+              <th className="text-end" style={{ width: "100px" }}>Rate</th>
+              <th className="text-end" style={{ width: "110px" }}>SAR</th>
             </tr>
           </thead>
           <tbody>
-            {data.rows.map((r, i) => (
-<tr key={i} className="align-middle">
-  <td className="py-2">
-    <span 
-      className="badge px-3 py-2 fw-semibold" 
-      style={{ backgroundColor: "#EEF2FF", color: "#4F46E5", border: "1px solid #C7D2FE", borderRadius: "8px" }}
-    >
-      📅 {fmtDate(r.travel_date)}
-    </span>
-  </td>
-                <td>{r.description}</td>
-                <td className="fw-bold text-end">{fmt(r.sar)}</td>
-              </tr>
-            ))}
+            {data.rows.map((r, i) => {
+              const persons = Number(r.persons) || 1;
+              const rate = Number(r.rate) || 0;
+              const totalSar = Number(r.total || r.sar) || (persons * rate);
+              return (
+                <tr key={i} className="align-middle">
+                  <td className="py-2">
+                    <span 
+                      className="badge px-2 py-1 fw-semibold" 
+                      style={{ backgroundColor: "#EEF2FF", color: "#4F46E5", border: "1px solid #C7D2FE", borderRadius: "6px" }}
+                    >
+                      📅 {fmtDate(r.travel_date || r.date)}
+                    </span>
+                  </td>
+                  <td>
+                    <div>{r.description || r.text || r.route}</div>
+                    {r.vehicle && <small className="text-muted">🚘 {r.vehicle}</small>}
+                  </td>
+                  <td className="text-center">{persons}</td>
+                  <td className="text-end">{fmt(rate)}</td>
+                  <td className="fw-bold text-end">{fmt(totalSar)}</td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
 

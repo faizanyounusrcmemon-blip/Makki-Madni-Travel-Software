@@ -54,12 +54,9 @@ const fmtDate = (d) =>
 export default function PackagesView({ id, onNavigate, fromPage }) {
   const [data, setData] = useState(null);
   
-  // DEFAULT INITIALLY OFF (FALSE) FOR ALL SWITCHES
   const [hideAmounts, setHideAmounts] = useState(false);
   const [showGift, setShowGift] = useState(false);
   const [showAgentComm, setShowAgentComm] = useState(false);
-  
-  // NEW SWITCH FOR TOGGLING DESIGN VIEWS (Classic vs Modern VIP)
   const [useModernUI, setUseModernUI] = useState(true);
 
   const ref = useRef(null);
@@ -84,7 +81,7 @@ export default function PackagesView({ id, onNavigate, fromPage }) {
 
   if (!data) return <div className="p-4 text-center text-secondary fw-semibold">Loading package quotation...</div>;
 
-/* ================= PACKAGE DURATION ================= */
+  /* ================= PACKAGE DURATION ================= */
   const flightDates = Array.isArray(data.flights)
     ? data.flights
         .map((f) => f.date)
@@ -98,18 +95,14 @@ export default function PackagesView({ id, onNavigate, fromPage }) {
   if (flightDates.length >= 2) {
     const startDate = new Date(flightDates[0]);
     const endDate = new Date(flightDates[flightDates.length - 1]);
-
     const diff = Math.floor((endDate - startDate) / (1000 * 60 * 60 * 24));
-
     packageDays = diff + 1;
     packageNights = diff;
   } else if (Array.isArray(data.hotels) && data.hotels.length > 0) {
-    // Agar valid flight dates na hon, toh hotels ke nights ka sum calculation ke liye use hoga
     const totalHotelNights = data.hotels.reduce(
       (sum, h) => sum + (Number(h.nights) || 0),
       0
     );
-
     if (totalHotelNights > 0) {
       packageNights = totalHotelNights;
       packageDays = totalHotelNights + 1;
@@ -176,14 +169,13 @@ export default function PackagesView({ id, onNavigate, fromPage }) {
     ? Math.round((infantFlightPKR / infantCount) + visaPerPerson + agentCommPerPerson)
     : 0;
 
-/* ================= LIGHT ICE BLUE VOUCHER ================= */
   const GiftSection = () => (
     showGift ? (
       <div className="my-3">
         <div
           className="rounded-4 overflow-hidden"
           style={{
-            backgroundColor: "#f0f9ff", // Soft Light Blue Tint
+            backgroundColor: "#f0f9ff",
             border: "1.5px solid #bae6fd",
             boxShadow: "0 2px 8px rgba(14, 165, 233, 0.08)",
             WebkitPrintColorAdjust: "exact",
@@ -191,7 +183,6 @@ export default function PackagesView({ id, onNavigate, fromPage }) {
           }}
         >
           <div className="row g-0 align-items-stretch">
-            {/* LEFT VOUCHER STRIP */}
             <div 
               className="col-3 col-md-2 p-3 text-center d-flex flex-column justify-content-center align-items-center"
               style={{
@@ -207,7 +198,6 @@ export default function PackagesView({ id, onNavigate, fromPage }) {
               </span>
             </div>
 
-            {/* RIGHT CONTENT AREA */}
             <div className="col-9 col-md-10 p-3" style={{ backgroundColor: "#f0f9ff" }}>
               <div className="d-flex justify-content-between align-items-center mb-2">
                 <div>
@@ -224,7 +214,6 @@ export default function PackagesView({ id, onNavigate, fromPage }) {
                 </span>
               </div>
 
-              {/* ITEMS CONTAINER */}
               <div className="rounded-3 p-2 my-2" style={{ backgroundColor: "#ffffff", border: "1px solid #bae6fd" }}>
                 {Array.isArray(data.gifting) && data.gifting.length > 0 ? (
                   data.gifting.map((g, i) => (
@@ -255,7 +244,6 @@ export default function PackagesView({ id, onNavigate, fromPage }) {
                 )}
               </div>
 
-              {/* FOOTER TOTAL */}
               {!hideAmounts && (
                 <div className="d-flex justify-content-between align-items-center mt-2 pt-1">
                   <span style={{ fontSize: "10px", color: "#0369a1", fontWeight: "700", letterSpacing: "0.5px" }}>
@@ -286,9 +274,7 @@ export default function PackagesView({ id, onNavigate, fromPage }) {
           </button>
         </div>
 
-        {/* TOGGLE OPTIONS */}
         <div className="d-flex gap-3 bg-light p-2 rounded-3 border align-items-center flex-wrap">
-          {/* UI STYLE SWITCH */}
           <div className="form-check form-switch m-0 pe-2 border-end">
             <input
               className="form-check-input style-pointer"
@@ -324,7 +310,6 @@ export default function PackagesView({ id, onNavigate, fromPage }) {
           </div>
         </div>
 
-        {/* EXPORT BUTTONS */}
         <div className="d-flex gap-2">
           <button className="btn btn-sm text-white fw-bold shadow-sm rounded-3 px-3" style={{ background: "linear-gradient(135deg,#28a745,#20c997)", border: "none" }} onClick={exportPDF}>
             📄 Export PDF
@@ -339,66 +324,65 @@ export default function PackagesView({ id, onNavigate, fromPage }) {
       <div ref={ref}>
         {useModernUI ? (
           /* =========================================================
-             1. MODERN VIP DESIGN (NEW UI)
+             1. MODERN VIP DESIGN
           ========================================================= */
           <div className="bg-white p-4 p-md-5 rounded-4 shadow-lg border" style={{ margin: "auto", fontFamily: "'Segoe UI', Roboto, sans-serif", color: "#2d3748" }}>
             <Header title="PACKAGE QUOTATION" />
 
-<div className="p-3 mb-4 rounded-4" style={{ background: "#f8fafc", border: "1px solid #e2e8f0" }}>
-  <div className="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-3">
-    <div>
-      <span className="badge bg-primary px-3 py-2 rounded-pill fs-6 mb-2">
-        PACKAGE —{" "}
-        <span
-          style={{ cursor: "pointer" }}
-          title="Click to copy Ref No"
-          onClick={() => handleCopyRef(data.ref_no)}
-        >
-          {data.ref_no}
-        </span>
-      </span>
-<div className="mb-2" style={{ fontSize: "14px", fontWeight: "600" }}>
-  <span style={{ color: "#6c757d", fontSize: "13px", textTransform: "uppercase", letterSpacing: "0.5px" }}>
-    Customer:{" "}
-  </span>
-  <span className="fw-bold" style={{ color: "#0d6efd", fontSize: "17px" }}>
-    {data.customer_name || "-"}
-  </span>
-</div>
+            <div className="p-3 mb-4 rounded-4" style={{ background: "#f8fafc", border: "1px solid #e2e8f0" }}>
+              <div className="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-3">
+                <div>
+                  <span className="badge bg-primary px-3 py-2 rounded-pill fs-6 mb-2">
+                    PACKAGE —{" "}
+                    <span
+                      style={{ cursor: "pointer" }}
+                      title="Click to copy Ref No"
+                      onClick={() => handleCopyRef(data.ref_no)}
+                    >
+                      {data.ref_no}
+                    </span>
+                  </span>
+                  <div className="mb-2" style={{ fontSize: "14px", fontWeight: "600" }}>
+                    <span style={{ color: "#6c757d", fontSize: "13px", textTransform: "uppercase", letterSpacing: "0.5px" }}>
+                      Customer:{" "}
+                    </span>
+                    <span className="fw-bold" style={{ color: "#0d6efd", fontSize: "17px" }}>
+                      {data.customer_name || "-"}
+                    </span>
+                  </div>
 
-<div style={{ fontSize: "14px", fontWeight: "600" }}>
-  <span style={{ color: "#6c757d", fontSize: "12px", textTransform: "uppercase", letterSpacing: "0.5px" }}>
-    Sub Customer:{" "}
-  </span>
-  <span className="fw-bold" style={{ color: "#0d9488", fontSize: "15px" }}>
-    {data.sub_customer_name || "-"}
-  </span>
-</div>
+                  <div style={{ fontSize: "14px", fontWeight: "600" }}>
+                    <span style={{ color: "#6c757d", fontSize: "12px", textTransform: "uppercase", letterSpacing: "0.5px" }}>
+                      Sub Customer:{" "}
+                    </span>
+                    <span className="fw-bold" style={{ color: "#0d9488", fontSize: "15px" }}>
+                      {data.sub_customer_name || "-"}
+                    </span>
+                  </div>
 
-      <div className="text-secondary small">
-        📞 {data.contact_no || "N/A"} | 📅 Booking Date: {fmtDate(data.booking_date)}
-      </div>
-    </div>
+                  <div className="text-secondary small mt-1">
+                    📞 {data.contact_no || "N/A"} | 📅 Booking Date: {fmtDate(data.booking_date)}
+                  </div>
+                </div>
 
-    {/* PDF & PRINT FRIENDLY DURATION BOX */}
-    <div 
-      className="px-4 py-2 rounded-4 text-center shadow-sm" 
-      style={{ 
-        backgroundColor: "#059669", 
-        color: "#ffffff",
-        WebkitPrintColorAdjust: "exact",
-        printColorAdjust: "exact" 
-      }}
-    >
-      <div style={{ fontSize: "11px", textTransform: "uppercase", letterSpacing: "1px", color: "#ffffff", opacity: 0.9 }}>
-        Duration
-      </div>
-      <div style={{ fontSize: "18px", fontWeight: "800", color: "#ffffff" }}>
-        📅 {packageDays} Days / 🌙 {packageNights} Nights
-      </div>
-    </div>
-  </div>
-</div>
+                <div 
+                  className="px-4 py-2 rounded-4 text-center shadow-sm" 
+                  style={{ 
+                    backgroundColor: "#059669", 
+                    color: "#ffffff",
+                    WebkitPrintColorAdjust: "exact",
+                    printColorAdjust: "exact" 
+                  }}
+                >
+                  <div style={{ fontSize: "11px", textTransform: "uppercase", letterSpacing: "1px", color: "#ffffff", opacity: 0.9 }}>
+                    Duration
+                  </div>
+                  <div style={{ fontSize: "18px", fontWeight: "800", color: "#ffffff" }}>
+                    📅 {packageDays} Days / 🌙 {packageNights} Nights
+                  </div>
+                </div>
+              </div>
+            </div>
 
             {/* Flights */}
             <div className="mb-4">
@@ -467,38 +451,67 @@ export default function PackagesView({ id, onNavigate, fromPage }) {
               ) : <p className="text-muted small">No visa</p>}
             </div>
 
-{/* Transport & Ziyarat */}
-<div className="row">
-  <div className="col-md-6 mb-3">
-    <h6 className="fw-bold text-danger">🚐 Transport</h6>
-    {Array.isArray(data.transport) && data.transport.length > 0 ? (
-      data.transport.map((t, i) => (
-        <div key={i} className="border p-2 rounded mb-1 bg-white small d-flex justify-content-between align-items-center">
-          <div>
-            {t.date && <span className="fw-bold text-primary d-block">{fmtDate(t.date)}</span>}
-            <span>{t.text}</span>
-          </div>
-          {!hideAmounts && <b className="ms-2">{Number(t.amount || 0).toLocaleString()} SAR</b>}
-        </div>
-      ))
-    ) : <p className="text-muted small">No transport</p>}
-  </div>
-  <div className="col-md-6 mb-3">
-    <h6 className="fw-bold" style={{ color: "#6f42c1" }}>🕌 Ziyarat</h6>
-    {Array.isArray(data.ziyarat) && data.ziyarat.length > 0 ? (
-      data.ziyarat.map((z, i) => (
-        <div key={i} className="border p-2 rounded mb-1 bg-white small d-flex justify-content-between">
-          <span>{z.text || z.route || z.description}</span>
-          {!hideAmounts && <b>{Number(z.amount || 0).toLocaleString()} SAR</b>}
-        </div>
-      ))
-    ) : <p className="text-muted small">No ziyarat</p>}
-  </div>
-</div>
+            {/* Transport & Ziyarat */}
+            <div className="row">
+              <div className="col-md-6 mb-3">
+                <h6 className="fw-bold text-danger">🚐 Transport</h6>
+                {Array.isArray(data.transport) && data.transport.length > 0 ? (
+                  data.transport.map((t, i) => {
+                    const persons = Number(t.persons) || 1;
+                    const rateVal = Number(t.rate) || 0;
+                    const totalSar = Number(t.amount || t.total) || (persons * rateVal);
+                    return (
+                      <div key={i} className="border p-2 rounded mb-2 bg-white small">
+                        <div className="d-flex justify-content-between align-items-center">
+                          <div>
+                            {t.date && <span className="fw-bold text-primary d-block">📅 {fmtDate(t.date)}</span>}
+                            <span>{t.text || t.route || t.description}</span>
+                            {t.vehicle && <div className="text-muted small">🚘 {t.vehicle}</div>}
+                          </div>
+                          {!hideAmounts && <b className="ms-2">{Number(totalSar).toLocaleString()} SAR</b>}
+                        </div>
+                        {!hideAmounts && (
+                          <div className="text-muted mt-1 pt-1 border-top" style={{ fontSize: "11px" }}>
+                            Persons: <b>{persons}</b> | Rate: <b>{rateVal}</b>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })
+                ) : <p className="text-muted small">No transport</p>}
+              </div>
+
+              <div className="col-md-6 mb-3">
+                <h6 className="fw-bold" style={{ color: "#6f42c1" }}>🕌 Ziyarat</h6>
+                {Array.isArray(data.ziyarat) && data.ziyarat.length > 0 ? (
+                  data.ziyarat.map((z, i) => {
+                    const persons = Number(z.persons) || 1;
+                    const rateVal = Number(z.rate) || 0;
+                    const totalSar = Number(z.amount || z.total) || (persons * rateVal);
+                    return (
+                      <div key={i} className="border p-2 rounded mb-2 bg-white small">
+                        <div className="d-flex justify-content-between align-items-center">
+                          <div>
+                            {z.date && <span className="fw-bold text-primary d-block">📅 {fmtDate(z.date)}</span>}
+                            <span>{z.text || z.route || z.description}</span>
+                            {z.vehicle && <div className="text-muted small">🚘 {z.vehicle}</div>}
+                          </div>
+                          {!hideAmounts && <b className="ms-2">{Number(totalSar).toLocaleString()} SAR</b>}
+                        </div>
+                        {!hideAmounts && (
+                          <div className="text-muted mt-1 pt-1 border-top" style={{ fontSize: "11px" }}>
+                            Persons: <b>{persons}</b> | Rate: <b>{rateVal}</b>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })
+                ) : <p className="text-muted small">No ziyarat</p>}
+              </div>
+            </div>
 
             <GiftSection />
 
-            {/* Agent Comm */}
             {showAgentComm && (
               <div className="mb-4">
                 <h6 className="fw-bold text-dark">💼 Agent Commission</h6>
@@ -513,23 +526,22 @@ export default function PackagesView({ id, onNavigate, fromPage }) {
               </div>
             )}
 
-{/* NET TOTAL SECTION (PDF PRINT OPTIMIZED) */}
-<div 
-  className="p-3 rounded-4 text-end my-4 shadow-sm" 
-  style={{ 
-    backgroundColor: "#047857", // Solid Dark Green (Gradient hataya gaya hai)
-    color: "#ffffff", 
-    WebkitPrintColorAdjust: "exact", 
-    printColorAdjust: "exact" 
-  }}
->
-  <div style={{ fontSize: "12px", textTransform: "uppercase", letterSpacing: "1px", color: "#ffffff", fontWeight: "600" }}>
-    Total Package Amount
-  </div>
-  <h3 className="fw-bold m-0 mt-1" style={{ color: "#ffffff", fontSize: "28px" }}>
-    NET PKR {Number(data.net_pkr_total || 0).toLocaleString()}
-  </h3>
-</div>
+            <div 
+              className="p-3 rounded-4 text-end my-4 shadow-sm" 
+              style={{ 
+                backgroundColor: "#047857",
+                color: "#ffffff", 
+                WebkitPrintColorAdjust: "exact", 
+                printColorAdjust: "exact" 
+              }}
+            >
+              <div style={{ fontSize: "12px", textTransform: "uppercase", letterSpacing: "1px", color: "#ffffff", fontWeight: "600" }}>
+                Total Package Amount
+              </div>
+              <h3 className="fw-bold m-0 mt-1" style={{ color: "#ffffff", fontSize: "28px" }}>
+                NET PKR {Number(data.net_pkr_total || 0).toLocaleString()}
+              </h3>
+            </div>
 
             <div className="border rounded-4 p-4 bg-white shadow-sm">
               <h5 className="fw-bold mb-3 text-dark">👥 Per Person Cost Breakdown</h5>
@@ -542,32 +554,32 @@ export default function PackagesView({ id, onNavigate, fromPage }) {
           </div>
         ) : (
           /* =========================================================
-             2. CLASSIC DESIGN (YOUR ORIGINAL UI)
+             2. CLASSIC DESIGN
           ========================================================= */
           <div className="bg-white p-4 rounded-4 shadow-lg" style={{ maxWidth: "800px", margin: "auto", fontFamily: "Arial, sans-serif" }}>
             <Header title="PACKAGE QUOTATION" />
 
-<div className="mb-3">
-  <h4 className="fw-bold">
-    PACKAGE —{" "}
-    <span
-      className="text-primary"
-      style={{ cursor: "pointer" }}
-      title="Click to copy Ref No"
-      onClick={() => handleCopyRef(data.ref_no)}
-    >
-      {data.ref_no}
-    </span>
-  </h4>
-  <p className="mb-1"><b>Customer:</b> {data.customer_name}</p>
-  <p className="mb-1"><b>Sub Customer:</b> {data.sub_customer_name || "-"}</p>
-  <p className="mb-1"><b>Contact No:</b> {data.contact_no || "-"}</p>
-  <p className="mb-1"><b>Booking Date:</b> {fmtDate(data.booking_date)}</p>
-  <div className="border rounded-3 p-3 mt-2 shadow-sm" style={{ background: "linear-gradient(135deg,#f8f9fa,#e9f7ef)", borderLeft: "5px solid #198754" }}>
-    <div style={{ fontSize: "12px", color: "#6c757d", textTransform: "uppercase", fontWeight: "600" }}>Package Duration</div>
-    <div style={{ fontSize: "22px", fontWeight: "800", color: "#198754" }}>📅 {packageDays} Days / 🌙 {packageNights} Nights</div>
-  </div>
-</div>
+            <div className="mb-3">
+              <h4 className="fw-bold">
+                PACKAGE —{" "}
+                <span
+                  className="text-primary"
+                  style={{ cursor: "pointer" }}
+                  title="Click to copy Ref No"
+                  onClick={() => handleCopyRef(data.ref_no)}
+                >
+                  {data.ref_no}
+                </span>
+              </h4>
+              <p className="mb-1"><b>Customer:</b> {data.customer_name}</p>
+              <p className="mb-1"><b>Sub Customer:</b> {data.sub_customer_name || "-"}</p>
+              <p className="mb-1"><b>Contact No:</b> {data.contact_no || "-"}</p>
+              <p className="mb-1"><b>Booking Date:</b> {fmtDate(data.booking_date)}</p>
+              <div className="border rounded-3 p-3 mt-2 shadow-sm" style={{ background: "linear-gradient(135deg,#f8f9fa,#e9f7ef)", borderLeft: "5px solid #198754" }}>
+                <div style={{ fontSize: "12px", color: "#6c757d", textTransform: "uppercase", fontWeight: "600" }}>Package Duration</div>
+                <div style={{ fontSize: "22px", fontWeight: "800", color: "#198754" }}>📅 {packageDays} Days / 🌙 {packageNights} Nights</div>
+              </div>
+            </div>
 
             <hr />
 
@@ -633,17 +645,24 @@ export default function PackagesView({ id, onNavigate, fromPage }) {
 
             <hr />
 
-<h5 className="fw-bold text-danger mb-2">🚐 Transport</h5>
-{Array.isArray(data.transport) && data.transport.length > 0 ? (
-  data.transport.map((t, i) => (
-    <div key={i} className="border p-2 rounded mb-1 shadow-sm">
-      {t.date && <b className="text-primary">{fmtDate(t.date)} — </b>}
-      {t.text} {!hideAmounts && <>— {Number(t.amount || 0).toLocaleString()} SAR</>}
-    </div>
-  ))
-) : <p>No transport</p>}
+            <h5 className="fw-bold text-danger mb-2">🚐 Transport</h5>
+            {Array.isArray(data.transport) && data.transport.length > 0 ? (
+              data.transport.map((t, i) => {
+                const persons = Number(t.persons) || 1;
+                const rateVal = Number(t.rate) || 0;
+                const totalSar = Number(t.amount || t.total) || (persons * rateVal);
+                return (
+                  <div key={i} className="border p-2 rounded mb-2 shadow-sm">
+                    {t.date && <b className="text-primary">📅 {fmtDate(t.date)} — </b>}
+                    <span>{t.text || t.route || t.description}</span>
+                    {t.vehicle && <span className="text-muted ms-1">({t.vehicle})</span>}
+                    {!hideAmounts && <div className="small text-muted mt-1">Persons: <b>{persons}</b> | Rate: <b>{rateVal}</b> | Total: <b>{Number(totalSar).toLocaleString()} SAR</b></div>}
+                  </div>
+                );
+              })
+            ) : <p>No transport</p>}
             {!hideAmounts && (
-              <p>
+              <p className="mt-2">
                 <b>Transport SAR:</b> {Number(data.transport_sar_total || 0).toLocaleString()} <br />
                 <b>SAR Rate:</b> {rate.transport} <br />
                 <b>Transport PKR:</b> {Number(data.transport_pkr_total || 0).toLocaleString()}
@@ -654,14 +673,22 @@ export default function PackagesView({ id, onNavigate, fromPage }) {
 
             <h5 className="fw-bold text-purple mb-2">🕌 Ziyarat</h5>
             {Array.isArray(data.ziyarat) && data.ziyarat.length > 0 ? (
-              data.ziyarat.map((z, i) => (
-                <div key={i} className="border p-2 rounded mb-1 shadow-sm">
-                  {z.text || z.route || z.description} {!hideAmounts && <> — {Number(z.amount || 0).toLocaleString()}</>}
-                </div>
-              ))
+              data.ziyarat.map((z, i) => {
+                const persons = Number(z.persons) || 1;
+                const rateVal = Number(z.rate) || 0;
+                const totalSar = Number(z.amount || z.total) || (persons * rateVal);
+                return (
+                  <div key={i} className="border p-2 rounded mb-2 shadow-sm">
+                    {z.date && <b className="text-primary">📅 {fmtDate(z.date)} — </b>}
+                    <span>{z.text || z.route || z.description}</span>
+                    {z.vehicle && <span className="text-muted ms-1">({z.vehicle})</span>}
+                    {!hideAmounts && <div className="small text-muted mt-1">Persons: <b>{persons}</b> | Rate: <b>{rateVal}</b> | Total: <b>{Number(totalSar).toLocaleString()} SAR</b></div>}
+                  </div>
+                );
+              })
             ) : <p>No ziyarat</p>}
             {!hideAmounts && (
-              <p>
+              <p className="mt-2">
                 <b>Ziyarat SAR:</b> {Number(data.ziyarat_sar_total || 0).toLocaleString()} <br />
                 <b>SAR Rate:</b> {rate.ziyarat} <br />
                 <b>Ziyarat PKR:</b> {Number(data.ziyarat_pkr_total || 0).toLocaleString()}
