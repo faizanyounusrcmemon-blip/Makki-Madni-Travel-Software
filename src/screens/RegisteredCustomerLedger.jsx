@@ -847,7 +847,7 @@ const handleSuccessResponse = (data, ledgerVal, originalId, currentType) => {
   // Metrics computation for summary cards
   const totalDebit = ledgerView.reduce((acc, r) => acc + (Number(r.debit) || 0), 0);
   const totalCredit = ledgerView.reduce((acc, r) => acc + (Number(r.credit) || 0), 0);
-  const currentBal = rows.length ? rows[rows.length - 1].balance : 0;
+  const currentBal = totalCredit - totalDebit;
 
   return (
     <div className="customer-ledger-page">
