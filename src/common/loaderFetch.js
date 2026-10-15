@@ -1,6 +1,7 @@
 // loaderFetch.js
 
 let globalLoadingCallback = null;
+let activeRequestsCount = 0;
 
 // browser ka original fetch save karo
 const originalFetch = window.fetch;
@@ -10,13 +11,21 @@ export const setGlobalLoader = (callback) => {
 };
 
 export const loaderFetch = async (...args) => {
-  if (globalLoadingCallback) globalLoadingCallback(true);
+  activeRequestsCount++;
+  if (activeRequestsCount === 1 && globalLoadingCallback) {
+    globalLoadingCallback(true);
+  }
 
   try {
-    // ✅ original fetch call karo
     const res = await originalFetch(...args);
     return res;
   } finally {
-    if (globalLoadingCallback) globalLoadingCallback(false);
+    activeRequestsCount--;
+    if (activeRequestsCount <= 0) {
+      activeRequestsCount = 0;
+      if (globalLoadingCallback) {
+        globalLoadingCallback(false);
+      }
+    }
   }
 };
