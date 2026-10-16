@@ -12,6 +12,9 @@ export default function DeletedReports({ onNavigate }) {
   const [currentPage, setCurrentPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(25);
 
+  // 📱 Mobile-Style Selection State
+  const [selectedRefs, setSelectedRefs] = useState({});
+
   /* ================= LOAD DATA ================= */
   const load = async () => {
     setLoading(true);
@@ -20,7 +23,10 @@ export default function DeletedReports({ onNavigate }) {
         `${import.meta.env.VITE_BACKEND_URL}/api/deleted/list`
       );
       const data = await res.json();
-      if (data.success) setRows(data.rows || []);
+      if (data.success) {
+        setRows(data.rows || []);
+        setSelectedRefs({}); // Reset selection on reload
+      }
     } catch (err) {
       console.error(err);
       Swal.fire({
@@ -66,6 +72,7 @@ export default function DeletedReports({ onNavigate }) {
     setCategory("ALL");
     setFromDate("");
     setToDate("");
+    setSelectedRefs({});
   };
 
   /* ================= FILTER & SUMMARY ================= */
@@ -132,18 +139,91 @@ export default function DeletedReports({ onNavigate }) {
     return rangeWithDots;
   };
 
-  /* ================= REUSABLE PASSWORD POPUP ================= */
+  /* ================= SELECTION HANDLERS ================= */
+  const toggleSelectAllCurrent = (e) => {
+    if (e.target.checked) {
+      const newSelected = { ...selectedRefs };
+      currentRows.forEach((r) => {
+        newSelected[`${r.type}_${r.ref_no}`] = true;
+      });
+      setSelectedRefs(newSelected);
+    } else {
+      const newSelected = { ...selectedRefs };
+      currentRows.forEach((r) => {
+        delete newSelected[`${r.type}_${r.ref_no}`];
+      });
+      setSelectedRefs(newSelected);
+    }
+  };
+
+  const toggleSelectOne = (type, ref_no) => {
+    const key = `${type}_${ref_no}`;
+    setSelectedRefs((prev) => {
+      const copy = { ...prev };
+      if (copy[key]) {
+        delete copy[key];
+      } else {
+        copy[key] = true;
+      }
+      return copy;
+    });
+  };
+
+  const isAllCurrentSelected =
+    currentRows.length > 0 &&
+    currentRows.every((r) => selectedRefs[`${r.type}_${r.ref_no}`]);
+
+  const selectedCount = Object.keys(selectedRefs).length;
+
+  /* ================= CATEGORY-WISE COLOR MAPPER ================= */
+  const getCategoryStyle = (type) => {
+    const t = type?.toUpperCase();
+    switch (t) {
+      case "PACKAGE":
+      case "PACKAGES":
+        return { bg: "#eff6ff", text: "#1d4ed8", border: "#bfdbfe", icon: "📦" };
+      case "HOTEL":
+      case "HOTELS":
+        return { bg: "#f0fdf4", text: "#15803d", border: "#bbf7d0", icon: "🏨" };
+      case "TICKETING":
+        return { bg: "#e0f2fe", text: "#0369a1", border: "#bae6fd", icon: "✈️" };
+      case "TRANSPORT":
+        return { bg: "#fdf4ff", text: "#a21caf", border: "#f5d0fe", icon: "🚐" };
+      case "ZIYARAT":
+        return { bg: "#fefce8", text: "#a16207", border: "#fef08a", icon: "🕌" };
+      case "VISA":
+        return { bg: "#fff7ed", text: "#c2410c", border: "#ffedd5", icon: "🛂" };
+      case "CARD":
+        return { bg: "#f5f3ff", text: "#6d28d9", border: "#ede9fe", icon: "💳" };
+      case "GROUPS":
+        return { bg: "#ecfdf5", text: "#047857", border: "#a7f3d0", icon: "👥" };
+      case "PURCHASE":
+        return { bg: "#f0fdfa", text: "#0f766e", border: "#ccfbf1", icon: "🛒" };
+      case "SUPPLIER":
+        return { bg: "#fae8ff", text: "#86198f", border: "#f5d0fe", icon: "🏢" };
+      case "CUSTOMER":
+        return { bg: "#ecfdf5", text: "#065f46", border: "#a7f3d0", icon: "👤" };
+      case "USER":
+        return { bg: "#fffbeb", text: "#b45309", border: "#fde68a", icon: "👤" };
+      case "BANK":
+        return { bg: "#f1f5f9", text: "#334155", border: "#cbd5e1", icon: "🏦" };
+      default:
+        return { bg: "#f8fafc", text: "#475569", border: "#e2e8f0", icon: "📄" };
+    }
+  };
+
+  /* ================= REUSABLE PASSWORD POPUP (WITH CATEGORY BREAKDOWN) ================= */
   const askPasswordPopup = async (
     title,
     btnColor,
     confirmText,
-    type,
+    typeDisplay,
     ref_no,
     customer_name,
     amount
   ) => {
     const { value: password } = await Swal.fire({
-      width: "380px",
+      width: "420px",
       padding: "1.25em",
       customClass: { popup: "rounded-4 border-0 shadow-lg" },
       html: `
@@ -152,10 +232,10 @@ export default function DeletedReports({ onNavigate }) {
             <span>🛡️</span> ${title}
           </div>
           <div style="background:#f8fafc; padding:12px; border-radius:12px; border:1px solid #e2e8f0; margin-bottom:12px;">
-            <div><b>Type:</b> ${type}</div>
+            <div style="margin-bottom:6px;"><b>Type:</b> ${typeDisplay}</div>
             <div><b>Ref No:</b> <span style="color:#2563eb; font-weight:600;">${ref_no}</span></div>
-            <div><b>Name:</b> ${customer_name || "-"}</div>
-            ${amount ? `<div><b>Amount:</b> <span style="color:#e11d48; font-weight:700;">PKR ${Number(amount).toLocaleString()}</span></div>` : ""}
+            ${customer_name ? `<div><b>Name:</b> ${customer_name}</div>` : ""}
+            ${amount ? `<div style="margin-top:4px;"><b>Total Amount:</b> <span style="color:#e11d48; font-weight:700;">PKR ${Number(amount).toLocaleString()}</span></div>` : ""}
           </div>
           <div style="position:relative">
             <input id="swal-pass" type="password" class="swal2-input"
@@ -198,13 +278,44 @@ export default function DeletedReports({ onNavigate }) {
     return password;
   };
 
-  /* ================= RESTORE ================= */
+  /* ================= HELPER: GET SELECTED CATEGORY BREAKDOWN HTML ================= */
+  const getSelectedCategoryBreakdown = (selectedItems) => {
+    const counts = {};
+    let totalAmt = 0;
+
+    selectedItems.forEach((item) => {
+      const t = item.type?.toUpperCase() || "OTHER";
+      counts[t] = (counts[t] || 0) + 1;
+
+      // Calculate sum of amount if available in rows
+      const foundRow = rows.find(
+        (r) => String(r.ref_no) === String(item.ref_no) && r.type?.toUpperCase() === t
+      );
+      if (foundRow && foundRow.amount) {
+        totalAmt += Number(foundRow.amount) || 0;
+      }
+    });
+
+    const badgesHtml = Object.entries(counts)
+      .map(([typeKey, count]) => {
+        const style = getCategoryStyle(typeKey);
+        return `<span style="display:inline-block; background:${style.bg}; color:${style.text}; border:1px solid ${style.border}; padding:2px 8px; border-radius:6px; font-size:11px; font-weight:600; margin-right:4px; margin-bottom:4px;">${style.icon} ${typeKey}: <b>${count}</b></span>`;
+      })
+      .join("");
+
+    return {
+      html: `<div style="display:flex; flex-wrap:wrap; gap:2px; margin-top:4px;">${badgesHtml}</div>`,
+      totalAmt,
+    };
+  };
+
+  /* ================= RESTORE SINGLE ================= */
   const restore = async (type, ref_no, customer_name, amount) => {
     const password = await askPasswordPopup(
       "Restore Record",
       "#16a34a",
       "Restore Record",
-      type,
+      `<span style="color:#15803d; font-weight:600;">${type}</span>`,
       ref_no,
       customer_name,
       amount
@@ -258,13 +369,13 @@ export default function DeletedReports({ onNavigate }) {
     }
   };
 
-  /* ================= PERMANENT DELETE ================= */
+  /* ================= PERMANENT DELETE SINGLE ================= */
   const permanentDelete = async (type, ref_no, customer_name, amount) => {
     const password = await askPasswordPopup(
       "Permanent Delete",
       "#e11d48",
       "Delete Forever",
-      type,
+      `<span style="color:#e11d48; font-weight:600;">${type}</span>`,
       ref_no,
       customer_name,
       amount
@@ -328,6 +439,138 @@ export default function DeletedReports({ onNavigate }) {
     }
   };
 
+  /* ================= BULK RESTORE ================= */
+  const handleBulkRestore = async () => {
+    const selectedItems = Object.keys(selectedRefs).map((key) => {
+      const [type, ...refParts] = key.split("_");
+      return { type, ref_no: refParts.join("_") };
+    });
+
+    if (selectedItems.length === 0) return;
+
+    const { html: typeBreakdownHtml, totalAmt } = getSelectedCategoryBreakdown(selectedItems);
+
+    const password = await askPasswordPopup(
+      `Bulk Restore (${selectedItems.length} items)`,
+      "#16a34a",
+      "Restore All Selected",
+      typeBreakdownHtml,
+      `${selectedItems.length} items selected`,
+      null,
+      totalAmt
+    );
+
+    if (!password) return;
+
+    Swal.fire({
+      width: "280px",
+      title: "Restoring selected...",
+      allowOutsideClick: false,
+      didOpen: () => Swal.showLoading(),
+    });
+
+    try {
+      const res = await fetch(
+        `${import.meta.env.VITE_BACKEND_URL}/api/deleted/bulk-restore`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ items: selectedItems, password }),
+        }
+      );
+      const data = await res.json();
+      Swal.close();
+
+      if (data.success) {
+        Swal.fire({
+          icon: "success",
+          title: "Restored!",
+          text: data.message,
+          timer: 1500,
+          showConfirmButton: false,
+        });
+        load();
+      } else {
+        Swal.fire({ title: "Error", text: data.error || "Failed", icon: "error" });
+      }
+    } catch (err) {
+      Swal.close();
+      Swal.fire({ icon: "error", text: "Server network error" });
+    }
+  };
+
+  /* ================= BULK PERMANENT DELETE ================= */
+  const handleBulkPermanentDelete = async () => {
+    const selectedItems = Object.keys(selectedRefs).map((key) => {
+      const [type, ...refParts] = key.split("_");
+      return { type, ref_no: refParts.join("_") };
+    });
+
+    if (selectedItems.length === 0) return;
+
+    const { html: typeBreakdownHtml, totalAmt } = getSelectedCategoryBreakdown(selectedItems);
+
+    const password = await askPasswordPopup(
+      `Bulk Permanent Delete (${selectedItems.length} items)`,
+      "#e11d48",
+      "Delete All Forever",
+      typeBreakdownHtml,
+      `${selectedItems.length} items selected`,
+      null,
+      totalAmt
+    );
+
+    if (!password) return;
+
+    const finalConfirm = await Swal.fire({
+      width: "380px",
+      title: "Are you absolutely sure?",
+      text: `${selectedItems.length} selected records will be erased forever from the database!`,
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#e11d48",
+      confirmButtonText: "Yes, Erase All Completely",
+    });
+
+    if (!finalConfirm.isConfirmed) return;
+
+    Swal.fire({
+      width: "280px",
+      title: "Erasing selected...",
+      allowOutsideClick: false,
+      didOpen: () => Swal.showLoading(),
+    });
+
+    try {
+      const res = await fetch(
+        `${import.meta.env.VITE_BACKEND_URL}/api/deleted/bulk-permanent-delete`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ items: selectedItems, password }),
+        }
+      );
+      const data = await res.json();
+      Swal.close();
+
+      if (data.success) {
+        Swal.fire({
+          icon: "success",
+          title: "Erased!",
+          text: data.message,
+          timer: 1500,
+          showConfirmButton: false,
+        });
+        load();
+      } else {
+        Swal.fire({ title: "Error", text: data.error || "Failed", icon: "error" });
+      }
+    } catch (err) {
+      Swal.close();
+      Swal.fire({ icon: "error", text: "Server network error" });
+    }
+  };
+
   /* ================= VIEW ================= */
   const handleView = (type, ref_no) => {
     const t = type?.toUpperCase();
@@ -365,31 +608,10 @@ export default function DeletedReports({ onNavigate }) {
 
   const fmtPKR = (v) => Number(v || 0).toLocaleString("en-PK");
 
-const typeIcon = (type) => {
-  const map = {
-    PACKAGE: "📦",
-    PACKAGES: "📦",
-    HOTEL: "🏨",
-    HOTELS: "🏨",
-    TICKETING: "✈️",
-    TRANSPORT: "🚐",
-    ZIYARAT: "🕌",
-    VISA: "🛂",
-    CARD: "💳",
-    GROUPS: "👥",
-    PURCHASE: "🛒",
-    SUPPLIER: "🏢",
-    CUSTOMER: "👤",
-    USER: "👤",
-    BANK: "🏦",
-  };
-  return map[type?.toUpperCase()] || "📄";
-};
-
-const isSupplier = (t) => t?.toUpperCase() === "SUPPLIER";
-const isCustomer = (t) => t?.toUpperCase() === "CUSTOMER";
-const isUser = (t) => t?.toUpperCase() === "USER";
-const isBank = (t) => t?.toUpperCase() === "BANK";
+  const isSupplier = (t) => t?.toUpperCase() === "SUPPLIER";
+  const isCustomer = (t) => t?.toUpperCase() === "CUSTOMER";
+  const isUser = (t) => t?.toUpperCase() === "USER";
+  const isBank = (t) => t?.toUpperCase() === "BANK";
 
   return (
     <div
@@ -484,27 +706,27 @@ const isBank = (t) => t?.toUpperCase() === "BANK";
           </div>
 
           <div className="col-lg-3 col-md-6">
-<select
-  className="form-select border-light-subtle bg-light shadow-none"
-  style={{ fontSize: "13px", padding: "10px 14px", borderRadius: "10px" }}
-  value={category}
-  onChange={(e) => setCategory(e.target.value)}
->
-  <option value="ALL">All Services</option>
-  <option value="PACKAGE">Packages</option>
-  <option value="HOTEL">Hotels</option>
-  <option value="TICKETING">Ticketing</option>
-  <option value="TRANSPORT">Transport</option>
-  <option value="ZIYARAT">Ziyarat</option>
-  <option value="VISA">Visa</option>
-  <option value="CARD">Card</option>
-  <option value="GROUPS">Groups</option>
-  <option value="PURCHASE">Purchase</option>
-  <option value="SUPPLIER">Supplier</option>
-  <option value="CUSTOMER">Customer</option>
-  <option value="USER">Users</option>
-  <option value="BANK">Bank Accounts</option>
-</select>
+            <select
+              className="form-select border-light-subtle bg-light shadow-none"
+              style={{ fontSize: "13px", padding: "10px 14px", borderRadius: "10px" }}
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+            >
+              <option value="ALL">All Services</option>
+              <option value="PACKAGE">Packages</option>
+              <option value="HOTEL">Hotels</option>
+              <option value="TICKETING">Ticketing</option>
+              <option value="TRANSPORT">Transport</option>
+              <option value="ZIYARAT">Ziyarat</option>
+              <option value="VISA">Visa</option>
+              <option value="CARD">Card</option>
+              <option value="GROUPS">Groups</option>
+              <option value="PURCHASE">Purchase</option>
+              <option value="SUPPLIER">Supplier</option>
+              <option value="CUSTOMER">Customer</option>
+              <option value="USER">Users</option>
+              <option value="BANK">Bank Accounts</option>
+            </select>
           </div>
 
           <div className="col-lg-2 col-md-3">
@@ -563,13 +785,60 @@ const isBank = (t) => t?.toUpperCase() === "BANK";
         </div>
       </div>
 
+      {/* 📱 MOBILE-STYLE SELECTION FLOATING BANNER WITH BULK BUTTONS */}
+      {selectedCount > 0 && (
+        <div
+          className="alert alert-dark d-flex align-items-center justify-content-between py-2 px-3 mb-3 rounded-4 shadow-sm flex-wrap gap-2"
+          style={{ background: "#0f172a", color: "#f8fafc", fontSize: "13px" }}
+        >
+          <div className="fw-semibold">
+            <span>✅ {selectedCount} items selected</span>
+          </div>
+
+          <div className="d-flex align-items-center gap-2">
+            <button
+              className="btn btn-sm btn-success rounded-pill px-3 fw-semibold"
+              style={{ fontSize: "12px" }}
+              onClick={handleBulkRestore}
+            >
+              ♻️ Restore Selected ({selectedCount})
+            </button>
+
+            <button
+              className="btn btn-sm btn-danger rounded-pill px-3 fw-semibold"
+              style={{ fontSize: "12px" }}
+              onClick={handleBulkPermanentDelete}
+            >
+              🗑️ Delete Selected ({selectedCount})
+            </button>
+
+            <button
+              className="btn btn-sm btn-outline-light rounded-pill px-3"
+              style={{ fontSize: "12px" }}
+              onClick={() => setSelectedRefs({})}
+            >
+              Clear
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* 📊 ELEGANT TABLE CONTAINER */}
       <div className="card border-0 shadow-sm rounded-4 overflow-hidden bg-white">
         <div className="table-responsive">
           <table className="table align-middle mb-0" style={{ fontSize: "13px" }}>
             <thead className="table-light text-secondary">
               <tr>
-                <th className="py-3 px-3 text-center" style={{ width: "50px" }}>SR#</th>
+                <th className="py-3 px-3 text-center" style={{ width: "40px" }}>
+                  <input
+                    type="checkbox"
+                    className="form-check-input shadow-none cursor-pointer"
+                    checked={isAllCurrentSelected}
+                    onChange={toggleSelectAllCurrent}
+                    title="Select All on this page"
+                  />
+                </th>
+                <th className="py-3 px-2 text-center" style={{ width: "50px" }}>SR#</th>
                 <th className="py-3">Type</th>
                 <th className="py-3">Ref No</th>
                 <th className="py-3">Customer Name</th>
@@ -583,7 +852,7 @@ const isBank = (t) => t?.toUpperCase() === "BANK";
             <tbody>
               {loading && (
                 <tr>
-                  <td colSpan={8} className="text-center py-5 text-muted">
+                  <td colSpan={9} className="text-center py-5 text-muted">
                     <div className="spinner-border spinner-border-sm text-danger me-2" role="status"></div>
                     Loading deleted records...
                   </td>
@@ -592,14 +861,41 @@ const isBank = (t) => t?.toUpperCase() === "BANK";
 
               {!loading && currentRows.map((r, i) => {
                 const isRegistered = r.customer_code && r.customer_code.trim() !== "";
+                const rowKey = `${r.type}_${r.ref_no}`;
+                const isSelected = !!selectedRefs[rowKey];
+                const catStyle = getCategoryStyle(r.type);
 
                 return (
-                  <tr key={i} className="align-middle">
+                  <tr
+                    key={i}
+                    className="align-middle"
+                    style={{
+                      backgroundColor: isSelected ? "rgba(13, 110, 253, 0.04)" : "transparent",
+                      transition: "background-color 0.2s ease",
+                    }}
+                  >
+                    <td className="text-center px-3">
+                      <input
+                        type="checkbox"
+                        className="form-check-input shadow-none cursor-pointer"
+                        checked={isSelected}
+                        onChange={() => toggleSelectOne(r.type, r.ref_no)}
+                      />
+                    </td>
+
                     <td className="text-center text-muted fw-bold">{i + 1 + indexOfFirst}</td>
 
                     <td>
-                      <span className="badge bg-danger-subtle text-danger border border-danger-subtle px-2 py-1 rounded-3">
-                        {typeIcon(r.type)} {r.type}
+                      <span
+                        className="badge px-2.5 py-1.5 rounded-3 fw-semibold border"
+                        style={{
+                          backgroundColor: catStyle.bg,
+                          color: catStyle.text,
+                          borderColor: catStyle.border,
+                          fontSize: "12px",
+                        }}
+                      >
+                        {catStyle.icon} {r.type}
                       </span>
                     </td>
 
@@ -611,7 +907,6 @@ const isBank = (t) => t?.toUpperCase() === "BANK";
                       </span>
                     </td>
 
-                    {/* CODE / STATUS COLUMN RENDER */}
                     <td className="text-center">
                       {isRegistered ? (
                         <span className="badge bg-success-subtle text-success border border-success-subtle px-2 py-1 rounded-pill">
@@ -630,7 +925,6 @@ const isBank = (t) => t?.toUpperCase() === "BANK";
                       {r.amount ? `PKR ${fmtPKR(r.amount)}` : "-"}
                     </td>
 
-                    {/* ACTION BUTTON GRID */}
                     <td className="text-center">
                       <div
                         style={{
@@ -641,20 +935,18 @@ const isBank = (t) => t?.toUpperCase() === "BANK";
                           alignItems: "center",
                         }}
                       >
-                        {/* VIEW BUTTON */}
-{!isSupplier(r.type) && !isCustomer(r.type) && !isUser(r.type) && !isBank(r.type) ? (
-  <button
-    className="btn btn-sm btn-outline-primary rounded-pill px-1 py-1 fw-semibold w-100"
-    style={{ fontSize: "11px", whiteSpace: "nowrap" }}
-    onClick={() => handleView(r.type, r.ref_no)}
-  >
-    👁️ View
-  </button>
-) : (
-  <div></div>
-)}
+                        {!isSupplier(r.type) && !isCustomer(r.type) && !isUser(r.type) && !isBank(r.type) ? (
+                          <button
+                            className="btn btn-sm btn-outline-primary rounded-pill px-1 py-1 fw-semibold w-100"
+                            style={{ fontSize: "11px", whiteSpace: "nowrap" }}
+                            onClick={() => handleView(r.type, r.ref_no)}
+                          >
+                            👁️ View
+                          </button>
+                        ) : (
+                          <div></div>
+                        )}
 
-                        {/* RESTORE BUTTON */}
                         <button
                           className="btn btn-sm btn-outline-success rounded-pill px-1 py-1 fw-semibold w-100"
                           style={{ fontSize: "11px", whiteSpace: "nowrap" }}
@@ -665,7 +957,6 @@ const isBank = (t) => t?.toUpperCase() === "BANK";
                           ♻️ Restore
                         </button>
 
-                        {/* ERASE BUTTON */}
                         <button
                           className="btn btn-sm btn-outline-danger rounded-pill px-1 py-1 fw-semibold w-100"
                           style={{ fontSize: "11px", whiteSpace: "nowrap" }}
@@ -688,7 +979,7 @@ const isBank = (t) => t?.toUpperCase() === "BANK";
 
               {!loading && filteredRows.length === 0 && (
                 <tr>
-                  <td colSpan={8} className="text-center py-5 text-muted">
+                  <td colSpan={9} className="text-center py-5 text-muted">
                     🎉 No deleted records matching your filter.
                   </td>
                 </tr>
