@@ -270,8 +270,9 @@ export default function PendingPurchase({ onNavigate }) {
                 <th className="py-3 px-3 text-center" style={{ width: "50px" }}>SR#</th>
                 <th className="py-3 text-center">Ref No</th>
                 <th className="py-3">Customer Name</th>
-                {activeTab === "missing" && <th className="py-3">Supplier Name</th>}
-                <th className="py-3 text-center">Status</th>
+                {activeTab === "missing" && <th className="py-3">Missing Item / Row</th>}
+                {activeTab === "missing" && <th className="py-3">Supplier Status</th>}
+                {activeTab === "pending" && <th className="py-3 text-center">Status</th>}
                 <th className="py-3 text-end">Sale (PKR)</th>
                 <th className="py-3 text-end">Purchase (PKR)</th>
                 <th className="py-3 text-center px-3">Action</th>
@@ -281,7 +282,7 @@ export default function PendingPurchase({ onNavigate }) {
             <tbody>
               {loading && (
                 <tr>
-                  <td colSpan={activeTab === "missing" ? 8 : 7} className="text-center py-5 text-muted">
+                  <td colSpan={activeTab === "missing" ? 9 : 7} className="text-center py-5 text-muted">
                     <div className="spinner-border spinner-border-sm text-warning me-2" role="status"></div>
                     Loading purchase records...
                   </td>
@@ -300,39 +301,43 @@ export default function PendingPurchase({ onNavigate }) {
                     {r.customer_name || "-"}
                   </td>
 
+                  {/* MISSING TAB SPECIFIC COLUMNS */}
                   {activeTab === "missing" && (
                     <td className="fw-bold text-danger">
-                      {r.supplier_name || "MISSING"}
+                      <span className="badge bg-danger-subtle text-danger border border-danger-subtle px-2 py-1 rounded-3">
+                        ⚠️ {r.item || "Unknown Item"}
+                      </span>
                     </td>
                   )}
 
-                  <td className="text-center">
-                    {activeTab === "pending" && (
-                      <>
-                        {r.purchase_status === "PENDING" && (
-                          <span className="badge bg-danger-subtle text-danger border border-danger-subtle px-2 py-1 rounded-pill fw-bold">
-                            🔻 Pending
-                          </span>
-                        )}
-                        {r.purchase_status === "PARTIAL" && (
-                          <span className="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle px-2 py-1 rounded-pill fw-bold">
-                            ⚠️ Partial
-                          </span>
-                        )}
-                        {r.purchase_status === "COMPLETE" && (
-                          <span className="badge bg-success-subtle text-success border border-success-subtle px-2 py-1 rounded-pill fw-bold">
-                            ✅ Complete
-                          </span>
-                        )}
-                      </>
-                    )}
-
-                    {activeTab === "missing" && (
-                      <span className="badge bg-success-subtle text-success border border-success-subtle px-2 py-1 rounded-pill fw-bold">
-                        ✅ Complete
+                  {activeTab === "missing" && (
+                    <td>
+                      <span className="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle px-2 py-1 rounded-pill fw-bold">
+                        🚫 Supplier Missing
                       </span>
-                    )}
-                  </td>
+                    </td>
+                  )}
+
+                  {/* PENDING TAB STATUS */}
+                  {activeTab === "pending" && (
+                    <td className="text-center">
+                      {r.purchase_status === "PENDING" && (
+                        <span className="badge bg-danger-subtle text-danger border border-danger-subtle px-2 py-1 rounded-pill fw-bold">
+                          🔻 Pending
+                        </span>
+                      )}
+                      {r.purchase_status === "PARTIAL" && (
+                        <span className="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle px-2 py-1 rounded-pill fw-bold">
+                          ⚠️ Partial
+                        </span>
+                      )}
+                      {r.purchase_status === "COMPLETE" && (
+                        <span className="badge bg-success-subtle text-success border border-success-subtle px-2 py-1 rounded-pill fw-bold">
+                          ✅ Complete
+                        </span>
+                      )}
+                    </td>
+                  )}
 
                   <td className="text-end fw-bold text-success">
                     PKR {fmt(r.sale_pkr)}
@@ -358,7 +363,13 @@ export default function PendingPurchase({ onNavigate }) {
                           : "✏️ Complete Purchase"}
                       </button>
                     ) : (
-                      <span className="text-muted">—</span>
+                      <button
+                        className="btn btn-sm btn-danger rounded-pill px-3 fw-semibold shadow-sm"
+                        style={{ fontSize: "12px" }}
+                        onClick={() => onNavigate("purchase", r.ref_no)}
+                      >
+                        🛠️ Fix Supplier
+                      </button>
                     )}
                   </td>
                 </tr>
@@ -366,7 +377,7 @@ export default function PendingPurchase({ onNavigate }) {
 
               {!loading && activeRows.length === 0 && (
                 <tr>
-                  <td colSpan={activeTab === "missing" ? 8 : 7} className="text-center py-5 text-success fw-bold">
+                  <td colSpan={activeTab === "missing" ? 9 : 7} className="text-center py-5 text-success fw-bold">
                     🎉 No records found!
                   </td>
                 </tr>

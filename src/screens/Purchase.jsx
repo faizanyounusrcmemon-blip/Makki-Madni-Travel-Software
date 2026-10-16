@@ -83,7 +83,7 @@ const itemCategoryBadge = (text = "") => {
   return { bg: "#f1f5f9", color: "#334155", icon: "📦" };
 };
 
-export default function Purchase({ onNavigate }) {
+export default function Purchase({ onNavigate, selectedRef }) {
   const [refNo, setRefNo] = useState("");
   const [rows, setRows] = useState([]);
   const [pending, setPending] = useState([]);
@@ -123,6 +123,14 @@ export default function Purchase({ onNavigate }) {
     });
     setPendingMap(map);
   }, [pending]);
+
+/* ================= AUTO LOAD ON REF PASSED ================= */
+  useEffect(() => {
+    if (selectedRef) {
+      setRefNo(selectedRef);
+      loadPackage(selectedRef);
+    }
+  }, [selectedRef]);
 
   /* ================= LOAD PACKAGE ================= */
   const loadPackage = async (r = refNo) => {
