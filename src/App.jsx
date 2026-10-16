@@ -168,7 +168,7 @@ export default function App() {
       {page === "systemStorage" && <SystemStorage onNavigate={navigate} />}
 
       {/* ================= PURCHASE ================= */}
-      {page === "purchase" && <Purchase onNavigate={navigate} />}
+      {page === "purchase" && <Purchase onNavigate={navigate} selectedRef={detail} />}
       {page === "supplier" && <Supplier onNavigate={navigate} />}
       {page === "customersList" && <CustomersList onNavigate={navigate} />}
       {page === "purchaseList" && <PurchaseList onNavigate={navigate} />}
