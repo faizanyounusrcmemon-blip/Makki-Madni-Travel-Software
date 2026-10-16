@@ -92,6 +92,7 @@ export default function Purchase({ onNavigate, selectedRef }) {
   const [isEdit, setIsEdit] = useState(false);
   const [pendingMap, setPendingMap] = useState({});
   const [customerName, setCustomerName] = useState("");
+  const [subCustomerName, setSubCustomerName] = useState("");
   const [pendingSearch, setPendingSearch] = useState("");
 
   /* ================= LOAD SUPPLIERS ================= */
@@ -132,7 +133,7 @@ export default function Purchase({ onNavigate, selectedRef }) {
     }
   }, [selectedRef]);
 
-  /* ================= LOAD PACKAGE ================= */
+/* ================= LOAD PACKAGE ================= */
   const loadPackage = async (r = refNo) => {
     if (!r) {
       return Swal.fire({ width: "320px", icon: "warning", text: "Please enter Ref No" });
@@ -149,6 +150,7 @@ export default function Purchase({ onNavigate, selectedRef }) {
       if (!data.success) {
         setRows([]);
         setCustomerName("");
+        setSubCustomerName("");
         return Swal.fire({ width: "320px", icon: "error", text: data.error || "Record not found" });
       }
 
@@ -176,23 +178,20 @@ export default function Purchase({ onNavigate, selectedRef }) {
         }))
       );
 
-      const cName =
-        data.customer_name ||
-        data.customer ||
-        data.rows?.[0]?.customer_name ||
-        pendingMap[r] ||
-        "N/A";
+      const cName = data.customer_name || pendingMap[r] || "N/A";
+      const subCName = data.sub_customer_name || "";
 
       setCustomerName(cName);
+      setSubCustomerName(subCName);
 
       Swal.fire({
-        width: "380px",
+        width: "385px",
         icon: "success",
         html: `
         <div style="text-align:left; font-size:14px">
           <b>✅ Data Loaded Successfully</b><br/><br/>
           <b>Ref No:</b> ${r}<br/>
-          <b>Customer:</b> ${cName}<br/>
+          <b>Customer:</b> ${cName}${subCName ? `<br/><b>Sub Customer:</b> ${subCName}` : ""}<br/>
         </div>
       `,
       });
@@ -203,10 +202,11 @@ export default function Purchase({ onNavigate, selectedRef }) {
   };
 
   /* ================= RESET / CANCEL FUNCTION ================= */
-  const handleCancel = () => {
+const handleCancel = () => {
     setRows([]);
     setRefNo("");
     setCustomerName("");
+    setSubCustomerName(""); 
     setIsEdit(false);
   };
 
@@ -571,15 +571,26 @@ export default function Purchase({ onNavigate, selectedRef }) {
                 </div>
               </div>
 
-              <div className="col-md-7 d-flex align-items-center justify-content-md-end gap-2">
-                {customerName && (
-                  <div 
-                    className="px-3 py-1.5 rounded-2 fw-extrabold text-truncate border shadow-2xs d-flex align-items-center gap-1.5 lift-hover" 
-                    style={{ fontSize: "13px", maxWidth: "250px", backgroundColor: "#ecfdf5", color: "#047857", borderColor: "#a7f3d0", fontWeight: "800", height: "36px" }}
-                  >
-                    <span>👤</span> {customerName}
-                  </div>
-                )}
+<div className="col-md-7 d-flex align-items-center justify-content-md-end gap-2 flex-wrap">
+                <div className="d-flex align-items-center gap-2">
+                  {customerName && (
+                    <div 
+                      className="px-3 py-1.5 rounded-2 fw-extrabold text-truncate border shadow-2xs d-flex align-items-center gap-1.5 lift-hover" 
+                      style={{ fontSize: "13px", maxWidth: "250px", backgroundColor: "#ecfdf5", color: "#047857", borderColor: "#a7f3d0", fontWeight: "800", height: "36px" }}
+                    >
+                      <span>👤</span> {customerName}
+                    </div>
+                  )}
+
+                  {subCustomerName && (
+                    <div 
+                      className="px-3 py-1.5 rounded-2 fw-extrabold text-truncate border shadow-2xs d-flex align-items-center gap-1.5 lift-hover" 
+                      style={{ fontSize: "13px", maxWidth: "250px", backgroundColor: "#e0f2fe", color: "#0369a1", borderColor: "#bae6fd", fontWeight: "800", height: "36px" }}
+                    >
+                      <span>🏷️</span> {subCustomerName}
+                    </div>
+                  )}
+                </div>
                 
                 {(rows.length > 0 || refNo) && (
                   <button
