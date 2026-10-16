@@ -4,7 +4,7 @@ export const Loader = ({ message = "Please wait, loading data..." }) => (
   <div
     style={{
       position: "fixed",
-      top: "50%",
+      top: "80%",
       left: "50%",
       transform: "translate(-50%, -50%)",
       zIndex: 9999,
@@ -122,7 +122,7 @@ export const Loader = ({ message = "Please wait, loading data..." }) => (
         style={{
           fontSize: "11px",
           fontWeight: "500",
-          color: "#64748b",
+          color: "#0d6efd",
           letterSpacing: "0.2px",
         }}
       >
