@@ -140,7 +140,7 @@ export default function Card({ onNavigate }) {
       });
     }
 
-    const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/card/get/${searchRef}`);
+    const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/card/get/${searchRef.trim().toUpperCase()}`);
     const data = await res.json();
 
     if (!data.success) {

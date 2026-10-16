@@ -164,7 +164,7 @@ const updateRow = (i, field, value) => {
     }
 
     try {
-      const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/transport/get/${searchRef}`);
+      const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/transport/get/${searchRef.trim().toUpperCase()}`);
       const data = await res.json();
 
       if (!data.success) {

@@ -164,7 +164,7 @@ export default function Ticketing({ onNavigate }) {
     }
 
     try {
-      const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/ticketing/get/${searchRef}`);
+      const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/ticketing/get/${searchRef.trim().toUpperCase()}`);
       const data = await res.json();
 
       if (!data.success) {

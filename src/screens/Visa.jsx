@@ -151,7 +151,7 @@ export default function Visa({ onNavigate }) {
     }
 
     try {
-      const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/visa/get/${searchRef}`);
+      const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/visa/get/${searchRef.trim().toUpperCase()}`);
       const data = await res.json();
 
       if (!data.success) {

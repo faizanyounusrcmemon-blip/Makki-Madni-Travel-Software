@@ -192,7 +192,7 @@ export default function Groups({ onNavigate }) {
     }
 
     try {
-      const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/groups/get/${searchRef}`);
+      const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/groups/get/${searchRef.trim().toUpperCase()}`);
       const data = await res.json();
 
       if (!data.success) {

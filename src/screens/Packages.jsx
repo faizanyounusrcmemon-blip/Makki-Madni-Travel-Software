@@ -282,7 +282,7 @@ const validFlights = flights.filter((f) => f.date && !isNaN(new Date(f.date)));
       return Swal.fire({ width: "280px", icon: "warning", text: "Search Ref No likho" });
     }
     try {
-      const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/bookings/get/${searchRef}`);
+      const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/bookings/get/${searchRef.trim().toUpperCase()}`);
       const data = await res.json();
       if (!data.success) {
         return Swal.fire({ width: "280px", icon: "error", text: "Record not found" });
