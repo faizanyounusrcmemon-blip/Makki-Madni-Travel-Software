@@ -12,8 +12,9 @@ export default function DeletedReports({ onNavigate }) {
   const [currentPage, setCurrentPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(25);
 
-  // 📱 Mobile-Style Selection State
+  // 📱 Mobile-Style Selection State & Checkbox Visibility Toggle
   const [selectedRefs, setSelectedRefs] = useState({});
+  const [showCheckboxes, setShowCheckboxes] = useState(false);
 
   /* ================= LOAD DATA ================= */
   const load = async () => {
@@ -287,7 +288,6 @@ export default function DeletedReports({ onNavigate }) {
       const t = item.type?.toUpperCase() || "OTHER";
       counts[t] = (counts[t] || 0) + 1;
 
-      // Calculate sum of amount if available in rows
       const foundRow = rows.find(
         (r) => String(r.ref_no) === String(item.ref_no) && r.type?.toUpperCase() === t
       );
@@ -439,7 +439,7 @@ export default function DeletedReports({ onNavigate }) {
     }
   };
 
-  /* ================= BULK RESTORE ================= */
+/* ================= BULK RESTORE FRONTEND HANDLER ================= */
   const handleBulkRestore = async () => {
     const selectedItems = Object.keys(selectedRefs).map((key) => {
       const [type, ...refParts] = key.split("_");
@@ -482,13 +482,35 @@ export default function DeletedReports({ onNavigate }) {
       Swal.close();
 
       if (data.success) {
-        Swal.fire({
-          icon: "success",
-          title: "Restored!",
-          text: data.message,
-          timer: 1500,
-          showConfirmButton: false,
-        });
+        if (data.errors && data.errors.length > 0) {
+          // ⚠️ Agar kuch items block ho gaye ho to alert dikhaye
+          const errorHtml = `
+            <div style="text-align:left; font-size:13px; max-height:220px; overflow-y:auto; background:#fff1f2; padding:10px; border-radius:8px; border:1px solid #fecdd3; color:#9f1239;">
+              <b>Summary:</b> ${data.restoredCount} restored, ${data.errors.length} blocked.<br/><br/>
+              <b>Blocked Ref Details:</b>
+              <ul style="margin:5px 0 0 15px; padding:0;">
+                ${data.errors.map(err => `<li style="margin-bottom:4px;">${err}</li>`).join("")}
+              </ul>
+            </div>
+          `;
+
+          Swal.fire({
+            width: "480px",
+            icon: data.restoredCount > 0 ? "warning" : "error",
+            title: data.restoredCount > 0 ? "Partial Restore Completed" : "Restore Blocked!",
+            html: errorHtml,
+            confirmButtonColor: "#e11d48"
+          });
+        } else {
+          // ✅ Sare successfully restore ho gaye
+          Swal.fire({
+            icon: "success",
+            title: "Restored!",
+            text: data.message,
+            timer: 1500,
+            showConfirmButton: false,
+          });
+        }
         load();
       } else {
         Swal.fire({ title: "Error", text: data.error || "Failed", icon: "error" });
@@ -691,10 +713,10 @@ export default function DeletedReports({ onNavigate }) {
         </div>
       </div>
 
-      {/* 🎛️ SEARCH & CONTROL CARD */}
+      {/* 🎛️ SEARCH & CONTROL CARD WITH MARK BUTTON */}
       <div className="card border-0 shadow-sm mb-4 rounded-4 p-3 bg-white">
-        <div className="row g-2 mb-3">
-          <div className="col-lg-4 col-md-6">
+        <div className="row g-2 mb-3 align-items-center">
+          <div className="col-lg-4 col-md-5">
             <input
               type="text"
               className="form-control border-light-subtle bg-light shadow-none"
@@ -705,7 +727,7 @@ export default function DeletedReports({ onNavigate }) {
             />
           </div>
 
-          <div className="col-lg-3 col-md-6">
+          <div className="col-lg-3 col-md-4">
             <select
               className="form-select border-light-subtle bg-light shadow-none"
               style={{ fontSize: "13px", padding: "10px 14px", borderRadius: "10px" }}
@@ -729,6 +751,22 @@ export default function DeletedReports({ onNavigate }) {
             </select>
           </div>
 
+          {/* 🏷️ MARK / SELECT BUTTON */}
+          <div className="col-lg-5 col-md-3 text-md-end">
+            <button
+              className={`btn btn-sm rounded-pill px-4 fw-semibold ${showCheckboxes ? "btn-dark" : "btn-outline-secondary"}`}
+              style={{ fontSize: "12px", height: "42px" }}
+              onClick={() => {
+                setShowCheckboxes(!showCheckboxes);
+                if (showCheckboxes) setSelectedRefs({});
+              }}
+            >
+              {showCheckboxes ? "✖ Hide Checkboxes" : "🏷️ Mark / Select"}
+            </button>
+          </div>
+        </div>
+
+        <div className="row g-2 mb-3">
           <div className="col-lg-2 col-md-3">
             <input
               type="date"
@@ -786,7 +824,7 @@ export default function DeletedReports({ onNavigate }) {
       </div>
 
       {/* 📱 MOBILE-STYLE SELECTION FLOATING BANNER WITH BULK BUTTONS */}
-      {selectedCount > 0 && (
+      {showCheckboxes && selectedCount > 0 && (
         <div
           className="alert alert-dark d-flex align-items-center justify-content-between py-2 px-3 mb-3 rounded-4 shadow-sm flex-wrap gap-2"
           style={{ background: "#0f172a", color: "#f8fafc", fontSize: "13px" }}
@@ -829,15 +867,17 @@ export default function DeletedReports({ onNavigate }) {
           <table className="table align-middle mb-0" style={{ fontSize: "13px" }}>
             <thead className="table-light text-secondary">
               <tr>
-                <th className="py-3 px-3 text-center" style={{ width: "40px" }}>
-                  <input
-                    type="checkbox"
-                    className="form-check-input shadow-none cursor-pointer"
-                    checked={isAllCurrentSelected}
-                    onChange={toggleSelectAllCurrent}
-                    title="Select All on this page"
-                  />
-                </th>
+                {showCheckboxes && (
+                  <th className="py-3 px-3 text-center" style={{ width: "40px" }}>
+                    <input
+                      type="checkbox"
+                      className="form-check-input shadow-none cursor-pointer"
+                      checked={isAllCurrentSelected}
+                      onChange={toggleSelectAllCurrent}
+                      title="Select All on this page"
+                    />
+                  </th>
+                )}
                 <th className="py-3 px-2 text-center" style={{ width: "50px" }}>SR#</th>
                 <th className="py-3">Type</th>
                 <th className="py-3">Ref No</th>
@@ -852,7 +892,7 @@ export default function DeletedReports({ onNavigate }) {
             <tbody>
               {loading && (
                 <tr>
-                  <td colSpan={9} className="text-center py-5 text-muted">
+                  <td colSpan={showCheckboxes ? 10 : 9} className="text-center py-5 text-muted">
                     <div className="spinner-border spinner-border-sm text-danger me-2" role="status"></div>
                     Loading deleted records...
                   </td>
@@ -874,14 +914,16 @@ export default function DeletedReports({ onNavigate }) {
                       transition: "background-color 0.2s ease",
                     }}
                   >
-                    <td className="text-center px-3">
-                      <input
-                        type="checkbox"
-                        className="form-check-input shadow-none cursor-pointer"
-                        checked={isSelected}
-                        onChange={() => toggleSelectOne(r.type, r.ref_no)}
-                      />
-                    </td>
+                    {showCheckboxes && (
+                      <td className="text-center px-3">
+                        <input
+                          type="checkbox"
+                          className="form-check-input shadow-none cursor-pointer"
+                          checked={isSelected}
+                          onChange={() => toggleSelectOne(r.type, r.ref_no)}
+                        />
+                      </td>
+                    )}
 
                     <td className="text-center text-muted fw-bold">{i + 1 + indexOfFirst}</td>
 
@@ -979,7 +1021,7 @@ export default function DeletedReports({ onNavigate }) {
 
               {!loading && filteredRows.length === 0 && (
                 <tr>
-                  <td colSpan={9} className="text-center py-5 text-muted">
+                  <td colSpan={showCheckboxes ? 10 : 9} className="text-center py-5 text-muted">
                     🎉 No deleted records matching your filter.
                   </td>
                 </tr>

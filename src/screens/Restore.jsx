@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+﻿import React, { useEffect, useState } from "react";
 import "./restore.css";
 import axios from "axios";
 import Swal from "sweetalert2";
@@ -12,7 +12,7 @@ export default function Restore({ onNavigate }) {
 
   const TABLES = [
     "banks","bookings","expense_ledger","hotels","ticketing","visa","card","groups",
-    "transport","customers","purchase_entries","users","bank_transactions",
+    "transport","customers","users","bank_transactions",
     "cash_transactions","customer_payments",
     "supplier_payments","suppliers","ziyarat","archive_snapshots","archive_balances","archive_profit_monthly","archive_logs",
     "authority_settings","system_passwords","activity_logs",
@@ -397,199 +397,243 @@ const askPassword = async (title, fileObj) => {
     });
   };
 
-/* ================= RESTORE (APP STORE STYLE LIVE TIMER & ETA) ================= */
+/* ================= RESTORE WITH REAL-TIME STREAMING LOG PANEL & LIVE METRICS ================= */
+  const restore = async (file, mode) => {
+    const fileObj = files.find((f) => f.name === file);
 
-const restore = async (file, mode) => {
-  const fileObj = files.find((f) => f.name === file);
+    const password = await askPassword(
+      mode === "full" ? "Full Backup Restore" : "Table Backup Restore",
+      fileObj
+    );
+    if (!password) return;
 
-  const password = await askPassword(
-    mode === "full" ? "Full Backup Restore" : "Table Backup Restore",
-    fileObj
-  );
-  if (!password) return;
+    if (mode === "table" && !tableMap[file]) {
+      return Swal.fire("Error", "Please select a table to restore", "error");
+    }
 
-  if (mode === "table" && !tableMap[file]) {
-    return Swal.fire("Error", "Please select a table to restore", "error");
-  }
-
-  let progressInterval = null;
-
-  try {
-    // 1. App Store Downloading Style Modal
-    Swal.fire({
-      title: "🔄 Restoring Database",
-      html: `
-        <div style="margin-top:15px; text-align: left; font-family: system-ui, -apple-system, sans-serif;">
-          
-          <!-- Progress Bar -->
-          <div style="width:100%; height:12px; background:#e2e8f0; border-radius:10px; overflow:hidden; margin-bottom: 12px;">
-            <div id="restoreBar" style="width:0%; height:100%; background:linear-gradient(90deg, #2563eb, #3b82f6); transition:width 0.3s ease;"></div>
-          </div>
-
-          <!-- App Store Style Percentage & Live Counters -->
-          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
-            <span id="restorePercent" style="font-weight:800; font-size:22px; color:#1e293b;">0%</span>
+    try {
+      Swal.fire({
+        title: "🔄 Restoring Database",
+        width: "750px",
+        html: `
+          <div style="display: flex; gap: 16px; margin-top: 15px; text-align: left; font-family: system-ui, -apple-system, sans-serif;">
             
-            <div style="text-align:right; font-size:12px; color:#64748b; line-height:1.4;">
-              <div>⏱ Elapsed: <strong id="timeElapsed" style="color:#0f172a;">00:00</strong></div>
-              <div>⏳ Remaining: <strong id="timeRemaining" style="color:#2563eb;">Calculating...</strong></div>
+            <!-- LEFT SIDE: TERMINAL / CMD STYLE LOG -->
+            <div style="flex: 1.2; background: #000; color: #00ff00; padding: 12px; border-radius: 8px; font-family: 'Courier New', monospace; font-size: 11px; height: 230px; overflow-y: auto; display: flex; flex-direction: column; gap: 3px; border: 1px solid #333;" id="restoreLogContainer">
+              <div style="color: #888; border-bottom: 1px solid #333; padding-bottom: 4px; margin-bottom: 4px; font-weight: bold;">C:\\DATABASE_RESTORE_ENGINE></div>
+              <div style="color: #38bdf8;">[INIT] Connecting to stream for: ${file}</div>
+            </div>
+
+            <!-- RIGHT SIDE: PROGRESS & METRICS -->
+            <div style="flex: 0.8; display: flex; flex-direction: column; justify-content: space-between;">
+              <div>
+                <!-- Progress Bar -->
+                <div style="width:100%; height:12px; background:#e2e8f0; border-radius:10px; overflow:hidden; margin-bottom: 10px;">
+                  <div id="restoreBar" style="width:5%; height:100%; background:linear-gradient(90deg, #2563eb, #3b82f6); transition:width 0.3s ease;"></div>
+                </div>
+
+                <!-- Percentage & Timers -->
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                  <span id="restorePercent" style="font-weight:800; font-size:20px; color:#1e293b;">0%</span>
+                  
+                  <div style="text-align:right; font-size:11px; color:#64748b; line-height:1.3;">
+                    <div>⏱ Elapsed: <strong id="timeElapsed" style="color:#0f172a;">00:00</strong></div>
+                    <div>⏳ Remaining: <strong id="timeRemaining" style="color:#2563eb;">Calculating...</strong></div>
+                  </div>
+                </div>
+
+                <!-- Tables Count Qty Display -->
+                <div style="font-size: 11px; color: #475569; font-weight: 600; margin-bottom: 8px; background: #f1f5f9; padding: 4px 8px; border-radius: 6px; display: flex; justify-content: space-between;">
+                  <span>📊 Tables Qty:</span>
+                  <span id="tableQtyCount" style="color: #2563eb;">0 / ${TABLES.length} Done</span>
+                </div>
+
+                <!-- Current Task Label -->
+                <div style="background:#f8fafc; padding:8px 12px; border-radius:8px; font-size:12px; color:#334155; border:1px solid #e2e8f0; margin-bottom:10px; display:flex; align-items:center; gap:6px;">
+                  <span id="restoreSpinner" style="display:inline-block; animation: spin 1s linear infinite;">🔄</span>
+                  <span id="restoreStatus" style="font-weight:600;">Connecting...</span>
+                </div>
+              </div>
+
+              <!-- Stepper Checklist -->
+              <div id="stepperContainer" style="font-size:11px; line-height: 1.7; color:#64748b;">
+                <div id="step1" style="color:#2563eb; font-weight:bold;">⏳ Step 1: Connecting & Downloading Backup...</div>
+                <div id="step2">⚪ Step 2: Extracting & Verifying Structures...</div>
+                <div id="step3">⚪ Step 3: Purging Live Records & Overwriting Tables...</div>
+                <div id="step4">⚪ Step 4: Finalizing Sequences & Triggers...</div>
+              </div>
             </div>
           </div>
 
-          <!-- Current Task Label -->
-          <div style="background:#f8fafc; padding:10px 14px; border-radius:10px; font-size:13px; color:#334155; border:1px solid #e2e8f0; margin-bottom:15px; display:flex; align-items:center; gap:8px;">
-            <span id="restoreSpinner" style="display:inline-block; animation: spin 1s linear infinite;">🔄</span>
-            <span id="restoreStatus" style="font-weight:600;">Initiating process...</span>
-          </div>
+          <style>
+            @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+          </style>
+        `,
+        allowOutsideClick: false,
+        allowEscapeKey: false,
+        showConfirmButton: false,
+      });
 
-          <!-- Stepper Checklist -->
-          <div id="stepperContainer" style="font-size:12px; line-height: 2; color:#64748b;">
-            <div id="step1" style="color:#2563eb; font-weight:bold;">⏳ Step 1: Reading Backup File...</div>
-            <div id="step2">⚪ Step 2: Extracting & Verifying Structures...</div>
-            <div id="step3">⚪ Step 3: Purging Live Records & Overwriting Tables...</div>
-            <div id="step4">⚪ Step 4: Finalizing Sequences & Triggers...</div>
-          </div>
-        </div>
-
-        <style>
-          @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        </style>
-      `,
-      allowOutsideClick: false,
-      allowEscapeKey: false,
-      showConfirmButton: false,
-    });
-
-    // Seconds ko MM:SS format me convert karne ke liye helper
-    const formatMMSS = (totalSecs) => {
-      const m = Math.floor(totalSecs / 60).toString().padStart(2, "0");
-      const s = (totalSecs % 60).toString().padStart(2, "0");
-      return `${m}:${s}`;
-    };
-
-    // DOM Updates Handler
-    const updateProgressDOM = (pct, statusText, currentStep, elapsedSecs, remainingSecs) => {
-      const bar = document.getElementById("restoreBar");
-      const txt = document.getElementById("restorePercent");
-      const st = document.getElementById("restoreStatus");
-      const elapsedEl = document.getElementById("timeElapsed");
-      const remainingEl = document.getElementById("timeRemaining");
-
-      if (bar) bar.style.width = `${pct}%`;
-      if (txt) txt.innerHTML = `${pct}%`;
-      if (st) st.innerHTML = statusText;
-      if (elapsedEl) elapsedEl.innerHTML = formatMMSS(elapsedSecs);
-      
-      if (remainingEl) {
-        if (remainingSecs === null) {
-          remainingEl.innerHTML = "Calculating...";
-        } else if (remainingSecs <= 0) {
-          remainingEl.innerHTML = "Finishing...";
-        } else {
-          remainingEl.innerHTML = formatMMSS(remainingSecs);
+      const appendLog = (msg, color = "#00ff00") => {
+        const logContainer = document.getElementById("restoreLogContainer");
+        if (logContainer) {
+          const div = document.createElement("div");
+          div.style.color = color;
+          div.innerHTML = msg;
+          logContainer.appendChild(div);
+          logContainer.scrollTop = logContainer.scrollHeight;
         }
-      }
+      };
 
-      for (let i = 1; i <= 4; i++) {
-        const el = document.getElementById(`step${i}`);
-        if (el) {
-          if (i < currentStep) {
-            el.innerHTML = el.innerHTML.replace(/[⏳⚪✅]/, "✅");
-            el.style.color = "#16a34a";
-            el.style.fontWeight = "normal";
-          } else if (i === currentStep) {
-            el.innerHTML = el.innerHTML.replace(/[⏳⚪✅]/, "⏳");
-            el.style.color = "#2563eb";
-            el.style.fontWeight = "bold";
+      const formatMMSS = (totalSecs) => {
+        const m = Math.floor(totalSecs / 60).toString().padStart(2, "0");
+        const s = (totalSecs % 60).toString().padStart(2, "0");
+        return `${m}:${s}`;
+      };
+
+      const updateProgressDOM = (pct, statusText, currentStep, elapsedSecs, remainingSecs, tablesDone) => {
+        const bar = document.getElementById("restoreBar");
+        const txt = document.getElementById("restorePercent");
+        const st = document.getElementById("restoreStatus");
+        const elapsedEl = document.getElementById("timeElapsed");
+        const remainingEl = document.getElementById("timeRemaining");
+        const tableQtyEl = document.getElementById("tableQtyCount");
+
+        if (bar) bar.style.width = `${pct}%`;
+        if (txt) txt.innerHTML = `${pct}%`;
+        if (st) st.innerHTML = statusText;
+        if (elapsedEl) elapsedEl.innerHTML = formatMMSS(elapsedSecs);
+        if (tableQtyEl) tableQtyEl.innerText = `${tablesDone} / ${TABLES.length} Done`;
+
+        if (remainingEl) {
+          if (remainingSecs === null) {
+            remainingEl.innerHTML = "Calculating...";
+          } else if (remainingSecs <= 0) {
+            remainingEl.innerHTML = "Finishing...";
           } else {
-            el.style.color = "#94a3b8";
-            el.style.fontWeight = "normal";
+            remainingEl.innerHTML = formatMMSS(remainingSecs);
           }
         }
-      }
-    };
 
-    // Timer logic variables
-    let simulatedPct = 0;
-    const startTime = Date.now();
+        for (let i = 1; i <= 4; i++) {
+          const el = document.getElementById(`step${i}`);
+          if (el) {
+            if (i < currentStep) {
+              el.innerHTML = el.innerHTML.replace(/[⏳⚪✅]/, "✅");
+              el.style.color = "#16a34a";
+              el.style.fontWeight = "normal";
+            } else if (i === currentStep) {
+              el.innerHTML = el.innerHTML.replace(/[⏳⚪✅]/, "⏳");
+              el.style.color = "#2563eb";
+              el.style.fontWeight = "bold";
+            } else {
+              el.style.color = "#94a3b8";
+              el.style.fontWeight = "normal";
+            }
+          }
+        }
+      };
 
-    progressInterval = setInterval(() => {
-      // Dynamic speed simulation
-      if (simulatedPct < 25) {
-        simulatedPct += 5;
-      } else if (simulatedPct >= 25 && simulatedPct < 70) {
-        simulatedPct += 3;
-      } else if (simulatedPct >= 70 && simulatedPct < 90) {
-        simulatedPct += 2;
-      }
+      // Timer & Clock Interval
+      const startTime = Date.now();
+      let completedSteps = 0;
+      let tablesRestoredCount = 0;
+      const totalStepsEstimate = TABLES.length + 3; // Tables count + init/sync steps
 
-      // Calculations
-      const elapsedSecs = Math.floor((Date.now() - startTime) / 1000);
-      
-      let remainingSecs = null;
-      if (simulatedPct > 5) {
-        const totalEstimatedSecs = (elapsedSecs / simulatedPct) * 100;
-        remainingSecs = Math.max(0, Math.ceil(totalEstimatedSecs - elapsedSecs));
-      }
+      const timerInterval = setInterval(() => {
+        const elapsedSecs = Math.floor((Date.now() - startTime) / 1000);
+        const elapsedEl = document.getElementById("timeElapsed");
+        if (elapsedEl) elapsedEl.innerHTML = formatMMSS(elapsedSecs);
 
-      let step = 1;
-      let statusMsg = "Reading Backup File...";
-      if (simulatedPct >= 25 && simulatedPct < 70) {
-        step = 2;
-        statusMsg = "Extracting & verifying structures...";
-      } else if (simulatedPct >= 70) {
-        step = 3;
-        statusMsg = "Purging live records & overwriting...";
-      }
+        const currentPct = Math.min(95, Math.floor((completedSteps / totalStepsEstimate) * 100));
+        let remainingSecs = null;
+        const remainingEl = document.getElementById("timeRemaining");
+        if (remainingEl && currentPct > 5) {
+          const totalEstimatedSecs = (elapsedSecs / currentPct) * 100;
+          remainingSecs = Math.max(0, Math.ceil(totalEstimatedSecs - elapsedSecs));
+          remainingEl.innerHTML = formatMMSS(remainingSecs);
+        }
 
-      updateProgressDOM(simulatedPct, statusMsg, step, elapsedSecs, remainingSecs);
-    }, 400);
+        let step = 1;
+        let statusMsg = "Connecting & Downloading...";
+        if (currentPct >= 15 && currentPct < 40) {
+          step = 2;
+          statusMsg = "Extracting & verifying structures...";
+        } else if (currentPct >= 40 && currentPct < 85) {
+          step = 3;
+          statusMsg = "Purging records & overwriting tables...";
+        } else if (currentPct >= 85) {
+          step = 4;
+          statusMsg = "Finalizing sequences & triggers...";
+        }
 
-    // REST Call Backend Engine
-    const res = await fetch(
-      `${import.meta.env.VITE_BACKEND_URL}${
-        mode === "full"
-          ? "/api/backup/restore/full"
-          : "/api/backup/restore/table"
-      }`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ file, table: tableMap[file], password }),
-      }
-    );
+        updateProgressDOM(currentPct, statusMsg, step, elapsedSecs, remainingSecs, tablesRestoredCount);
+      }, 500);
 
-    const data = await res.json();
+      const queryParams = new URLSearchParams({
+        file,
+        mode,
+        table: tableMap[file] || "",
+        password
+      });
 
-    if (progressInterval) clearInterval(progressInterval);
+      const eventSource = new EventSource(
+        `${import.meta.env.VITE_BACKEND_URL}/api/backup/restore-stream?${queryParams.toString()}`
+      );
 
-    if (!res.ok || !data.success) {
+      eventSource.onmessage = (event) => {
+        const data = JSON.parse(event.data);
+
+        if (data.msg) {
+          appendLog(data.msg, data.color || "#00ff00");
+          const statusEl = document.getElementById("restoreStatus");
+          if (statusEl) statusEl.innerText = data.msg;
+
+          completedSteps++;
+          if (data.msg.includes("SUCCESSFULLY RESTORED")) {
+            tablesRestoredCount = Math.min(TABLES.length, tablesRestoredCount + 1);
+          }
+        }
+
+        if (data.success !== undefined) {
+          clearInterval(timerInterval);
+          eventSource.close();
+
+          const totalElapsedSecs = Math.floor((Date.now() - startTime) / 1000);
+          updateProgressDOM(100, "Completed successfully!", 4, totalElapsedSecs, 0, TABLES.length);
+
+          setTimeout(() => {
+            Swal.close();
+            if (data.success) {
+              Swal.fire({
+                icon: "success",
+                title: "Restore Completed",
+                text: "Database restored successfully!",
+                confirmButtonColor: "#16a34a",
+              });
+              loadBackups();
+            } else {
+              Swal.fire("Error", data.error || "Restore failed", "error");
+            }
+          }, 800);
+        }
+      };
+
+      eventSource.onerror = (err) => {
+        clearInterval(timerInterval);
+        eventSource.close();
+        appendLog("CRITICAL ERROR: Stream connection lost", "#f43f5e");
+        setTimeout(() => {
+          Swal.close();
+          Swal.fire("Error", "Stream connection lost or wrong password", "error");
+        }, 1200);
+      };
+
+    } catch (err) {
       Swal.close();
-      return Swal.fire("Error", data.error || "Restore failed / Wrong password", "error");
+      Swal.fire("Error", err.message, "error");
     }
-
-    // Final Completion Step
-    const totalElapsedSecs = Math.floor((Date.now() - startTime) / 1000);
-    updateProgressDOM(98, "Finalizing sequences & triggers...", 4, totalElapsedSecs, 0);
-    await new Promise((r) => setTimeout(r, 500));
-    updateProgressDOM(100, "Done!", 5, totalElapsedSecs, 0);
-    await new Promise((r) => setTimeout(r, 300));
-
-    Swal.close();
-
-    Swal.fire({
-      icon: "success",
-      title: "Restore Completed",
-      text: "Database restored successfully!",
-      confirmButtonColor: "#16a34a",
-    });
-
-  } catch (err) {
-    if (progressInterval) clearInterval(progressInterval);
-    Swal.close();
-    Swal.fire("Error", "Restore failed", "error");
-  }
-};
+  };
 
   /* ================= DOWNLOAD ================= */
 
